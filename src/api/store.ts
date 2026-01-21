@@ -5,6 +5,25 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  MutationFunction,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   CommonResponseListStoreResponse,
   CommonResponseLong,
@@ -17,6 +36,12 @@ import type {
   SwaggerErrorResponse,
   UpdateStoreBody
 } from './generated.schemas';
+
+import { customFetch } from './mutator';
+
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -53,20 +78,89 @@ export const getGetStoresUrl = (params: GetStoresParams,) => {
 
 export const getStores = async (params: GetStoresParams, options?: RequestInit): Promise<getStoresResponse> => {
   
-  const res = await fetch(getGetStoresUrl(params),
+  return customFetch<getStoresResponse>(getGetStoresUrl(params),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetStoresQueryKey = (params?: GetStoresParams,) => {
+    return [
+    `/api/stores`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getGetStoresQueryOptions = <TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(params: GetStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoresQueryKey(params);
+
   
-  const data: getStoresResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getStoresResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStores>>> = ({ signal }) => getStores(params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetStoresQueryResult = NonNullable<Awaited<ReturnType<typeof getStores>>>
+export type GetStoresQueryError = unknown
+
+
+export function useGetStores<TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(
+ params: GetStoresParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStores>>,
+          TError,
+          Awaited<ReturnType<typeof getStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStores<TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(
+ params: GetStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStores>>,
+          TError,
+          Awaited<ReturnType<typeof getStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStores<TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(
+ params: GetStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 상점 목록 조회
+ */
+
+export function useGetStores<TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(
+ params: GetStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStoresQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -112,7 +206,7 @@ export const getCreateStoreUrl = () => {
 
 export const createStore = async (createStoreBody: CreateStoreBody, options?: RequestInit): Promise<createStoreResponse> => {
   
-  const res = await fetch(getCreateStoreUrl(),
+  return customFetch<createStoreResponse>(getCreateStoreUrl(),
   {      
     ...options,
     method: 'POST',
@@ -120,16 +214,56 @@ export const createStore = async (createStoreBody: CreateStoreBody, options?: Re
     body: JSON.stringify(
       createStoreBody,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: createStoreResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createStoreResponse
-}
+);}
 
 
-/**
+
+
+export const getCreateStoreMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: CreateStoreBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: CreateStoreBody}, TContext> => {
+
+const mutationKey = ['createStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStore>>, {data: CreateStoreBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStore(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof createStore>>>
+    export type CreateStoreMutationBody = CreateStoreBody
+    export type CreateStoreMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 상점 등록
+ */
+export const useCreateStore = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: CreateStoreBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createStore>>,
+        TError,
+        {data: CreateStoreBody},
+        TContext
+      > => {
+      return useMutation(getCreateStoreMutationOptions(options), queryClient);
+    }
+    /**
  * 특정 상점을 신고합니다.
  * @summary [학생] 상점 신고
  */
@@ -168,7 +302,7 @@ export const getReportStoreUrl = (storeId: number,) => {
 export const reportStore = async (storeId: number,
     storeReportRequest: StoreReportRequest, options?: RequestInit): Promise<reportStoreResponse> => {
   
-  const res = await fetch(getReportStoreUrl(storeId),
+  return customFetch<reportStoreResponse>(getReportStoreUrl(storeId),
   {      
     ...options,
     method: 'POST',
@@ -176,16 +310,56 @@ export const reportStore = async (storeId: number,
     body: JSON.stringify(
       storeReportRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: reportStoreResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as reportStoreResponse
-}
+);}
 
 
-/**
+
+
+export const getReportStoreMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportStore>>, TError,{storeId: number;data: StoreReportRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportStore>>, TError,{storeId: number;data: StoreReportRequest}, TContext> => {
+
+const mutationKey = ['reportStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportStore>>, {storeId: number;data: StoreReportRequest}> = (props) => {
+          const {storeId,data} = props ?? {};
+
+          return  reportStore(storeId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportStoreMutationResult = NonNullable<Awaited<ReturnType<typeof reportStore>>>
+    export type ReportStoreMutationBody = StoreReportRequest
+    export type ReportStoreMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [학생] 상점 신고
+ */
+export const useReportStore = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportStore>>, TError,{storeId: number;data: StoreReportRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reportStore>>,
+        TError,
+        {storeId: number;data: StoreReportRequest},
+        TContext
+      > => {
+      return useMutation(getReportStoreMutationOptions(options), queryClient);
+    }
+    /**
  * 상점 ID로 상점의 상세 정보를 조회합니다.
  * @summary [공통] 상점 단건 조회
  */
@@ -218,20 +392,89 @@ export const getGetStoreUrl = (storeId: number,) => {
 
 export const getStore = async (storeId: number, options?: RequestInit): Promise<getStoreResponse> => {
   
-  const res = await fetch(getGetStoreUrl(storeId),
+  return customFetch<getStoreResponse>(getGetStoreUrl(storeId),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetStoreQueryKey = (storeId?: number,) => {
+    return [
+    `/api/stores/${storeId}`
+    ] as const;
+    }
+
+    
+export const getGetStoreQueryOptions = <TData = Awaited<ReturnType<typeof getStore>>, TError = SwaggerErrorResponse>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreQueryKey(storeId);
+
   
-  const data: getStoreResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getStoreResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStore>>> = ({ signal }) => getStore(storeId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetStoreQueryResult = NonNullable<Awaited<ReturnType<typeof getStore>>>
+export type GetStoreQueryError = SwaggerErrorResponse
+
+
+export function useGetStore<TData = Awaited<ReturnType<typeof getStore>>, TError = SwaggerErrorResponse>(
+ storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStore>>,
+          TError,
+          Awaited<ReturnType<typeof getStore>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStore<TData = Awaited<ReturnType<typeof getStore>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStore>>,
+          TError,
+          Awaited<ReturnType<typeof getStore>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStore<TData = Awaited<ReturnType<typeof getStore>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 상점 단건 조회
+ */
+
+export function useGetStore<TData = Awaited<ReturnType<typeof getStore>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStoreQueryOptions(storeId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -272,23 +515,63 @@ export const getDeleteStoreUrl = (storeId: number,) => {
 
 export const deleteStore = async (storeId: number, options?: RequestInit): Promise<deleteStoreResponse> => {
   
-  const res = await fetch(getDeleteStoreUrl(storeId),
+  return customFetch<deleteStoreResponse>(getDeleteStoreUrl(storeId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deleteStoreResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deleteStoreResponse
-}
+);}
 
 
-/**
+
+
+export const getDeleteStoreMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStore>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStore>>, TError,{storeId: number}, TContext> => {
+
+const mutationKey = ['deleteStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStore>>, {storeId: number}> = (props) => {
+          const {storeId} = props ?? {};
+
+          return  deleteStore(storeId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStoreMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStore>>>
+    
+    export type DeleteStoreMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 상점 삭제
+ */
+export const useDeleteStore = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStore>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStore>>,
+        TError,
+        {storeId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteStoreMutationOptions(options), queryClient);
+    }
+    /**
  * 상점 정보를 수정합니다. (본인 상점만 가능)
  * @summary [점주] 상점 정보 수정
  */
@@ -332,7 +615,7 @@ export const getUpdateStoreUrl = (storeId: number,) => {
 export const updateStore = async (storeId: number,
     updateStoreBody: UpdateStoreBody, options?: RequestInit): Promise<updateStoreResponse> => {
   
-  const res = await fetch(getUpdateStoreUrl(storeId),
+  return customFetch<updateStoreResponse>(getUpdateStoreUrl(storeId),
   {      
     ...options,
     method: 'PATCH',
@@ -340,16 +623,56 @@ export const updateStore = async (storeId: number,
     body: JSON.stringify(
       updateStoreBody,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: updateStoreResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateStoreResponse
-}
+);}
 
 
-/**
+
+
+export const getUpdateStoreMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: UpdateStoreBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: UpdateStoreBody}, TContext> => {
+
+const mutationKey = ['updateStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStore>>, {storeId: number;data: UpdateStoreBody}> = (props) => {
+          const {storeId,data} = props ?? {};
+
+          return  updateStore(storeId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof updateStore>>>
+    export type UpdateStoreMutationBody = UpdateStoreBody
+    export type UpdateStoreMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 상점 정보 수정
+ */
+export const useUpdateStore = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: UpdateStoreBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateStore>>,
+        TError,
+        {storeId: number;data: UpdateStoreBody},
+        TContext
+      > => {
+      return useMutation(getUpdateStoreMutationOptions(options), queryClient);
+    }
+    /**
  * 자신이 등록한 모든 상점을 조회합니다.
  * @summary [점주] 자신의 상점 조회
  */
@@ -375,20 +698,89 @@ export const getGetMyStoresUrl = () => {
 
 export const getMyStores = async ( options?: RequestInit): Promise<getMyStoresResponse> => {
   
-  const res = await fetch(getGetMyStoresUrl(),
+  return customFetch<getMyStoresResponse>(getGetMyStoresUrl(),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetMyStoresQueryKey = () => {
+    return [
+    `/api/stores/my-stores`
+    ] as const;
+    }
+
+    
+export const getGetMyStoresQueryOptions = <TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyStoresQueryKey();
+
   
-  const data: getMyStoresResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getMyStoresResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyStores>>> = ({ signal }) => getMyStores({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetMyStoresQueryResult = NonNullable<Awaited<ReturnType<typeof getMyStores>>>
+export type GetMyStoresQueryError = unknown
+
+
+export function useGetMyStores<TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyStores>>,
+          TError,
+          Awaited<ReturnType<typeof getMyStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyStores<TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyStores>>,
+          TError,
+          Awaited<ReturnType<typeof getMyStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyStores<TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [점주] 자신의 상점 조회
+ */
+
+export function useGetMyStores<TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyStoresQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -419,19 +811,60 @@ export const getDeleteStoreImageUrl = (storeId: number,
 export const deleteStoreImage = async (storeId: number,
     imageId: number, options?: RequestInit): Promise<deleteStoreImageResponse> => {
   
-  const res = await fetch(getDeleteStoreImageUrl(storeId,imageId),
+  return customFetch<deleteStoreImageResponse>(getDeleteStoreImageUrl(storeId,imageId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deleteStoreImageResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deleteStoreImageResponse
-}
+);}
 
 
+
+
+export const getDeleteStoreImageMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreImage>>, TError,{storeId: number;imageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStoreImage>>, TError,{storeId: number;imageId: number}, TContext> => {
+
+const mutationKey = ['deleteStoreImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStoreImage>>, {storeId: number;imageId: number}> = (props) => {
+          const {storeId,imageId} = props ?? {};
+
+          return  deleteStoreImage(storeId,imageId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStoreImageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStoreImage>>>
+    
+    export type DeleteStoreImageMutationError = unknown
+
+    /**
+ * @summary [점주] 상점 이미지 개별 삭제
+ */
+export const useDeleteStoreImage = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreImage>>, TError,{storeId: number;imageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStoreImage>>,
+        TError,
+        {storeId: number;imageId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteStoreImageMutationOptions(options), queryClient);
+    }
+    

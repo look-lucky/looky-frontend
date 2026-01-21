@@ -5,6 +5,25 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  MutationFunction,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   CommonResponseLong,
   CommonResponsePageResponseReviewResponse,
@@ -16,6 +35,12 @@ import type {
   SwaggerErrorResponse,
   UpdateReviewBody
 } from './generated.schemas';
+
+import { customFetch } from './mutator';
+
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -61,20 +86,95 @@ export const getGetReviewsUrl = (storeId: number,
 export const getReviews = async (storeId: number,
     params: GetReviewsParams, options?: RequestInit): Promise<getReviewsResponse> => {
   
-  const res = await fetch(getGetReviewsUrl(storeId,params),
+  return customFetch<getReviewsResponse>(getGetReviewsUrl(storeId,params),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetReviewsQueryKey = (storeId?: number,
+    params?: GetReviewsParams,) => {
+    return [
+    `/api/stores/${storeId}/reviews`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getGetReviewsQueryOptions = <TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(storeId: number,
+    params: GetReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReviewsQueryKey(storeId,params);
+
   
-  const data: getReviewsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getReviewsResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReviews>>> = ({ signal }) => getReviews(storeId,params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof getReviews>>>
+export type GetReviewsQueryError = SwaggerErrorResponse
+
+
+export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(
+ storeId: number,
+    params: GetReviewsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getReviews>>,
+          TError,
+          Awaited<ReturnType<typeof getReviews>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(
+ storeId: number,
+    params: GetReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getReviews>>,
+          TError,
+          Awaited<ReturnType<typeof getReviews>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(
+ storeId: number,
+    params: GetReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 상점 리뷰 목록 조회
+ */
+
+export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(
+ storeId: number,
+    params: GetReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetReviewsQueryOptions(storeId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -121,7 +221,7 @@ export const getCreateReviewUrl = (storeId: number,) => {
 export const createReview = async (storeId: number,
     createReviewBody: CreateReviewBody, options?: RequestInit): Promise<createReviewResponse> => {
   
-  const res = await fetch(getCreateReviewUrl(storeId),
+  return customFetch<createReviewResponse>(getCreateReviewUrl(storeId),
   {      
     ...options,
     method: 'POST',
@@ -129,16 +229,56 @@ export const createReview = async (storeId: number,
     body: JSON.stringify(
       createReviewBody,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: createReviewResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createReviewResponse
-}
+);}
 
 
-/**
+
+
+export const getCreateReviewMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewBody}, TContext> => {
+
+const mutationKey = ['createReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReview>>, {storeId: number;data: CreateReviewBody}> = (props) => {
+          const {storeId,data} = props ?? {};
+
+          return  createReview(storeId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createReview>>>
+    export type CreateReviewMutationBody = CreateReviewBody
+    export type CreateReviewMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [학생] 리뷰 작성
+ */
+export const useCreateReview = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createReview>>,
+        TError,
+        {storeId: number;data: CreateReviewBody},
+        TContext
+      > => {
+      return useMutation(getCreateReviewMutationOptions(options), queryClient);
+    }
+    /**
  * 특정 리뷰를 신고합니다.
  * @summary [공통] 리뷰 신고 
  */
@@ -172,7 +312,7 @@ export const getReportReviewUrl = (reviewId: number,) => {
 export const reportReview = async (reviewId: number,
     reportRequest: ReportRequest, options?: RequestInit): Promise<reportReviewResponse> => {
   
-  const res = await fetch(getReportReviewUrl(reviewId),
+  return customFetch<reportReviewResponse>(getReportReviewUrl(reviewId),
   {      
     ...options,
     method: 'POST',
@@ -180,16 +320,56 @@ export const reportReview = async (reviewId: number,
     body: JSON.stringify(
       reportRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: reportReviewResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as reportReviewResponse
-}
+);}
 
 
-/**
+
+
+export const getReportReviewMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportReview>>, TError,{reviewId: number;data: ReportRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportReview>>, TError,{reviewId: number;data: ReportRequest}, TContext> => {
+
+const mutationKey = ['reportReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportReview>>, {reviewId: number;data: ReportRequest}> = (props) => {
+          const {reviewId,data} = props ?? {};
+
+          return  reportReview(reviewId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportReviewMutationResult = NonNullable<Awaited<ReturnType<typeof reportReview>>>
+    export type ReportReviewMutationBody = ReportRequest
+    export type ReportReviewMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [공통] 리뷰 신고 
+ */
+export const useReportReview = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportReview>>, TError,{reviewId: number;data: ReportRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reportReview>>,
+        TError,
+        {reviewId: number;data: ReportRequest},
+        TContext
+      > => {
+      return useMutation(getReportReviewMutationOptions(options), queryClient);
+    }
+    /**
  * 리뷰에 좋아요를 누릅니다.
  * @summary [공통] 리뷰 좋아요
  */
@@ -232,23 +412,63 @@ export const getAddLikeUrl = (reviewId: number,) => {
 
 export const addLike = async (reviewId: number, options?: RequestInit): Promise<addLikeResponse> => {
   
-  const res = await fetch(getAddLikeUrl(reviewId),
+  return customFetch<addLikeResponse>(getAddLikeUrl(reviewId),
   {      
     ...options,
     method: 'POST'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: addLikeResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as addLikeResponse
-}
+);}
 
 
-/**
+
+
+export const getAddLikeMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addLike>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addLike>>, TError,{reviewId: number}, TContext> => {
+
+const mutationKey = ['addLike'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addLike>>, {reviewId: number}> = (props) => {
+          const {reviewId} = props ?? {};
+
+          return  addLike(reviewId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddLikeMutationResult = NonNullable<Awaited<ReturnType<typeof addLike>>>
+    
+    export type AddLikeMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [공통] 리뷰 좋아요
+ */
+export const useAddLike = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addLike>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addLike>>,
+        TError,
+        {reviewId: number},
+        TContext
+      > => {
+      return useMutation(getAddLikeMutationOptions(options), queryClient);
+    }
+    /**
  * 리뷰 좋아요를 취소합니다.
  * @summary [공통] 리뷰 좋아요 취소
  */
@@ -281,23 +501,63 @@ export const getRemoveLikeUrl = (reviewId: number,) => {
 
 export const removeLike = async (reviewId: number, options?: RequestInit): Promise<removeLikeResponse> => {
   
-  const res = await fetch(getRemoveLikeUrl(reviewId),
+  return customFetch<removeLikeResponse>(getRemoveLikeUrl(reviewId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: removeLikeResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as removeLikeResponse
-}
+);}
 
 
-/**
+
+
+export const getRemoveLikeMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeLike>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeLike>>, TError,{reviewId: number}, TContext> => {
+
+const mutationKey = ['removeLike'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeLike>>, {reviewId: number}> = (props) => {
+          const {reviewId} = props ?? {};
+
+          return  removeLike(reviewId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveLikeMutationResult = NonNullable<Awaited<ReturnType<typeof removeLike>>>
+    
+    export type RemoveLikeMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [공통] 리뷰 좋아요 취소
+ */
+export const useRemoveLike = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeLike>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeLike>>,
+        TError,
+        {reviewId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveLikeMutationOptions(options), queryClient);
+    }
+    /**
  * 작성한 리뷰를 삭제합니다. (본인만 가능)
  * @summary [학생] 리뷰 삭제
  */
@@ -335,23 +595,63 @@ export const getDeleteReviewUrl = (reviewId: number,) => {
 
 export const deleteReview = async (reviewId: number, options?: RequestInit): Promise<deleteReviewResponse> => {
   
-  const res = await fetch(getDeleteReviewUrl(reviewId),
+  return customFetch<deleteReviewResponse>(getDeleteReviewUrl(reviewId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deleteReviewResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deleteReviewResponse
-}
+);}
 
 
-/**
+
+
+export const getDeleteReviewMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReview>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteReview>>, TError,{reviewId: number}, TContext> => {
+
+const mutationKey = ['deleteReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteReview>>, {reviewId: number}> = (props) => {
+          const {reviewId} = props ?? {};
+
+          return  deleteReview(reviewId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteReviewMutationResult = NonNullable<Awaited<ReturnType<typeof deleteReview>>>
+    
+    export type DeleteReviewMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [학생] 리뷰 삭제
+ */
+export const useDeleteReview = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReview>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteReview>>,
+        TError,
+        {reviewId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteReviewMutationOptions(options), queryClient);
+    }
+    /**
  * 작성한 리뷰를 수정합니다. (본인만 가능)
  * @summary [학생] 리뷰 수정
  */
@@ -390,7 +690,7 @@ export const getUpdateReviewUrl = (reviewId: number,) => {
 export const updateReview = async (reviewId: number,
     updateReviewBody: UpdateReviewBody, options?: RequestInit): Promise<updateReviewResponse> => {
   
-  const res = await fetch(getUpdateReviewUrl(reviewId),
+  return customFetch<updateReviewResponse>(getUpdateReviewUrl(reviewId),
   {      
     ...options,
     method: 'PATCH',
@@ -398,16 +698,56 @@ export const updateReview = async (reviewId: number,
     body: JSON.stringify(
       updateReviewBody,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: updateReviewResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateReviewResponse
-}
+);}
 
 
-/**
+
+
+export const getUpdateReviewMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewBody}, TContext> => {
+
+const mutationKey = ['updateReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReview>>, {reviewId: number;data: UpdateReviewBody}> = (props) => {
+          const {reviewId,data} = props ?? {};
+
+          return  updateReview(reviewId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof updateReview>>>
+    export type UpdateReviewMutationBody = UpdateReviewBody
+    export type UpdateReviewMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [학생] 리뷰 수정
+ */
+export const useUpdateReview = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateReview>>,
+        TError,
+        {reviewId: number;data: UpdateReviewBody},
+        TContext
+      > => {
+      return useMutation(getUpdateReviewMutationOptions(options), queryClient);
+    }
+    /**
  * 상점의 평점 평균, 총 리뷰 수, 별점별 개수 분포를 조회합니다.
  * @summary [공통] 상점 리뷰 통계
  */
@@ -440,19 +780,88 @@ export const getGetReviewStatsUrl = (storeId: number,) => {
 
 export const getReviewStats = async (storeId: number, options?: RequestInit): Promise<getReviewStatsResponse> => {
   
-  const res = await fetch(getGetReviewStatsUrl(storeId),
+  return customFetch<getReviewStatsResponse>(getGetReviewStatsUrl(storeId),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetReviewStatsQueryKey = (storeId?: number,) => {
+    return [
+    `/api/stores/${storeId}/reviews/stats`
+    ] as const;
+    }
+
+    
+export const getGetReviewStatsQueryOptions = <TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReviewStatsQueryKey(storeId);
+
   
-  const data: getReviewStatsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getReviewStatsResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReviewStats>>> = ({ signal }) => getReviewStats(storeId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetReviewStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getReviewStats>>>
+export type GetReviewStatsQueryError = SwaggerErrorResponse
+
+
+export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(
+ storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getReviewStats>>,
+          TError,
+          Awaited<ReturnType<typeof getReviewStats>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getReviewStats>>,
+          TError,
+          Awaited<ReturnType<typeof getReviewStats>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 상점 리뷰 통계
+ */
+
+export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetReviewStatsQueryOptions(storeId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 

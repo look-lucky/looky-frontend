@@ -5,6 +5,25 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  MutationFunction,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   CommonResponseListRefreshTokenResponse,
   CommonResponsePageResponseUserResponse,
@@ -14,6 +33,12 @@ import type {
   SwaggerErrorResponse,
   UserRoleUpdateRequest
 } from './generated.schemas';
+
+import { customFetch } from './mutator';
+
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -56,7 +81,7 @@ export const getUpdateUserRoleUrl = (userId: number,) => {
 export const updateUserRole = async (userId: number,
     userRoleUpdateRequest: UserRoleUpdateRequest, options?: RequestInit): Promise<updateUserRoleResponse> => {
   
-  const res = await fetch(getUpdateUserRoleUrl(userId),
+  return customFetch<updateUserRoleResponse>(getUpdateUserRoleUrl(userId),
   {      
     ...options,
     method: 'PATCH',
@@ -64,16 +89,56 @@ export const updateUserRole = async (userId: number,
     body: JSON.stringify(
       userRoleUpdateRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: updateUserRoleResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateUserRoleResponse
-}
+);}
 
 
-/**
+
+
+export const getUpdateUserRoleMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUserRole>>, TError,{userId: number;data: UserRoleUpdateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateUserRole>>, TError,{userId: number;data: UserRoleUpdateRequest}, TContext> => {
+
+const mutationKey = ['updateUserRole'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateUserRole>>, {userId: number;data: UserRoleUpdateRequest}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  updateUserRole(userId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateUserRoleMutationResult = NonNullable<Awaited<ReturnType<typeof updateUserRole>>>
+    export type UpdateUserRoleMutationBody = UserRoleUpdateRequest
+    export type UpdateUserRoleMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [관리자] 사용자 권한 수정
+ */
+export const useUpdateUserRole = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUserRole>>, TError,{userId: number;data: UserRoleUpdateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateUserRole>>,
+        TError,
+        {userId: number;data: UserRoleUpdateRequest},
+        TContext
+      > => {
+      return useMutation(getUpdateUserRoleMutationOptions(options), queryClient);
+    }
+    /**
  * 가입된 모든 사용자를 페이징하여 조회합니다.
  * @summary [관리자] 전체 사용자 목록 조회
  */
@@ -113,20 +178,89 @@ export const getGetAllUsersUrl = (params: GetAllUsersParams,) => {
 
 export const getAllUsers = async (params: GetAllUsersParams, options?: RequestInit): Promise<getAllUsersResponse> => {
   
-  const res = await fetch(getGetAllUsersUrl(params),
+  return customFetch<getAllUsersResponse>(getGetAllUsersUrl(params),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetAllUsersQueryKey = (params?: GetAllUsersParams,) => {
+    return [
+    `/api/admin/users`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getGetAllUsersQueryOptions = <TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(params: GetAllUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAllUsersQueryKey(params);
+
   
-  const data: getAllUsersResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getAllUsersResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllUsers>>> = ({ signal }) => getAllUsers(params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetAllUsersQueryResult = NonNullable<Awaited<ReturnType<typeof getAllUsers>>>
+export type GetAllUsersQueryError = SwaggerErrorResponse
+
+
+export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(
+ params: GetAllUsersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAllUsers>>,
+          TError,
+          Awaited<ReturnType<typeof getAllUsers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(
+ params: GetAllUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAllUsers>>,
+          TError,
+          Awaited<ReturnType<typeof getAllUsers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(
+ params: GetAllUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [관리자] 전체 사용자 목록 조회
+ */
+
+export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(
+ params: GetAllUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAllUsersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -162,20 +296,89 @@ export const getGetAllRefreshTokensUrl = () => {
 
 export const getAllRefreshTokens = async ( options?: RequestInit): Promise<getAllRefreshTokensResponse> => {
   
-  const res = await fetch(getGetAllRefreshTokensUrl(),
+  return customFetch<getAllRefreshTokensResponse>(getGetAllRefreshTokensUrl(),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetAllRefreshTokensQueryKey = () => {
+    return [
+    `/api/admin/tokens`
+    ] as const;
+    }
+
+    
+export const getGetAllRefreshTokensQueryOptions = <TData = Awaited<ReturnType<typeof getAllRefreshTokens>>, TError = SwaggerErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllRefreshTokens>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAllRefreshTokensQueryKey();
+
   
-  const data: getAllRefreshTokensResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getAllRefreshTokensResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllRefreshTokens>>> = ({ signal }) => getAllRefreshTokens({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAllRefreshTokens>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetAllRefreshTokensQueryResult = NonNullable<Awaited<ReturnType<typeof getAllRefreshTokens>>>
+export type GetAllRefreshTokensQueryError = SwaggerErrorResponse
+
+
+export function useGetAllRefreshTokens<TData = Awaited<ReturnType<typeof getAllRefreshTokens>>, TError = SwaggerErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllRefreshTokens>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAllRefreshTokens>>,
+          TError,
+          Awaited<ReturnType<typeof getAllRefreshTokens>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAllRefreshTokens<TData = Awaited<ReturnType<typeof getAllRefreshTokens>>, TError = SwaggerErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllRefreshTokens>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAllRefreshTokens>>,
+          TError,
+          Awaited<ReturnType<typeof getAllRefreshTokens>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAllRefreshTokens<TData = Awaited<ReturnType<typeof getAllRefreshTokens>>, TError = SwaggerErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllRefreshTokens>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [관리자] 전체 리프레시 토큰 목록 조회
+ */
+
+export function useGetAllRefreshTokens<TData = Awaited<ReturnType<typeof getAllRefreshTokens>>, TError = SwaggerErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllRefreshTokens>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAllRefreshTokensQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -216,20 +419,89 @@ export const getGetUserRefreshTokenUrl = (userId: number,) => {
 
 export const getUserRefreshToken = async (userId: number, options?: RequestInit): Promise<getUserRefreshTokenResponse> => {
   
-  const res = await fetch(getGetUserRefreshTokenUrl(userId),
+  return customFetch<getUserRefreshTokenResponse>(getGetUserRefreshTokenUrl(userId),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetUserRefreshTokenQueryKey = (userId?: number,) => {
+    return [
+    `/api/admin/tokens/${userId}`
+    ] as const;
+    }
+
+    
+export const getGetUserRefreshTokenQueryOptions = <TData = Awaited<ReturnType<typeof getUserRefreshToken>>, TError = SwaggerErrorResponse>(userId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserRefreshToken>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUserRefreshTokenQueryKey(userId);
+
   
-  const data: getUserRefreshTokenResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getUserRefreshTokenResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserRefreshToken>>> = ({ signal }) => getUserRefreshToken(userId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUserRefreshToken>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetUserRefreshTokenQueryResult = NonNullable<Awaited<ReturnType<typeof getUserRefreshToken>>>
+export type GetUserRefreshTokenQueryError = SwaggerErrorResponse
+
+
+export function useGetUserRefreshToken<TData = Awaited<ReturnType<typeof getUserRefreshToken>>, TError = SwaggerErrorResponse>(
+ userId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserRefreshToken>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUserRefreshToken>>,
+          TError,
+          Awaited<ReturnType<typeof getUserRefreshToken>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUserRefreshToken<TData = Awaited<ReturnType<typeof getUserRefreshToken>>, TError = SwaggerErrorResponse>(
+ userId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserRefreshToken>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUserRefreshToken>>,
+          TError,
+          Awaited<ReturnType<typeof getUserRefreshToken>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUserRefreshToken<TData = Awaited<ReturnType<typeof getUserRefreshToken>>, TError = SwaggerErrorResponse>(
+ userId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserRefreshToken>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [관리자] 특정 사용자 리프레시 토큰 조회
+ */
+
+export function useGetUserRefreshToken<TData = Awaited<ReturnType<typeof getUserRefreshToken>>, TError = SwaggerErrorResponse>(
+ userId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUserRefreshToken>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetUserRefreshTokenQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -270,23 +542,63 @@ export const getDeleteUserRefreshTokenUrl = (userId: number,) => {
 
 export const deleteUserRefreshToken = async (userId: number, options?: RequestInit): Promise<deleteUserRefreshTokenResponse> => {
   
-  const res = await fetch(getDeleteUserRefreshTokenUrl(userId),
+  return customFetch<deleteUserRefreshTokenResponse>(getDeleteUserRefreshTokenUrl(userId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deleteUserRefreshTokenResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deleteUserRefreshTokenResponse
-}
+);}
 
 
-/**
+
+
+export const getDeleteUserRefreshTokenMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUserRefreshToken>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteUserRefreshToken>>, TError,{userId: number}, TContext> => {
+
+const mutationKey = ['deleteUserRefreshToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUserRefreshToken>>, {userId: number}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  deleteUserRefreshToken(userId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteUserRefreshTokenMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUserRefreshToken>>>
+    
+    export type DeleteUserRefreshTokenMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [관리자] 특정 사용자 리프레시 토큰 삭제
+ */
+export const useDeleteUserRefreshToken = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUserRefreshToken>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteUserRefreshToken>>,
+        TError,
+        {userId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteUserRefreshTokenMutationOptions(options), queryClient);
+    }
+    /**
  * 사용자를 강제 탈퇴시킵니다.
  * @summary [관리자] 사용자 강제 탈퇴
  */
@@ -324,19 +636,60 @@ export const getDeleteUserUrl = (userId: number,) => {
 
 export const deleteUser = async (userId: number, options?: RequestInit): Promise<deleteUserResponse> => {
   
-  const res = await fetch(getDeleteUserUrl(userId),
+  return customFetch<deleteUserResponse>(getDeleteUserUrl(userId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deleteUserResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deleteUserResponse
-}
+);}
 
 
+
+
+export const getDeleteUserMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,{userId: number}, TContext> => {
+
+const mutationKey = ['deleteUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUser>>, {userId: number}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  deleteUser(userId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteUserMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUser>>>
+    
+    export type DeleteUserMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [관리자] 사용자 강제 탈퇴
+ */
+export const useDeleteUser = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteUser>>,
+        TError,
+        {userId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteUserMutationOptions(options), queryClient);
+    }
+    

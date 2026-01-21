@@ -5,6 +5,25 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  MutationFunction,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   CommonResponseLong,
   CommonResponsePageResponseStoreNewsCommentResponse,
@@ -17,6 +36,12 @@ import type {
   GetStoreNewsListParams,
   UpdateStoreNewsBody
 } from './generated.schemas';
+
+import { customFetch } from './mutator';
+
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -55,20 +80,95 @@ export const getGetStoreNewsListUrl = (storeId: number,
 export const getStoreNewsList = async (storeId: number,
     params: GetStoreNewsListParams, options?: RequestInit): Promise<getStoreNewsListResponse> => {
   
-  const res = await fetch(getGetStoreNewsListUrl(storeId,params),
+  return customFetch<getStoreNewsListResponse>(getGetStoreNewsListUrl(storeId,params),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetStoreNewsListQueryKey = (storeId?: number,
+    params?: GetStoreNewsListParams,) => {
+    return [
+    `/api/stores/${storeId}/news`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getGetStoreNewsListQueryOptions = <TData = Awaited<ReturnType<typeof getStoreNewsList>>, TError = unknown>(storeId: number,
+    params: GetStoreNewsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNewsList>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreNewsListQueryKey(storeId,params);
+
   
-  const data: getStoreNewsListResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getStoreNewsListResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreNewsList>>> = ({ signal }) => getStoreNewsList(storeId,params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreNewsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetStoreNewsListQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreNewsList>>>
+export type GetStoreNewsListQueryError = unknown
+
+
+export function useGetStoreNewsList<TData = Awaited<ReturnType<typeof getStoreNewsList>>, TError = unknown>(
+ storeId: number,
+    params: GetStoreNewsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNewsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreNewsList>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreNewsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStoreNewsList<TData = Awaited<ReturnType<typeof getStoreNewsList>>, TError = unknown>(
+ storeId: number,
+    params: GetStoreNewsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNewsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreNewsList>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreNewsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStoreNewsList<TData = Awaited<ReturnType<typeof getStoreNewsList>>, TError = unknown>(
+ storeId: number,
+    params: GetStoreNewsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNewsList>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 소식 목록 조회
+ */
+
+export function useGetStoreNewsList<TData = Awaited<ReturnType<typeof getStoreNewsList>>, TError = unknown>(
+ storeId: number,
+    params: GetStoreNewsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNewsList>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStoreNewsListQueryOptions(storeId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -110,7 +210,7 @@ export const getCreateStoreNewsUrl = (storeId: number,) => {
 export const createStoreNews = async (storeId: number,
     createStoreNewsBody: CreateStoreNewsBody, options?: RequestInit): Promise<createStoreNewsResponse> => {
   
-  const res = await fetch(getCreateStoreNewsUrl(storeId),
+  return customFetch<createStoreNewsResponse>(getCreateStoreNewsUrl(storeId),
   {      
     ...options,
     method: 'POST',
@@ -118,16 +218,56 @@ export const createStoreNews = async (storeId: number,
     body: JSON.stringify(
       createStoreNewsBody,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: createStoreNewsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createStoreNewsResponse
-}
+);}
 
 
-/**
+
+
+export const getCreateStoreNewsMutationOptions = <TError = CommonResponseLong,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsBody}, TContext> => {
+
+const mutationKey = ['createStoreNews'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStoreNews>>, {storeId: number;data: CreateStoreNewsBody}> = (props) => {
+          const {storeId,data} = props ?? {};
+
+          return  createStoreNews(storeId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof createStoreNews>>>
+    export type CreateStoreNewsMutationBody = CreateStoreNewsBody
+    export type CreateStoreNewsMutationError = CommonResponseLong
+
+    /**
+ * @summary [점주] 소식 등록
+ */
+export const useCreateStoreNews = <TError = CommonResponseLong,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createStoreNews>>,
+        TError,
+        {storeId: number;data: CreateStoreNewsBody},
+        TContext
+      > => {
+      return useMutation(getCreateStoreNewsMutationOptions(options), queryClient);
+    }
+    /**
  * 소식에 좋아요를 누르거나 취소합니다.
  * @summary [공통] 소식 좋아요 토글
  */
@@ -153,23 +293,63 @@ export const getToggleLikeUrl = (newsId: number,) => {
 
 export const toggleLike = async (newsId: number, options?: RequestInit): Promise<toggleLikeResponse> => {
   
-  const res = await fetch(getToggleLikeUrl(newsId),
+  return customFetch<toggleLikeResponse>(getToggleLikeUrl(newsId),
   {      
     ...options,
     method: 'POST'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: toggleLikeResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as toggleLikeResponse
-}
+);}
 
 
-/**
+
+
+export const getToggleLikeMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext> => {
+
+const mutationKey = ['toggleLike'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleLike>>, {newsId: number}> = (props) => {
+          const {newsId} = props ?? {};
+
+          return  toggleLike(newsId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleLikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleLike>>>
+    
+    export type ToggleLikeMutationError = unknown
+
+    /**
+ * @summary [공통] 소식 좋아요 토글
+ */
+export const useToggleLike = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof toggleLike>>,
+        TError,
+        {newsId: number},
+        TContext
+      > => {
+      return useMutation(getToggleLikeMutationOptions(options), queryClient);
+    }
+    /**
  * 소식의 댓글 목록을 조회합니다.
  * @summary [공통] 댓글 목록 조회
  */
@@ -204,20 +384,95 @@ export const getGetCommentsUrl = (newsId: number,
 export const getComments = async (newsId: number,
     params: GetCommentsParams, options?: RequestInit): Promise<getCommentsResponse> => {
   
-  const res = await fetch(getGetCommentsUrl(newsId,params),
+  return customFetch<getCommentsResponse>(getGetCommentsUrl(newsId,params),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetCommentsQueryKey = (newsId?: number,
+    params?: GetCommentsParams,) => {
+    return [
+    `/api/store-news/${newsId}/comments`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getGetCommentsQueryOptions = <TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(newsId: number,
+    params: GetCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCommentsQueryKey(newsId,params);
+
   
-  const data: getCommentsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getCommentsResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getComments>>> = ({ signal }) => getComments(newsId,params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(newsId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof getComments>>>
+export type GetCommentsQueryError = unknown
+
+
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(
+ newsId: number,
+    params: GetCommentsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getComments>>,
+          TError,
+          Awaited<ReturnType<typeof getComments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(
+ newsId: number,
+    params: GetCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getComments>>,
+          TError,
+          Awaited<ReturnType<typeof getComments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(
+ newsId: number,
+    params: GetCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 댓글 목록 조회
+ */
+
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(
+ newsId: number,
+    params: GetCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCommentsQueryOptions(newsId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -247,7 +502,7 @@ export const getCreateCommentUrl = (newsId: number,) => {
 export const createComment = async (newsId: number,
     createStoreNewsCommentRequest: CreateStoreNewsCommentRequest, options?: RequestInit): Promise<createCommentResponse> => {
   
-  const res = await fetch(getCreateCommentUrl(newsId),
+  return customFetch<createCommentResponse>(getCreateCommentUrl(newsId),
   {      
     ...options,
     method: 'POST',
@@ -255,16 +510,56 @@ export const createComment = async (newsId: number,
     body: JSON.stringify(
       createStoreNewsCommentRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: createCommentResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createCommentResponse
-}
+);}
 
 
-/**
+
+
+export const getCreateCommentMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext> => {
+
+const mutationKey = ['createComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createComment>>, {newsId: number;data: CreateStoreNewsCommentRequest}> = (props) => {
+          const {newsId,data} = props ?? {};
+
+          return  createComment(newsId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCommentMutationResult = NonNullable<Awaited<ReturnType<typeof createComment>>>
+    export type CreateCommentMutationBody = CreateStoreNewsCommentRequest
+    export type CreateCommentMutationError = unknown
+
+    /**
+ * @summary [공통] 댓글 작성
+ */
+export const useCreateComment = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createComment>>,
+        TError,
+        {newsId: number;data: CreateStoreNewsCommentRequest},
+        TContext
+      > => {
+      return useMutation(getCreateCommentMutationOptions(options), queryClient);
+    }
+    /**
  * 소식 상세 정보를 조회합니다.
  * @summary [공통] 소식 상세 조회
  */
@@ -290,20 +585,89 @@ export const getGetStoreNewsUrl = (newsId: number,) => {
 
 export const getStoreNews = async (newsId: number, options?: RequestInit): Promise<getStoreNewsResponse> => {
   
-  const res = await fetch(getGetStoreNewsUrl(newsId),
+  return customFetch<getStoreNewsResponse>(getGetStoreNewsUrl(newsId),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetStoreNewsQueryKey = (newsId?: number,) => {
+    return [
+    `/api/store-news/${newsId}`
+    ] as const;
+    }
+
+    
+export const getGetStoreNewsQueryOptions = <TData = Awaited<ReturnType<typeof getStoreNews>>, TError = unknown>(newsId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreNewsQueryKey(newsId);
+
   
-  const data: getStoreNewsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getStoreNewsResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreNews>>> = ({ signal }) => getStoreNews(newsId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(newsId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreNews>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetStoreNewsQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreNews>>>
+export type GetStoreNewsQueryError = unknown
+
+
+export function useGetStoreNews<TData = Awaited<ReturnType<typeof getStoreNews>>, TError = unknown>(
+ newsId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNews>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreNews>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreNews>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStoreNews<TData = Awaited<ReturnType<typeof getStoreNews>>, TError = unknown>(
+ newsId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNews>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreNews>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreNews>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStoreNews<TData = Awaited<ReturnType<typeof getStoreNews>>, TError = unknown>(
+ newsId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 소식 상세 조회
+ */
+
+export function useGetStoreNews<TData = Awaited<ReturnType<typeof getStoreNews>>, TError = unknown>(
+ newsId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreNews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStoreNewsQueryOptions(newsId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -332,23 +696,63 @@ export const getDeleteStoreNewsUrl = (newsId: number,) => {
 
 export const deleteStoreNews = async (newsId: number, options?: RequestInit): Promise<deleteStoreNewsResponse> => {
   
-  const res = await fetch(getDeleteStoreNewsUrl(newsId),
+  return customFetch<deleteStoreNewsResponse>(getDeleteStoreNewsUrl(newsId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deleteStoreNewsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deleteStoreNewsResponse
-}
+);}
 
 
-/**
+
+
+export const getDeleteStoreNewsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreNews>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStoreNews>>, TError,{newsId: number}, TContext> => {
+
+const mutationKey = ['deleteStoreNews'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStoreNews>>, {newsId: number}> = (props) => {
+          const {newsId} = props ?? {};
+
+          return  deleteStoreNews(newsId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStoreNews>>>
+    
+    export type DeleteStoreNewsMutationError = unknown
+
+    /**
+ * @summary [점주] 소식 삭제
+ */
+export const useDeleteStoreNews = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreNews>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStoreNews>>,
+        TError,
+        {newsId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteStoreNewsMutationOptions(options), queryClient);
+    }
+    /**
  * 소식을 수정합니다.
  * @summary [점주] 소식 수정
  */
@@ -375,7 +779,7 @@ export const getUpdateStoreNewsUrl = (newsId: number,) => {
 export const updateStoreNews = async (newsId: number,
     updateStoreNewsBody: UpdateStoreNewsBody, options?: RequestInit): Promise<updateStoreNewsResponse> => {
   
-  const res = await fetch(getUpdateStoreNewsUrl(newsId),
+  return customFetch<updateStoreNewsResponse>(getUpdateStoreNewsUrl(newsId),
   {      
     ...options,
     method: 'PATCH',
@@ -383,16 +787,56 @@ export const updateStoreNews = async (newsId: number,
     body: JSON.stringify(
       updateStoreNewsBody,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: updateStoreNewsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateStoreNewsResponse
-}
+);}
 
 
-/**
+
+
+export const getUpdateStoreNewsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsBody}, TContext> => {
+
+const mutationKey = ['updateStoreNews'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStoreNews>>, {newsId: number;data: UpdateStoreNewsBody}> = (props) => {
+          const {newsId,data} = props ?? {};
+
+          return  updateStoreNews(newsId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof updateStoreNews>>>
+    export type UpdateStoreNewsMutationBody = UpdateStoreNewsBody
+    export type UpdateStoreNewsMutationError = unknown
+
+    /**
+ * @summary [점주] 소식 수정
+ */
+export const useUpdateStoreNews = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateStoreNews>>,
+        TError,
+        {newsId: number;data: UpdateStoreNewsBody},
+        TContext
+      > => {
+      return useMutation(getUpdateStoreNewsMutationOptions(options), queryClient);
+    }
+    /**
  * 자신의 댓글을 삭제합니다.
  * @summary [공통] 댓글 삭제
  */
@@ -420,19 +864,60 @@ export const getDeleteCommentUrl = (newsId: number,
 export const deleteComment = async (newsId: number,
     commentId: number, options?: RequestInit): Promise<deleteCommentResponse> => {
   
-  const res = await fetch(getDeleteCommentUrl(newsId,commentId),
+  return customFetch<deleteCommentResponse>(getDeleteCommentUrl(newsId,commentId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deleteCommentResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deleteCommentResponse
-}
+);}
 
 
+
+
+export const getDeleteCommentMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext> => {
+
+const mutationKey = ['deleteComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteComment>>, {newsId: number;commentId: number}> = (props) => {
+          const {newsId,commentId} = props ?? {};
+
+          return  deleteComment(newsId,commentId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCommentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteComment>>>
+    
+    export type DeleteCommentMutationError = unknown
+
+    /**
+ * @summary [공통] 댓글 삭제
+ */
+export const useDeleteComment = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteComment>>,
+        TError,
+        {newsId: number;commentId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCommentMutationOptions(options), queryClient);
+    }
+    

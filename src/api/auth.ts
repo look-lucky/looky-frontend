@@ -5,6 +5,16 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation
+} from '@tanstack/react-query';
+import type {
+  MutationFunction,
+  QueryClient,
+  UseMutationOptions,
+  UseMutationResult
+} from '@tanstack/react-query';
+
 import type {
   AdminSignupRequest,
   CommonResponseLoginResponse,
@@ -16,6 +26,12 @@ import type {
   StudentSignupRequest,
   SwaggerErrorResponse
 } from './generated.schemas';
+
+import { customFetch } from './mutator';
+
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -45,7 +61,7 @@ export const getSignupStudentUrl = () => {
 
 export const signupStudent = async (studentSignupRequest: StudentSignupRequest, options?: RequestInit): Promise<signupStudentResponse> => {
   
-  const res = await fetch(getSignupStudentUrl(),
+  return customFetch<signupStudentResponse>(getSignupStudentUrl(),
   {      
     ...options,
     method: 'POST',
@@ -53,16 +69,56 @@ export const signupStudent = async (studentSignupRequest: StudentSignupRequest, 
     body: JSON.stringify(
       studentSignupRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: signupStudentResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as signupStudentResponse
-}
+);}
 
 
-/**
+
+
+export const getSignupStudentMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signupStudent>>, TError,{data: StudentSignupRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof signupStudent>>, TError,{data: StudentSignupRequest}, TContext> => {
+
+const mutationKey = ['signupStudent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof signupStudent>>, {data: StudentSignupRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  signupStudent(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SignupStudentMutationResult = NonNullable<Awaited<ReturnType<typeof signupStudent>>>
+    export type SignupStudentMutationBody = StudentSignupRequest
+    export type SignupStudentMutationError = unknown
+
+    /**
+ * @summary [학생] 학생 회원가입
+ */
+export const useSignupStudent = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signupStudent>>, TError,{data: StudentSignupRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof signupStudent>>,
+        TError,
+        {data: StudentSignupRequest},
+        TContext
+      > => {
+      return useMutation(getSignupStudentMutationOptions(options), queryClient);
+    }
+    /**
  * 점주 회원을 등록합니다.
  * @summary [점주] 점주 회원가입
  */
@@ -88,7 +144,7 @@ export const getSignupOwnerUrl = () => {
 
 export const signupOwner = async (ownerSignupRequest: OwnerSignupRequest, options?: RequestInit): Promise<signupOwnerResponse> => {
   
-  const res = await fetch(getSignupOwnerUrl(),
+  return customFetch<signupOwnerResponse>(getSignupOwnerUrl(),
   {      
     ...options,
     method: 'POST',
@@ -96,16 +152,56 @@ export const signupOwner = async (ownerSignupRequest: OwnerSignupRequest, option
     body: JSON.stringify(
       ownerSignupRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: signupOwnerResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as signupOwnerResponse
-}
+);}
 
 
-/**
+
+
+export const getSignupOwnerMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signupOwner>>, TError,{data: OwnerSignupRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof signupOwner>>, TError,{data: OwnerSignupRequest}, TContext> => {
+
+const mutationKey = ['signupOwner'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof signupOwner>>, {data: OwnerSignupRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  signupOwner(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SignupOwnerMutationResult = NonNullable<Awaited<ReturnType<typeof signupOwner>>>
+    export type SignupOwnerMutationBody = OwnerSignupRequest
+    export type SignupOwnerMutationError = unknown
+
+    /**
+ * @summary [점주] 점주 회원가입
+ */
+export const useSignupOwner = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signupOwner>>, TError,{data: OwnerSignupRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof signupOwner>>,
+        TError,
+        {data: OwnerSignupRequest},
+        TContext
+      > => {
+      return useMutation(getSignupOwnerMutationOptions(options), queryClient);
+    }
+    /**
  * 관리자 계정을 생성합니다.
  * @summary [관리자] 관리자 회원가입 (테스트용)
  */
@@ -131,7 +227,7 @@ export const getSignupAdminUrl = () => {
 
 export const signupAdmin = async (adminSignupRequest: AdminSignupRequest, options?: RequestInit): Promise<signupAdminResponse> => {
   
-  const res = await fetch(getSignupAdminUrl(),
+  return customFetch<signupAdminResponse>(getSignupAdminUrl(),
   {      
     ...options,
     method: 'POST',
@@ -139,16 +235,56 @@ export const signupAdmin = async (adminSignupRequest: AdminSignupRequest, option
     body: JSON.stringify(
       adminSignupRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: signupAdminResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as signupAdminResponse
-}
+);}
 
 
-/**
+
+
+export const getSignupAdminMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signupAdmin>>, TError,{data: AdminSignupRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof signupAdmin>>, TError,{data: AdminSignupRequest}, TContext> => {
+
+const mutationKey = ['signupAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof signupAdmin>>, {data: AdminSignupRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  signupAdmin(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SignupAdminMutationResult = NonNullable<Awaited<ReturnType<typeof signupAdmin>>>
+    export type SignupAdminMutationBody = AdminSignupRequest
+    export type SignupAdminMutationError = unknown
+
+    /**
+ * @summary [관리자] 관리자 회원가입 (테스트용)
+ */
+export const useSignupAdmin = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signupAdmin>>, TError,{data: AdminSignupRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof signupAdmin>>,
+        TError,
+        {data: AdminSignupRequest},
+        TContext
+      > => {
+      return useMutation(getSignupAdminMutationOptions(options), queryClient);
+    }
+    /**
  * RefreshToken으로 AccessToken을 갱신합니다.
  * @summary [공통] 토큰 갱신
  */
@@ -186,23 +322,63 @@ export const getRefreshUrl = () => {
 
 export const refresh = async ( options?: RequestInit): Promise<refreshResponse> => {
   
-  const res = await fetch(getRefreshUrl(),
+  return customFetch<refreshResponse>(getRefreshUrl(),
   {      
     ...options,
     method: 'POST'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: refreshResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as refreshResponse
-}
+);}
 
 
-/**
+
+
+export const getRefreshMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refresh>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refresh>>, TError,void, TContext> => {
+
+const mutationKey = ['refresh'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refresh>>, void> = () => {
+          
+
+          return  refresh(requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshMutationResult = NonNullable<Awaited<ReturnType<typeof refresh>>>
+    
+    export type RefreshMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [공통] 토큰 갱신
+ */
+export const useRefresh = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refresh>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof refresh>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRefreshMutationOptions(options), queryClient);
+    }
+    /**
  * 사용자를 로그아웃 처리합니다.
  * @summary [공통] 로그아웃
  */
@@ -228,23 +404,63 @@ export const getLogoutUrl = () => {
 
 export const logout = async ( options?: RequestInit): Promise<logoutResponse> => {
   
-  const res = await fetch(getLogoutUrl(),
+  return customFetch<logoutResponse>(getLogoutUrl(),
   {      
     ...options,
     method: 'POST'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: logoutResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as logoutResponse
-}
+);}
 
 
-/**
+
+
+export const getLogoutMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext> => {
+
+const mutationKey = ['logout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logout>>, void> = () => {
+          
+
+          return  logout(requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogoutMutationResult = NonNullable<Awaited<ReturnType<typeof logout>>>
+    
+    export type LogoutMutationError = unknown
+
+    /**
+ * @summary [공통] 로그아웃
+ */
+export const useLogout = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof logout>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getLogoutMutationOptions(options), queryClient);
+    }
+    /**
  * 아이디와 비밀번호로 로그인합니다.
  * @summary [공통] 로그인
  */
@@ -282,7 +498,7 @@ export const getLoginUrl = () => {
 
 export const login = async (loginRequest: LoginRequest, options?: RequestInit): Promise<loginResponse> => {
   
-  const res = await fetch(getLoginUrl(),
+  return customFetch<loginResponse>(getLoginUrl(),
   {      
     ...options,
     method: 'POST',
@@ -290,16 +506,56 @@ export const login = async (loginRequest: LoginRequest, options?: RequestInit): 
     body: JSON.stringify(
       loginRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: loginResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as loginResponse
-}
+);}
 
 
-/**
+
+
+export const getLoginMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext> => {
+
+const mutationKey = ['login'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof login>>, {data: LoginRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  login(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
+    export type LoginMutationBody = LoginRequest
+    export type LoginMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [공통] 로그인
+ */
+export const useLogin = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof login>>,
+        TError,
+        {data: LoginRequest},
+        TContext
+      > => {
+      return useMutation(getLoginMutationOptions(options), queryClient);
+    }
+    /**
  * 소셜 로그인 후 추가 정보를 입력하여 회원가입을 완료합니다.
  * @summary [공통] 소셜 회원가입 완료
  */
@@ -349,19 +605,60 @@ export const getCompleteSocialSignupUrl = (params: CompleteSocialSignupParams,) 
 
 export const completeSocialSignup = async (params: CompleteSocialSignupParams, options?: RequestInit): Promise<completeSocialSignupResponse> => {
   
-  const res = await fetch(getCompleteSocialSignupUrl(params),
+  return customFetch<completeSocialSignupResponse>(getCompleteSocialSignupUrl(params),
   {      
     ...options,
     method: 'POST'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: completeSocialSignupResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as completeSocialSignupResponse
-}
+);}
 
 
+
+
+export const getCompleteSocialSignupMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{params: CompleteSocialSignupParams}, TContext> => {
+
+const mutationKey = ['completeSocialSignup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeSocialSignup>>, {params: CompleteSocialSignupParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  completeSocialSignup(params,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteSocialSignupMutationResult = NonNullable<Awaited<ReturnType<typeof completeSocialSignup>>>
+    
+    export type CompleteSocialSignupMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [공통] 소셜 회원가입 완료
+ */
+export const useCompleteSocialSignup = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeSocialSignup>>,
+        TError,
+        {params: CompleteSocialSignupParams},
+        TContext
+      > => {
+      return useMutation(getCompleteSocialSignupMutationOptions(options), queryClient);
+    }
+    

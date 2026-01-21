@@ -5,11 +5,36 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  MutationFunction,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   CommonResponseVoid,
   SwaggerErrorResponse,
   UploadExcelBody
 } from './generated.schemas';
+
+import { customFetch } from './mutator';
+
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -53,7 +78,7 @@ export const uploadExcel = async (uploadExcelBody: UploadExcelBody, options?: Re
     const formData = new FormData();
 formData.append(`file`, uploadExcelBody.file);
 
-  const res = await fetch(getUploadExcelUrl(),
+  return customFetch<uploadExcelResponse>(getUploadExcelUrl(),
   {      
     ...options,
     method: 'POST'
@@ -61,16 +86,56 @@ formData.append(`file`, uploadExcelBody.file);
     body: 
       formData,
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: uploadExcelResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as uploadExcelResponse
-}
+);}
 
 
-/**
+
+
+export const getUploadExcelMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadExcel>>, TError,{data: UploadExcelBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadExcel>>, TError,{data: UploadExcelBody}, TContext> => {
+
+const mutationKey = ['uploadExcel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadExcel>>, {data: UploadExcelBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadExcel(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadExcelMutationResult = NonNullable<Awaited<ReturnType<typeof uploadExcel>>>
+    export type UploadExcelMutationBody = UploadExcelBody
+    export type UploadExcelMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [관리자] 제휴 혜택 엑셀 업로드
+ */
+export const useUploadExcel = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadExcel>>, TError,{data: UploadExcelBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof uploadExcel>>,
+        TError,
+        {data: UploadExcelBody},
+        TContext
+      > => {
+      return useMutation(getUploadExcelMutationOptions(options), queryClient);
+    }
+    /**
  * 상점-조직 제휴 혜택 목록을 엑셀 파일로 다운로드합니다.
  * @summary [관리자] 제휴 혜택 엑셀 다운로드
  */
@@ -103,19 +168,88 @@ export const getDownloadExcelUrl = () => {
 
 export const downloadExcel = async ( options?: RequestInit): Promise<downloadExcelResponse> => {
   
-  const res = await fetch(getDownloadExcelUrl(),
+  return customFetch<downloadExcelResponse>(getDownloadExcelUrl(),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getDownloadExcelQueryKey = () => {
+    return [
+    `/api/admin/excel/download`
+    ] as const;
+    }
+
+    
+export const getDownloadExcelQueryOptions = <TData = Awaited<ReturnType<typeof downloadExcel>>, TError = SwaggerErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadExcel>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadExcelQueryKey();
+
   
-  const data: downloadExcelResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as downloadExcelResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadExcel>>> = ({ signal }) => downloadExcel({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadExcel>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type DownloadExcelQueryResult = NonNullable<Awaited<ReturnType<typeof downloadExcel>>>
+export type DownloadExcelQueryError = SwaggerErrorResponse
+
+
+export function useDownloadExcel<TData = Awaited<ReturnType<typeof downloadExcel>>, TError = SwaggerErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadExcel>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadExcel>>,
+          TError,
+          Awaited<ReturnType<typeof downloadExcel>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadExcel<TData = Awaited<ReturnType<typeof downloadExcel>>, TError = SwaggerErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadExcel>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadExcel>>,
+          TError,
+          Awaited<ReturnType<typeof downloadExcel>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadExcel<TData = Awaited<ReturnType<typeof downloadExcel>>, TError = SwaggerErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadExcel>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [관리자] 제휴 혜택 엑셀 다운로드
+ */
+
+export function useDownloadExcel<TData = Awaited<ReturnType<typeof downloadExcel>>, TError = SwaggerErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadExcel>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDownloadExcelQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 

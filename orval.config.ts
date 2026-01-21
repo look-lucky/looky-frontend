@@ -4,14 +4,17 @@ import { defineConfig } from "orval";
 export default defineConfig({
   api: {
     input: {
-      target: "./openapi.json", // ← 네가 받은 파일
+      target: "./openapi.json",
     },
     output: {
       target: "./src/api/generated.ts",
-      client: "fetch",
+      client: "react-query",
       mode: "tags",
-      reactQuery: {
-        enabled: true,
+      override: {
+        mutator: {
+          path: "./src/api/mutator.ts",
+          name: "customFetch",
+        },
       },
     },
   },

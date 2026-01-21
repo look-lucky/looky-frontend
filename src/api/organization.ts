@@ -5,6 +5,25 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  MutationFunction,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   CommonResponseListOrganizationResponse,
   CommonResponseLong,
@@ -12,6 +31,12 @@ import type {
   CreateOrganizationRequest,
   UpdateOrganizationRequest
 } from './generated.schemas';
+
+import { customFetch } from './mutator';
+
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -41,20 +66,89 @@ export const getGetOrganizationsUrl = (universityId: number,) => {
 
 export const getOrganizations = async (universityId: number, options?: RequestInit): Promise<getOrganizationsResponse> => {
   
-  const res = await fetch(getGetOrganizationsUrl(universityId),
+  return customFetch<getOrganizationsResponse>(getGetOrganizationsUrl(universityId),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetOrganizationsQueryKey = (universityId?: number,) => {
+    return [
+    `/api/universities/${universityId}/organizations`
+    ] as const;
+    }
+
+    
+export const getGetOrganizationsQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizations>>, TError = unknown>(universityId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationsQueryKey(universityId);
+
   
-  const data: getOrganizationsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getOrganizationsResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrganizations>>> = ({ signal }) => getOrganizations(universityId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(universityId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetOrganizationsQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizations>>>
+export type GetOrganizationsQueryError = unknown
+
+
+export function useGetOrganizations<TData = Awaited<ReturnType<typeof getOrganizations>>, TError = unknown>(
+ universityId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizations>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizations<TData = Awaited<ReturnType<typeof getOrganizations>>, TError = unknown>(
+ universityId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizations>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizations<TData = Awaited<ReturnType<typeof getOrganizations>>, TError = unknown>(
+ universityId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 특정 대학의 소속 목록 조회
+ */
+
+export function useGetOrganizations<TData = Awaited<ReturnType<typeof getOrganizations>>, TError = unknown>(
+ universityId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetOrganizationsQueryOptions(universityId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -84,7 +178,7 @@ export const getCreateOrganizationUrl = (universityId: number,) => {
 export const createOrganization = async (universityId: number,
     createOrganizationRequest: CreateOrganizationRequest, options?: RequestInit): Promise<createOrganizationResponse> => {
   
-  const res = await fetch(getCreateOrganizationUrl(universityId),
+  return customFetch<createOrganizationResponse>(getCreateOrganizationUrl(universityId),
   {      
     ...options,
     method: 'POST',
@@ -92,16 +186,56 @@ export const createOrganization = async (universityId: number,
     body: JSON.stringify(
       createOrganizationRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: createOrganizationResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createOrganizationResponse
-}
+);}
 
 
-/**
+
+
+export const getCreateOrganizationMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganization>>, TError,{universityId: number;data: CreateOrganizationRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createOrganization>>, TError,{universityId: number;data: CreateOrganizationRequest}, TContext> => {
+
+const mutationKey = ['createOrganization'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createOrganization>>, {universityId: number;data: CreateOrganizationRequest}> = (props) => {
+          const {universityId,data} = props ?? {};
+
+          return  createOrganization(universityId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof createOrganization>>>
+    export type CreateOrganizationMutationBody = CreateOrganizationRequest
+    export type CreateOrganizationMutationError = unknown
+
+    /**
+ * @summary [관리자] 특정 대학에 소속 등록
+ */
+export const useCreateOrganization = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOrganization>>, TError,{universityId: number;data: CreateOrganizationRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createOrganization>>,
+        TError,
+        {universityId: number;data: CreateOrganizationRequest},
+        TContext
+      > => {
+      return useMutation(getCreateOrganizationMutationOptions(options), queryClient);
+    }
+    /**
  * 학생이 특정 소속에 가입합니다.
  * @summary [학생] 소속 가입
  */
@@ -127,23 +261,63 @@ export const getJoinOrganizationUrl = (organizationId: number,) => {
 
 export const joinOrganization = async (organizationId: number, options?: RequestInit): Promise<joinOrganizationResponse> => {
   
-  const res = await fetch(getJoinOrganizationUrl(organizationId),
+  return customFetch<joinOrganizationResponse>(getJoinOrganizationUrl(organizationId),
   {      
     ...options,
     method: 'POST'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: joinOrganizationResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as joinOrganizationResponse
-}
+);}
 
 
-/**
+
+
+export const getJoinOrganizationMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinOrganization>>, TError,{organizationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinOrganization>>, TError,{organizationId: number}, TContext> => {
+
+const mutationKey = ['joinOrganization'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinOrganization>>, {organizationId: number}> = (props) => {
+          const {organizationId} = props ?? {};
+
+          return  joinOrganization(organizationId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JoinOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof joinOrganization>>>
+    
+    export type JoinOrganizationMutationError = unknown
+
+    /**
+ * @summary [학생] 소속 가입
+ */
+export const useJoinOrganization = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinOrganization>>, TError,{organizationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof joinOrganization>>,
+        TError,
+        {organizationId: number},
+        TContext
+      > => {
+      return useMutation(getJoinOrganizationMutationOptions(options), queryClient);
+    }
+    /**
  * 학생이 특정 소속에서 탈퇴합니다.
  * @summary [학생] 소속 탈퇴
  */
@@ -169,23 +343,63 @@ export const getLeaveOrganizationUrl = (organizationId: number,) => {
 
 export const leaveOrganization = async (organizationId: number, options?: RequestInit): Promise<leaveOrganizationResponse> => {
   
-  const res = await fetch(getLeaveOrganizationUrl(organizationId),
+  return customFetch<leaveOrganizationResponse>(getLeaveOrganizationUrl(organizationId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: leaveOrganizationResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as leaveOrganizationResponse
-}
+);}
 
 
-/**
+
+
+export const getLeaveOrganizationMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveOrganization>>, TError,{organizationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof leaveOrganization>>, TError,{organizationId: number}, TContext> => {
+
+const mutationKey = ['leaveOrganization'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof leaveOrganization>>, {organizationId: number}> = (props) => {
+          const {organizationId} = props ?? {};
+
+          return  leaveOrganization(organizationId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LeaveOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof leaveOrganization>>>
+    
+    export type LeaveOrganizationMutationError = unknown
+
+    /**
+ * @summary [학생] 소속 탈퇴
+ */
+export const useLeaveOrganization = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveOrganization>>, TError,{organizationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof leaveOrganization>>,
+        TError,
+        {organizationId: number},
+        TContext
+      > => {
+      return useMutation(getLeaveOrganizationMutationOptions(options), queryClient);
+    }
+    /**
  * 소속을 삭제합니다.
  * @summary [관리자] 소속 삭제
  */
@@ -211,23 +425,63 @@ export const getDeleteOrganizationUrl = (organizationId: number,) => {
 
 export const deleteOrganization = async (organizationId: number, options?: RequestInit): Promise<deleteOrganizationResponse> => {
   
-  const res = await fetch(getDeleteOrganizationUrl(organizationId),
+  return customFetch<deleteOrganizationResponse>(getDeleteOrganizationUrl(organizationId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deleteOrganizationResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deleteOrganizationResponse
-}
+);}
 
 
-/**
+
+
+export const getDeleteOrganizationMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOrganization>>, TError,{organizationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteOrganization>>, TError,{organizationId: number}, TContext> => {
+
+const mutationKey = ['deleteOrganization'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteOrganization>>, {organizationId: number}> = (props) => {
+          const {organizationId} = props ?? {};
+
+          return  deleteOrganization(organizationId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof deleteOrganization>>>
+    
+    export type DeleteOrganizationMutationError = unknown
+
+    /**
+ * @summary [관리자] 소속 삭제
+ */
+export const useDeleteOrganization = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOrganization>>, TError,{organizationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteOrganization>>,
+        TError,
+        {organizationId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteOrganizationMutationOptions(options), queryClient);
+    }
+    /**
  * 소속 정보를 수정합니다.
  * @summary [관리자] 소속 수정
  */
@@ -254,7 +508,7 @@ export const getUpdateOrganizationUrl = (organizationId: number,) => {
 export const updateOrganization = async (organizationId: number,
     updateOrganizationRequest: UpdateOrganizationRequest, options?: RequestInit): Promise<updateOrganizationResponse> => {
   
-  const res = await fetch(getUpdateOrganizationUrl(organizationId),
+  return customFetch<updateOrganizationResponse>(getUpdateOrganizationUrl(organizationId),
   {      
     ...options,
     method: 'PATCH',
@@ -262,12 +516,53 @@ export const updateOrganization = async (organizationId: number,
     body: JSON.stringify(
       updateOrganizationRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: updateOrganizationResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateOrganizationResponse
-}
+);}
 
 
+
+
+export const getUpdateOrganizationMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrganization>>, TError,{organizationId: number;data: UpdateOrganizationRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateOrganization>>, TError,{organizationId: number;data: UpdateOrganizationRequest}, TContext> => {
+
+const mutationKey = ['updateOrganization'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOrganization>>, {organizationId: number;data: UpdateOrganizationRequest}> = (props) => {
+          const {organizationId,data} = props ?? {};
+
+          return  updateOrganization(organizationId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof updateOrganization>>>
+    export type UpdateOrganizationMutationBody = UpdateOrganizationRequest
+    export type UpdateOrganizationMutationError = unknown
+
+    /**
+ * @summary [관리자] 소속 수정
+ */
+export const useUpdateOrganization = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrganization>>, TError,{organizationId: number;data: UpdateOrganizationRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateOrganization>>,
+        TError,
+        {organizationId: number;data: UpdateOrganizationRequest},
+        TContext
+      > => {
+      return useMutation(getUpdateOrganizationMutationOptions(options), queryClient);
+    }
+    

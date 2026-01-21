@@ -5,6 +5,25 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  MutationFunction,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   CommonResponseIssueCouponResponse,
   CommonResponseListCouponResponse,
@@ -17,6 +36,12 @@ import type {
   UpdateCouponRequest,
   VerifyCouponRequest
 } from './generated.schemas';
+
+import { customFetch } from './mutator';
+
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -53,20 +78,89 @@ export const getGetCouponsByStoreUrl = (storeId: number,) => {
 
 export const getCouponsByStore = async (storeId: number, options?: RequestInit): Promise<getCouponsByStoreResponse> => {
   
-  const res = await fetch(getGetCouponsByStoreUrl(storeId),
+  return customFetch<getCouponsByStoreResponse>(getGetCouponsByStoreUrl(storeId),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetCouponsByStoreQueryKey = (storeId?: number,) => {
+    return [
+    `/api/stores/${storeId}/coupons`
+    ] as const;
+    }
+
+    
+export const getGetCouponsByStoreQueryOptions = <TData = Awaited<ReturnType<typeof getCouponsByStore>>, TError = SwaggerErrorResponse>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCouponsByStoreQueryKey(storeId);
+
   
-  const data: getCouponsByStoreResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getCouponsByStoreResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCouponsByStore>>> = ({ signal }) => getCouponsByStore(storeId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCouponsByStore>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetCouponsByStoreQueryResult = NonNullable<Awaited<ReturnType<typeof getCouponsByStore>>>
+export type GetCouponsByStoreQueryError = SwaggerErrorResponse
+
+
+export function useGetCouponsByStore<TData = Awaited<ReturnType<typeof getCouponsByStore>>, TError = SwaggerErrorResponse>(
+ storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByStore>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCouponsByStore>>,
+          TError,
+          Awaited<ReturnType<typeof getCouponsByStore>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCouponsByStore<TData = Awaited<ReturnType<typeof getCouponsByStore>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByStore>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCouponsByStore>>,
+          TError,
+          Awaited<ReturnType<typeof getCouponsByStore>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCouponsByStore<TData = Awaited<ReturnType<typeof getCouponsByStore>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 상점별 쿠폰 목록 조회
+ */
+
+export function useGetCouponsByStore<TData = Awaited<ReturnType<typeof getCouponsByStore>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCouponsByStoreQueryOptions(storeId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -113,7 +207,7 @@ export const getCreateCouponUrl = (storeId: number,) => {
 export const createCoupon = async (storeId: number,
     createCouponRequest: CreateCouponRequest, options?: RequestInit): Promise<createCouponResponse> => {
   
-  const res = await fetch(getCreateCouponUrl(storeId),
+  return customFetch<createCouponResponse>(getCreateCouponUrl(storeId),
   {      
     ...options,
     method: 'POST',
@@ -121,16 +215,56 @@ export const createCoupon = async (storeId: number,
     body: JSON.stringify(
       createCouponRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: createCouponResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createCouponResponse
-}
+);}
 
 
-/**
+
+
+export const getCreateCouponMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoupon>>, TError,{storeId: number;data: CreateCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCoupon>>, TError,{storeId: number;data: CreateCouponRequest}, TContext> => {
+
+const mutationKey = ['createCoupon'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCoupon>>, {storeId: number;data: CreateCouponRequest}> = (props) => {
+          const {storeId,data} = props ?? {};
+
+          return  createCoupon(storeId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCouponMutationResult = NonNullable<Awaited<ReturnType<typeof createCoupon>>>
+    export type CreateCouponMutationBody = CreateCouponRequest
+    export type CreateCouponMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 쿠폰 생성
+ */
+export const useCreateCoupon = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoupon>>, TError,{storeId: number;data: CreateCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCoupon>>,
+        TError,
+        {storeId: number;data: CreateCouponRequest},
+        TContext
+      > => {
+      return useMutation(getCreateCouponMutationOptions(options), queryClient);
+    }
+    /**
  * 손님이 제시한 4자리 코드를 입력하여 사용 처리합니다.
  * @summary [점주] 쿠폰 사용 확인 (코드 검증)
  */
@@ -164,7 +298,7 @@ export const getVerifyCouponUrl = (storeId: number,) => {
 export const verifyCoupon = async (storeId: number,
     verifyCouponRequest: VerifyCouponRequest, options?: RequestInit): Promise<verifyCouponResponse> => {
   
-  const res = await fetch(getVerifyCouponUrl(storeId),
+  return customFetch<verifyCouponResponse>(getVerifyCouponUrl(storeId),
   {      
     ...options,
     method: 'POST',
@@ -172,16 +306,56 @@ export const verifyCoupon = async (storeId: number,
     body: JSON.stringify(
       verifyCouponRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: verifyCouponResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as verifyCouponResponse
-}
+);}
 
 
-/**
+
+
+export const getVerifyCouponMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCoupon>>, TError,{storeId: number;data: VerifyCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyCoupon>>, TError,{storeId: number;data: VerifyCouponRequest}, TContext> => {
+
+const mutationKey = ['verifyCoupon'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyCoupon>>, {storeId: number;data: VerifyCouponRequest}> = (props) => {
+          const {storeId,data} = props ?? {};
+
+          return  verifyCoupon(storeId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyCouponMutationResult = NonNullable<Awaited<ReturnType<typeof verifyCoupon>>>
+    export type VerifyCouponMutationBody = VerifyCouponRequest
+    export type VerifyCouponMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 쿠폰 사용 확인 (코드 검증)
+ */
+export const useVerifyCoupon = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCoupon>>, TError,{storeId: number;data: VerifyCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof verifyCoupon>>,
+        TError,
+        {storeId: number;data: VerifyCouponRequest},
+        TContext
+      > => {
+      return useMutation(getVerifyCouponMutationOptions(options), queryClient);
+    }
+    /**
  * 매장에서 사용하기 위해 쿠폰을 활성화하고 4자리 코드를 발급받습니다.
  * @summary [학생] 쿠폰 코드 발급
  */
@@ -224,23 +398,63 @@ export const getActivateCouponUrl = (customerCouponId: number,) => {
 
 export const activateCoupon = async (customerCouponId: number, options?: RequestInit): Promise<activateCouponResponse> => {
   
-  const res = await fetch(getActivateCouponUrl(customerCouponId),
+  return customFetch<activateCouponResponse>(getActivateCouponUrl(customerCouponId),
   {      
     ...options,
     method: 'POST'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: activateCouponResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as activateCouponResponse
-}
+);}
 
 
-/**
+
+
+export const getActivateCouponMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateCoupon>>, TError,{customerCouponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateCoupon>>, TError,{customerCouponId: number}, TContext> => {
+
+const mutationKey = ['activateCoupon'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateCoupon>>, {customerCouponId: number}> = (props) => {
+          const {customerCouponId} = props ?? {};
+
+          return  activateCoupon(customerCouponId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateCouponMutationResult = NonNullable<Awaited<ReturnType<typeof activateCoupon>>>
+    
+    export type ActivateCouponMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [학생] 쿠폰 코드 발급
+ */
+export const useActivateCoupon = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateCoupon>>, TError,{customerCouponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof activateCoupon>>,
+        TError,
+        {customerCouponId: number},
+        TContext
+      > => {
+      return useMutation(getActivateCouponMutationOptions(options), queryClient);
+    }
+    /**
  * 사용자가 쿠폰을 발급받습니다.
  * @summary [학생] 쿠폰 발급
  */
@@ -278,23 +492,63 @@ export const getIssueCouponUrl = (couponId: number,) => {
 
 export const issueCoupon = async (couponId: number, options?: RequestInit): Promise<issueCouponResponse> => {
   
-  const res = await fetch(getIssueCouponUrl(couponId),
+  return customFetch<issueCouponResponse>(getIssueCouponUrl(couponId),
   {      
     ...options,
     method: 'POST'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: issueCouponResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as issueCouponResponse
-}
+);}
 
 
-/**
+
+
+export const getIssueCouponMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof issueCoupon>>, TError,{couponId: number}, TContext> => {
+
+const mutationKey = ['issueCoupon'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof issueCoupon>>, {couponId: number}> = (props) => {
+          const {couponId} = props ?? {};
+
+          return  issueCoupon(couponId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IssueCouponMutationResult = NonNullable<Awaited<ReturnType<typeof issueCoupon>>>
+    
+    export type IssueCouponMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [학생] 쿠폰 발급
+ */
+export const useIssueCoupon = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof issueCoupon>>,
+        TError,
+        {couponId: number},
+        TContext
+      > => {
+      return useMutation(getIssueCouponMutationOptions(options), queryClient);
+    }
+    /**
  * 쿠폰을 삭제합니다. (본인 상점만 가능)
  * @summary [점주] 쿠폰 삭제
  */
@@ -332,23 +586,63 @@ export const getDeleteCouponUrl = (couponId: number,) => {
 
 export const deleteCoupon = async (couponId: number, options?: RequestInit): Promise<deleteCouponResponse> => {
   
-  const res = await fetch(getDeleteCouponUrl(couponId),
+  return customFetch<deleteCouponResponse>(getDeleteCouponUrl(couponId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deleteCouponResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deleteCouponResponse
-}
+);}
 
 
-/**
+
+
+export const getDeleteCouponMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCoupon>>, TError,{couponId: number}, TContext> => {
+
+const mutationKey = ['deleteCoupon'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCoupon>>, {couponId: number}> = (props) => {
+          const {couponId} = props ?? {};
+
+          return  deleteCoupon(couponId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCouponMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCoupon>>>
+    
+    export type DeleteCouponMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 쿠폰 삭제
+ */
+export const useDeleteCoupon = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCoupon>>,
+        TError,
+        {couponId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCouponMutationOptions(options), queryClient);
+    }
+    /**
  * 쿠폰 정보를 수정합니다. (본인 상점만 가능)
  * @summary [점주] 쿠폰 수정
  */
@@ -387,7 +681,7 @@ export const getUpdateCouponUrl = (couponId: number,) => {
 export const updateCoupon = async (couponId: number,
     updateCouponRequest: UpdateCouponRequest, options?: RequestInit): Promise<updateCouponResponse> => {
   
-  const res = await fetch(getUpdateCouponUrl(couponId),
+  return customFetch<updateCouponResponse>(getUpdateCouponUrl(couponId),
   {      
     ...options,
     method: 'PATCH',
@@ -395,16 +689,56 @@ export const updateCoupon = async (couponId: number,
     body: JSON.stringify(
       updateCouponRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: updateCouponResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateCouponResponse
-}
+);}
 
 
-/**
+
+
+export const getUpdateCouponMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCoupon>>, TError,{couponId: number;data: UpdateCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCoupon>>, TError,{couponId: number;data: UpdateCouponRequest}, TContext> => {
+
+const mutationKey = ['updateCoupon'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCoupon>>, {couponId: number;data: UpdateCouponRequest}> = (props) => {
+          const {couponId,data} = props ?? {};
+
+          return  updateCoupon(couponId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCouponMutationResult = NonNullable<Awaited<ReturnType<typeof updateCoupon>>>
+    export type UpdateCouponMutationBody = UpdateCouponRequest
+    export type UpdateCouponMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 쿠폰 수정
+ */
+export const useUpdateCoupon = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCoupon>>, TError,{couponId: number;data: UpdateCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateCoupon>>,
+        TError,
+        {couponId: number;data: UpdateCouponRequest},
+        TContext
+      > => {
+      return useMutation(getUpdateCouponMutationOptions(options), queryClient);
+    }
+    /**
  * 사용자가 발급받은 쿠폰 목록을 조회합니다.
  * @summary [학생] 내 쿠폰 조회
  */
@@ -430,20 +764,89 @@ export const getGetMyCouponsUrl = () => {
 
 export const getMyCoupons = async ( options?: RequestInit): Promise<getMyCouponsResponse> => {
   
-  const res = await fetch(getGetMyCouponsUrl(),
+  return customFetch<getMyCouponsResponse>(getGetMyCouponsUrl(),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetMyCouponsQueryKey = () => {
+    return [
+    `/api/my-coupons`
+    ] as const;
+    }
+
+    
+export const getGetMyCouponsQueryOptions = <TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyCouponsQueryKey();
+
   
-  const data: getMyCouponsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getMyCouponsResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyCoupons>>> = ({ signal }) => getMyCoupons({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetMyCouponsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyCoupons>>>
+export type GetMyCouponsQueryError = unknown
+
+
+export function useGetMyCoupons<TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyCoupons>>,
+          TError,
+          Awaited<ReturnType<typeof getMyCoupons>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyCoupons<TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyCoupons>>,
+          TError,
+          Awaited<ReturnType<typeof getMyCoupons>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyCoupons<TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [학생] 내 쿠폰 조회
+ */
+
+export function useGetMyCoupons<TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyCouponsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -479,19 +882,88 @@ export const getGetCouponsByItemUrl = (itemId: number,) => {
 
 export const getCouponsByItem = async (itemId: number, options?: RequestInit): Promise<getCouponsByItemResponse> => {
   
-  const res = await fetch(getGetCouponsByItemUrl(itemId),
+  return customFetch<getCouponsByItemResponse>(getGetCouponsByItemUrl(itemId),
   {      
     ...options,
     method: 'GET'
     
     
   }
-)
+);}
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+
+
+
+export const getGetCouponsByItemQueryKey = (itemId?: number,) => {
+    return [
+    `/api/items/${itemId}/coupons`
+    ] as const;
+    }
+
+    
+export const getGetCouponsByItemQueryOptions = <TData = Awaited<ReturnType<typeof getCouponsByItem>>, TError = SwaggerErrorResponse>(itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByItem>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCouponsByItemQueryKey(itemId);
+
   
-  const data: getCouponsByItemResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getCouponsByItemResponse
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCouponsByItem>>> = ({ signal }) => getCouponsByItem(itemId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(itemId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCouponsByItem>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetCouponsByItemQueryResult = NonNullable<Awaited<ReturnType<typeof getCouponsByItem>>>
+export type GetCouponsByItemQueryError = SwaggerErrorResponse
+
+
+export function useGetCouponsByItem<TData = Awaited<ReturnType<typeof getCouponsByItem>>, TError = SwaggerErrorResponse>(
+ itemId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByItem>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCouponsByItem>>,
+          TError,
+          Awaited<ReturnType<typeof getCouponsByItem>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCouponsByItem<TData = Awaited<ReturnType<typeof getCouponsByItem>>, TError = SwaggerErrorResponse>(
+ itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByItem>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCouponsByItem>>,
+          TError,
+          Awaited<ReturnType<typeof getCouponsByItem>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCouponsByItem<TData = Awaited<ReturnType<typeof getCouponsByItem>>, TError = SwaggerErrorResponse>(
+ itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByItem>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 상품별 적용 가능 쿠폰 조회
+ */
+
+export function useGetCouponsByItem<TData = Awaited<ReturnType<typeof getCouponsByItem>>, TError = SwaggerErrorResponse>(
+ itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCouponsByItem>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCouponsByItemQueryOptions(itemId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 

@@ -5,6 +5,16 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation
+} from '@tanstack/react-query';
+import type {
+  MutationFunction,
+  QueryClient,
+  UseMutationOptions,
+  UseMutationResult
+} from '@tanstack/react-query';
+
 import type {
   CommonResponseLong,
   CommonResponseVoid,
@@ -12,6 +22,12 @@ import type {
   SwaggerErrorResponse,
   UpdatePartnershipRequest
 } from './generated.schemas';
+
+import { customFetch } from './mutator';
+
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
@@ -64,7 +80,7 @@ export const getCreatePartnershipUrl = (storeId: number,) => {
 export const createPartnership = async (storeId: number,
     createPartnershipRequest: CreatePartnershipRequest, options?: RequestInit): Promise<createPartnershipResponse> => {
   
-  const res = await fetch(getCreatePartnershipUrl(storeId),
+  return customFetch<createPartnershipResponse>(getCreatePartnershipUrl(storeId),
   {      
     ...options,
     method: 'POST',
@@ -72,16 +88,56 @@ export const createPartnership = async (storeId: number,
     body: JSON.stringify(
       createPartnershipRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: createPartnershipResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createPartnershipResponse
-}
+);}
 
 
-/**
+
+
+export const getCreatePartnershipMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPartnership>>, TError,{storeId: number;data: CreatePartnershipRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPartnership>>, TError,{storeId: number;data: CreatePartnershipRequest}, TContext> => {
+
+const mutationKey = ['createPartnership'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPartnership>>, {storeId: number;data: CreatePartnershipRequest}> = (props) => {
+          const {storeId,data} = props ?? {};
+
+          return  createPartnership(storeId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePartnershipMutationResult = NonNullable<Awaited<ReturnType<typeof createPartnership>>>
+    export type CreatePartnershipMutationBody = CreatePartnershipRequest
+    export type CreatePartnershipMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 제휴 등록
+ */
+export const useCreatePartnership = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPartnership>>, TError,{storeId: number;data: CreatePartnershipRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPartnership>>,
+        TError,
+        {storeId: number;data: CreatePartnershipRequest},
+        TContext
+      > => {
+      return useMutation(getCreatePartnershipMutationOptions(options), queryClient);
+    }
+    /**
  * 제휴를 삭제합니다.
  * @summary [점주] 제휴 삭제
  */
@@ -121,23 +177,63 @@ export const getDeletePartnershipUrl = (storeId: number,
 export const deletePartnership = async (storeId: number,
     partnershipId: number, options?: RequestInit): Promise<deletePartnershipResponse> => {
   
-  const res = await fetch(getDeletePartnershipUrl(storeId,partnershipId),
+  return customFetch<deletePartnershipResponse>(getDeletePartnershipUrl(storeId,partnershipId),
   {      
     ...options,
     method: 'DELETE'
     
     
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: deletePartnershipResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as deletePartnershipResponse
-}
+);}
 
 
-/**
+
+
+export const getDeletePartnershipMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePartnership>>, TError,{storeId: number;partnershipId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePartnership>>, TError,{storeId: number;partnershipId: number}, TContext> => {
+
+const mutationKey = ['deletePartnership'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePartnership>>, {storeId: number;partnershipId: number}> = (props) => {
+          const {storeId,partnershipId} = props ?? {};
+
+          return  deletePartnership(storeId,partnershipId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePartnershipMutationResult = NonNullable<Awaited<ReturnType<typeof deletePartnership>>>
+    
+    export type DeletePartnershipMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 제휴 삭제
+ */
+export const useDeletePartnership = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePartnership>>, TError,{storeId: number;partnershipId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deletePartnership>>,
+        TError,
+        {storeId: number;partnershipId: number},
+        TContext
+      > => {
+      return useMutation(getDeletePartnershipMutationOptions(options), queryClient);
+    }
+    /**
  * 제휴 내용을 수정합니다.
  * @summary [점주] 제휴 혜택 수정
  */
@@ -178,7 +274,7 @@ export const updatePartnershipBenefit = async (storeId: number,
     partnershipId: number,
     updatePartnershipRequest: UpdatePartnershipRequest, options?: RequestInit): Promise<updatePartnershipBenefitResponse> => {
   
-  const res = await fetch(getUpdatePartnershipBenefitUrl(storeId,partnershipId),
+  return customFetch<updatePartnershipBenefitResponse>(getUpdatePartnershipBenefitUrl(storeId,partnershipId),
   {      
     ...options,
     method: 'PATCH',
@@ -186,12 +282,53 @@ export const updatePartnershipBenefit = async (storeId: number,
     body: JSON.stringify(
       updatePartnershipRequest,)
   }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-  
-  const data: updatePartnershipBenefitResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updatePartnershipBenefitResponse
-}
+);}
 
 
+
+
+export const getUpdatePartnershipBenefitMutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePartnershipBenefit>>, TError,{storeId: number;partnershipId: number;data: UpdatePartnershipRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePartnershipBenefit>>, TError,{storeId: number;partnershipId: number;data: UpdatePartnershipRequest}, TContext> => {
+
+const mutationKey = ['updatePartnershipBenefit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePartnershipBenefit>>, {storeId: number;partnershipId: number;data: UpdatePartnershipRequest}> = (props) => {
+          const {storeId,partnershipId,data} = props ?? {};
+
+          return  updatePartnershipBenefit(storeId,partnershipId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePartnershipBenefitMutationResult = NonNullable<Awaited<ReturnType<typeof updatePartnershipBenefit>>>
+    export type UpdatePartnershipBenefitMutationBody = UpdatePartnershipRequest
+    export type UpdatePartnershipBenefitMutationError = SwaggerErrorResponse
+
+    /**
+ * @summary [점주] 제휴 혜택 수정
+ */
+export const useUpdatePartnershipBenefit = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePartnershipBenefit>>, TError,{storeId: number;partnershipId: number;data: UpdatePartnershipRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updatePartnershipBenefit>>,
+        TError,
+        {storeId: number;partnershipId: number;data: UpdatePartnershipRequest},
+        TContext
+      > => {
+      return useMutation(getUpdatePartnershipBenefitMutationOptions(options), queryClient);
+    }
+    
