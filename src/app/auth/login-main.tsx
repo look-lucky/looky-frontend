@@ -1,9 +1,9 @@
-import { ArrowLeft } from "@/src/components/button/ArrowLeft";
+import { ArrowLeft } from "@/src/components/button/arrow-left";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { rs } from "../theme/scale";
+import { rs } from "../../theme/scale";
 
 import { SignupIcons } from "@/assets/images/icons/signup";
 import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
@@ -29,12 +29,10 @@ export default function SignInPage() {
         {/* University Email Button */}
         <Pressable
           style={styles.universityButton}
-          onPress={() => router.push("/signin-email")}
+          onPress={() => router.push("/auth/login")}
         >
           <SignupIcons.graduation width={20} height={20} />
-          <Text style={styles.universityButtonText}>
-            대학교 이메일로 시작하기
-          </Text>
+          <Text style={styles.universityButtonText}>니어딜 시작하기</Text>
         </Pressable>
 
         {/* Divider */}

@@ -1,8 +1,12 @@
 import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
+import { useLogin } from "@/src/api/auth";
 import { ArrowLeft } from "@/src/components/button/arrow-left";
+import { useAuth } from "@/src/lib/auth";
+import { rs } from "@/src/theme/scale";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -15,7 +19,7 @@ import Svg, { Path } from "react-native-svg";
 
 function EyeOffIcon({ color = "#d5d5d5" }: { color?: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Svg width={rs(20)} height={rs(20)} viewBox="0 0 24 24" fill="none">
       <Path
         d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
         stroke={color}
@@ -36,25 +40,48 @@ function EyeOffIcon({ color = "#d5d5d5" }: { color?: string }) {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { handleAuthSuccess } = useAuth();
+  const loginMutation = useLogin();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = () => {
-    // TODO: Implement login logic
-    console.log("Login with:", username, password);
+    if (!username || !password) {
+      Alert.alert("알림", "아이디와 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    loginMutation.mutate(
+      { data: { username, password } },
+      {
+        onSuccess: async (res) => {
+          if (res.status === 200 && res.data.data?.accessToken) {
+            const { accessToken, expiresIn } = res.data.data;
+            await handleAuthSuccess(accessToken, expiresIn ?? 3600);
+            router.replace("/home");
+          } else {
+            Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인해주세요.");
+          }
+        },
+        onError: () => {
+          Alert.alert("오류", "로그인 중 문제가 발생했습니다.");
+        },
+      }
+    );
   };
 
   const handleSignup = () => {
-    router.push("/login-main");
+    router.push("/auth/signup-info");
   };
 
   const handleFindId = () => {
-    router.push("/signin-email");
+    router.push("/auth/find-id");
   };
 
   const handleFindPassword = () => {
-    // TODO: Navigate to find password page
+    router.push("/auth/verify-student");
   };
 
   return (
@@ -67,40 +94,42 @@ export default function LoginPage() {
       {/* Top content with subtitle and logo */}
       <View style={styles.topContent}>
         <Text style={styles.subtitle}>우리대학 제휴혜택이 궁금할 땐?</Text>
-        <NearDealLogo width={169} height={57} />
+        <NearDealLogo width={rs(169)} height={rs(57)} />
       </View>
 
       {/* Center content with input fields */}
       <View style={styles.centerContent}>
-        {/* Username input */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="아이디"
-            placeholderTextColor="#828282"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
-        </View>
+        <View style={styles.inputWrapper}>
+          {/* Username input */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="아이디"
+              placeholderTextColor="#828282"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          </View>
 
-        {/* Password input with eye icon */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="비밀번호"
-            placeholderTextColor="#828282"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeIcon}
-          >
-            <EyeOffIcon color="#d5d5d5" />
-          </TouchableOpacity>
+          {/* Password input with eye icon */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="비밀번호"
+              placeholderTextColor="#828282"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <EyeOffIcon color="#d5d5d5" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Links row */}
@@ -121,8 +150,17 @@ export default function LoginPage() {
 
       {/* Bottom content with login button */}
       <View style={styles.bottomContent}>
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>로그인</Text>
+        <TouchableOpacity
+          style={[
+            styles.loginButton,
+            loginMutation.isPending && styles.loginButtonDisabled,
+          ]}
+          onPress={handleLogin}
+          disabled={loginMutation.isPending}
+        >
+          <Text style={styles.loginButtonText}>
+            {loginMutation.isPending ? "로그인 중..." : "로그인"}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -133,27 +171,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
+    paddingHorizontal: rs(24),
   },
   header: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: rs(12),
     alignItems: "flex-start",
   },
   topContent: {
-    paddingHorizontal: 24,
-    marginTop: 40,
+    paddingTop: rs(40),
+    gap: rs(4),
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: rs(14),
     fontWeight: "500",
     color: "#000000",
     fontFamily: "Pretendard",
-    marginBottom: 4,
   },
   centerContent: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
+    gap: rs(10),
+  },
+  inputWrapper: {
+    gap: rs(6),
   },
   inputContainer: {
     flexDirection: "row",
@@ -161,58 +201,58 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#e0e0e0",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    height: 40,
-    marginBottom: 6,
+    borderRadius: rs(8),
+    paddingHorizontal: rs(16),
+    height: rs(40),
   },
   input: {
     flex: 1,
-    fontSize: 14,
+    fontSize: rs(14),
     color: "#272828",
     fontFamily: "Pretendard",
   },
   eyeIcon: {
-    padding: 4,
+    padding: rs(4),
   },
   linksRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
+    gap: rs(12),
   },
   linkTextBold: {
-    fontSize: 14,
+    fontSize: rs(14),
     fontWeight: "700",
     color: "#272828",
     fontFamily: "Pretendard",
   },
   linkText: {
-    fontSize: 12,
+    fontSize: rs(12),
     fontWeight: "700",
     color: "#828282",
     fontFamily: "Pretendard",
   },
   linkDivider: {
     width: 1,
-    height: 21,
+    height: rs(21),
     backgroundColor: "#e6e6e6",
-    marginHorizontal: 12,
   },
   bottomContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: rs(40),
   },
   loginButton: {
     backgroundColor: "#40ce2b",
-    borderRadius: 8,
-    height: 40,
+    borderRadius: rs(8),
+    height: rs(40),
     alignItems: "center",
     justifyContent: "center",
   },
   loginButtonText: {
-    fontSize: 14,
+    fontSize: rs(14),
     fontWeight: "700",
     color: "#ffffff",
     fontFamily: "Pretendard",
+  },
+  loginButtonDisabled: {
+    opacity: 0.6,
   },
 });

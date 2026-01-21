@@ -11,7 +11,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace("/signup"); // 🔥 핵심
+      router.replace("/auth/login-main"); // 🔥 핵심
     }, 1000); // 1초
 
     return () => clearTimeout(timer);
