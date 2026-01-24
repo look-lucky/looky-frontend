@@ -1,4 +1,5 @@
-import type { Store } from '@/src/components/map/store-card';
+// Re-export DUMMY_STORES from data/mock for backward compatibility
+export { DUMMY_STORES } from '@/src/data/mock/store';
 
 // 필터 카테고리
 export const FILTER_CATEGORIES = [
@@ -31,46 +32,3 @@ export const SNAP_INDEX = {
   HALF: 1,       // 중간 상태 (탭바 숨김)
   FULL: 2,       // 펼친 상태 (탭바 숨김)
 } as const;
-
-// 더미 가게 데이터 (API 연동 전 테스트용)
-export const DUMMY_STORES: Store[] = [
-  {
-    id: '1',
-    name: '만계치킨',
-    image: 'https://picsum.photos/200/200?random=1',
-    rating: 4.7,
-    reviewCount: 800,
-    distance: '75m',
-    openStatus: '영업중',
-    openHours: '16:30 - 03:30',
-    benefits: ['치킨 언어머니 쿨링 500m', '무 마라 2L 배송'],
-    lat: 35.8468,
-    lng: 127.1294,
-  },
-  {
-    id: '2',
-    name: '전북대 붕어빵',
-    image: 'https://picsum.photos/200/200?random=2',
-    rating: 4.5,
-    reviewCount: 320,
-    distance: '120m',
-    openStatus: '영업중',
-    openHours: '10:00 - 22:00',
-    benefits: ['붕어빵 2개 서비스'],
-    lat: 35.8448,
-    lng: 127.1274,
-  },
-  {
-    id: '3',
-    name: '맛있는 분식',
-    image: 'https://picsum.photos/200/200?random=3',
-    rating: 4.2,
-    reviewCount: 156,
-    distance: '250m',
-    openStatus: '영업중',
-    openHours: '11:00 - 21:00',
-    benefits: ['떡볶이 500원 할인'],
-    lat: 35.8438,
-    lng: 127.1314,
-  },
-];

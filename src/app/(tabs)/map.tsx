@@ -1,4 +1,3 @@
-import BottomSheet, { BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { NaverMap } from '@/src/components/map/naver-map-view';
 import { SelectedStoreDetail } from '@/src/components/map/selected-store-detail';
 import { SortDropdown } from '@/src/components/map/sort-dropdown';
@@ -14,7 +13,10 @@ import {
 } from '@/src/constants/map';
 import { useTabBar } from '@/src/contexts/tab-bar-context';
 import { rs } from '@/src/theme/scale';
+import { Gray, Owner, Text } from '@/src/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
@@ -27,11 +29,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function MapTab() {
   const { setTabBarVisible } = useTabBar();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedSort, setSelectedSort] = useState('distance');
   const [mapCenter] = useState({ lat: 35.8448, lng: 127.1294 }); // 전북대학교
-  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<Store[]>([]);
   const [hasSearched, setHasSearched] = useState(false); // 검색 실행 여부
   const [showSortOptions, setShowSortOptions] = useState(false);
@@ -46,6 +49,11 @@ export default function MapTab() {
     })),
   []);
 
+  const selectedStore = useMemo(() => {
+    if (!selectedStoreId) return null;
+      return DUMMY_STORES.find(store => store.id === selectedStoreId) ?? null;
+  }, [selectedStoreId]);
+
   // 바텀시트 ref
   const bottomSheetRef = useRef<BottomSheet>(null);
   const currentIndexRef = useRef(0); // 현재 바텀시트 인덱스 추적
@@ -59,8 +67,8 @@ export default function MapTab() {
 
   // snap points: 접힌 상태 / 중간 / 풀
   const snapPoints = useMemo(() => {
-    const collapsedHeight = 120; // 헤더 + 필터 버튼만 보이는 높이
-    return [collapsedHeight, '50%', '90%'];
+    const collapsedHeight = 220; // 헤더 + 필터 버튼만 보이는 높이
+    return [collapsedHeight, '50%', '80%'];
   }, []);
 
   // 바텀시트 인덱스 변경 시 탭바 숨김/표시
@@ -86,7 +94,7 @@ export default function MapTab() {
   const handleMapClick = (lat: number, lng: number) => {
     console.log('Map clicked:', lat, lng);
     // 지도 클릭 시 선택 해제 및 바텀시트 접기
-    setSelectedStore(null);
+    setSelectedStoreId(null);
     bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
   };
 
@@ -95,7 +103,7 @@ export default function MapTab() {
     // 마커에 해당하는 가게 찾기
     const store = DUMMY_STORES.find(s => s.id === markerId);
     if (store) {
-      setSelectedStore(store);
+      setSelectedStoreId(store.id);
       // 마커 클릭 시 바텀시트 중간으로
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
     }
@@ -124,6 +132,10 @@ export default function MapTab() {
     setShowSortOptions(false);
   };
 
+  const handleViewStoreDetail = (storeId: string) => {
+    router.push(`/store/${storeId}`);
+  };
+
   return (
     <ThemedView style={styles.container}>
       {/* 지도 (전체 화면 배경) */}
@@ -142,18 +154,18 @@ export default function MapTab() {
         <View style={styles.searchContainer}>
           <View style={styles.searchBox}>
             <TouchableOpacity style={styles.searchIconButton} onPress={handleBack}>
-              <Ionicons name="chevron-back" size={24} color="#1d1b20" />
+              <Ionicons name="chevron-back" size={24} color={Text.primary} />
             </TouchableOpacity>
             <TextInput
               style={styles.searchInput}
               placeholder="행운의 가게를 검색하세요!"
-              placeholderTextColor="#828282"
+              placeholderTextColor={Text.placeholder}
               value={searchQuery}
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
             />
             <TouchableOpacity style={styles.searchIconButton} onPress={handleSearch}>
-              <Ionicons name="search" size={24} color="#1d1b20" />
+              <Ionicons name="search" size={24} color={Text.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -175,7 +187,7 @@ export default function MapTab() {
               onPress={() => setSelectedFilter(category.id)}
             >
               {selectedFilter === category.id && (
-                <Ionicons name="checkmark" size={16} color="#fff" style={styles.filterCheck} />
+                <Ionicons name="checkmark" size={16} color={Gray.white} style={styles.filterCheck} />
               )}
               <ThemedText
                 style={[
@@ -193,16 +205,16 @@ export default function MapTab() {
       {/* 지도 컨트롤 버튼 (오른쪽) */}
       <View style={styles.mapControls}>
         <TouchableOpacity style={styles.controlButton}>
-          <Ionicons name="refresh" size={20} color="#34b262" />
+          <Ionicons name="refresh" size={20} color={Owner.primary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.controlButton}
           onPress={() => bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF)}
         >
-          <Ionicons name="list" size={20} color="#34b262" />
+          <Ionicons name="list" size={20} color={Owner.primary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.controlButton}>
-          <Ionicons name="locate" size={20} color="#34b262" />
+          <Ionicons name="locate" size={20} color={Owner.primary} />
         </TouchableOpacity>
       </View>
 
@@ -216,64 +228,68 @@ export default function MapTab() {
         handleIndicatorStyle={styles.bottomSheetHandle}
         enablePanDownToClose={false}
       >
-        {/* 바텀시트 헤더 */}
-        <BottomSheetView style={styles.bottomSheetHeader}>
-          <View style={styles.bottomSheetTriggerContent}>
-            <ThemedText style={styles.bottomSheetTriggerText}>
-              주변 0km
-            </ThemedText>
-            <Ionicons name="chevron-up" size={20} color="#1d1b20" />
-          </View>
-
-          {/* 필터 버튼 행 */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.bottomFilterContainer}
-            contentContainerStyle={styles.bottomFilterContent}
-          >
-            {/* 거리순 드롭다운 */}
-            <TouchableOpacity
-              style={styles.bottomFilterButton}
-              onPress={() => setShowSortOptions(!showSortOptions)}
-            >
-              <ThemedText style={styles.bottomFilterText}>
-                {SORT_OPTIONS.find(o => o.id === selectedSort)?.label}
+        <View style={styles.bottomSheetContent}>
+          {/* 바텀시트 헤더 */}
+          <View style={styles.bottomSheetHeader}>
+            <View style={styles.bottomSheetTriggerContent}>
+              <ThemedText style={styles.bottomSheetTriggerText}>
+                주변 0km
               </ThemedText>
-              <Ionicons
-                name={showSortOptions ? "chevron-up" : "chevron-down"}
-                size={14}
-                color="#1d1b20"
-              />
-            </TouchableOpacity>
+              <Ionicons name="chevron-up" size={20} color={Text.primary} />
+            </View>
 
-            {/* 다른 필터 버튼들 */}
-            {BOTTOM_FILTERS.map((filter) => (
+            {/* 필터 버튼 행 */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.bottomFilterContainer}
+              contentContainerStyle={styles.bottomFilterContent}
+            >
+              {/* 거리순 드롭다운 */}
               <TouchableOpacity
-                key={filter.id}
                 style={styles.bottomFilterButton}
+                onPress={() => setShowSortOptions(!showSortOptions)}
               >
                 <ThemedText style={styles.bottomFilterText}>
-                  {filter.label}
+                  {SORT_OPTIONS.find(o => o.id === selectedSort)?.label}
                 </ThemedText>
+                <Ionicons
+                  name={showSortOptions ? "chevron-up" : "chevron-down"}
+                  size={14}
+                  color={Text.primary}
+                />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
 
-          {/* 정렬 옵션 드롭다운 */}
-          {showSortOptions && (
-            <SortDropdown
-              options={SORT_OPTIONS}
-              selectedId={selectedSort}
-              onSelect={handleSortSelect}
+              {/* 다른 필터 버튼들 */}
+              {BOTTOM_FILTERS.map((filter) => (
+                <TouchableOpacity
+                  key={filter.id}
+                  style={styles.bottomFilterButton}
+                >
+                  <ThemedText style={styles.bottomFilterText}>
+                    {filter.label}
+                  </ThemedText>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* 정렬 옵션 드롭다운 */}
+            {showSortOptions && (
+              <SortDropdown
+                options={SORT_OPTIONS}
+                selectedId={selectedSort}
+                onSelect={handleSortSelect}
+              />
+            )}
+          </View>
+
+          {/* 선택된 가게 상세 또는 검색 결과 목록 */}
+          <BottomSheetScrollView style={styles.scrollView} contentContainerStyle={styles.storeListContent}>
+          {selectedStore  ? (
+            <SelectedStoreDetail
+              store={selectedStore}
+              onViewDetail={() => handleViewStoreDetail(selectedStore.id)}
             />
-          )}
-        </BottomSheetView>
-
-        {/* 선택된 가게 상세 또는 검색 결과 목록 */}
-        <BottomSheetScrollView contentContainerStyle={styles.storeListContent}>
-          {selectedStore ? (
-            <SelectedStoreDetail store={selectedStore} />
           ) : searchResults.length > 0 ? (
             searchResults.map((store) => (
               <StoreCard key={store.id} store={store} />
@@ -288,7 +304,8 @@ export default function MapTab() {
               </ThemedText>
             </View>
           ) : null}
-        </BottomSheetScrollView>
+          </BottomSheetScrollView>
+        </View>
       </BottomSheet>
     </ThemedView>
   );
@@ -297,7 +314,7 @@ export default function MapTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Gray.white,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -315,7 +332,7 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: Gray.white,
     borderRadius: 12,
     height: rs(56),
     paddingHorizontal: 8,
@@ -329,7 +346,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1d1b20',
+    color: Text.primary,
   },
   filterContainer: {
   },
@@ -344,24 +361,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: Gray.white,
     borderWidth: 1,
-    borderColor: '#34b262',
+    borderColor: Owner.primary,
     gap: 8,
   },
   filterButtonActive: {
-    backgroundColor: '#000000',
-    borderColor: '#34b262',
+    backgroundColor: Gray.black,
+    borderColor: Owner.primary,
   },
   filterCheck: {
     marginRight: 4,
   },
   filterText: {
     fontSize: 14,
-    color: '#1d1b20',
+    color: Text.primary,
   },
   filterTextActive: {
-    color: '#fff',
+    color: Gray.white,
   },
   mapControls: {
     position: 'absolute',
@@ -371,13 +388,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   controlButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
+    width: rs(44),
+    height: rs(44),
+    borderRadius: 20,
+    backgroundColor: Gray.white,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: Gray.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -385,18 +402,26 @@ const styles = StyleSheet.create({
   },
   // 바텀시트 스타일
   bottomSheetBackground: {
-    backgroundColor: '#fff',
+    backgroundColor: Gray.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
+  bottomSheetContent: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
   bottomSheetHandle: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: Gray.gray4,
     width: 40,
     height: 4,
   },
   bottomSheetHeader: {
     paddingHorizontal: 16,
     paddingTop: 8,
+    backgroundColor: Gray.white,
+    zIndex: 1,
   },
   bottomSheetTriggerContent: {
     flexDirection: 'row',
@@ -407,7 +432,7 @@ const styles = StyleSheet.create({
   bottomSheetTriggerText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1d1b20',
+    color: Text.primary,
   },
   bottomFilterContainer: {
   },
@@ -421,19 +446,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Gray.gray2,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: Gray.gray4,
     gap: 4,
   },
   bottomFilterText: {
     fontSize: 13,
-    color: '#1d1b20',
+    color: Text.primary,
   },
   // 가게 목록
   storeListContent: {
     paddingHorizontal: 16,
-    paddingBottom: 100,
   },
   // 빈 상태
   emptyState: {
@@ -442,11 +466,11 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#666',
+    color: Text.secondary,
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#999',
+    color: Text.tertiary,
   },
 });
