@@ -17,6 +17,8 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   handleAuthSuccess: (accessToken: string, expiresIn: number, userType: UserType) => Promise<void>;
   handleLogout: () => Promise<void>;
+  // 개발용: 로그인 없이 userType 전환
+  devSetUserType: (userType: UserType) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -50,9 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ isAuthenticated: false, isLoading: false, userType: null });
   }, []);
 
+  // 개발용: 로그인 없이 userType 전환 (테스트용)
+  const devSetUserType = useCallback((userType: UserType) => {
+    setState({ isAuthenticated: true, isLoading: false, userType });
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ ...state, handleAuthSuccess, handleLogout }}
+      value={{ ...state, handleAuthSuccess, handleLogout, devSetUserType }}
     >
       {children}
     </AuthContext.Provider>
