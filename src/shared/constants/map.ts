@@ -1,5 +1,5 @@
 // Re-export DUMMY_STORES from data/mock for backward compatibility
-export { DUMMY_STORES } from '@/src/data/mock/store';
+export { DUMMY_STORES } from '@/src/shared/data/mock/store';
 
 // 필터 카테고리
 export const FILTER_CATEGORIES = [

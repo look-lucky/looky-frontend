@@ -1,5 +1,5 @@
 // src/api/mutator.ts
-import { getToken } from "@/src/lib/auth/token";
+import { getToken } from "@/src/shared/lib/auth/token";
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";

@@ -1,4 +1,4 @@
-import type { Store, StoreDetail } from '@/src/types/store';
+import type { Store, StoreDetail } from '@/src/shared/types/store';
 
 // ============================================
 // 지도/리스트용 더미 데이터

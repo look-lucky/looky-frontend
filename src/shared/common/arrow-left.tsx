@@ -1,18 +1,18 @@
-import { Pressable, StyleSheet, type PressableProps } from 'react-native';
+import { Pressable, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-export type ArrowLeftProps = PressableProps & {
+export type ArrowLeftProps = {
   onPress?: () => void;
   size?: number;
+  style?: StyleProp<ViewStyle>;
 };
 
-export function ArrowLeft({ onPress, size = 24, style, ...otherProps }: ArrowLeftProps) {
+export function ArrowLeft({ onPress, size = 24, style }: ArrowLeftProps) {
   return (
     <Pressable
-      style={[styles.container, style]}
+      style={[styles.container, style as ViewStyle]}
       onPress={onPress}
       hitSlop={8}
-      {...otherProps}
     >
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
         <Path
