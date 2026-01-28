@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; 
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { FlatList, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // 1. 더미 데이터 
 const NOTIFICATIONS = [
@@ -156,7 +156,7 @@ export default function NotificationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F5F5F5', paddingTop: Platform.OS === "android" ? StatusBar.currentHeight: 0,
   },
   
   // 헤더 스타일
@@ -194,7 +194,6 @@ const styles = StyleSheet.create({
     // borderRadius: 10,
     // padding: 4,
     gap: 8,
-    // 그림자
     shadowColor: "rgba(0, 0, 0, 0.1)",
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
@@ -223,7 +222,7 @@ const styles = StyleSheet.create({
   textActive: { color: 'white' },
   textInactive: { color: '#828282' },
 
-  // 미확인 버튼 안 빨간 점
+  // 미확인 버튼 안 빨간 점(원숫자로 바꿔야함)
   redDotBox: {
     marginLeft: 4,
     width: 6, 

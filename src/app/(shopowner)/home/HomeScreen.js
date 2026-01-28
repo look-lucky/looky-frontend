@@ -1,21 +1,14 @@
+import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import {
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Image, Modal, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, } from "react-native";
 
 export default function HomeScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Image
           source={require("@/assets/images/shopowner/logo2.png")}
@@ -26,7 +19,7 @@ export default function HomeScreen({ navigation }) {
         {/* --- 1. 상단 프로필 카드 --- */}
         <View style={styles.profileCard}>
           <View style={styles.iconBox}>
-            <Ionicons name="storefront" size={40} color="#34B262" />
+            <Ionicons name="storefront" size={rs(40)} color="#34B262" />
           </View>
           <View style={styles.textContainer}>
             <Text style={styles.storeName}>채영식당</Text>
@@ -66,7 +59,7 @@ export default function HomeScreen({ navigation }) {
               >
                 <Ionicons
                   name="information-circle-outline"
-                  size={20}
+                  size={rs(20)}
                   color="#668776"
                 />
               </TouchableOpacity>
@@ -84,9 +77,9 @@ export default function HomeScreen({ navigation }) {
                 {/* 작은 클로버 아이콘(나중에 바꿔야함) */}
                 <Ionicons
                   name="leaf"
-                  size={10}
+                  size={rs(10)}
                   color="white"
-                  style={{ marginRight: 4 }}
+                  style={{ marginRight: rs(4) }}
                 />
                 <Text style={styles.progressDescText}>
                   <Text style={{ fontWeight: "700" }}>네잎클로버</Text>까지
@@ -113,7 +106,7 @@ export default function HomeScreen({ navigation }) {
           </View>
           <TouchableOpacity style={styles.moreLinkRow}>
             <Text style={styles.moreLinkText}>자세히 보러가기</Text>
-            <Ionicons name="chevron-forward" size={12} color="#668776" />
+            <Ionicons name="chevron-forward" size={rs(12)} color="#668776" />
           </TouchableOpacity>
         </View>
 
@@ -123,7 +116,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.statCard}>
               <View style={styles.statHeader}>
                 <View style={styles.statIconBox}>
-                  <Ionicons name="home" size={8} color="#34B262" />
+                  <Ionicons name="home" size={rs(8)} color="#34B262" />
                 </View>
                 <Text style={styles.statTitle}>오늘 가게 페이지</Text>
               </View>
@@ -138,7 +131,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.statCard}>
               <View style={styles.statHeader}>
                 <View style={styles.statIconBox}>
-                  <Ionicons name="ticket" size={8} color="#34B262" />
+                  <Ionicons name="ticket" size={rs(8)} color="#34B262" />
                 </View>
                 <Text style={styles.statTitle}>사용된 쿠폰</Text>
               </View>
@@ -156,7 +149,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.statCard}>
               <View style={styles.statHeader}>
                 <View style={styles.statIconBox}>
-                  <Ionicons name="people" size={8} color="#34B262" />
+                  <Ionicons name="people" size={rs(8)} color="#34B262" />
                 </View>
                 <Text style={styles.statTitle}>이번 주 방문</Text>
               </View>
@@ -167,7 +160,7 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.statIconBox}>
                   <Ionicons
                     name="chatbubble-ellipses"
-                    size={8}
+                    size={rs(8)}
                     color="#34B262"
                   />
                 </View>
@@ -181,7 +174,7 @@ export default function HomeScreen({ navigation }) {
           {/* 잠금 화면 */}
           <View style={styles.lockedOverlay}>
             <View style={styles.lockIconCircle}>
-              <Ionicons name="lock-closed" size={20} color="#828282" />
+              <Ionicons name="lock-closed" size={rs(20)} color="#828282" />
             </View>
             <Text style={styles.lockedTitle}>추후 공개될 예정이에요</Text>
             <Text style={styles.lockedSubTitle}>조금만 기다려주세요!</Text>
@@ -197,7 +190,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.notiTitleRow}>
               {/* 알림 아이콘 */}
               <View style={styles.notiIconBox}>
-                <Ionicons name="notifications" size={16} color="#668776" />
+                <Ionicons name="notifications" size={rs(16)} color="#668776" />
               </View>
               <Text style={styles.notiTitle}>알림</Text>
             </View>
@@ -206,7 +199,7 @@ export default function HomeScreen({ navigation }) {
               onPress={() => navigation.navigate("Notification")}
             >
               <Text style={styles.moreLinkText}>전체보기</Text>
-              <Ionicons name="chevron-forward" size={12} color="#668776" />
+              <Ionicons name="chevron-forward" size={rs(12)} color="#668776" />
             </TouchableOpacity>
           </View>
 
@@ -215,7 +208,7 @@ export default function HomeScreen({ navigation }) {
           {/* 알림 1 (리뷰 - 파랑) */}
           <View style={[styles.notiItem, styles.notiItemUnread]}>
             <View style={[styles.notiItemIcon, { backgroundColor: "#DBEAFE" }]}>
-              <Ionicons name="chatbubble-ellipses" size={14} color="#2563EB" />
+              <Ionicons name="chatbubble-ellipses" size={rs(14)} color="#2563EB" />
             </View>
             <View style={styles.notiContent}>
               <Text style={styles.notiText} numberOfLines={1}>
@@ -231,7 +224,7 @@ export default function HomeScreen({ navigation }) {
           {/* 알림 2 (쿠폰 - 노랑) */}
           <View style={[styles.notiItem, styles.notiItemUnread]}>
             <View style={[styles.notiItemIcon, { backgroundColor: "#FEF4C7" }]}>
-              <Ionicons name="ticket" size={14} color="#D97706" />
+              <Ionicons name="ticket" size={rs(14)} color="#D97706" />
             </View>
             <View style={styles.notiContent}>
               <Text style={styles.notiText} numberOfLines={1}>
@@ -247,7 +240,7 @@ export default function HomeScreen({ navigation }) {
           {/* 알림 3 (좋아요 - 빨강) */}
           <View style={styles.notiItem}>
             <View style={[styles.notiItemIcon, { backgroundColor: "#FEE2E2" }]}>
-              <Ionicons name="heart" size={14} color="#FF3E41" />
+              <Ionicons name="heart" size={rs(14)} color="#FF3E41" />
             </View>
             <View style={styles.notiContent}>
               <Text style={styles.notiText} numberOfLines={1}>
@@ -282,9 +275,9 @@ export default function HomeScreen({ navigation }) {
               {/* 닫기 버튼 */}
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: rs(10), bottom: rs(10), left: rs(10), right: rs(10) }}
               >
-                <Ionicons name="close" size={24} color="#828282" />
+                <Ionicons name="close" size={rs(24)} color="#828282" />
               </TouchableOpacity>
             </View>
 
@@ -359,168 +352,168 @@ export default function HomeScreen({ navigation }) {
         </View>
       </Modal>
       {/* 등급 안내 모달 (팝업창) 끝 */}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F5" },
-  scrollContent: { paddingTop: 60, paddingBottom: 40, paddingHorizontal: 20 },
+  container: { flex: 1, backgroundColor: "#F5F5F5", paddingTop: Platform.OS === "android" ? StatusBar.currentHeight: 0 },
+  scrollContent: { paddingTop: rs(10), paddingBottom: rs(40), paddingHorizontal: rs(20) },
   pageTitle: {
-    fontSize: 24,
+    fontSize: rs(24),
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: rs(20),
     color: "#333",
   },
 
-  logo: { width: 120, height: 30, marginBottom: 10, marginLeft: 0 },
+  logo: { width: rs(120), height: rs(30), marginBottom: rs(10), marginLeft: 0 },
 
   // 프로필 카드
   profileCard: {
     width: "100%",
-    height: 86,
+    height: rs(86),
     backgroundColor: "white",
-    borderRadius: 8,
+    borderRadius: rs(8),
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    marginBottom: 20,
+    paddingHorizontal: rs(12),
+    marginBottom: rs(20),
     shadowColor: "rgba(0,0,0,0.05)",
-    shadowOffset: { width: 2, height: 2 },
+    shadowOffset: { width: rs(2), height: rs(2) },
     shadowOpacity: 1,
-    shadowRadius: 4,
+    shadowRadius: rs(4),
     elevation: 3,
   },
   iconBox: {
-    width: 62,
-    height: 62,
+    width: rs(62),
+    height: rs(62),
     backgroundColor: "#EAF6EE",
-    borderRadius: 12,
+    borderRadius: rs(12),
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 14,
+    marginRight: rs(14),
   },
   profileImage: { width: "100%", height: "100%" },
   textContainer: { flex: 1, justifyContent: "center" },
   storeName: {
-    fontSize: 15,
+    fontSize: rs(15),
     fontWeight: "700",
     color: "black",
-    lineHeight: 24,
+    lineHeight: rs(24),
   },
   greeting: {
-    fontSize: 15,
+    fontSize: rs(15),
     fontWeight: "500",
     color: "#828282",
-    lineHeight: 24,
+    lineHeight: rs(24),
   },
 
   // 등급 카드
   levelCardShadow: {
     width: "100%",
-    minHeight: 173,
+    minHeight: rs(173),
     shadowColor: "rgba(0,0,0,0.05)",
-    shadowOffset: { width: 2, height: 2 },
+    shadowOffset: { width: rs(2), height: rs(2) },
     shadowOpacity: 1,
-    shadowRadius: 4,
+    shadowRadius: rs(4),
     elevation: 3,
-    borderRadius: 8,
-    marginBottom: 25,
+    borderRadius: rs(8),
+    marginBottom: rs(25),
   },
   levelCard: {
-    borderRadius: 8,
+    borderRadius: rs(8),
     overflow: "hidden",
-    padding: 20,
+    padding: rs(20),
     position: "relative",
   },
   levelImage: { width: "100%", height: "100%" },
   decoCircleTop: {
     position: "absolute",
-    width: 98,
-    height: 98,
-    borderRadius: 49,
+    width: rs(98),
+    height: rs(98),
+    borderRadius: rs(49),
     backgroundColor: "#49AA7F",
-    top: -48,
-    right: -40,
+    top: rs(-48),
+    right: rs(-40),
   },
   decoCircleBottom: {
     position: "absolute",
-    width: 98,
-    height: 98,
-    borderRadius: 49,
+    width: rs(98),
+    height: rs(98),
+    borderRadius: rs(49),
     backgroundColor: "#49AA7F",
-    bottom: -60,
-    left: -49,
+    bottom: rs(-60),
+    left: rs(-49),
   },
-  levelHeader: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
+  levelHeader: { flexDirection: "row", alignItems: "center", marginBottom: rs(15) },
   // 아이콘 배경 원
   levelIconContainer: {
-    width: 50,
-    height: 49,
+    width: rs(50),
+    height: rs(49),
     backgroundColor: "transparent",
-    borderRadius: 25,
-    marginRight: 10,
+    borderRadius: rs(25),
+    marginRight: rs(10),
     justifyContent: "center",
     alignItems: "center",
   },
   levelInfo: { flex: 1 },
   levelLabel: {
     color: "white",
-    fontSize: 12,
+    fontSize: rs(12),
     fontWeight: "500",
-    marginBottom: 2,
+    marginBottom: rs(2),
     fontFamily: "System",
   },
   levelValue: {
     color: "white",
-    fontSize: 17,
+    fontSize: rs(17),
     fontWeight: "700",
     fontFamily: "System",
   },
   infoIcon: {
-    width: 20,
-    height: 20,
+    width: rs(20),
+    height: rs(20),
     backgroundColor: "rgba(255,255,255,0.80)",
-    borderRadius: 10,
+    borderRadius: rs(10),
     justifyContent: "center",
     alignItems: "center",
   },
 
   progressContainer: {
     backgroundColor: "#54B77E",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    marginBottom: 15,
+    borderRadius: rs(8),
+    paddingVertical: rs(10),
+    paddingHorizontal: rs(15),
+    marginBottom: rs(15),
   },
   progressTextRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: rs(8),
   },
   progressLabel: {
     color: "rgba(255,255,255,0.80)",
-    fontSize: 10,
+    fontSize: rs(10),
     fontWeight: "500",
   },
-  progressValue: { color: "white", fontSize: 11, fontWeight: "600" },
+  progressValue: { color: "white", fontSize: rs(11), fontWeight: "600" },
   progressBarTrack: {
     width: "100%",
-    height: 6,
+    height: rs(6),
     backgroundColor: "#74BD9F",
-    borderRadius: 3,
-    marginBottom: 8,
+    borderRadius: rs(3),
+    marginBottom: rs(8),
     overflow: "hidden",
   },
   progressBarFill: {
     width: "80%",
     height: "100%",
     backgroundColor: "#3EAE6B",
-    borderRadius: 3,
+    borderRadius: rs(3),
   },
   progressDescRow: { flexDirection: "row", alignItems: "center" },
-  progressDescText: { color: "white", fontSize: 10 },
+  progressDescText: { color: "white", fontSize: rs(10) },
   cardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -528,14 +521,14 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: "rgba(255,255,255,0.70)",
-    fontSize: 9,
+    fontSize: rs(9),
     fontWeight: "500",
   },
   footerLink: {
     textDecorationLine: "underline",
     textShadowColor: "rgba(0,0,0,0.25)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: rs(1) },
+    textShadowRadius: rs(4),
   },
 
   // 섹션 헤더
@@ -543,79 +536,79 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    marginBottom: 10,
+    marginBottom: rs(10),
   },
   sectionTitleRow: { flexDirection: "row", alignItems: "center" },
-  sectionEmoji: { fontSize: 15, marginRight: 4 },
+  sectionEmoji: { fontSize: rs(15), marginRight: rs(4) },
   sectionTitleText: {
-    fontSize: 15,
+    fontSize: rs(15),
     fontWeight: "700",
     color: "#668776",
-    lineHeight: 22,
+    lineHeight: rs(22),
   },
   moreLinkRow: {
     flexDirection: "row",
     alignItems: "center",
-    transform: [{ translateY: 3 }],
+    transform: [{ translateY: rs(3) }],
   },
   moreLinkText: {
-    fontSize: 11,
+    fontSize: rs(11),
     fontWeight: "600",
     color: "#668776",
-    lineHeight: 22,
-    marginRight: 2,
+    lineHeight: rs(22),
+    marginRight: rs(2),
   },
   moreLinkArrow: {
-    fontSize: 10,
+    fontSize: rs(10),
     color: "#668776",
-    marginLeft: 3,
+    marginLeft: rs(3),
     fontWeight: "bold",
-    marginTop: 1,
+    marginTop: rs(1),
   },
 
   // 통계 컨테이너
   statsContainer: {
     position: "relative",
     width: "100%",
-    gap: 11,
-    paddingBottom: 20,
-    marginBottom: 25,
+    gap: rs(11),
+    paddingBottom: rs(20),
+    marginBottom: rs(25),
   },
   gridRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 11,
+    marginBottom: rs(11),
   },
   statCard: {
     width: "48%",
-    height: 68,
+    height: rs(68),
     backgroundColor: "white",
-    borderRadius: 8,
-    padding: 9,
+    borderRadius: rs(8),
+    padding: rs(9),
     justifyContent: "center",
   },
-  statHeader: { flexDirection: "row", alignItems: "center", marginBottom: 2 },
+  statHeader: { flexDirection: "row", alignItems: "center", marginBottom: rs(2) },
   statIconBox: {
-    width: 14,
-    height: 14,
+    width: rs(14),
+    height: rs(14),
     backgroundColor: "#EAF6EE",
-    borderRadius: 3,
-    marginRight: 5,
+    borderRadius: rs(3),
+    marginRight: rs(5),
     justifyContent: "center",
     alignItems: "center",
   },
-  statTitle: { fontSize: 8, color: "#668776", fontWeight: "400", flex: 1 },
+  statTitle: { fontSize: rs(8), color: "#668776", fontWeight: "400", flex: 1 },
   statNumber: {
-    fontSize: 14,
+    fontSize: rs(14),
     fontWeight: "600",
     color: "black",
     marginBottom: 0,
   },
-  statFooter: { flexDirection: "row", alignItems: "center", marginTop: 2 },
-  statSubText: { fontSize: 8, color: "#668776", marginRight: 4 },
+  statFooter: { flexDirection: "row", alignItems: "center", marginTop: rs(2) },
+  statSubText: { fontSize: rs(8), color: "#668776", marginRight: rs(4) },
   trendBadge: { flexDirection: "row", alignItems: "center" },
-  trendText: { fontSize: 8, color: "#34B262", fontWeight: "600" },
-  alertText: { fontSize: 8, color: "#34B262", fontWeight: "600" },
+  trendText: { fontSize: rs(8), color: "#34B262", fontWeight: "600" },
+  alertText: { fontSize: rs(8), color: "#34B262", fontWeight: "600" },
 
   // 잠금 오버레이
   lockedOverlay: {
@@ -626,70 +619,70 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: "rgba(255, 255, 255, 0.96)",
     zIndex: 10,
-    borderRadius: 12,
+    borderRadius: rs(12),
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 1)",
     shadowColor: "rgba(0, 0, 0, 0.05)",
-    shadowOffset: { width: 2, height: 2 },
+    shadowOffset: { width: rs(2), height: rs(2) },
     shadowOpacity: 1,
-    shadowRadius: 4,
+    shadowRadius: rs(4),
     elevation: 3,
   },
   lockIconCircle: {
-    width: 41,
-    height: 41,
+    width: rs(41),
+    height: rs(41),
     backgroundColor: "rgba(218, 218, 218, 0.59)",
-    borderRadius: 20.5,
-    marginBottom: 9,
+    borderRadius: rs(20.5),
+    marginBottom: rs(9),
     justifyContent: "center",
     alignItems: "center",
   },
   lockedTitle: {
-    fontSize: 15,
+    fontSize: rs(15),
     fontWeight: "600",
     color: "black",
-    marginBottom: 4,
+    marginBottom: rs(4),
   },
   lockedSubTitle: {
-    fontSize: 11,
+    fontSize: rs(11),
     fontWeight: "500",
     color: "#668776",
-    lineHeight: 16,
+    lineHeight: rs(16),
   },
 
   // 알림 박스
   notiBox: {
     width: "100%",
     backgroundColor: "white",
-    borderRadius: 8,
+    borderRadius: rs(8),
     shadowColor: "rgba(0, 0, 0, 0.05)",
-    shadowOffset: { width: 2, height: 2 },
+    shadowOffset: { width: rs(2), height: rs(2) },
     shadowOpacity: 1,
-    shadowRadius: 4,
+    shadowRadius: rs(4),
     elevation: 3,
-    paddingTop: 10,
-    paddingBottom: 5,
+    paddingTop: rs(10),
+    paddingBottom: rs(5),
     marginBottom: 0,
   },
   notiHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    paddingTop: 5,
+    paddingHorizontal: rs(16),
+    paddingBottom: rs(10),
+    paddingTop: rs(5),
   },
   notiTitleRow: { flexDirection: "row", alignItems: "center" },
   notiIconBox: {
-    width: 18,
-    height: 18,
-    marginRight: 5,
+    width: rs(18),
+    height: rs(18),
+    marginRight: rs(5),
     justifyContent: "center",
     alignItems: "center",
   },
-  notiTitle: { fontSize: 15, fontWeight: "700", color: "#668776" },
+  notiTitle: { fontSize: rs(15), fontWeight: "700", color: "#668776" },
   divider: {
     height: 1,
     backgroundColor: "rgba(130, 130, 130, 0.15)",
@@ -698,30 +691,30 @@ const styles = StyleSheet.create({
   notiItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: rs(12),
+    paddingHorizontal: rs(16),
     backgroundColor: "white",
   },
   notiItemUnread: { backgroundColor: "rgba(234, 246, 238, 0.50)" },
   notiItemIcon: {
-    width: 25,
-    height: 25,
-    borderRadius: 8,
+    width: rs(25),
+    height: rs(25),
+    borderRadius: rs(8),
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 10,
+    marginRight: rs(10),
   },
   notiContent: { flex: 1, justifyContent: "center" },
-  notiText: { fontSize: 12, color: "black", marginBottom: 2, lineHeight: 18 },
-  notiTime: { fontSize: 9, color: "#828282" },
+  notiText: { fontSize: rs(12), color: "black", marginBottom: rs(2), lineHeight: rs(18) },
+  notiTime: { fontSize: rs(9), color: "#828282" },
   newBadgeDot: {
-    width: 6,
-    height: 6,
+    width: rs(6),
+    height: rs(6),
     backgroundColor: "#34B262",
-    borderRadius: 3,
+    borderRadius: rs(3),
     position: "absolute",
-    right: 16,
-    top: 15,
+    right: rs(16),
+    top: rs(15),
   },
 
   // 모달(팝업) 관련 스타일
@@ -732,11 +725,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    width: 335,
+    width: rs(335),
     maxHeight: "50%",
     backgroundColor: "white",
-    borderRadius: 10,
-    padding: 22,
+    borderRadius: rs(10),
+    padding: rs(22),
     alignItems: "center",
   },
 
@@ -746,35 +739,35 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: rs(15),
   },
   headerTitleRow: { flexDirection: "row", alignItems: "center" },
-  headerImage: { width: 24, height: 24, marginRight: 3 },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: "black" },
+  headerImage: { width: rs(24), height: rs(24), marginRight: rs(3) },
+  headerTitle: { fontSize: rs(17), fontWeight: "700", color: "black" },
 
   // 모달 리스트
-  gradeList: { width: "100%", gap: 12 },
+  gradeList: { width: "100%", gap: rs(12) },
   gradeItemBox: {
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(217, 217, 217, 0.30)",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    borderRadius: rs(10),
+    paddingVertical: rs(10),
+    paddingHorizontal: rs(16),
   },
-  gradeImage: { width: 40, height: 40, marginRight: 10 },
+  gradeImage: { width: rs(40), height: rs(40), marginRight: rs(10) },
   gradeTextBox: { flex: 1, flexDirection: "column", justifyContent: "center" },
   gradeItemTitle: {
-    fontSize: 15,
+    fontSize: rs(15),
     fontWeight: "700",
     color: "black",
-    marginBottom: 4,
+    marginBottom: rs(4),
   },
   gradeItemDesc: {
-    fontSize: 11,
+    fontSize: rs(11),
     color: "#668776",
     fontWeight: "600",
-    lineHeight: 16,
+    lineHeight: rs(16),
   },
 });
