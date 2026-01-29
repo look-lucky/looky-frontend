@@ -38,7 +38,7 @@ export default function SignInPage() {
         {/* University Email Button */}
         <Pressable
           style={styles.universityButton}
-          onPress={() => router.push("/auth/login")}
+          onPress={() => router.push("/auth/sign-up-form")}
         >
           <SignupIcons.graduation width={20} height={20} />
           <Text style={styles.universityButtonText}>니어딜 시작하기</Text>

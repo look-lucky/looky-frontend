@@ -73,7 +73,7 @@ export default function LoginPage() {
   };
 
   const handleSignup = () => {
-    router.push("/auth/signup-info");
+    router.push("/auth/sign-up-form");
   };
 
   const handleFindId = () => {
@@ -81,7 +81,8 @@ export default function LoginPage() {
   };
 
   const handleFindPassword = () => {
-    router.push("/auth/verify-student");
+    // TODO: 비밀번호 찾기 페이지 구현 필요
+    router.push("/auth/find-id");
   };
 
   return (
