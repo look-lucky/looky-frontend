@@ -1,11 +1,11 @@
 import { NaverMap } from '@/src/app/(student)/components/map/naver-map-view';
 import { SelectedStoreDetail } from '@/src/app/(student)/components/map/selected-store-detail';
+import { FilterTab, StoreFilterModal } from '@/src/app/(student)/components/map/store-filter-modal';
 import { Store, StoreCard } from '@/src/app/(student)/components/store/store-card';
 import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { ThemedView } from '@/src/shared/common/themed-view';
 import {
-  BOTTOM_FILTERS,
   DISTANCE_OPTIONS,
   DUMMY_STORES,
   FILTER_CATEGORIES,
@@ -56,6 +56,13 @@ export default function MapTab() {
   const [showDistanceModal, setShowDistanceModal] = useState(false);
   const [selectedDistance, setSelectedDistance] = useState('0');
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // 필터 모달 관련 state
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>('storeType');
+  const [selectedStoreTypes, setSelectedStoreTypes] = useState<string[]>([]);
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
 
   // 가게 데이터에서 마커 생성
   const markers = useMemo(() =>
@@ -178,6 +185,37 @@ export default function MapTab() {
 
   const handleViewStoreDetail = (storeId: string) => {
     router.push(`/store/${storeId}`);
+  };
+
+  // 필터 모달 핸들러
+  const handleOpenFilterModal = (tab: FilterTab) => {
+    setActiveFilterTab(tab);
+    setShowFilterModal(true);
+  };
+
+  const handleStoreTypeToggle = (id: string) => {
+    setSelectedStoreTypes(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleMoodToggle = (id: string) => {
+    setSelectedMoods(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleEventToggle = (id: string) => {
+    setSelectedEvents(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleFilterApply = () => {
+    // TODO: API 호출하여 필터링된 결과 가져오기
+    // categories: selectedStoreTypes, moods: selectedMoods
+    console.log('Applied filters:', { selectedStoreTypes, selectedMoods, selectedEvents });
+    setShowFilterModal(false);
   };
 
   return (
@@ -306,17 +344,27 @@ export default function MapTab() {
                 />
               </TouchableOpacity>
 
-              {/* 다른 필터 버튼들 */}
-              {BOTTOM_FILTERS.map((filter) => (
-                <TouchableOpacity
-                  key={filter.id}
-                  style={styles.bottomFilterButton}
-                >
-                  <ThemedText style={styles.bottomFilterText}>
-                    {filter.label}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
+              {/* 가게 종류 버튼 */}
+              <TouchableOpacity
+                style={styles.bottomFilterButton}
+                onPress={() => handleOpenFilterModal('storeType')}
+              >
+                <ThemedText style={styles.bottomFilterText}>
+                  가게 종류
+                </ThemedText>
+                <Ionicons name="chevron-down" size={14} color={Text.primary} />
+              </TouchableOpacity>
+
+              {/* 이벤트 버튼 */}
+              <TouchableOpacity
+                style={styles.bottomFilterButton}
+                onPress={() => handleOpenFilterModal('event')}
+              >
+                <ThemedText style={styles.bottomFilterText}>
+                  이벤트
+                </ThemedText>
+                <Ionicons name="chevron-down" size={14} color={Text.primary} />
+              </TouchableOpacity>
             </ScrollView>
           </View>
 
@@ -361,6 +409,21 @@ export default function MapTab() {
         selectedId={selectedDistance}
         onSelect={handleDistanceSelect}
         onClose={() => setShowDistanceModal(false)}
+      />
+
+      {/* 가게 종류/이벤트 필터 모달 */}
+      <StoreFilterModal
+        visible={showFilterModal}
+        activeTab={activeFilterTab}
+        selectedStoreTypes={selectedStoreTypes}
+        selectedMoods={selectedMoods}
+        selectedEvents={selectedEvents}
+        onTabChange={setActiveFilterTab}
+        onStoreTypeToggle={handleStoreTypeToggle}
+        onMoodToggle={handleMoodToggle}
+        onEventToggle={handleEventToggle}
+        onClose={() => setShowFilterModal(false)}
+        onApply={handleFilterApply}
       />
     </ThemedView>
   );
