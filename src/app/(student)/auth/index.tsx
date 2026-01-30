@@ -1,19 +1,51 @@
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { rs } from "@/src/shared/theme/scale";
 
 import { SignupIcons } from "@/assets/images/icons/signup";
 import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
-import { useGoogleLogin } from "@/src/shared/lib/auth/use-google-login";
-import { useKakaoLogin } from "@/src/shared/lib/auth/use-kakao-login";
+import { useSocialLogin } from "@/src/shared/lib/auth/use-social-login";
 
 export default function SignInPage() {
   const router = useRouter();
-  const { login: kakaoLogin, isReady: isKakaoReady } = useKakaoLogin();
-  const { login: googleLogin, isReady: isGoogleReady } = useGoogleLogin();
+  const { loginWithGoogle, loginWithKakao, isLoading } = useSocialLogin();
+
+  const handleGoogleLogin = async () => {
+    const result = await loginWithGoogle();
+    if (result.success) {
+      if (result.needsSignup && result.userId) {
+        // 신규 회원 - 추가 정보 입력 페이지로 이동
+        router.push({
+          pathname: "/auth/sign-up-social",
+          params: { userId: result.userId, provider: "google" },
+        });
+      } else {
+        // 기존 회원 - 메인으로 이동
+        router.replace("/(student)/(tabs)");
+      }
+    } else if (result.error !== "cancelled") {
+      Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
+    }
+  };
+
+  const handleKakaoLogin = async () => {
+    const result = await loginWithKakao();
+    if (result.success) {
+      if (result.needsSignup && result.userId) {
+        router.push({
+          pathname: "/auth/sign-up-social",
+          params: { userId: result.userId, provider: "kakao" },
+        });
+      } else {
+        router.replace("/(student)/(tabs)");
+      }
+    } else if (result.error !== "cancelled") {
+      Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
+    }
+  };
 
   // 임시
   const appleLogin = () => {
@@ -38,7 +70,7 @@ export default function SignInPage() {
         {/* University Email Button */}
         <Pressable
           style={styles.universityButton}
-          onPress={() => router.push("/auth/sign-up-form")}
+          onPress={() => router.push("/auth/sign-in")}
         >
           <SignupIcons.graduation width={20} height={20} />
           <Text style={styles.universityButtonText}>니어딜 시작하기</Text>
@@ -53,18 +85,18 @@ export default function SignInPage() {
 
         {/* Social Buttons */}
         <Pressable
-          style={[styles.socialButton, !isKakaoReady && styles.disabledButton]}
-          onPress={kakaoLogin}
-          disabled={!isKakaoReady}
+          style={[styles.socialButton, isLoading && styles.disabledButton]}
+          onPress={handleKakaoLogin}
+          disabled={isLoading}
         >
           <SignupIcons.kakao width={20} height={20} />
           <Text style={styles.socialButtonText}>카카오로 시작하기</Text>
         </Pressable>
 
         <Pressable
-          style={[styles.socialButton, !isGoogleReady && styles.disabledButton]}
-          onPress={googleLogin}
-          disabled={!isGoogleReady}
+          style={[styles.socialButton, isLoading && styles.disabledButton]}
+          onPress={handleGoogleLogin}
+          disabled={isLoading}
         >
           <SignupIcons.google width={20} height={20} />
           <Text style={styles.socialButtonText}>Google로 시작하기</Text>
