@@ -1,15 +1,56 @@
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { rs } from "@/src/shared/theme/scale";
 
 import { SignupIcons } from "@/assets/images/icons/signup";
 import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
+import { useSocialLogin } from "@/src/shared/lib/auth/use-social-login";
 
 export default function SignInPage() {
   const router = useRouter();
+  const { loginWithGoogle, loginWithKakao, isLoading } = useSocialLogin();
+
+  const handleGoogleLogin = async () => {
+    const result = await loginWithGoogle();
+    if (result.success) {
+      if (result.needsSignup && result.userId) {
+        // 신규 회원 - 추가 정보 입력 페이지로 이동
+        router.push({
+          pathname: "/auth/sign-up-social",
+          params: { userId: result.userId, provider: "google" },
+        });
+      } else {
+        // 기존 회원 - 메인으로 이동
+        router.replace("/(student)/(tabs)");
+      }
+    } else if (result.error !== "cancelled") {
+      Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
+    }
+  };
+
+  const handleKakaoLogin = async () => {
+    const result = await loginWithKakao();
+    if (result.success) {
+      if (result.needsSignup && result.userId) {
+        router.push({
+          pathname: "/auth/sign-up-social",
+          params: { userId: result.userId, provider: "kakao" },
+        });
+      } else {
+        router.replace("/(student)/(tabs)");
+      }
+    } else if (result.error !== "cancelled") {
+      Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
+    }
+  };
+
+  // 임시
+  const appleLogin = () => {
+    router.replace("/(student)/(tabs)")
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
@@ -29,7 +70,7 @@ export default function SignInPage() {
         {/* University Email Button */}
         <Pressable
           style={styles.universityButton}
-          onPress={() => router.push("/auth/login")}
+          onPress={() => router.push("/auth/sign-in")}
         >
           <SignupIcons.graduation width={20} height={20} />
           <Text style={styles.universityButtonText}>니어딜 시작하기</Text>
@@ -43,19 +84,30 @@ export default function SignInPage() {
         </View>
 
         {/* Social Buttons */}
-        <Pressable style={styles.socialButton}>
+        <Pressable
+          style={[styles.socialButton, isLoading && styles.disabledButton]}
+          onPress={handleKakaoLogin}
+          disabled={isLoading}
+        >
           <SignupIcons.kakao width={20} height={20} />
           <Text style={styles.socialButtonText}>카카오로 시작하기</Text>
         </Pressable>
 
-        <Pressable style={styles.socialButton}>
+        <Pressable
+          style={[styles.socialButton, isLoading && styles.disabledButton]}
+          onPress={handleGoogleLogin}
+          disabled={isLoading}
+        >
           <SignupIcons.google width={20} height={20} />
           <Text style={styles.socialButtonText}>Google로 시작하기</Text>
         </Pressable>
 
-        <Pressable style={styles.socialButton}>
+        <Pressable 
+          style={styles.socialButton}
+          onPress={appleLogin}
+        >
           <SignupIcons.apple width={20} height={20} />
-          <Text style={styles.socialButtonText}>Apple로 시작하기</Text>
+          <Text style={styles.socialButtonText}>Apple로 시작하기(메인화면으로-임시)</Text>
         </Pressable>
 
         {/* Terms Text */}
@@ -158,5 +210,8 @@ const styles = StyleSheet.create({
   termsLink: {
     color: "#000000",
     fontWeight: "600",
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });

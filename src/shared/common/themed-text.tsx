@@ -53,6 +53,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: Fonts.bold,
     fontSize: 20,
+    lineHeight: 25,
   },
   caption: {
     fontFamily: Fonts.regular,

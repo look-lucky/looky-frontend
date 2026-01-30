@@ -1,3 +1,4 @@
+import { useCreateReview } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
@@ -7,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -49,19 +51,42 @@ export default function ReviewWriteScreen() {
   const [reviewContent, setReviewContent] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
 
+  const { mutate: createReview, isPending } = useCreateReview({
+    mutation: {
+      onSuccess: () => {
+        router.back();
+      },
+      onError: (error: any) => {
+        if (error?.status === 409) {
+          Alert.alert('알림', '이미 작성한 리뷰가 있습니다.');
+        } else {
+          Alert.alert('오류', '리뷰 등록에 실패했습니다. 다시 시도해주세요.');
+        }
+      },
+    },
+  });
+
   const isSubmitDisabled =
-    rating === 0 || reviewContent.trim().length < MIN_REVIEW_LENGTH;
+    rating === 0 || reviewContent.trim().length < MIN_REVIEW_LENGTH || isPending;
 
   const handleBack = () => router.back();
   const handleStarPress = (star: number) => setRating(star);
-  
+
   const handleRemovePhoto = (index: number) =>
     setPhotos((prev) => prev.filter((_, i) => i !== index));
 
   const handleSubmit = () => {
     if (isSubmitDisabled) return;
-    console.log('Submit review:', { storeId: id, rating, reviewContent, photos });
-    router.back();
+    createReview({
+      storeId: Number(id),
+      data: {
+        request: {
+          content: reviewContent.trim(),
+          rating,
+        },
+        images: photos.length > 0 ? photos : undefined,
+      },
+    });
   };
 
   const handleAddPhoto = () => console.log('Add photo'); // TODO: 이미지 피커 연동

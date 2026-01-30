@@ -16,6 +16,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import type { UserType } from "@/src/shared/lib/auth/token";
+
+// JWT payload 디코딩 함수
+function decodeJwtPayload(token: string): { role?: string } | null {
+  try {
+    const payload = token.split(".")[1];
+    const decoded = atob(payload);
+    return JSON.parse(decoded);
+  } catch (e) {
+    console.log("[Login] JWT decode failed:", e);
+    return null;
+  }
+}
 
 function EyeOffIcon({ color = "#d5d5d5" }: { color?: string }) {
   return (
@@ -57,11 +70,26 @@ export default function LoginPage() {
       { data: { username, password } },
       {
         onSuccess: async (res) => {
+          console.log("[Login] Response status:", res.status);
+          console.log("[Login] Response data:", JSON.stringify(res.data, null, 2));
+
           if (res.status === 200 && res.data.data?.accessToken) {
-            const { accessToken, expiresIn, role } = res.data.data;
-            await handleAuthSuccess(accessToken, expiresIn ?? 3600, role ?? 'ROLE_CUSTOMER');
+            const { accessToken, expiresIn } = res.data.data;
+            console.log("[Login] Token received:", accessToken.substring(0, 20) + "...");
+            console.log("[Login] ExpiresIn:", expiresIn);
+
+            // JWT에서 role 추출
+            const jwtPayload = decodeJwtPayload(accessToken);
+            console.log("[Login] JWT payload:", jwtPayload);
+            const role = (jwtPayload?.role as UserType) ?? "ROLE_STUDENT";
+            console.log("[Login] Role from JWT:", role);
+
+            await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
+            console.log("[Login] handleAuthSuccess completed - token should be stored");
+
             router.replace("/");
           } else {
+            console.log("[Login] Failed - invalid response");
             Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인해주세요.");
           }
         },
@@ -73,7 +101,7 @@ export default function LoginPage() {
   };
 
   const handleSignup = () => {
-    router.push("/auth/signup-info");
+    router.push("/auth/sign-up-form");
   };
 
   const handleFindId = () => {
@@ -81,7 +109,8 @@ export default function LoginPage() {
   };
 
   const handleFindPassword = () => {
-    router.push("/auth/verify-student");
+    // TODO: 비밀번호 찾기 페이지 구현 필요
+    router.push("/auth/find-id");
   };
 
   return (

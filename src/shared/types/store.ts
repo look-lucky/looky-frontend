@@ -26,6 +26,7 @@ export interface Coupon {
   description: string;
   discount: string;
   expiryDate: string;
+  targetOrganizationId?: number | null; // 특정 단과대학 전용 쿠폰 (null이면 전체 대상)
 }
 
 export interface NewsItem {

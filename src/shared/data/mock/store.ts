@@ -75,6 +75,23 @@ export const DUMMY_STORE_DETAILS: StoreDetail[] = [
         description: '만계치킨 첫 방문 고객 할인',
         discount: '15%',
         expiryDate: '2026.02.28까지',
+        targetOrganizationId: null, // 전체 대상
+      },
+      {
+        id: '2',
+        title: '환경생명자원대학 전용 20% 할인',
+        description: '환경생명자원대학 학생 전용 쿠폰',
+        discount: '20%',
+        expiryDate: '2026.03.15까지',
+        targetOrganizationId: 4, // 환경생명자원대학
+      },
+      {
+        id: '3',
+        title: '공과대학 전용 10% 할인',
+        description: '공과대학 학생 전용 쿠폰',
+        discount: '10%',
+        expiryDate: '2026.03.31까지',
+        targetOrganizationId: 2, // 공과대학
       },
     ],
     news: [
@@ -233,6 +250,15 @@ export const DUMMY_STORE_DETAILS: StoreDetail[] = [
         description: '따끈따끈 붕어빵 할인',
         discount: '10%',
         expiryDate: '2026.02.15까지',
+        targetOrganizationId: null, // 전체 대상
+      },
+      {
+        id: '2',
+        title: '경상대학 전용 15% 할인',
+        description: '경상대학 학생 전용 쿠폰',
+        discount: '15%',
+        expiryDate: '2026.02.28까지',
+        targetOrganizationId: 1, // 경상대학
       },
     ],
     news: [
