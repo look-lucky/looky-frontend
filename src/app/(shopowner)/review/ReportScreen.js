@@ -26,7 +26,6 @@ export default function ReportScreen({ navigation }) {
     navigation.navigate('ReportComplete');
   };
 
-  // 라디오 버튼 컴포넌트 (텍스트 포함 전체 터치 가능)
   const RadioItem = ({ label, isSelected, onPress }) => {
     const activeColor = "#FF6200";
     const inactiveColor = "#ACACAC";
@@ -34,7 +33,6 @@ export default function ReportScreen({ navigation }) {
     const inactiveBg = "#E9E9E9";
 
     return (
-      // TouchableOpacity가 레이아웃 전체를 감싸고 있어 글자를 눌러도 onPress가 작동합니다.
       <TouchableOpacity 
         style={styles.radioItem} 
         onPress={onPress} 

@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     alignItems: 'center' 
   },
   confirmButton: { 
-    width: '100%', // 너비를 카드 너비에 맞춰 100%로 설정
+    width: '100%',
     height: 45, 
     backgroundColor: 'black',
     borderRadius: 8, 
