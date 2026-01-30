@@ -1,6 +1,7 @@
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
+import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -27,17 +28,28 @@ function SummaryCard({ rows }: { rows: SummaryRow[] }) {
 
 export default function SignupCompletePage() {
   const router = useRouter();
-  const { nickname } = useLocalSearchParams<{ nickname?: string }>();
-  const displayName = (nickname?.trim() || "(닉네임)") as string;
 
-  // ✅ 예시 데이터 (실제론 이전 단계 state/params로 넣으면 됨)
+  // Store에서 데이터 가져오기
+  const {
+    nickname,
+    username,
+    password,
+    universityName,
+    collegeName,
+    departmentName,
+    reset,
+  } = useSignupStore();
+
+  const displayName = nickname?.trim() || "닉네임";
+
+  // Store 데이터로 요약 카드 생성
   const rows: SummaryRow[] = [
-    { label: "ID", value: "boywonderof" },
-    { label: "PW", value: "chaeyoung is god 25@" },
-    { label: "닉네임", value: "니어딜화이팅" },
-    { label: "대학교", value: "전북대학교" },
-    { label: "단과대학", value: "공과대학" },
-    { label: "소속학과", value: "IT 융합기전학과" },
+    { label: "대학교", value: universityName || "-" },
+    { label: "단과대학", value: collegeName || "-" },
+    { label: "소속학과", value: departmentName || "-" },
+    { label: "닉네임", value: nickname || "-" },
+    { label: "아이디", value: username || "-" },
+    { label: "비밀번호", value: password ? "●".repeat(Math.min(password.length, 12)) : "-" },
   ];
 
   return (
@@ -67,8 +79,9 @@ export default function SignupCompletePage() {
         <TouchableOpacity
           style={styles.ctaBtn}
           onPress={() => {
-            // TODO: 홈으로 이동 등
-            router.replace("/"); // 너 프로젝트 라우트에 맞게 수정
+            // Store 초기화 후 홈으로 이동
+            reset();
+            router.replace("/(student)/(tabs)");
           }}
           activeOpacity={0.9}
         >

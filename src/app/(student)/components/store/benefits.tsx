@@ -1,5 +1,6 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
+import { Gray, System } from '@/src/shared/theme/theme';
 import type { Coupon } from '@/src/shared/types/store';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -46,15 +47,17 @@ function CouponSection({ coupons }: { coupons: Coupon[] }) {
           </View>
           <View style={styles.couponContent}>
             <View style={styles.couponHeader}>
-              <ThemedText style={styles.couponTitle}>{coupon.title}</ThemedText>
-              <ThemedText style={styles.couponDiscount}>{coupon.discount}</ThemedText>
+              <ThemedText type="defaultSemiBold">{coupon.title}</ThemedText>
+              <ThemedText type='defaultSemiBold' lightColor={System.hotSoldOut}>{coupon.discount}</ThemedText>
             </View>
             <ThemedText style={styles.couponDescription}>{coupon.description}</ThemedText>
-            <ThemedText style={styles.couponExpiry}>{coupon.expiryDate}</ThemedText>
+            <View style={styles.couponFooter}>
+              <ThemedText style={styles.couponExpiry}>{coupon.expiryDate}</ThemedText>
+              <TouchableOpacity style={styles.couponButton}>
+                <ThemedText type="default" lightColor={Gray.white}>쿠폰 받기</ThemedText>
+              </TouchableOpacity>
+            </View>
           </View>
-          <TouchableOpacity style={styles.couponButton}>
-            <ThemedText style={styles.couponButtonText}>쿠폰 받기</ThemedText>
-          </TouchableOpacity>
         </View>
       ))}
     </View>
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
   },
   couponCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: '#fff',
     borderRadius: 16,
     borderWidth: 1,
@@ -143,17 +146,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1d1b20',
   },
-  couponDiscount: {
-    fontSize: rs(16),
-    fontWeight: '700',
-    color: '#ff4d4d',
-  },
   couponDescription: {
     fontSize: rs(12),
     color: '#666',
   },
+  couponFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: rs(4),
+  },
   couponExpiry: {
-    fontSize: rs(8),
+    fontSize: rs(10),
     color: '#999',
   },
   couponButton: {
@@ -161,10 +165,5 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: rs(12),
     paddingVertical: rs(8),
-  },
-  couponButtonText: {
-    fontSize: rs(12),
-    fontWeight: '600',
-    color: '#fff',
-  },
+  }
 });

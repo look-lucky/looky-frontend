@@ -11,7 +11,7 @@ export default function LandingPage() {
   const { devSetUserType } = useAuth();
 
   const handleStudentPress = () => {
-    router.replace("/auth/login-main");
+    router.replace("/auth");
   };
 
   const handleOwnerPress = () => {

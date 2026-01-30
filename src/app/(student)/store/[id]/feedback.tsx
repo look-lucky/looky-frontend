@@ -1,3 +1,5 @@
+import { StoreReportRequestReasonsItem } from '@/src/api/generated.schemas';
+import { useReportStore } from '@/src/api/store';
 import { AppButton } from '@/src/shared/common/app-button';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
@@ -6,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -14,15 +17,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const FEEDBACK_OPTIONS = [
-  { id: 'no_benefit', label: '매장이 제휴혜택을 제공하지 않아요.' },
-  { id: 'different_benefit', label: '매장이 실제로는 다른 제휴혜택을 제공해요.' },
-  { id: 'wrong_name', label: '매장 이름이 잘못되었어요.' },
-  { id: 'wrong_address', label: '매장 주소가 잘못되었어요.' },
-  { id: 'wrong_phone', label: '매장 전화번호가 잘못되었어요.' },
-  { id: 'wrong_hours', label: '매장 휴무일 정보가 잘못되었어요.' },
-  { id: 'wrong_menu', label: '매장 메뉴가 잘못되었어요.' },
-  { id: 'other', label: '기타' },
+const FEEDBACK_OPTIONS: {
+  id: StoreReportRequestReasonsItem;
+  label: string;
+}[] = [
+  { id: 'BENEFIT_REFUSAL', label: '매장이 제휴혜택을 제공하지 않아요.' },
+  { id: 'BENEFIT_MISMATCH', label: '매장이 실제로는 다른 제휴혜택을 제공해요.' },
+  { id: 'EVENT_NOT_HELD', label: '매장이 이벤트를 진행하지 않아요.' },
+  { id: 'CLOSED_OR_MOVED', label: '매장이 폐업 또는 이전했어요.' },
+  { id: 'INFO_ERROR', label: '매장 정보가 잘못되었어요.' },
+  { id: 'LOCATION_MISMATCH', label: '매장 위치가 잘못되었어요.' },
+  { id: 'ETC', label: '기타' },
 ];
 
 export default function StoreFeedbackScreen() {
@@ -30,19 +35,37 @@ export default function StoreFeedbackScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<
+    StoreReportRequestReasonsItem[]
+  >([]);
   const [detailContent, setDetailContent] = useState('');
 
-  const isOtherSelected = selectedOptions.includes('other');
+  const { mutate: reportStore, isPending } = useReportStore({
+    mutation: {
+      onSuccess: () => {
+        router.replace(`/store/${id}/feedback-complete`);
+      },
+      onError: (error: any) => {
+        if (error?.status === 409) {
+          Alert.alert('알림', '이미 신고한 매장입니다.');
+        } else {
+          Alert.alert('오류', '신고 등록에 실패했습니다. 다시 시도해주세요.');
+        }
+      },
+    },
+  });
+
+  const isOtherSelected = selectedOptions.includes('ETC');
   const isSubmitDisabled =
     selectedOptions.length === 0 ||
-    (isOtherSelected && detailContent.trim() === '');
+    (isOtherSelected && detailContent.trim() === '') ||
+    isPending;
 
   const handleBack = () => {
     router.back();
   };
 
-  const toggleOption = (optionId: string) => {
+  const toggleOption = (optionId: StoreReportRequestReasonsItem) => {
     setSelectedOptions((prev) =>
       prev.includes(optionId)
         ? prev.filter((id) => id !== optionId)
@@ -53,14 +76,13 @@ export default function StoreFeedbackScreen() {
   const handleSubmit = () => {
     if (isSubmitDisabled) return;
 
-    // TODO: API 호출
-    console.log('Submit feedback:', {
-      storeId: id,
-      selectedOptions,
-      detailContent,
+    reportStore({
+      storeId: Number(id),
+      data: {
+        reasons: selectedOptions,
+        detail: detailContent.trim() || undefined,
+      },
     });
-
-    router.replace(`/store/${id}/feedback-complete`);
   };
 
   return (

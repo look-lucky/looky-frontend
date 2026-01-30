@@ -1,12 +1,15 @@
+import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
+import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
 import { rs } from '@/src/shared/theme/scale';
+import { System, Text } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import {
-    Image,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,6 +31,7 @@ interface StoreHeaderProps {
   isPartner: boolean;
   onBack: () => void;
   onLike: () => void;
+  onUniversityChange?: (universityId: number) => void;
 }
 
 // ============================================
@@ -103,10 +107,10 @@ function StoreInfoSection({
   return (
     <View style={styles.infoContainer}>
       <View style={styles.titleRow}>
-        <ThemedText style={styles.name}>{name}</ThemedText>
+        <ThemedText type='title' lightColor={Text.primary}>{name}</ThemedText>
         <View style={styles.ratingContainer}>
-          <Ionicons name="star" size={rs(16)} color="#FFB800" />
-          <ThemedText style={styles.rating}>{rating}</ThemedText>
+          <Ionicons name="star" size={rs(16)} color={System.star} />
+          <ThemedText type='defaultSemiBold' lightColor={Text.primary}>{rating}</ThemedText>
         </View>
       </View>
 
@@ -137,13 +141,15 @@ function StoreInfoSection({
 function TagSection({
   university,
   isPartner,
+  onUniversityPress,
 }: {
   university: string;
   isPartner: boolean;
+  onUniversityPress: () => void;
 }) {
   return (
     <View style={styles.tagContainer}>
-      <TouchableOpacity style={styles.universityTag}>
+      <TouchableOpacity style={styles.universityTag} onPress={onUniversityPress}>
         <Ionicons name="school-outline" size={rs(14)} color="#34b262" />
         <ThemedText style={styles.universityText}>{university}</ThemedText>
         <Ionicons name="chevron-down" size={rs(12)} color="#666" />
@@ -176,7 +182,22 @@ export function StoreHeader({
   isPartner,
   onBack,
   onLike,
+  onUniversityChange,
 }: StoreHeaderProps) {
+  const [showUniversityModal, setShowUniversityModal] = useState(false);
+
+  // 현재 선택된 대학의 id 찾기 (label로 매칭)
+  const selectedUniversityId =
+    UNIVERSITY_OPTIONS.find((opt) => opt.label === university)?.id ?? 0;
+
+  const handleUniversitySelect = (id: string | number) => {
+    const numericId = typeof id === 'string' ? Number(id) : id;
+    const selected = UNIVERSITY_OPTIONS.find((opt) => opt.id === numericId);
+    if (selected && onUniversityChange) {
+      onUniversityChange(numericId);
+    }
+  };
+
   return (
     <>
       <MainImageSection
@@ -195,8 +216,21 @@ export function StoreHeader({
           address={address}
           openHours={openHours}
         />
-        <TagSection university={university} isPartner={isPartner} />
+        <TagSection
+          university={university}
+          isPartner={isPartner}
+          onUniversityPress={() => setShowUniversityModal(true)}
+        />
       </View>
+
+      <SelectModal
+        visible={showUniversityModal}
+        options={UNIVERSITY_OPTIONS}
+        selectedId={selectedUniversityId}
+        onSelect={handleUniversitySelect}
+        onClose={() => setShowUniversityModal(false)}
+        title="다른 제휴혜택 보기"
+      />
     </>
   );
 }
@@ -278,21 +312,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  name: {
-    fontSize: rs(24),
-    fontWeight: '700',
-    color: '#000000',
-    flex: 1,
-  },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(4),
-  },
-  rating: {
-    fontSize: rs(16),
-    fontWeight: '600',
-    color: '#000000',
   },
   categoryRow: {
     flexDirection: 'row',
