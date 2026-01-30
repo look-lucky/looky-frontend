@@ -63,6 +63,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     "expo-web-browser",
+    "expo-image-picker",
+    "@react-native-community/datetimepicker",
     [
       "@react-native-seoul/kakao-login",
       {
