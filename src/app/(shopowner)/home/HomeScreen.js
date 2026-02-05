@@ -333,7 +333,7 @@ export default function HomeScreen({ navigation }) {
               </View>
 
               {/* (4) 네잎 */}
-              <View style={styles.gradeItemBox}>
+              <View style={styles.gradeItemBox}> 
                 <Image
                   source={require("@/assets/images/shopowner/4clover.png")}
                   style={styles.gradeImage}
@@ -359,13 +359,7 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5", paddingTop: Platform.OS === "android" ? StatusBar.currentHeight: 0 },
   scrollContent: { paddingTop: rs(10), paddingBottom: rs(40), paddingHorizontal: rs(20) },
-  pageTitle: {
-    fontSize: rs(24),
-    fontWeight: "bold",
-    marginBottom: rs(20),
-    color: "#333",
-  },
-
+  pageTitle: { fontSize: rs(24), fontWeight: "bold", marginBottom: rs(20), color: "#333", },
   logo: { width: rs(120), height: rs(30), marginBottom: rs(10), marginLeft: 0 },
 
   // 프로필 카드
@@ -383,7 +377,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: rs(4),
     elevation: 3,
-  },
+ },
   iconBox: {
     width: rs(62),
     height: rs(62),
@@ -395,18 +389,8 @@ const styles = StyleSheet.create({
   },
   profileImage: { width: "100%", height: "100%" },
   textContainer: { flex: 1, justifyContent: "center" },
-  storeName: {
-    fontSize: rs(15),
-    fontWeight: "700",
-    color: "black",
-    lineHeight: rs(24),
-  },
-  greeting: {
-    fontSize: rs(15),
-    fontWeight: "500",
-    color: "#828282",
-    lineHeight: rs(24),
-  },
+  storeName: { fontSize: rs(15), fontWeight: "700", color: "black", lineHeight: rs(24),},
+  greeting: { fontSize: rs(15), fontWeight: "500", color: "#828282", lineHeight: rs(24), },
 
   // 등급 카드
   levelCardShadow: {
@@ -420,12 +404,7 @@ const styles = StyleSheet.create({
     borderRadius: rs(8),
     marginBottom: rs(25),
   },
-  levelCard: {
-    borderRadius: rs(8),
-    overflow: "hidden",
-    padding: rs(20),
-    position: "relative",
-  },
+  levelCard: { borderRadius: rs(8), overflow: "hidden", padding: rs(20), position: "relative", },
   levelImage: { width: "100%", height: "100%" },
   decoCircleTop: {
     position: "absolute",

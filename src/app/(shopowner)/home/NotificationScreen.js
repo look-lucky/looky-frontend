@@ -53,7 +53,6 @@ export default function NotificationScreen() {
   const navigation = useNavigation();
   const [filter, setFilter] = useState('all'); // 'all' | 'unread'
 
-  // 아이콘 및 색상 결정 함수
   const getIconInfo = (type) => {
     switch (type) {
       case 'review':
@@ -74,7 +73,7 @@ export default function NotificationScreen() {
     return (
       <View style={[
         styles.itemContainer, 
-        item.isUnread && styles.itemUnread // 미확인 항목 배경색 적용
+        item.isUnread && styles.itemUnread
       ]}>
         {/* 1. 아이콘 */}
         <View style={[styles.iconBox, { backgroundColor: iconInfo.bg }]}>
@@ -209,37 +208,16 @@ const styles = StyleSheet.create({
     minWidth: 55,
     height: 30,
   },
-  filterBtnActive: {
-    backgroundColor: '#34B262', // 활성 녹색
-  },
-  filterBtnInactive: {
-    backgroundColor: 'rgba(218, 218, 218, 0.50)', // 비활성 회색
-  },
-  filterText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
+  filterBtnActive: { backgroundColor: '#34B262',},
+  filterBtnInactive: { backgroundColor: 'rgba(218, 218, 218, 0.50)', },
+  filterText: { fontSize: 13, fontWeight: '500', },
   textActive: { color: 'white' },
   textInactive: { color: '#828282' },
 
   // 미확인 버튼 안 빨간 점(원숫자로 바꿔야함)
-  redDotBox: {
-    marginLeft: 4,
-    width: 6, 
-    height: 6, 
-    justifyContent: 'center', 
-    alignItems: 'center'
-  },
-  redDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#FF3E41',
-  },
-  totalCount: {
-    fontSize: 11,
-    color: '#828282',
-  },
+  redDotBox: { marginLeft: 4, width: 6,  height: 6,  justifyContent: 'center',  alignItems: 'center' },
+  redDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FF3E41', },
+  totalCount: { fontSize: 11, color: '#828282',},
 
   // 리스트 카드 (흰색 박스)
   listCard: {
@@ -255,55 +233,17 @@ const styles = StyleSheet.create({
     elevation: 3,
     overflow: 'hidden',
   },
-  listContent: {
-    paddingVertical: 0,
-  },
+  listContent: { paddingVertical: 0, },
   
   // 리스트 아이템
-  itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 20, // 높이 조절
-    paddingHorizontal: 16,
-    backgroundColor: 'white',
-  },
-  itemUnread: {
-    backgroundColor: 'rgba(234, 246, 238, 0.50)',
-  },
+  itemContainer: { flexDirection: 'row', alignItems: 'center', paddingVertical: 20, paddingHorizontal: 16, backgroundColor: 'white',},
+  itemUnread: { backgroundColor: 'rgba(234, 246, 238, 0.50)',},
   
-  iconBox: {
-    width: 25,
-    height: 25,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  textContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  itemText: {
-    fontSize: 11,
-    color: 'black',
-    marginBottom: 4,
-    lineHeight: 16,
-  },
-  itemTime: {
-    fontSize: 10,
-    color: '#828282',
-  },
-  unreadDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#34B262',
-    marginLeft: 8,
-  },
+  iconBox: { width: 25, height: 25, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 10,},
+  textContainer: { flex: 1, justifyContent: 'center',},
+  itemText: { fontSize: 11, color: 'black', marginBottom: 4, lineHeight: 16, },
+  itemTime: { fontSize: 10, color: '#828282', },
+  unreadDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#34B262', marginLeft: 8, },
   
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(130, 130, 130, 0.15)',
-    width: '100%',
-  },
+  divider: { height: 1, backgroundColor: 'rgba(130, 130, 130, 0.15)', width: '100%', },
 });

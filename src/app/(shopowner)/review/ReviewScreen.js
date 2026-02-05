@@ -3,14 +3,14 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-// 1. 더미 데이터 (배고프당, 니어딜화이팅)
+// 1. 더미 데이터
 const INITIAL_REVIEWS = [
   {
     id: 1,
     author: '배고프당',
-    profileColor: '#5F6AA9', // 프로필 원 색상
+    profileColor: '#5F6AA9',
     date: '2026.01.08',
-    rating: 4.5, // 별점 (소수점 가능하지만 여기선 4개/5개로 표현)
+    rating: 4.5,
     content: '떡볶이가 정말 맛있어요! 매콤달콤한 맛이 최고입니다. 다음에 \n또 올게요~',
     images: [1, 2, 3], // 이미지 있을 경우 (더미)
     status: 'unanswered', // 미답변
@@ -69,7 +69,7 @@ export default function ReviewScreen({navigation}) {
     Alert.alert('완료', '답글이 등록되었습니다.');
   };
 
-  // 별점 렌더링 함수 (노란 별)
+  // 별점 렌더링 함수
   const renderStars = (count) => {
     const stars = [];
     for (let i = 0; i < 5; i++) {
