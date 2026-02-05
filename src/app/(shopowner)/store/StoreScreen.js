@@ -1,7 +1,15 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView,
+  ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
+} from 'react-native';
+
+// API Hooks Import
+import { useCreateItem, useDeleteItem, useGetItems, useUpdateItem } from '@/src/api/item';
+import { useGetMyStores, useUpdateStore } from '@/src/api/store';
 
 // # Helper Functions & Constants
 const TIME_12H = [];
@@ -45,6 +53,28 @@ const getFormatDate = (date) => {
 // # Component: StoreScreen
 export default function StoreScreen() {
   
+  // 1. API Hooks 연결 (Store & Item)
+  
+  // (1) 내 가게 조회
+  const { data: storeDataResponse, isLoading: isStoreLoading, refetch: refetchStore } = useGetMyStores();
+  const [myStoreId, setMyStoreId] = useState(null);
+
+  // (2) 가게 정보 수정
+  const updateStoreMutation = useUpdateStore();
+
+  // (3) 메뉴(상품) 목록 조회
+  // myStoreId가 있을 때만 쿼리 실행 (enabled 옵션)
+  const { 
+    data: itemsDataResponse, 
+    isLoading: isItemsLoading, 
+    refetch: refetchItems 
+  } = useGetItems(myStoreId, { query: { enabled: !!myStoreId } });
+
+  // (4) 메뉴 추가/수정/삭제 Mutations
+  const createItemMutation = useCreateItem();
+  const updateItemMutation = useUpdateItem();
+  const deleteItemMutation = useDeleteItem();
+
   // # State: UI Control
   const [activeTab, setActiveTab] = useState('info');
   const [basicModalVisible, setBasicModalVisible] = useState(false);
@@ -59,7 +89,7 @@ export default function StoreScreen() {
 
   // # State: Store Data
   const [storeInfo, setStoreInfo] = useState({
-    categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImage: null
+    name: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImage: null
   });
 
   const initialHours = ['월', '화', '수', '목', '금', '토', '일'].map(day => ({
@@ -67,30 +97,26 @@ export default function StoreScreen() {
   }));
   const [operatingHours, setOperatingHours] = useState(initialHours);
 
-  // # State: Calendar & Status
+  // # State: Calendar
   const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
   const [selectedHolidays, setSelectedHolidays] = useState(['2026-01-19', '2026-01-20', '2026-01-21', '2026-01-22', '2026-01-23']);
   const [isPaused, setIsPaused] = useState(false);
 
   // # State: Menu Management
+  // 카테고리는 API에 별도 엔드포인트가 없으므로 로컬 관리 + 아이템에서 추출(확인필요)
   const [menuCategories, setMenuCategories] = useState(['메인메뉴', '사이드', '음료/주류', '세트메뉴']);
   const [selectedCategory, setSelectedCategory] = useState('메인메뉴');
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   
-  // 메뉴 추가/수정 모달 관련 상태
   const [menuModalVisible, setMenuModalVisible] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false); // true: 수정, false: 추가
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [targetItemId, setTargetItemId] = useState(null); // 수정할 아이템 ID
+
+  // 메뉴 폼 데이터
   const [menuForm, setMenuForm] = useState({
       name: '', price: '', desc: '', category: '메인메뉴', 
       isRepresentative: false, badge: null, isSoldOut: false, isHidden: false
   });
-
-  // # State: Menu List (Dummy Data)
-  const [menuList, setMenuList] = useState([
-    { id: 1, name: '떡볶이', price: '4,500', desc: '매콤달콤한 국민 간식', badge: 'BEST', isRepresentative: true, isSoldOut: false, image: null },
-    { id: 2, name: '순대', price: '4,000', desc: '찹쌀순대와 당면순대 반반', badge: null, isRepresentative: false, isSoldOut: false, image: null },
-    { id: 3, name: '크림떡볶이', price: '6,500', desc: '꾸우덕한 크림이 가득~!', badge: 'BEST', isRepresentative: false, isSoldOut: true, image: null },
-  ]);
 
   // # State: Edit Temp Data
   const [editBasicData, setEditBasicData] = useState({ ...storeInfo });
@@ -101,7 +127,165 @@ export default function StoreScreen() {
   const ALL_VIBES = ['1인 혼밥', '회식', '모임', '야식', '데이트'];
   const BADGE_TYPES = ['BEST', 'NEW', 'HOT', '비건'];
 
-  // # Logic Functions
+  // 2. 데이터 바인딩 (서버 데이터 -> UI State)
+
+  // 2-1. 내 가게 정보 바인딩
+  useEffect(() => {
+    if (storeDataResponse?.data) {
+        const myStore = Array.isArray(storeDataResponse.data) ? storeDataResponse.data[0] : storeDataResponse.data;
+        if (myStore) {
+            setMyStoreId(myStore.id);
+            setStoreInfo({
+                name: myStore.name || '',
+                categories: myStore.category ? [myStore.category] : [],
+                vibes: [], 
+                intro: myStore.introduction || '',
+                address: myStore.address || '',
+                detailAddress: myStore.addressDetail || '',
+                phone: myStore.phoneNumber || '',
+                logoImage: myStore.imageUrl || null,
+                bannerImage: null
+            });
+        }
+    }
+  }, [storeDataResponse]);
+
+  // 2-2. 메뉴 리스트 데이터 가공
+  const rawMenuList = itemsDataResponse?.data || [];
+  
+  const menuList = rawMenuList
+    .map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price ? item.price.toString() : '0',
+        desc: item.description || '', // API: description <-> UI: desc
+        category: item.category || '메인메뉴',
+        isRepresentative: item.isRecommended || false, // API: isRecommended <-> UI: isRepresentative
+        isSoldOut: item.isSoldOut || false,
+        isHidden: item.isHidden || false, // API에 필드가 있다고 가정 (없으면 로컬 처리)
+        badge: item.badge || null, // API에 필드가 있다고 가정
+        image: item.imageUrl || null
+    }))
+    .filter(item => item.category === selectedCategory);
+
+
+  // 액션 핸들러 (API 호출)
+
+  // [Store] 기본 정보 저장
+  const handleBasicSave = () => {
+    console.log("🖱️ 완료 버튼 눌림!"); 
+    console.log("현재 myStoreId:", myStoreId);
+    console.log("보낼 데이터:", editBasicData);
+
+    // 가게 ID가 없는 경우
+    if (!myStoreId) {
+        Alert.alert("오류", "가게 정보를 찾을 수 없습니다.\n잠시 후 다시 시도해 주세요.");
+        return;
+    }
+
+    // 서버로 보낼 데이터 구성
+    const updateBody = {
+        name: storeInfo.name, // 이름은 변경하지 않음 (기존 값 유지)
+        introduction: editBasicData.intro,
+        address: editBasicData.address,
+        addressDetail: editBasicData.detailAddress,
+        phoneNumber: editBasicData.phone,
+    };
+
+    // API 요청 보내기
+    updateStoreMutation.mutate(
+        { storeId: myStoreId, data: updateBody },
+        {
+            onSuccess: () => {
+                console.log("✅ 수정 성공!");
+                Alert.alert("성공", "가게 정보가 수정되었습니다.");
+                refetchStore();
+                setBasicModalVisible(false);
+            },
+            onError: (err) => {
+                console.error("❌ 수정 실패:", err);
+                // 에러 메시지가 서버에서 오는지 확인필요
+                const msg = err?.response?.data?.message || "수정에 실패했습니다.";
+                Alert.alert("실패", msg);
+            }
+        }
+    );
+  };
+
+  // [Menu] 메뉴 추가/수정 저장
+  const handleMenuSave = () => {
+      if (!myStoreId) return;
+
+      // 공통 Payload
+      const payload = {
+          name: menuForm.name,
+          price: parseInt(menuForm.price.replace(/,/g, ''), 10) || 0,
+          description: menuForm.desc,
+          category: menuForm.category,
+          isRecommended: menuForm.isRepresentative,
+          isSoldOut: menuForm.isSoldOut,
+          // badge, isHidden 등은 API 스펙에 따라 추가 필요 (현재는 기본 필드만)
+          // imageUrl: ... (이미지 업로드는 별도 로직 필요)
+      };
+
+      if (isEditMode && targetItemId) {
+          updateItemMutation.mutate(
+              { itemId: targetItemId, data: payload },
+              {
+                  onSuccess: () => {
+                      Alert.alert("성공", "메뉴가 수정되었습니다.");
+                      refetchItems();
+                      setMenuModalVisible(false);
+                  },
+                  onError: (err) => {
+                      console.error(err);
+                      Alert.alert("실패", "메뉴 수정 실패");
+                  }
+              }
+          );
+      } else {
+          // 추가 (Create)
+          createItemMutation.mutate(
+              { storeId: myStoreId, data: payload },
+              {
+                  onSuccess: () => {
+                      Alert.alert("성공", "새 메뉴가 등록되었습니다.");
+                      refetchItems();
+                      setMenuModalVisible(false);
+                  },
+                  onError: (err) => {
+                      console.error(err);
+                      Alert.alert("실패", "메뉴 등록 실패");
+                  }
+              }
+          );
+      }
+  };
+
+  // [Menu] 즉시 상태 변경 (품절, 대표메뉴) - 낙관적 업데이트 대신 API 호출 후 리패치 방식 사용
+  const handleQuickUpdate = (item, field, value) => {
+      // 기존 데이터 + 변경된 필드
+      const payload = {
+          name: item.name,
+          price: parseInt(item.price.replace(/,/g, ''), 10),
+          description: item.desc,
+          category: item.category,
+          isRecommended: item.isRepresentative,
+          isSoldOut: item.isSoldOut,
+          ...(field === 'isSoldOut' && { isSoldOut: value }),
+          ...(field === 'isRecommended' && { isRecommended: value }),
+      };
+
+      updateItemMutation.mutate(
+          { itemId: item.id, data: payload },
+          {
+              onSuccess: () => refetchItems(), // 성공 시 목록 갱신
+              onError: () => Alert.alert("오류", "상태 변경에 실패했습니다.")
+          }
+      );
+  };
+
+  // # UI Logic Helpers
   const openBasicEditModal = () => {
     const rawPhone = storeInfo.phone ? storeInfo.phone.replace(/-/g, '') : '';
     setEditBasicData({ ...storeInfo, phone: rawPhone });
@@ -122,8 +306,11 @@ export default function StoreScreen() {
     }
   };
 
-  const handleBasicSave = () => { setStoreInfo({ ...editBasicData }); setBasicModalVisible(false); };
-  const handleHoursSave = () => { setOperatingHours(editHoursData); setHoursModalVisible(false); };
+  const handleHoursSave = () => {
+    setOperatingHours(editHoursData); 
+    setHoursModalVisible(false);
+    Alert.alert("알림", "영업시간 로컬 저장 완료 (API 연동 필요)");
+  };
 
   const toggleHoliday = (index) => {
     const newHours = [...editHoursData];
@@ -171,17 +358,10 @@ export default function StoreScreen() {
     return days;
   };
 
-  // # Menu List Logic
-  const toggleMenuSoldOut = (id) => {
-    setMenuList(prev => prev.map(item => item.id === id ? { ...item, isSoldOut: !item.isSoldOut } : item));
-  };
-  const toggleMenuRepresentative = (id) => {
-    setMenuList(prev => prev.map(item => item.id === id ? { ...item, isRepresentative: !item.isRepresentative } : item));
-  };
-
   // # Menu Modal Logic
   const openAddMenuModal = () => {
       setIsEditMode(false);
+      setTargetItemId(null);
       setMenuForm({
           name: '', price: '', desc: '', category: selectedCategory,
           isRepresentative: false, badge: null, isSoldOut: false, isHidden: false
@@ -191,12 +371,29 @@ export default function StoreScreen() {
 
   const openEditMenuModal = (item) => {
       setIsEditMode(true);
+      setTargetItemId(item.id);
       setMenuForm({
-          name: item.name, price: item.price.replace(/,/g, '').replace('원', ''), desc: item.desc, category: selectedCategory,
-          isRepresentative: item.isRepresentative, badge: item.badge, isSoldOut: item.isSoldOut, isHidden: false
+          name: item.name, 
+          price: item.price, 
+          desc: item.desc, 
+          category: item.category,
+          isRepresentative: item.isRepresentative, 
+          badge: item.badge, 
+          isSoldOut: item.isSoldOut, 
+          isHidden: item.isHidden
       });
       setMenuModalVisible(true);
   };
+
+  // 로딩 화면
+  if (isStoreLoading) {
+      return (
+          <View style={[styles.container, {justifyContent:'center', alignItems:'center'}]}>
+              <ActivityIndicator size="large" color="#34B262" />
+              <Text style={{marginTop: 10, color:'#828282'}}>가게 정보를 불러오는 중...</Text>
+          </View>
+      );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -220,12 +417,14 @@ export default function StoreScreen() {
         {/* ==================== 매장 정보 탭 ==================== */}
         {activeTab === 'info' ? (
           <View style={{ gap: rs(20) }}>
-            {/* Card 1: 기본 정보 */}
             <View style={styles.infoCard}>
               <View style={styles.cardHeader}>
                 <View style={styles.headerTitleRow}>
                   <View style={styles.iconCircle}><Ionicons name="storefront" size={rs(14)} color="#34B262" /></View>
-                  <Text style={styles.headerTitle}>기본 정보</Text>
+                  <View>
+                    <Text style={styles.headerTitle}>기본 정보</Text>
+                    {storeInfo.name ? <Text style={styles.subTitle}>{storeInfo.name}</Text> : null}
+                  </View>
                 </View>
                 <TouchableOpacity style={styles.editButton} onPress={openBasicEditModal}>
                   <Text style={styles.editButtonText}>수정</Text>
@@ -239,21 +438,14 @@ export default function StoreScreen() {
               <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{storeInfo.phone}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
             </View>
 
-            {/* Card 2: 영업시간 */}
+            {/* 영업시간 (UI Only - API 없음) */}
             <View style={styles.infoCard}>
               <View style={styles.cardHeader}>
                   <View style={styles.headerTitleRow}>
-                  <View style={styles.timeIconCircle}>
-                      <Ionicons name="time" size={rs(18)} color="#34B262" />
-                  </View>
-                  <View>
-                      <Text style={styles.headerTitle}>영업시간</Text>
-                      <Text style={styles.subTitle}>요일별 설정</Text>
-                  </View>
+                  <View style={styles.timeIconCircle}><Ionicons name="time" size={rs(18)} color="#34B262" /></View>
+                  <View><Text style={styles.headerTitle}>영업시간</Text><Text style={styles.subTitle}>요일별 설정</Text></View>
                 </View>
-                <TouchableOpacity style={styles.editButton} onPress={openHoursEditModal}>
-                  <Text style={styles.editButtonText}>수정</Text>
-                </TouchableOpacity>
+                <TouchableOpacity style={styles.editButton} onPress={openHoursEditModal}><Text style={styles.editButtonText}>수정</Text></TouchableOpacity>
               </View>
               <View style={{ gap: rs(8) }}>
                 {operatingHours.map((item, index) => (
@@ -265,23 +457,23 @@ export default function StoreScreen() {
               </View>
             </View>
             
-            {/* Card 3: 매장 소식 */}
+            {/* 매장 소식 (Placeholder) */}
             <TouchableOpacity style={[styles.infoCard, { paddingVertical: rs(22) }]} activeOpacity={0.7} onPress={() => handleMockAction("매장 소식 페이지로 이동 (준비중)")}>
               <View style={styles.newsContentRow}>
                 <View style={styles.newsLeftSection}>
-                   <View style={styles.timeIconCircle}><Ionicons name="megaphone" size={rs(18)} color="#34B262" /></View>
-                   <View><Text style={styles.headerTitle}>매장 소식</Text><Text style={styles.subTitle}>고객에게 전할 공지사항</Text></View>
+                    <View style={styles.timeIconCircle}><Ionicons name="megaphone" size={rs(18)} color="#34B262" /></View>
+                    <View><Text style={styles.headerTitle}>매장 소식</Text><Text style={styles.subTitle}>고객에게 전할 공지사항</Text></View>
                 </View>
                 <Ionicons name="chevron-forward" size={rs(18)} color="#34B262" />
               </View>
             </TouchableOpacity>
 
-            {/* Card 4: 휴무일 캘린더 */}
+            {/* 휴무일 캘린더 (UI Only) */}
             <View style={styles.infoCard}>
-               <View style={styles.cardHeader}>
-                 <View style={styles.headerTitleRow}>
-                  <View style={styles.timeIconCircle}><Ionicons name="calendar" size={rs(18)} color="#34B262" /></View>
-                  <View><Text style={styles.headerTitle}>휴무일</Text><Text style={styles.subTitle}>임시 휴무일을 터치로 지정</Text></View>
+                <View style={styles.cardHeader}>
+                  <View style={styles.headerTitleRow}>
+                   <View style={styles.timeIconCircle}><Ionicons name="calendar" size={rs(18)} color="#34B262" /></View>
+                   <View><Text style={styles.headerTitle}>휴무일</Text><Text style={styles.subTitle}>임시 휴무일을 터치로 지정</Text></View>
                 </View>
               </View>
               <View style={styles.calendarControl}>
@@ -300,18 +492,11 @@ export default function StoreScreen() {
                       const isPast = dateStr < getFormatDate(new Date());
                       const dayOfWeek = date.getDay();
                       
-                      const yesterday = new Date(date); yesterday.setDate(date.getDate() - 1);
-                      const tomorrow = new Date(date); tomorrow.setDate(date.getDate() + 1);
-                      const isPrevSelected = selectedHolidays.includes(getFormatDate(yesterday));
-                      const isNextSelected = selectedHolidays.includes(getFormatDate(tomorrow));
-
                       const cellStyle = [styles.dayBtn];
                       const textStyle = [styles.dayTextNum];
                       if (dayOfWeek === 0) textStyle.push({color: '#FF3E41'}); else if (dayOfWeek === 6) textStyle.push({color: '#007AFF'});
                       if (isSelected) {
                           cellStyle.push(styles.dayBtnSelected); textStyle.push({color: 'white', fontWeight: '700'});
-                          if (isPrevSelected && dayOfWeek !== 0) cellStyle.push(styles.connectLeft);
-                          if (isNextSelected && dayOfWeek !== 6) cellStyle.push(styles.connectRight);
                       }
                       if (isPast) textStyle.push({color: '#E0E0E0'});
 
@@ -320,7 +505,7 @@ export default function StoreScreen() {
               </View>
             </View>
 
-            {/* Card 5: 영업 일시 중지 */}
+            {/* 영업 일시 중지 (UI Only) */}
             <View style={[styles.infoCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: rs(15), gap: rs(10) }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(10), flex: 1 }}>
                     <View style={styles.alertIconCircle}><Ionicons name="warning" size={rs(18)} color="#DC2626" /></View>
@@ -333,7 +518,7 @@ export default function StoreScreen() {
             <View style={{height: rs(20)}} />
           </View>
         ) : (
-          /* ==================== 메뉴 관리 탭 ==================== */
+          /* ==================== 메뉴 관리 탭 (API 연동 완료) ==================== */
           <View style={{flex: 1}}>
               <View style={styles.categoryScrollContainer}>
                 <View style={{ flex: 1 }}>
@@ -352,9 +537,11 @@ export default function StoreScreen() {
               </View>
 
               {/* 메뉴 리스트 영역 */}
-              {selectedCategory === '메인메뉴' ? (
+              {isItemsLoading ? (
+                  <ActivityIndicator size="small" color="#34B262" style={{marginVertical: 20}} />
+              ) : menuList.length > 0 ? (
                   <View style={styles.menuListContainer}>
-                     {menuList.map((item) => (
+                      {menuList.map((item) => (
                         <View key={item.id} style={styles.menuCard}>
                             <View style={styles.dragHandle}>
                                 <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
@@ -372,31 +559,36 @@ export default function StoreScreen() {
                                         <Text style={styles.menuName}>{item.name}</Text>
                                         {item.badge && <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{item.badge}</Text></View>}
                                     </View>
-                                    <Text style={styles.menuPrice}>{item.price}원</Text>
+                                    <Text style={styles.menuPrice}>{Number(item.price).toLocaleString()}원</Text>
                                     <Text style={styles.menuDesc} numberOfLines={1}>{item.desc}</Text>
                                 </View>
                             </View>
                             <View style={styles.menuActions}>
-                                <TouchableOpacity onPress={() => toggleMenuRepresentative(item.id)}>
+                                {/* 대표메뉴 토글 */}
+                                <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isRecommended', !item.isRepresentative)}>
                                     <View style={[styles.actionCircle, item.isRepresentative ? {backgroundColor: '#FFFACA'} : {backgroundColor: '#F5F5F5'}]}>
                                         <Ionicons name="star" size={rs(12)} color={item.isRepresentative ? "#EAB308" : "#DADADA"} />
                                     </View>
                                 </TouchableOpacity>
+                                {/* 품절 토글 */}
                                 <View style={styles.soldOutContainer}>
                                     <Text style={styles.soldOutLabel}>품절</Text>
-                                    <TouchableOpacity onPress={() => toggleMenuSoldOut(item.id)}>
+                                    <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isSoldOut', !item.isSoldOut)}>
                                         <View style={[styles.soldOutSwitch, item.isSoldOut ? styles.soldOutOn : styles.soldOutOff]}><View style={styles.soldOutKnob} /></View>
                                     </TouchableOpacity>
                                 </View>
+                                {/* 수정 */}
                                 <TouchableOpacity onPress={() => openEditMenuModal(item)}>
                                     <Ionicons name="pencil" size={rs(16)} color="#828282" />
                                 </TouchableOpacity>
                             </View>
                         </View>
-                     ))}
+                      ))}
                   </View>
               ) : (
-                  <View style={{height: rs(200)}} />
+                  <View style={{height: rs(200), justifyContent:'center', alignItems:'center'}}>
+                      <Text style={{color:'#ccc'}}>등록된 메뉴가 없습니다.</Text>
+                  </View>
               )}
 
               {/* + 메뉴 추가하기 버튼 (하단) */}
@@ -406,40 +598,17 @@ export default function StoreScreen() {
               </TouchableOpacity>
               <View style={{height: rs(30)}} />
 
-              {/* 카테고리 관리 모달 */}
+              {/* 카테고리 관리 모달 (UI Only) */}
               <Modal transparent={true} visible={categoryModalVisible} animationType="fade" onRequestClose={() => setCategoryModalVisible(false)}>
                   <TouchableOpacity style={styles.catModalOverlay} activeOpacity={1} onPress={() => setCategoryModalVisible(false)}>
                       <View style={styles.catModalContent}>
-                            <View style={styles.catModalItemOrange}>
-                                <View style={{width: rs(25), height: rs(20), backgroundColor: '#F6A823', borderRadius: rs(8)}} />
-                                <View style={styles.catModalIconBox}><Ionicons name="reorder-two" size={rs(12)} color="white" /></View>
-                                <Text style={styles.catModalTextWhite}>메인메뉴</Text>
-                            </View>
-                            <View style={styles.catModalItem}>
-                                <View style={{width: rs(25), height: rs(20), backgroundColor: 'white', borderRadius: rs(8)}} />
-                                <View style={styles.catModalIconBoxWhite}><Ionicons name="reorder-two" size={rs(12)} color="#DADADA" /></View>
-                                <Text style={styles.catModalTextBlack}>사이드</Text>
-                            </View>
-                            <View style={styles.catModalItem}>
-                                <View style={{width: rs(25), height: rs(20), backgroundColor: 'white', borderRadius: rs(8)}} />
-                                <View style={styles.catModalIconBoxWhite}><Ionicons name="reorder-two" size={rs(12)} color="#DADADA" /></View>
-                                <Text style={styles.catModalTextBlack}>음료/주류</Text>
-                            </View>
-                            <View style={styles.catModalItem}>
-                                <View style={{width: rs(25), height: rs(20), backgroundColor: 'white', borderRadius: rs(8)}} />
-                                <View style={styles.catModalIconBoxWhite}><Ionicons name="reorder-two" size={rs(12)} color="#DADADA" /></View>
-                                <Text style={styles.catModalTextBlack}>세트메뉴</Text>
-                            </View>
-                            <TouchableOpacity style={[styles.catModalItem, { gap: rs(2), marginTop: rs(10) }]}>
-                                <View style={{width: rs(25), height: rs(20), backgroundColor: 'white', borderRadius: rs(8)}} />
-                                <View style={styles.catModalIconBoxWhite}><Ionicons name="add" size={rs(12)} color="#828282" /></View>
-                                <View style={{flexDirection:'row', alignItems:'center', gap: rs(2)}}>
-                                     <View style={{width:rs(14), height:rs(14), justifyContent:'center', alignItems:'center', overflow:'hidden'}}>
-                                         <View style={{width:rs(8.75), height:rs(8.75), backgroundColor:'rgba(130, 130, 130, 0.70)'}} />
-                                     </View>
-                                     <Text style={styles.catModalTextGray}>메뉴 카테고리</Text>
+                            {menuCategories.map((cat, idx) => (
+                                <View key={idx} style={styles.catModalItem}>
+                                    <View style={{width: rs(25), height: rs(20), backgroundColor: idx===0?'#F6A823':'white', borderRadius: rs(8)}} />
+                                    <View style={styles.catModalIconBoxWhite}><Ionicons name="reorder-two" size={rs(12)} color={idx===0?'white':'#DADADA'} /></View>
+                                    <Text style={idx===0?styles.catModalTextWhite:styles.catModalTextBlack}>{cat}</Text>
                                 </View>
-                            </TouchableOpacity>
+                            ))}
                       </View>
                   </TouchableOpacity>
               </Modal>
@@ -448,7 +617,7 @@ export default function StoreScreen() {
       </ScrollView>
 
       {/* =================================================================
-         # Modal: Menu Add/Edit (메뉴 추가/수정)
+         # Modal: Menu Add/Edit (메뉴 추가/수정) - API 연결됨
          ================================================================= */}
       <Modal animationType="slide" transparent={true} visible={menuModalVisible} onRequestClose={() => setMenuModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
@@ -460,15 +629,14 @@ export default function StoreScreen() {
                     </TouchableOpacity>
                 </View>
 
-                
                 <ScrollView contentContainerStyle={styles.modalScroll}>
                     {/* 1. 기본 정보 */}
                     <Text style={styles.sectionTitle}>기본 정보</Text>
                     
-                    {/* 사진 추가 */}
+                    {/* 사진 추가 (UI Only) */}
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>메뉴 사진(1:1 비율 권장)</Text>
-                        <TouchableOpacity style={styles.photoUploadBox} onPress={() => handleMockAction('사진첩 열기')}>
+                        <TouchableOpacity style={styles.photoUploadBox} onPress={() => handleMockAction('사진 업로드 API 연동 필요')}>
                             <View style={styles.cameraIconBox}><Ionicons name="camera" size={rs(18)} color="rgba(130, 130, 130, 0.70)" /></View>
                             <Text style={styles.photoUploadText}>사진 추가</Text>
                         </TouchableOpacity>
@@ -496,7 +664,7 @@ export default function StoreScreen() {
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>메뉴 설명</Text>
                         <View style={[styles.textInputBox, {height: rs(60), alignItems: 'flex-start', paddingVertical: rs(10)}]}>
-                            <TextInput style={[styles.textInput, {height: '100%'}]} multiline placeholder="특제 간장소스로 맛을 낸 짭쪼름한 치킨" placeholderTextColor="#999" value={menuForm.desc} onChangeText={(t) => setMenuForm({...menuForm, desc: t})} />
+                            <TextInput style={[styles.textInput, {height: '100%'}]} multiline placeholder="메뉴 설명을 입력해주세요" placeholderTextColor="#999" value={menuForm.desc} onChangeText={(t) => setMenuForm({...menuForm, desc: t})} />
                         </View>
                     </View>
 
@@ -505,7 +673,7 @@ export default function StoreScreen() {
                     {/* 2. 카테고리 및 속성 */}
                     <Text style={styles.sectionTitle}>카테고리 및 속성</Text>
 
-                    {/* 메뉴 카테고리 (dropdown mock) */}
+                    {/* 메뉴 카테고리 (dropdown) */}
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>메뉴 카테고리</Text>
                         <View style={styles.dropdownBox}>
@@ -525,7 +693,7 @@ export default function StoreScreen() {
                         </View>
                     </TouchableOpacity>
 
-                    {/* 배지 설정 */}
+                    {/* 배지 설정 (badge 필드 가정) */}
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>배지설정</Text>
                         <View style={{flexDirection: 'row', gap: rs(8)}}>
@@ -577,8 +745,14 @@ export default function StoreScreen() {
 
                 {/* 하단 고정 추가하기 버튼 */}
                 <View style={styles.modalFooter}>
-                    <TouchableOpacity style={styles.modalSubmitBtn} onPress={() => { setMenuModalVisible(false); handleMockAction(isEditMode ? "수정 완료" : "추가 완료"); }}>
-                        <Text style={styles.modalSubmitText}>{isEditMode ? '수정하기' : '추가하기'}</Text>
+                    <TouchableOpacity 
+                      style={styles.modalSubmitBtn} 
+                      onPress={handleMenuSave} // API 호출 핸들러 연결
+                      disabled={createItemMutation.isPending || updateItemMutation.isPending}
+                    >
+                        <Text style={styles.modalSubmitText}>
+                          {createItemMutation.isPending || updateItemMutation.isPending ? '처리 중...' : (isEditMode ? '수정하기' : '추가하기')}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -709,7 +883,6 @@ const styles = StyleSheet.create({
   modalScroll: { padding: rs(20) },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: rs(20) },
   
-  // 메뉴 추가 모달 헤더 스타일 (여백 및 패딩 조정)
   menuModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: rs(20), marginBottom: rs(5), paddingBottom: rs(15), paddingHorizontal: rs(20), borderBottomWidth: 1, borderBottomColor: '#eee', },
   
   modalTitle: { fontSize: rs(14), fontWeight: '700', fontFamily: 'Pretendard' },
@@ -782,7 +955,6 @@ const styles = StyleSheet.create({
   catModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)' }, 
   catModalContent: { width: rs(287), backgroundColor: 'white', borderRadius: rs(12), padding: rs(5), shadowColor: "#000", shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.05, elevation: 5 },
   catModalItem: { flexDirection: 'row', alignItems: 'center', gap: rs(5), paddingVertical: rs(3), paddingHorizontal: rs(5), height: rs(26), borderRadius: rs(8) },
-  catModalItemOrange: { flexDirection: 'row', alignItems: 'center', gap: rs(5), paddingVertical: rs(3), paddingHorizontal: rs(5), height: rs(26), backgroundColor: '#F6A823', borderRadius: rs(8) },
   catModalIconBox: { width: rs(16), height: rs(16), borderRadius: rs(8), overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   catModalIconBoxWhite: { width: rs(16), height: rs(16), borderRadius: rs(8), overflow: 'hidden', justifyContent: 'center', alignItems: 'center', borderColor: 'transparent' },
   catModalTextWhite: { color: 'white', fontSize: rs(11), fontFamily: 'Inter', fontWeight: '600' },
