@@ -1,3 +1,5 @@
+import { EventCard } from '@/src/app/(student)/components/event/event-card';
+import { SelectedEventDetail } from '@/src/app/(student)/components/event/selected-event-detail';
 import { NaverMap } from '@/src/app/(student)/components/map/naver-map-view';
 import { SelectedStoreDetail } from '@/src/app/(student)/components/map/selected-store-detail';
 import { FilterTab, StoreFilterModal } from '@/src/app/(student)/components/map/store-filter-modal';
@@ -12,7 +14,9 @@ import {
   SORT_OPTIONS,
 } from '@/src/shared/constants/map';
 import { useTabBar } from '@/src/shared/contexts/tab-bar-context';
+import { useEvents } from '@/src/shared/hooks/use-events';
 import { useMapSearch } from '@/src/shared/hooks/use-map-search';
+import type { Event } from '@/src/shared/types/event';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Owner, Text } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -66,10 +70,33 @@ export default function MapTab() {
     handleMapClick,
     handleBack,
     handleFilterApply,
+    handleFilterReset,
     handleStoreTypeToggle,
     handleMoodToggle,
     handleEventToggle,
   } = useMapSearch();
+
+  // 이벤트 훅
+  const {
+    events,
+    eventMarkers,
+    isLoading: isEventsLoading,
+    refetchEvents,
+  } = useEvents({
+    myLocation,
+    selectedDistance,
+    selectedSort,
+  });
+
+  // 선택된 이벤트 상태
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const selectedEvent = useMemo(() => {
+    if (!selectedEventId) return null;
+    return events.find((e) => e.id === selectedEventId) ?? null;
+  }, [selectedEventId, events]);
+
+  // 카테고리가 'EVENT'인지 확인 (이벤트만 보기 모드)
+  const isEventOnlyMode = selectedCategory === 'EVENT';
 
   // 모달 state
   const [showSortModal, setShowSortModal] = useState(false);
@@ -135,16 +162,34 @@ export default function MapTab() {
   // 지도 클릭
   const onMapClick = useCallback(() => {
     handleMapClick();
+    setSelectedEventId(null);
     bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
   }, [handleMapClick]);
 
-  // 마커 클릭
+  // 가게 마커 클릭
   const onMarkerClick = useCallback(
     (markerId: string) => {
+      setSelectedEventId(null);
       handleMarkerClick(markerId);
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
     },
     [handleMarkerClick],
+  );
+
+  // 이벤트 마커 클릭
+  const onEventMarkerClick = useCallback(
+    (markerId: string) => {
+      // markerId는 "event-{id}" 형식
+      const eventId = markerId.replace('event-', '');
+      handleMapClick(); // 가게 선택 해제
+      setSelectedEventId(eventId);
+      const event = events.find((e) => e.id === eventId);
+      if (event) {
+        setMapCenter({ lat: event.lat, lng: event.lng });
+      }
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+    },
+    [events, handleMapClick, setMapCenter],
   );
 
   // 가게 상세 보기
@@ -163,6 +208,32 @@ export default function MapTab() {
       });
     },
     [stores, router],
+  );
+
+  // 이벤트 상세 보기
+  const handleViewEventDetail = useCallback(
+    (eventId: string) => {
+      router.push({
+        pathname: '/event/[id]' as const,
+        params: { id: eventId },
+      } as any);
+    },
+    [router],
+  );
+
+  // 이벤트 카드 클릭
+  const handleEventCardPress = useCallback(
+    (eventId: string) => {
+      Keyboard.dismiss();
+      setSelectedEventId(eventId);
+      handleMapClick(); // 가게 선택 해제
+      const event = events.find((e) => e.id === eventId);
+      if (event) {
+        setMapCenter({ lat: event.lat, lng: event.lng });
+      }
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+    },
+    [events, handleMapClick, setMapCenter],
   );
 
   // 리스트에서 가게 카드 클릭
@@ -291,20 +362,48 @@ export default function MapTab() {
 
       {/* 가게 종류 버튼 */}
       <TouchableOpacity
-        style={styles.bottomFilterButton}
+        style={[
+          styles.bottomFilterButton,
+          selectedStoreTypes.length > 0 && styles.bottomFilterButtonActive,
+        ]}
         onPress={() => handleOpenFilterModal('storeType')}
       >
-        <ThemedText style={styles.bottomFilterText}>가게 종류</ThemedText>
-        <Ionicons name="chevron-down" size={14} color={Text.primary} />
+        <ThemedText
+          style={[
+            styles.bottomFilterText,
+            selectedStoreTypes.length > 0 && styles.bottomFilterTextActive,
+          ]}
+        >
+          가게 종류{selectedStoreTypes.length > 0 ? ` ${selectedStoreTypes.length}` : ''}
+        </ThemedText>
+        <Ionicons
+          name="chevron-down"
+          size={14}
+          color={selectedStoreTypes.length > 0 ? Owner.primary : Text.primary}
+        />
       </TouchableOpacity>
 
       {/* 이벤트 버튼 */}
       <TouchableOpacity
-        style={styles.bottomFilterButton}
+        style={[
+          styles.bottomFilterButton,
+          selectedEvents.length > 0 && styles.bottomFilterButtonActive,
+        ]}
         onPress={() => handleOpenFilterModal('event')}
       >
-        <ThemedText style={styles.bottomFilterText}>이벤트</ThemedText>
-        <Ionicons name="chevron-down" size={14} color={Text.primary} />
+        <ThemedText
+          style={[
+            styles.bottomFilterText,
+            selectedEvents.length > 0 && styles.bottomFilterTextActive,
+          ]}
+        >
+          이벤트{selectedEvents.length > 0 ? ` ${selectedEvents.length}` : ''}
+        </ThemedText>
+        <Ionicons
+          name="chevron-down"
+          size={14}
+          color={selectedEvents.length > 0 ? Owner.primary : Text.primary}
+        />
       </TouchableOpacity>
     </ScrollView>
   );
@@ -387,6 +486,7 @@ export default function MapTab() {
           onStoreTypeToggle={handleStoreTypeToggle}
           onMoodToggle={handleMoodToggle}
           onEventToggle={handleEventToggle}
+          onReset={handleFilterReset}
           onClose={() => setShowFilterModal(false)}
           onApply={onFilterApply}
         />
@@ -402,9 +502,11 @@ export default function MapTab() {
       {/* 지도 */}
       <NaverMap
         center={mapCenter}
-        markers={markers}
+        markers={isEventOnlyMode ? [] : markers}
+        eventMarkers={eventMarkers}
         onMapClick={onMapClick}
         onMarkerClick={onMarkerClick}
+        onEventMarkerClick={onEventMarkerClick}
         onMapReady={() => {}}
         style={styles.map}
         isShowZoomControls={false}
@@ -418,7 +520,13 @@ export default function MapTab() {
 
       {/* 지도 컨트롤 버튼 */}
       <View style={styles.mapControls}>
-        <TouchableOpacity style={styles.controlButton} onPress={() => refetchStores()}>
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={() => {
+            refetchStores();
+            refetchEvents();
+          }}
+        >
           <Ionicons name="refresh" size={20} color={Owner.primary} />
         </TouchableOpacity>
         <TouchableOpacity
@@ -465,37 +573,75 @@ export default function MapTab() {
             {renderFilterChips()}
           </View>
 
-          {/* 가게 목록 / 선택된 가게 상세 */}
+          {/* 가게/이벤트 목록 또는 선택된 상세 */}
           <BottomSheetScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.storeListContent}
           >
+            {/* 선택된 가게 상세 */}
             {selectedStore ? (
               <SelectedStoreDetail
                 store={selectedStore}
                 onViewDetail={() => handleViewStoreDetail(selectedStore.id)}
               />
-            ) : isLoading ? (
+            ) : selectedEvent ? (
+              /* 선택된 이벤트 상세 */
+              <SelectedEventDetail
+                event={selectedEvent}
+                onViewDetail={() => handleViewEventDetail(selectedEvent.id)}
+              />
+            ) : isLoading || isEventsLoading ? (
               <View style={styles.loadingState}>
                 <ActivityIndicator size="large" color={Owner.primary} />
               </View>
-            ) : stores.length > 0 ? (
-              stores.map((store) => (
-                <StoreCard
-                  key={store.id}
-                  store={store}
-                  onPress={() => handleStoreCardPress(store.id)}
-                />
-              ))
             ) : (
-              <View style={styles.emptyState}>
-                <ThemedText style={styles.emptyStateTitle}>
-                  아직 찾으시는 데이터이 안 보여요...
-                </ThemedText>
-                <ThemedText style={styles.emptyStateText}>
-                  {'\u2022'} 다른 검색어로 시도해보세요
-                </ThemedText>
-              </View>
+              <>
+                {/* 이벤트만 보기 모드가 아닐 때 가게 목록 */}
+                {!isEventOnlyMode && stores.length > 0 && (
+                  <>
+                    {stores.map((store) => (
+                      <StoreCard
+                        key={store.id}
+                        store={store}
+                        onPress={() => handleStoreCardPress(store.id)}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {/* 이벤트 목록 (가게 아래 또는 이벤트만 보기 모드) */}
+                {events.length > 0 && (
+                  <>
+                    {/* 구분선 (가게가 있을 때만) */}
+                    {!isEventOnlyMode && stores.length > 0 && (
+                      <View style={styles.sectionDivider}>
+                        <View style={styles.dividerLine} />
+                        <ThemedText style={styles.dividerText}>이벤트</ThemedText>
+                        <View style={styles.dividerLine} />
+                      </View>
+                    )}
+                    {events.map((event) => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        onPress={() => handleEventCardPress(event.id)}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {/* 빈 상태 */}
+                {stores.length === 0 && events.length === 0 && (
+                  <View style={styles.emptyState}>
+                    <ThemedText style={styles.emptyStateTitle}>
+                      아직 찾으시는 데이터가 안 보여요...
+                    </ThemedText>
+                    <ThemedText style={styles.emptyStateText}>
+                      {'\u2022'} 다른 검색어로 시도해보세요
+                    </ThemedText>
+                  </View>
+                )}
+              </>
             )}
           </BottomSheetScrollView>
         </View>
@@ -530,6 +676,7 @@ export default function MapTab() {
         onStoreTypeToggle={handleStoreTypeToggle}
         onMoodToggle={handleMoodToggle}
         onEventToggle={handleEventToggle}
+        onReset={handleFilterReset}
         onClose={() => setShowFilterModal(false)}
         onApply={onFilterApply}
       />
@@ -679,9 +826,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Text.primary,
   },
+  bottomFilterButtonActive: {
+    backgroundColor: Owner.primary + '15',
+    borderColor: Owner.primary,
+  },
+  bottomFilterTextActive: {
+    color: Owner.primary,
+    fontWeight: '600',
+  },
   // 가게 목록
   storeListContent: {
     paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  // 섹션 구분선
+  sectionDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: rs(16),
+    gap: rs(12),
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Gray.gray3,
+  },
+  dividerText: {
+    fontSize: rs(13),
+    color: Text.secondary,
+    fontWeight: '500',
   },
   // 로딩
   loadingState: {

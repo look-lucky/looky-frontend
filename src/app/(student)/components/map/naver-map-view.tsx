@@ -1,3 +1,4 @@
+import type { EventStatus, EventType } from '@/src/shared/types/event';
 import {
   NaverMapMarkerOverlay,
   NaverMapView,
@@ -6,18 +7,81 @@ import {
 import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-interface MarkerData {
+// 가게 마커 아이콘 PNG
+const STORE_MARKER_ICONS = {
+  partnerWithCoupon: require('@/assets/images/icons/map/clover-heart.png'),
+  partnerNoCoupon: require('@/assets/images/icons/map/clover.png'),
+  nonPartnerWithCoupon: require('@/assets/images/icons/map/clover-gray-heart.png'),
+  nonPartnerNoCoupon: require('@/assets/images/icons/map/clover-gray.png'),
+};
+
+// 이벤트 마커 아이콘 SVG
+const EVENT_MARKER_ICONS: Record<EventType, any> = {
+  FOOD_EVENT: require('@/assets/images/icons/map/event-food.svg'),
+  POPUP_STORE: require('@/assets/images/icons/map/event-brand.svg'),
+  SCHOOL_EVENT: require('@/assets/images/icons/map/event-college.svg'),
+  FLEA_MARKET: require('@/assets/images/icons/map/event-market.svg'),
+  PERFORMANCE: require('@/assets/images/icons/map/event-busking.svg'),
+  COMMUNITY: require('@/assets/images/icons/map/event-student.svg'),
+};
+
+const MARKER_SIZE = 40;
+
+// 가게 마커 아이콘 선택 헬퍼
+function getStoreMarkerIcon(isPartner: boolean, hasCoupon: boolean) {
+  if (isPartner) {
+    return hasCoupon ? STORE_MARKER_ICONS.partnerWithCoupon : STORE_MARKER_ICONS.partnerNoCoupon;
+  }
+  return hasCoupon ? STORE_MARKER_ICONS.nonPartnerWithCoupon : STORE_MARKER_ICONS.nonPartnerNoCoupon;
+}
+
+// 이벤트 마커 아이콘 선택 헬퍼
+function getEventMarkerIcon(eventType: EventType) {
+  return EVENT_MARKER_ICONS[eventType] ?? EVENT_MARKER_ICONS.COMMUNITY;
+}
+
+// 이벤트 상태에 따른 opacity
+function getEventMarkerOpacity(status: EventStatus): number {
+  switch (status) {
+    case 'live':
+      return 1.0;
+    case 'upcoming':
+      return 0.5;
+    case 'ended':
+      return 0.4;
+    default:
+      return 1.0;
+  }
+}
+
+// 가게 마커 데이터
+interface StoreMarkerData {
   id: string;
   lat: number;
   lng: number;
   title?: string;
+  isPartner: boolean;
+  hasCoupon: boolean;
+}
+
+// 이벤트 마커 데이터
+interface EventMarkerData {
+  id: string;
+  lat: number;
+  lng: number;
+  title?: string;
+  type: 'event';
+  eventType: EventType;
+  status: EventStatus;
 }
 
 interface NaverMapProps {
   center?: { lat: number; lng: number };
-  markers?: MarkerData[];
+  markers?: StoreMarkerData[];
+  eventMarkers?: EventMarkerData[];
   onMapClick?: (lat: number, lng: number) => void;
   onMarkerClick?: (markerId: string) => void;
+  onEventMarkerClick?: (markerId: string) => void;
   onMapReady?: () => void;
   style?: object;
   isShowZoomControls?: boolean;
@@ -28,8 +92,10 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     {
       center = { lat: 35.8358, lng: 127.1294 }, // 전북대학교 기본 좌표
       markers = [],
+      eventMarkers = [],
       onMapClick,
       onMarkerClick,
+      onEventMarkerClick,
       onMapReady,
       style,
       isShowZoomControls = false,
@@ -72,13 +138,31 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
             onMapClick?.(event.latitude, event.longitude);
           }}
         >
+          {/* 가게 마커 */}
           {markers.map((marker) => (
             <NaverMapMarkerOverlay
               key={marker.id}
               latitude={marker.lat}
               longitude={marker.lng}
+              width={MARKER_SIZE}
+              height={MARKER_SIZE}
               onTap={() => onMarkerClick?.(marker.id)}
-              caption={marker.title ? { text: marker.title } : undefined}
+              anchor={{ x: 0.5, y: 0.5 }}
+              image={getStoreMarkerIcon(marker.isPartner, marker.hasCoupon)}
+            />
+          ))}
+          {/* 이벤트 마커 */}
+          {eventMarkers.map((marker) => (
+            <NaverMapMarkerOverlay
+              key={marker.id}
+              latitude={marker.lat}
+              longitude={marker.lng}
+              width={MARKER_SIZE}
+              height={MARKER_SIZE}
+              onTap={() => onEventMarkerClick?.(marker.id)}
+              anchor={{ x: 0.5, y: 0.5 }}
+              image={getEventMarkerIcon(marker.eventType)}
+              alpha={getEventMarkerOpacity(marker.status)}
             />
           ))}
         </NaverMapView>

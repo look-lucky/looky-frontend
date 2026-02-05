@@ -60,11 +60,12 @@ export const MOOD_OPTIONS = [
   { id: 'ROMANTIC', label: '데이트' },
 ];
 
-// 이벤트 (API 미지원 - UI만)
+// 이벤트 타입 (API EventType 매핑)
 export const EVENT_OPTIONS = [
-  { id: 'school', label: '학교 행사' },
-  { id: 'performance', label: '공연·버스킹' },
-  { id: 'foodtruck', label: '푸드트럭' },
-  { id: 'fleamarket', label: '플리마켓' },
-  { id: 'popup', label: '브랜드 팝업' },
+  { id: 'SCHOOL_EVENT', label: '학교 행사' },
+  { id: 'PERFORMANCE', label: '공연·버스킹' },
+  { id: 'FOOD_EVENT', label: '푸드 이벤트' },
+  { id: 'FLEA_MARKET', label: '플리마켓' },
+  { id: 'POPUP_STORE', label: '팝업스토어' },
+  { id: 'COMMUNITY', label: '커뮤니티' },
 ];
