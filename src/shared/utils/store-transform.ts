@@ -30,6 +30,32 @@ export function formatDistance(km: number): string {
 }
 
 /**
+ * 영업시간 JSON 문자열을 현재 요일에 맞게 파싱
+ * 입력: '{"Mon": "11:00-21:00", "Tue": "11:00-21:00", ..., "Sun": "Closed"}'
+ * 출력: "11:00-21:00" 또는 "휴무"
+ */
+export function formatOperatingHours(operatingHours: string): string {
+  if (!operatingHours) return '';
+
+  try {
+    const parsed = JSON.parse(operatingHours);
+    const dayKeys = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date().getDay(); // 0 = Sunday
+    const todayKey = dayKeys[today];
+    const todayHours = parsed[todayKey];
+
+    if (!todayHours || todayHours === 'Closed') {
+      return '휴무';
+    }
+
+    return todayHours;
+  } catch {
+    // 파싱 실패 시 원본 반환
+    return operatingHours;
+  }
+}
+
+/**
  * StoreResponse (API) → Store (UI) 변환
  */
 export function transformStoreResponse(
@@ -45,18 +71,20 @@ export function transformStoreResponse(
     distance = formatDistance(km);
   }
 
-  // 확장 필드 (Mock 서버에서 제공)
+  // 확장 필드 (타입 생성 전 임시 처리)
   const extendedResponse = response as StoreResponse & {
     isPartner?: boolean;
     hasCoupon?: boolean;
+    averageRating?: number;
+    reviewCount?: number;
   };
 
   return {
     id: String(response.id ?? 0),
     name: response.name ?? '',
     image: response.imageUrls?.[0] ?? '',
-    rating: response.averageRating ?? 0,
-    reviewCount: response.reviewCount ?? 0,
+    rating: extendedResponse.averageRating ?? 0,
+    reviewCount: extendedResponse.reviewCount ?? 0,
     distance,
     openStatus: '', // TODO: 서버에서 영업상태 제공 시 연동
     openHours: response.operatingHours ?? '',
