@@ -1,3 +1,8 @@
+import {
+  useAddFavorite,
+  useGetMyFavorites,
+  useRemoveFavorite,
+} from '@/src/api/favorite';
 import { EventCard } from '@/src/app/(student)/components/event/event-card';
 import { SelectedEventDetail } from '@/src/app/(student)/components/event/selected-event-detail';
 import { NaverMap } from '@/src/app/(student)/components/map/naver-map-view';
@@ -17,11 +22,12 @@ import { useTabBar } from '@/src/shared/contexts/tab-bar-context';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { useMapSearch } from '@/src/shared/hooks/use-map-search';
 import type { Event } from '@/src/shared/types/event';
+import type { Store } from '@/src/shared/types/store';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Owner, Text } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -39,6 +45,7 @@ export default function MapTab() {
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
   const searchInputRef = useRef<TextInput>(null);
+  const { category } = useLocalSearchParams<{ category?: string }>();
 
   const {
     keyword,
@@ -76,6 +83,19 @@ export default function MapTab() {
     handleEventToggle,
   } = useMapSearch();
 
+  // 홈에서 카테고리 선택 후 진입 시 해당 카테고리 활성화
+  useEffect(() => {
+    if (category) {
+      // category-section에서 'ALL'로 보내지만 CATEGORY_TABS는 'all'
+      const normalizedCategory = category === 'ALL' ? 'all' : category;
+      const validCategories = CATEGORY_TABS.map((tab) => tab.id);
+      const targetCategory = validCategories.includes(normalizedCategory)
+        ? normalizedCategory
+        : 'all';
+      handleCategorySelect(targetCategory);
+    }
+  }, [category, handleCategorySelect]);
+
   // 이벤트 훅
   const {
     events,
@@ -87,6 +107,58 @@ export default function MapTab() {
     selectedDistance,
     selectedSort,
   });
+
+  // 즐겨찾기 훅
+  const { data: favoritesData, refetch: refetchFavorites } = useGetMyFavorites(
+    { pageable: { page: 0, size: 100 } },
+    { query: { staleTime: 60 * 1000 } },
+  );
+  const addFavoriteMutation = useAddFavorite();
+  const removeFavoriteMutation = useRemoveFavorite();
+
+  // 즐겨찾기 ID Set
+  const favoriteStoreIds = useMemo(() => {
+    const response = favoritesData?.data as
+      | { data?: { content?: { storeId?: number }[] } }
+      | undefined;
+    const favorites = response?.data?.content ?? [];
+    return new Set(favorites.map((f) => String(f.storeId)));
+  }, [favoritesData]);
+
+  // stores에 isFavorite 매핑
+  const storesWithFavorite: Store[] = useMemo(() => {
+    return stores.map((store) => ({
+      ...store,
+      isFavorite: favoriteStoreIds.has(store.id),
+    }));
+  }, [stores, favoriteStoreIds]);
+
+  // selectedStore에 isFavorite 매핑
+  const selectedStoreWithFavorite = useMemo(() => {
+    if (!selectedStore) return null;
+    return {
+      ...selectedStore,
+      isFavorite: favoriteStoreIds.has(selectedStore.id),
+    };
+  }, [selectedStore, favoriteStoreIds]);
+
+  // 북마크 토글 핸들러
+  const handleBookmarkPress = useCallback(
+    async (storeId: string) => {
+      const isFavorite = favoriteStoreIds.has(storeId);
+      try {
+        if (isFavorite) {
+          await removeFavoriteMutation.mutateAsync({ storeId: Number(storeId) });
+        } else {
+          await addFavoriteMutation.mutateAsync({ storeId: Number(storeId) });
+        }
+        refetchFavorites();
+      } catch (error) {
+        console.error('즐겨찾기 토글 실패:', error);
+      }
+    },
+    [favoriteStoreIds, addFavoriteMutation, removeFavoriteMutation, refetchFavorites],
+  );
 
   // 선택된 이벤트 상태
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -427,14 +499,15 @@ export default function MapTab() {
                 <View style={styles.centerContent}>
                   <ActivityIndicator size="large" color={Owner.primary} />
                 </View>
-              ) : stores.length > 0 ? (
+              ) : storesWithFavorite.length > 0 ? (
                 <FlatList
-                  data={stores}
+                  data={storesWithFavorite}
                   keyExtractor={(item) => item.id}
                   renderItem={({ item }) => (
                     <StoreCard
                       store={item}
                       onPress={() => handleStoreCardPress(item.id)}
+                      onBookmarkPress={handleBookmarkPress}
                     />
                   )}
                   contentContainerStyle={styles.listContent}
@@ -579,10 +652,11 @@ export default function MapTab() {
             contentContainerStyle={styles.storeListContent}
           >
             {/* 선택된 가게 상세 */}
-            {selectedStore ? (
+            {selectedStoreWithFavorite ? (
               <SelectedStoreDetail
-                store={selectedStore}
-                onViewDetail={() => handleViewStoreDetail(selectedStore.id)}
+                store={selectedStoreWithFavorite}
+                onViewDetail={() => handleViewStoreDetail(selectedStoreWithFavorite.id)}
+                onBookmarkPress={handleBookmarkPress}
               />
             ) : selectedEvent ? (
               /* 선택된 이벤트 상세 */
@@ -597,13 +671,14 @@ export default function MapTab() {
             ) : (
               <>
                 {/* 이벤트만 보기 모드가 아닐 때 가게 목록 */}
-                {!isEventOnlyMode && stores.length > 0 && (
+                {!isEventOnlyMode && storesWithFavorite.length > 0 && (
                   <>
-                    {stores.map((store) => (
+                    {storesWithFavorite.map((store) => (
                       <StoreCard
                         key={store.id}
                         store={store}
                         onPress={() => handleStoreCardPress(store.id)}
+                        onBookmarkPress={handleBookmarkPress}
                       />
                     ))}
                   </>
@@ -613,7 +688,7 @@ export default function MapTab() {
                 {events.length > 0 && (
                   <>
                     {/* 구분선 (가게가 있을 때만) */}
-                    {!isEventOnlyMode && stores.length > 0 && (
+                    {!isEventOnlyMode && storesWithFavorite.length > 0 && (
                       <View style={styles.sectionDivider}>
                         <View style={styles.dividerLine} />
                         <ThemedText style={styles.dividerText}>이벤트</ThemedText>
@@ -631,7 +706,7 @@ export default function MapTab() {
                 )}
 
                 {/* 빈 상태 */}
-                {stores.length === 0 && events.length === 0 && (
+                {storesWithFavorite.length === 0 && events.length === 0 && (
                   <View style={styles.emptyState}>
                     <ThemedText style={styles.emptyStateTitle}>
                       아직 찾으시는 데이터가 안 보여요...

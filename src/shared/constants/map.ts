@@ -1,21 +1,25 @@
 // 카테고리 탭 (디자인 시안 기준)
 export const CATEGORY_TABS = [
   { id: 'all', label: '전체' },
-  { id: 'EVENT', label: '이벤트' }, // TODO: 서버 이벤트 카테고리 지원 시 연동
   { id: 'RESTAURANT', label: '식당' },
   { id: 'BAR', label: '주점' },
   { id: 'CAFE', label: '카페' },
   { id: 'ENTERTAINMENT', label: '놀거리' },
+  { id: 'BEAUTY_HEALTH', label: '뷰티·헬스' },
+  { id: 'EVENT', label: '이벤트' },
+  { id: 'ETC', label: 'ETC' },
 ];
 
 // 카테고리 탭 → API categories 파라미터 매핑
 export const CATEGORY_TO_API: Record<string, string | null> = {
   all: null,
-  EVENT: null, // TODO: 서버 이벤트 카테고리 지원 시 연동
   RESTAURANT: 'RESTAURANT',
   BAR: 'BAR',
   CAFE: 'CAFE',
   ENTERTAINMENT: 'ENTERTAINMENT',
+  BEAUTY_HEALTH: 'BEAUTY_HEALTH',
+  EVENT: null, // 이벤트는 별도 API
+  ETC: 'ETC',
 };
 
 // 정렬 옵션
