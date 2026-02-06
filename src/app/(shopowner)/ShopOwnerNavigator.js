@@ -23,6 +23,7 @@ import WithdrawCompleteScreen from './mypage/WithdrawCompleteScreen';
 import WithdrawScreen from './mypage/WithdrawScreen';
 import ReviewScreen from './review/ReviewScreen';
 import StoreScreen from './store/StoreScreen';
+import PatronHomeScreen from './patron/HomeScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -69,7 +70,8 @@ function MainTabNavigator() {
 
 export default function ShopOwnerNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName="PatronHome" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="PatronHome" component={PatronHomeScreen} />
       {/* 1. 기본 화면 탭 네비게이터 */}
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       {/* 2. 알림 화면 스택 화면 */}
