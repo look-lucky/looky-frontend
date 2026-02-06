@@ -150,9 +150,10 @@ export interface CreateItemRequest {
   description?: string;
   itemOrder?: number;
   badge?: CreateItemRequestBadge;
+  itemCategoryId?: number;
   hidden?: boolean;
-  representative?: boolean;
   soldOut?: boolean;
+  representative?: boolean;
 }
 
 export type CreateCouponRequestStatus = typeof CreateCouponRequestStatus[keyof typeof CreateCouponRequestStatus];
@@ -407,6 +408,41 @@ export interface StoreClaimRejectionRequest {
   reason?: string;
 }
 
+/**
+ * 이벤트 타입 목록
+ */
+export type CreateEventRequestEventTypesItem = typeof CreateEventRequestEventTypesItem[keyof typeof CreateEventRequestEventTypesItem];
+
+
+export const CreateEventRequestEventTypesItem = {
+  FOOD_EVENT: 'FOOD_EVENT',
+  POPUP_STORE: 'POPUP_STORE',
+  SCHOOL_EVENT: 'SCHOOL_EVENT',
+  FLEA_MARKET: 'FLEA_MARKET',
+  PERFORMANCE: 'PERFORMANCE',
+  COMMUNITY: 'COMMUNITY',
+} as const;
+
+/**
+ * 이벤트 생성 요청
+ */
+export interface CreateEventRequest {
+  /** 이벤트 제목 */
+  title: string;
+  /** 이벤트 설명 */
+  description?: string;
+  /** 이벤트 타입 목록 */
+  eventTypes: CreateEventRequestEventTypesItem[];
+  /** 위도 */
+  latitude?: number;
+  /** 경도 */
+  longitude?: number;
+  /** 이벤트 시작일시 */
+  startDateTime: string;
+  /** 이벤트 종료일시 */
+  endDateTime: string;
+}
+
 export interface UpdateUniversityRequest {
   name: string;
   emailDomain: string;
@@ -501,6 +537,8 @@ export interface UpdateItemRequest {
   isRepresentative?: boolean;
   isHidden?: boolean;
   badge?: UpdateItemRequestBadge;
+  itemCategoryId?: number;
+  removeItemCategory?: boolean;
 }
 
 export type UpdateCouponRequestStatus = typeof UpdateCouponRequestStatus[keyof typeof UpdateCouponRequestStatus];
@@ -543,6 +581,55 @@ export interface UpdatePartnershipRequest {
   benefit: string;
   startsAt?: string;
   endsAt?: string;
+}
+
+/**
+ * 이벤트 타입 목록
+ */
+export type UpdateEventRequestEventTypesItem = typeof UpdateEventRequestEventTypesItem[keyof typeof UpdateEventRequestEventTypesItem];
+
+
+export const UpdateEventRequestEventTypesItem = {
+  FOOD_EVENT: 'FOOD_EVENT',
+  POPUP_STORE: 'POPUP_STORE',
+  SCHOOL_EVENT: 'SCHOOL_EVENT',
+  FLEA_MARKET: 'FLEA_MARKET',
+  PERFORMANCE: 'PERFORMANCE',
+  COMMUNITY: 'COMMUNITY',
+} as const;
+
+/**
+ * 이벤트 상태
+ */
+export type UpdateEventRequestStatus = typeof UpdateEventRequestStatus[keyof typeof UpdateEventRequestStatus];
+
+
+export const UpdateEventRequestStatus = {
+  UPCOMING: 'UPCOMING',
+  LIVE: 'LIVE',
+  ENDED: 'ENDED',
+} as const;
+
+/**
+ * 이벤트 수정 요청
+ */
+export interface UpdateEventRequest {
+  /** 이벤트 제목 */
+  title?: string;
+  /** 이벤트 설명 */
+  description?: string;
+  /** 이벤트 타입 목록 */
+  eventTypes?: UpdateEventRequestEventTypesItem[];
+  /** 위도 */
+  latitude?: number;
+  /** 경도 */
+  longitude?: number;
+  /** 이벤트 시작일시 */
+  startDateTime?: string;
+  /** 이벤트 종료일시 */
+  endDateTime?: string;
+  /** 이벤트 상태 */
+  status?: UpdateEventRequestStatus;
 }
 
 export interface UniversityResponse {
@@ -625,6 +712,8 @@ export interface StoreResponse {
   storeCategories?: StoreResponseStoreCategoriesItem[];
   storeMoods?: StoreResponseStoreMoodsItem[];
   imageUrls?: string[];
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 export interface PageResponseStoreResponse {
@@ -688,6 +777,16 @@ export interface CommonResponseReviewStatsResponse {
   data?: ReviewStatsResponse;
 }
 
+export interface StoreRegistrationStatusResponse {
+  hasMenu?: boolean;
+  hasStoreInfo?: boolean;
+}
+
+export interface CommonResponseStoreRegistrationStatusResponse {
+  isSuccess?: boolean;
+  data?: StoreRegistrationStatusResponse;
+}
+
 export interface StoreNewsResponse {
   id?: number;
   storeId?: number;
@@ -734,13 +833,153 @@ export interface ItemResponse {
   itemOrder?: number;
   badge?: ItemResponseBadge;
   hidden?: boolean;
-  representative?: boolean;
   soldOut?: boolean;
+  representative?: boolean;
 }
 
 export interface CommonResponseListItemResponse {
   isSuccess?: boolean;
   data?: ItemResponse[];
+}
+
+export type StoreStoreStatus = typeof StoreStoreStatus[keyof typeof StoreStoreStatus];
+
+
+export const StoreStoreStatus = {
+  UNCLAIMED: 'UNCLAIMED',
+  ACTIVE: 'ACTIVE',
+  BANNED: 'BANNED',
+} as const;
+
+export type StoreStoreCategoriesItem = typeof StoreStoreCategoriesItem[keyof typeof StoreStoreCategoriesItem];
+
+
+export const StoreStoreCategoriesItem = {
+  BAR: 'BAR',
+  CAFE: 'CAFE',
+  RESTAURANT: 'RESTAURANT',
+  ENTERTAINMENT: 'ENTERTAINMENT',
+  BEAUTY_HEALTH: 'BEAUTY_HEALTH',
+  ETC: 'ETC',
+} as const;
+
+export type StoreStoreMoodsItem = typeof StoreStoreMoodsItem[keyof typeof StoreStoreMoodsItem];
+
+
+export const StoreStoreMoodsItem = {
+  SOLO_DINING: 'SOLO_DINING',
+  GROUP_GATHERING: 'GROUP_GATHERING',
+  LATE_NIGHT: 'LATE_NIGHT',
+  ROMANTIC: 'ROMANTIC',
+} as const;
+
+export type UserGender = typeof UserGender[keyof typeof UserGender];
+
+
+export const UserGender = {
+  MALE: 'MALE',
+  FEMALE: 'FEMALE',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+export type UserRole = typeof UserRole[keyof typeof UserRole];
+
+
+export const UserRole = {
+  ROLE_GUEST: 'ROLE_GUEST',
+  ROLE_COUNCIL: 'ROLE_COUNCIL',
+  ROLE_STUDENT: 'ROLE_STUDENT',
+  ROLE_OWNER: 'ROLE_OWNER',
+  ROLE_ADMIN: 'ROLE_ADMIN',
+} as const;
+
+export type UserSocialType = typeof UserSocialType[keyof typeof UserSocialType];
+
+
+export const UserSocialType = {
+  LOCAL: 'LOCAL',
+  GOOGLE: 'GOOGLE',
+  NAVER: 'NAVER',
+  KAKAO: 'KAKAO',
+  FIREBASE: 'FIREBASE',
+} as const;
+
+export interface User {
+  createdAt?: string;
+  modifiedAt?: string;
+  createdBy?: string;
+  lastModifiedBy?: string;
+  id?: number;
+  username?: string;
+  password?: string;
+  gender?: UserGender;
+  birthDate?: string;
+  role?: UserRole;
+  socialType?: UserSocialType;
+  socialId?: string;
+  deleted?: boolean;
+  deletedAt?: string;
+  userId?: number;
+}
+
+export interface StoreImage {
+  id?: number;
+  store?: Store;
+  imageUrl?: string;
+  orderIndex?: number;
+}
+
+export interface University {
+  id?: number;
+  name?: string;
+  emailDomain?: string;
+}
+
+export interface StoreUniversity {
+  id?: number;
+  store?: Store;
+  university?: University;
+}
+
+export interface Store {
+  createdAt?: string;
+  modifiedAt?: string;
+  createdBy?: string;
+  lastModifiedBy?: string;
+  id?: number;
+  name?: string;
+  branch?: string;
+  bizRegNo?: string;
+  roadAddress?: string;
+  jibunAddress?: string;
+  latitude?: number;
+  longitude?: number;
+  storePhone?: string;
+  needToCheck?: boolean;
+  checkReason?: string;
+  introduction?: string;
+  operatingHours?: string;
+  storeStatus?: StoreStoreStatus;
+  storeCategories?: StoreStoreCategoriesItem[];
+  storeMoods?: StoreStoreMoodsItem[];
+  user?: User;
+  images?: StoreImage[];
+  universities?: StoreUniversity[];
+}
+
+export interface ItemCategory {
+  createdAt?: string;
+  modifiedAt?: string;
+  createdBy?: string;
+  lastModifiedBy?: string;
+  id?: number;
+  store?: Store;
+  name?: string;
+}
+
+export interface CommonResponseListItemCategory {
+  isSuccess?: boolean;
+  data?: ItemCategory[];
 }
 
 export type CouponResponseStatus = typeof CouponResponseStatus[keyof typeof CouponResponseStatus];
@@ -765,6 +1004,7 @@ export interface CouponResponse {
   totalQuantity?: number;
   limitPerUser?: number;
   status?: CouponResponseStatus;
+  isIssued?: boolean;
 }
 
 export interface CommonResponseListCouponResponse {
@@ -851,6 +1091,61 @@ export interface CommonResponsePageResponseFavoriteStoreResponse {
   data?: PageResponseFavoriteStoreResponse;
 }
 
+export type EventResponseEventTypesItem = typeof EventResponseEventTypesItem[keyof typeof EventResponseEventTypesItem];
+
+
+export const EventResponseEventTypesItem = {
+  FOOD_EVENT: 'FOOD_EVENT',
+  POPUP_STORE: 'POPUP_STORE',
+  SCHOOL_EVENT: 'SCHOOL_EVENT',
+  FLEA_MARKET: 'FLEA_MARKET',
+  PERFORMANCE: 'PERFORMANCE',
+  COMMUNITY: 'COMMUNITY',
+} as const;
+
+export type EventResponseStatus = typeof EventResponseStatus[keyof typeof EventResponseStatus];
+
+
+export const EventResponseStatus = {
+  UPCOMING: 'UPCOMING',
+  LIVE: 'LIVE',
+  ENDED: 'ENDED',
+} as const;
+
+export interface EventResponse {
+  id?: number;
+  title?: string;
+  description?: string;
+  eventTypes?: EventResponseEventTypesItem[];
+  latitude?: number;
+  longitude?: number;
+  startDateTime?: string;
+  endDateTime?: string;
+  status?: EventResponseStatus;
+  imageUrls?: string[];
+  createdAt?: string;
+}
+
+export interface PageResponseEventResponse {
+  content?: EventResponse[];
+  pageNumber?: number;
+  pageSize?: number;
+  totalElements?: number;
+  totalPages?: number;
+  sort?: string;
+  last?: boolean;
+}
+
+export interface CommonResponsePageResponseEventResponse {
+  isSuccess?: boolean;
+  data?: PageResponseEventResponse;
+}
+
+export interface CommonResponseEventResponse {
+  isSuccess?: boolean;
+  data?: EventResponse;
+}
+
 export interface CommonResponseBoolean {
   isSuccess?: boolean;
   data?: boolean;
@@ -923,6 +1218,21 @@ export interface CommonResponseListPartnershipResponse {
   data?: PartnershipResponse[];
 }
 
+export interface SortObject {
+  sorted?: boolean;
+  empty?: boolean;
+  unsorted?: boolean;
+}
+
+export interface PageableObject {
+  paged?: boolean;
+  pageNumber?: number;
+  pageSize?: number;
+  offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
+}
+
 export type StoreClaimResponseStatus = typeof StoreClaimResponseStatus[keyof typeof StoreClaimResponseStatus];
 
 
@@ -948,32 +1258,17 @@ export interface StoreClaimResponse {
   adminMemo?: string;
 }
 
-export interface SortObject {
-  empty?: boolean;
-  sorted?: boolean;
-  unsorted?: boolean;
-}
-
-export interface PageableObject {
-  offset?: number;
-  sort?: SortObject;
-  pageSize?: number;
-  pageNumber?: number;
-  paged?: boolean;
-  unpaged?: boolean;
-}
-
 export interface PageStoreClaimResponse {
-  totalPages?: number;
   totalElements?: number;
+  totalPages?: number;
+  pageable?: PageableObject;
+  first?: boolean;
   size?: number;
   content?: StoreClaimResponse[];
   number?: number;
   sort?: SortObject;
-  first?: boolean;
-  last?: boolean;
   numberOfElements?: number;
-  pageable?: PageableObject;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1012,6 +1307,10 @@ categories?: GetStoresCategoriesItem[];
  * 분위기 필터 (복수 선택 가능)
  */
 moods?: GetStoresMoodsItem[];
+/**
+ * 대학(상권) ID 필터
+ */
+universityId?: number;
 /**
  * 페이징 정보 (page, size, sort)
  */
@@ -1078,6 +1377,8 @@ export type CreateItemBody = {
   request: CreateItemRequest;
 };
 
+export type CreateItemCategoryBody = {[key: string]: string};
+
 export type GetCommentsParams = {
 /**
  * 페이징 정보
@@ -1113,10 +1414,18 @@ export type UploadPartnershipDataBody = {
   file: Blob;
 };
 
+export type CreateEventBody = {
+  request: CreateEventRequest;
+  /** 이벤트 이미지 */
+  images?: string[];
+};
+
 export type UpdateStoreBody = {
   request: UpdateStoreRequest;
   images: string[];
 };
+
+export type UpdateItemCategoryBody = {[key: string]: string};
 
 export type UpdateStoreNewsBody = {
   /** 변경할 소식 이미지 목록 */
@@ -1136,7 +1445,28 @@ export type UpdateItemBody = {
   request: UpdateItemRequest;
 };
 
+export type UpdateEventBody = {
+  request: UpdateEventRequest;
+  /** 이벤트 이미지 */
+  images?: string[];
+};
+
 export type HealthCheck200 = {[key: string]: { [key: string]: unknown }};
+
+export type GetNearbyStoresParams = {
+/**
+ * 위도
+ */
+latitude: number;
+/**
+ * 경도
+ */
+longitude: number;
+/**
+ * 반경(km)
+ */
+radius: number;
+};
 
 export type GetMyFavoritesParams = {
 /**
@@ -1144,6 +1474,46 @@ export type GetMyFavoritesParams = {
  */
 pageable: Pageable;
 };
+
+export type GetEventsParams = {
+/**
+ * 검색 키워드 (제목)
+ */
+keyword?: string;
+/**
+ * 이벤트 타입 필터 (복수 선택 가능)
+ */
+eventTypes?: GetEventsEventTypesItem[];
+/**
+ * 상태 필터
+ */
+status?: GetEventsStatus;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
+};
+
+export type GetEventsEventTypesItem = typeof GetEventsEventTypesItem[keyof typeof GetEventsEventTypesItem];
+
+
+export const GetEventsEventTypesItem = {
+  FOOD_EVENT: 'FOOD_EVENT',
+  POPUP_STORE: 'POPUP_STORE',
+  SCHOOL_EVENT: 'SCHOOL_EVENT',
+  FLEA_MARKET: 'FLEA_MARKET',
+  PERFORMANCE: 'PERFORMANCE',
+  COMMUNITY: 'COMMUNITY',
+} as const;
+
+export type GetEventsStatus = typeof GetEventsStatus[keyof typeof GetEventsStatus];
+
+
+export const GetEventsStatus = {
+  UPCOMING: 'UPCOMING',
+  LIVE: 'LIVE',
+  ENDED: 'ENDED',
+} as const;
 
 export type CheckUsernameAvailabilityParams = {
 username: string;
