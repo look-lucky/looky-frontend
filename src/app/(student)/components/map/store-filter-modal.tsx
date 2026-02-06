@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type FilterTab = 'storeType' | 'event';
 
@@ -29,6 +30,7 @@ interface StoreFilterModalProps {
   onStoreTypeToggle: (id: string) => void;
   onMoodToggle: (id: string) => void;
   onEventToggle: (id: string) => void;
+  onReset: () => void;
   onClose: () => void;
   onApply: () => void;
 }
@@ -43,9 +45,12 @@ export function StoreFilterModal({
   onStoreTypeToggle,
   onMoodToggle,
   onEventToggle,
+  onReset,
   onClose,
   onApply,
 }: StoreFilterModalProps) {
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal
       visible={visible}
@@ -54,30 +59,38 @@ export function StoreFilterModal({
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.container} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={[styles.container, { paddingBottom: rs(20) + insets.bottom }]}
+          onPress={(e) => e.stopPropagation()}
+        >
           {/* 탭 헤더 */}
           <View style={styles.tabHeader}>
-            <TouchableOpacity
-              style={styles.tab}
-              onPress={() => onTabChange('storeType')}
-            >
-              <ThemedText
-                type="subtitle"
-                lightColor={activeTab === 'storeType' ? Text.primary : Text.tertiary}
+            <View style={styles.tabRow}>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => onTabChange('storeType')}
               >
-                가게 종류
-              </ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.tab}
-              onPress={() => onTabChange('event')}
-            >
-              <ThemedText
-                type="subtitle"
-                lightColor={activeTab === 'event' ? Text.primary : Text.tertiary}
+                <ThemedText
+                  type="subtitle"
+                  lightColor={activeTab === 'storeType' ? Text.primary : Text.tertiary}
+                >
+                  가게 종류
+                </ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => onTabChange('event')}
               >
-                이벤트
-              </ThemedText>
+                <ThemedText
+                  type="subtitle"
+                  lightColor={activeTab === 'event' ? Text.primary : Text.tertiary}
+                >
+                  이벤트
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={onReset}>
+              <ThemedText style={styles.resetText}>초기화</ThemedText>
             </TouchableOpacity>
           </View>
 
@@ -200,8 +213,17 @@ const styles = StyleSheet.create({
   },
   tabHeader: {
     flexDirection: 'row',
-    gap: rs(16),
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: rs(20),
+  },
+  tabRow: {
+    flexDirection: 'row',
+    gap: rs(16),
+  },
+  resetText: {
+    fontSize: 14,
+    color: Text.tertiary,
   },
   tab: {
     paddingVertical: rs(4),

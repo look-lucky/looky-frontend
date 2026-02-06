@@ -3,6 +3,7 @@ import { ThemedText } from '@/src/shared/common/themed-text';
 import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
 import { rs } from '@/src/shared/theme/scale';
 import { System, Text } from '@/src/shared/theme/theme';
+import { formatOperatingHours } from '@/src/shared/utils/store-transform';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -128,7 +129,7 @@ function StoreInfoSection({
 
       <View style={styles.infoRow}>
         <Ionicons name="time-outline" size={rs(14)} color="#666" />
-        <ThemedText style={styles.infoText}>{openHours}</ThemedText>
+        <ThemedText style={styles.infoText}>{formatOperatingHours(openHours)}</ThemedText>
       </View>
     </View>
   );

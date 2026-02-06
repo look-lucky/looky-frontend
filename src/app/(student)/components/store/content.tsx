@@ -8,10 +8,11 @@ import type {
 } from '@/src/shared/types/store';
 import { rs } from '@/src/shared/theme/scale';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { AnnouncementCarousel } from './announcement-carousel';
 import { RecommendSection } from './recommend-section';
 import { ReportSection } from './report-section';
+import { InfoSection, type StoreInfo } from './tabs/info-section';
 import { MenuSection } from './tabs/menu-section';
 import { NewsSection } from './tabs/news-section';
 import { ReviewSection } from './tabs/review-section';
@@ -34,6 +35,9 @@ interface StoreContentProps {
   onEditReview?: (reviewId: string) => void;
   onDeleteReview?: (reviewId: string) => void;
   onReportReview?: (reviewId: string) => void;
+  storeInfo?: StoreInfo;
+  scrollViewRef?: React.RefObject<ScrollView | null>;
+  scrollOffsetY?: React.RefObject<number>;
 }
 
 export function StoreContent({
@@ -50,6 +54,9 @@ export function StoreContent({
   onEditReview,
   onDeleteReview,
   onReportReview,
+  storeInfo,
+  scrollViewRef,
+  scrollOffsetY,
 }: StoreContentProps) {
   return (
     <View style={styles.container}>
@@ -66,6 +73,10 @@ export function StoreContent({
           onDeleteReview={onDeleteReview}
           onReportReview={onReportReview}
         />
+      )}
+
+      {activeTab === 'info' && storeInfo && (
+        <InfoSection {...storeInfo} scrollViewRef={scrollViewRef} scrollOffsetY={scrollOffsetY} />
       )}
 
       {activeTab === 'news' && (

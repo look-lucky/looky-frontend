@@ -20,7 +20,7 @@ import { ThemedText } from '@/src/shared/common/themed-text';
 import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
 import { rs } from '@/src/shared/theme/scale';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -32,6 +32,13 @@ const CATEGORY_LABEL: Record<string, string> = {
   ENTERTAINMENT: '오락',
   BEAUTY_HEALTH: '뷰티/건강',
   ETC: '기타',
+};
+
+const MOOD_LABEL: Record<string, string> = {
+  SOLO_DINING: '혼밥',
+  GROUP_GATHERING: '단체모임',
+  LATE_NIGHT: '심야영업',
+  ROMANTIC: '로맨틱',
 };
 
 const formatDate = (dateStr?: string) => {
@@ -56,6 +63,8 @@ export default function StoreDetailScreen() {
   const [activeTab, setActiveTab] = useState('news');
   const [isLiked, setIsLiked] = useState(false);
   const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetY = useRef(0);
 
   const storeId = Number(id);
 
@@ -77,7 +86,8 @@ export default function StoreDetailScreen() {
 
   // 쿠폰 목록
   const { data: couponsRes } = useGetCouponsByStore(storeId);
-  const apiCoupons = ((couponsRes as any)?.data?.data ?? []) as CouponResponse[];
+  const rawCoupons = (couponsRes as any)?.data?.data;
+  const apiCoupons = (Array.isArray(rawCoupons) ? rawCoupons : []) as CouponResponse[];
 
   // 소식 (paginated)
   const { data: newsRes, isLoading: isNewsLoading } = useGetStoreNewsList(
@@ -107,6 +117,9 @@ export default function StoreDetailScreen() {
   const storeCategory = apiStore?.storeCategories
     ?.map((c) => CATEGORY_LABEL[c] ?? c)
     .join(', ') ?? '';
+  const storeMoods = apiStore?.storeMoods
+    ?.map((m) => MOOD_LABEL[m] ?? m)
+    .join(' · ') ?? '';
 
   // 리뷰 통계 → rating, reviewCount
   const storeRating = reviewStats?.averageRating ?? (Number(rating) || 0);
@@ -184,6 +197,17 @@ export default function StoreDetailScreen() {
     [apiReviewsPage],
   );
 
+  // 매장 정보: API StoreResponse → InfoSection props
+  const storeInfo = useMemo(() => ({
+    introduction: apiStore?.introduction ?? '',
+    operatingHours: storeOpenHours,
+    roadAddress: storeAddress,
+    jibunAddress: apiStore?.jibunAddress ?? '',
+    phone: apiStore?.phone ?? '',
+    category: storeCategory,
+    moods: storeMoods,
+  }), [apiStore, storeOpenHours, storeAddress, storeCategory, storeMoods]);
+
   // 리뷰 통계: API ReviewStatsResponse → 컴포넌트 ReviewRating 타입
   const storeReviewRating = useMemo(() => ({
     totalCount: reviewStats?.totalReviews ?? 0,
@@ -250,6 +274,9 @@ export default function StoreDetailScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
+        ref={scrollViewRef}
+        onScroll={(e) => { scrollOffsetY.current = e.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={16}
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
@@ -297,6 +324,9 @@ export default function StoreDetailScreen() {
               reviews={storeReviews}
               onWriteReview={handleWriteReview}
               onEditReview={handleEditReview}
+              storeInfo={storeInfo}
+              scrollViewRef={scrollViewRef}
+              scrollOffsetY={scrollOffsetY}
             />
           </View>
         )}

@@ -14,6 +14,8 @@ export interface Store {
   benefits: string[];
   lat: number;
   lng: number;
+  isPartner: boolean;
+  hasCoupon: boolean;
 }
 
 // ============================================

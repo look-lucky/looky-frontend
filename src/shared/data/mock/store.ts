@@ -17,6 +17,8 @@ export const DUMMY_STORES: Store[] = [
     benefits: ['치킨 언어머니 쿨링 500m', '무 마라 2L 배송'],
     lat: 35.8468,
     lng: 127.1294,
+    isPartner: true,
+    hasCoupon: true,
   },
   {
     id: '2',
@@ -30,6 +32,8 @@ export const DUMMY_STORES: Store[] = [
     benefits: ['붕어빵 2개 서비스'],
     lat: 35.8448,
     lng: 127.1274,
+    isPartner: true,
+    hasCoupon: true,
   },
   {
     id: '3',
@@ -43,6 +47,8 @@ export const DUMMY_STORES: Store[] = [
     benefits: ['떡볶이 500원 할인'],
     lat: 35.8438,
     lng: 127.1314,
+    isPartner: false,
+    hasCoupon: false,
   },
 ];
 

@@ -1,10 +1,21 @@
+import { ThemedText } from "@/src/shared/common/themed-text";
+import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";
+import { Gray } from "@/src/shared/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function MyPageTab() {
   const insets = useSafeAreaInsets();
+  const { handleLogout } = useAuth();
+
+  const onLogout = () => {
+    Alert.alert("로그아웃", "정말 로그아웃 하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      { text: "로그아웃", style: "destructive", onPress: handleLogout },
+    ]);
+  };
 
   return (
     <View style={styles.container}>
@@ -115,9 +126,9 @@ export default function MyPageTab() {
         </View>
 
         {/* 로그아웃 버튼 */}
-        <TouchableOpacity style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={rs(16)} color="#828282" />
-          <Text style={styles.logoutText}>로그아웃</Text>
+        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+          <Ionicons name="log-out-outline" size={rs(16)} color={Gray.gray9} />
+          <ThemedText style={styles.logoutText}>로그아웃</ThemedText>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -250,11 +261,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    alignSelf: "center",
     gap: rs(6),
-    paddingVertical: rs(30),
+    paddingVertical: rs(12),
+    paddingHorizontal: rs(24),
+    borderWidth: 1,
+    borderColor: Gray.gray4,
+    borderRadius: rs(8),
+    marginVertical: rs(28),
   },
   logoutText: {
     fontSize: rs(14),
-    color: "#828282",
+    color: Gray.gray9,
   },
 });

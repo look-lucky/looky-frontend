@@ -1,6 +1,7 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import type { Store } from '@/src/shared/types/store';
+import { formatOperatingHours } from '@/src/shared/utils/store-transform';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -52,7 +53,7 @@ export function SelectedStoreDetail({
               {store.openStatus}
             </ThemedText>
             <ThemedText style={styles.detailText}>
-              {store.openHours}
+              {formatOperatingHours(store.openHours)}
             </ThemedText>
           </View>
           {store.benefits.length > 0 && (
