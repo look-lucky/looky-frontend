@@ -5,8 +5,9 @@ import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
 import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -53,10 +54,10 @@ function formatDate(date: Date) {
 export default function SignupOwnerPage() {
   console.log("=== SignupOwnerPage mounted ===");
   const router = useRouter();
-  const { setSignupFields } = useSignupStore();
+  const { storeName: savedStoreName, storeAddress: savedStoreAddress, setSignupFields } = useSignupStore();
 
-  // 폼 상태
-  const [storeName, setStoreName] = useState("");
+  // 폼 상태 (zustand에서 복원)
+  const [storeName, setStoreName] = useState(savedStoreName);
   const [storePhone, setStorePhone] = useState("");
   const [representativeName, setRepresentativeName] = useState("");
   const [businessNumber, setBusinessNumber] = useState("");
@@ -65,6 +66,11 @@ export default function SignupOwnerPage() {
 
   // 날짜 모달 상태
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+
+  // 검색 화면에서 돌아왔을 때 zustand → 로컬 state 동기화
+  useEffect(() => {
+    if (savedStoreName) setStoreName(savedStoreName);
+  }, [savedStoreName]);
 
   // 폼 유효성
   const isFormValid =
@@ -132,16 +138,24 @@ export default function SignupOwnerPage() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 가게 이름 */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="가게 이름"
-            placeholderTextColor={TextColors.placeholder}
-            value={storeName}
-            onChangeText={setStoreName}
-          />
-        </View>
+        {/* 가게 이름 (터치 시 검색 화면 이동) */}
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => router.push("/auth/store-search")}
+          activeOpacity={0.7}
+        >
+          <ThemedText
+            style={storeName ? styles.inputText : styles.inputPlaceholder}
+          >
+            {storeName || "가게 이름"}
+          </ThemedText>
+          <Ionicons name="search" size={rs(18)} color={Gray.gray9} />
+        </TouchableOpacity>
+        {savedStoreAddress ? (
+          <ThemedText style={styles.storeAddress}>
+            {savedStoreAddress}
+          </ThemedText>
+        ) : null}
 
         {/* 가게 전화번호 */}
         <View style={styles.inputContainer}>
@@ -292,6 +306,22 @@ const styles = StyleSheet.create({
     fontSize: rs(14),
     color: TextColors.primary,
     fontFamily: "Pretendard",
+  },
+  inputText: {
+    flex: 1,
+    fontSize: rs(14),
+    color: TextColors.primary,
+  },
+  inputPlaceholder: {
+    flex: 1,
+    fontSize: rs(14),
+    color: TextColors.placeholder,
+  },
+  storeAddress: {
+    fontSize: rs(12),
+    color: TextColors.tertiary,
+    marginTop: rs(-4),
+    paddingHorizontal: rs(4),
   },
   dateRow: {
     flexDirection: "row",

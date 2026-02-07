@@ -29,6 +29,7 @@ interface SignupState {
 
   // Step 2 (점주): sign-up-owner.tsx에서 입력
   storeName: string;
+  storeAddress: string;
   storePhone: string;
   representativeName: string;
   businessNumber: string;
@@ -63,6 +64,7 @@ const initialState: Omit<SignupState, "setSignupField" | "setSignupFields" | "re
   departmentName: "",
   studentEmail: "",
   storeName: "",
+  storeAddress: "",
   storePhone: "",
   representativeName: "",
   businessNumber: "",
