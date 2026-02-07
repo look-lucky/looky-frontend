@@ -1,14 +1,54 @@
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";
-import { Gray } from "@/src/shared/theme/theme";
+import { Fonts, Gray, Owner, Primary, Text as TextColor } from "@/src/shared/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const MenuItem = ({
+  icon,
+  text,
+  rightText,
+  onPress,
+  isLast,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  text: string;
+  rightText?: string;
+  onPress?: () => void;
+  isLast?: boolean;
+}) => (
+  <TouchableOpacity
+    style={[styles.menuItemRow, !isLast && styles.menuItemBorder]}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <View style={styles.menuItemLeft}>
+      <Ionicons name={icon} size={rs(20)} color={TextColor.secondary} />
+      <ThemedText style={styles.menuItemText}>{text}</ThemedText>
+    </View>
+    <View style={styles.menuItemRight}>
+      {rightText && (
+        <ThemedText style={styles.menuItemCount}>{rightText}</ThemedText>
+      )}
+      <Ionicons name="chevron-forward" size={rs(16)} color={Gray.gray5} />
+    </View>
+  </TouchableOpacity>
+);
 
 export default function MyPageTab() {
   const insets = useSafeAreaInsets();
   const { handleLogout } = useAuth();
+  const router = useRouter();
 
   const onLogout = () => {
     Alert.alert("로그아웃", "정말 로그아웃 하시겠습니까?", [
@@ -18,191 +58,215 @@ export default function MyPageTab() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* 초록색 배경 Header */}
-      <View style={[styles.headerBackground, { paddingTop: insets.top }]}>
-        {/* 타이틀 */}
-        <Text style={styles.headerTitle}>마이페이지</Text>
-
-        {/* 프로필 카드 - 더 진한 초록색 */}
-        <View style={styles.profileCard}>
-          {/* 프로필 아이콘 */}
-          <View style={styles.profileIconContainer}>
-            <Ionicons name="person-circle-outline" size={rs(66)} color="#FFFFFF" />
-          </View>
-
-          {/* 프로필 정보 */}
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>띠로롱 님</Text>
-            <Text style={styles.profileSchool}>전북대학교 공과대학</Text>
-          </View>
-
-          {/* 수정 버튼 */}
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editButtonText}>수정</Text>
-          </TouchableOpacity>
-        </View>
+    <View style={[styles.safeArea, { paddingTop: insets.top }]}>
+      {/* 헤더 */}
+      <View style={styles.headerContainer}>
+        <ThemedText style={styles.headerTitle}>마이페이지</ThemedText>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* 마이 쿠폰 카드 */}
-        <View style={styles.couponCard}>
-          <View style={styles.couponItem}>
-            <Text style={[styles.couponNumber, { color: "#009951" }]}>4</Text>
-            <Text style={styles.couponLabel}>보유 쿠폰</Text>
+      {/* 프로필 카드 */}
+      <View style={styles.fixedProfileContainer}>
+        <LinearGradient
+          colors={[Owner.primary, "#2FB786"]}
+          style={styles.profileGradientBox}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        >
+          <View style={styles.profileContentRow}>
+            <View style={styles.profileIconBox}>
+              <Ionicons name="person" size={rs(24)} color={Primary[400]} />
+            </View>
+            <View style={styles.profileTextColumn}>
+              <ThemedText style={styles.profileName}>띠로롱 님</ThemedText>
+              <ThemedText style={styles.profileGreeting}>
+                전북대학교 공과대학
+              </ThemedText>
+            </View>
+            <TouchableOpacity style={styles.editButton}>
+              <ThemedText style={styles.editButtonText}>수정</ThemedText>
+            </TouchableOpacity>
           </View>
-          <View style={styles.couponDivider} />
-          <View style={styles.couponItem}>
-            <Text style={[styles.couponNumber, { color: "#EB4335" }]}>2</Text>
-            <Text style={styles.couponLabel}>곧 만료</Text>
+        </LinearGradient>
+      </View>
+
+      {/* 메뉴 영역 */}
+      <View style={styles.menuScrollArea}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* 쿠폰 카드 */}
+          <View style={styles.couponCard}>
+            <View style={styles.couponItem}>
+              <ThemedText style={[styles.couponNumber, { color: Primary[500] }]}>
+                4
+              </ThemedText>
+              <ThemedText style={styles.couponLabel}>보유 쿠폰</ThemedText>
+            </View>
+            <View style={styles.couponDivider} />
+            <View style={styles.couponItem}>
+              <ThemedText style={[styles.couponNumber, { color: "#EB4335" }]}>
+                2
+              </ThemedText>
+              <ThemedText style={styles.couponLabel}>곧 만료</ThemedText>
+            </View>
+            <View style={styles.couponDivider} />
+            <View style={styles.couponItem}>
+              <ThemedText style={[styles.couponNumber, { color: TextColor.primary }]}>
+                12
+              </ThemedText>
+              <ThemedText style={styles.couponLabel}>사용 완료</ThemedText>
+            </View>
           </View>
-          <View style={styles.couponDivider} />
-          <View style={styles.couponItem}>
-            <Text style={[styles.couponNumber, { color: "#000000" }]}>12</Text>
-            <Text style={styles.couponLabel}>사용 완료</Text>
+
+          {/* 그룹 1: 찜한 매장 / 내가 쓴 리뷰 */}
+          <View style={styles.menuGroupBox}>
+            <MenuItem
+              icon="bookmark-outline"
+              text="찜한 매장"
+              rightText="12"
+            />
+            <MenuItem
+              icon="document-text-outline"
+              text="내가 쓴 리뷰"
+              rightText="19"
+              isLast
+            />
           </View>
-        </View>
 
-        {/* 메뉴 리스트 */}
-        <View style={styles.menuCard}>
-          {/* 찜한 매장 */}
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuLeft}>
-              <Ionicons name="bookmark-outline" size={rs(20)} color="#828282" />
-              <Text style={styles.menuText}>찜한 매장</Text>
-            </View>
-            <View style={styles.menuRight}>
-              <Text style={styles.menuCount}>12</Text>
-              <Ionicons name="chevron-forward" size={rs(16)} color="#828282" />
-            </View>
+          {/* 그룹 2: 알림 설정 / 고객센터 / 설정 */}
+          <View style={styles.menuGroupBox}>
+            <MenuItem icon="notifications-outline" text="알림 설정" />
+            <MenuItem icon="chatbubble-ellipses-outline" text="고객센터" onPress={() => router.push("/inquiry")} />
+            <MenuItem icon="settings-sharp" text="설정" isLast />
+          </View>
+
+          {/* 로그아웃 */}
+          <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+            <Ionicons name="log-out-outline" size={rs(16)} color={Gray.gray9} />
+            <ThemedText style={styles.logoutText}>로그아웃</ThemedText>
           </TouchableOpacity>
-
-          <View style={styles.menuDivider} />
-
-          {/* 내가 쓴 리뷰 */}
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuLeft}>
-              <Ionicons name="document-text-outline" size={rs(20)} color="#828282" />
-              <Text style={styles.menuText}>내가 쓴 리뷰</Text>
-            </View>
-            <View style={styles.menuRight}>
-              <Text style={styles.menuCount}>19</Text>
-              <Ionicons name="chevron-forward" size={rs(16)} color="#828282" />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.menuDivider} />
-
-          {/* 알림 설정 */}
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuLeft}>
-              <Ionicons name="notifications-outline" size={rs(20)} color="#828282" />
-              <Text style={styles.menuText}>알림 설정</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={rs(16)} color="#828282" />
-          </TouchableOpacity>
-
-          <View style={styles.menuDivider} />
-
-          {/* 고객센터 */}
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuLeft}>
-              <Ionicons name="help-circle-outline" size={rs(20)} color="#828282" />
-              <Text style={styles.menuText}>고객센터</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={rs(16)} color="#828282" />
-          </TouchableOpacity>
-
-          <View style={styles.menuDivider} />
-
-          {/* 설정 */}
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuLeft}>
-              <Ionicons name="settings-outline" size={rs(20)} color="#828282" />
-              <Text style={styles.menuText}>설정</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={rs(16)} color="#828282" />
-          </TouchableOpacity>
-        </View>
-
-        {/* 로그아웃 버튼 */}
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Ionicons name="log-out-outline" size={rs(16)} color={Gray.gray9} />
-          <ThemedText style={styles.logoutText}>로그아웃</ThemedText>
-        </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#F7F7F7",
+    backgroundColor: Gray.white,
   },
-  headerBackground: {
-    backgroundColor: "#8AD97E",
-    paddingHorizontal: rs(20),
-    paddingBottom: rs(40),
+
+  // 헤더
+  headerContainer: {
+    height: rs(50),
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingLeft: rs(20),
+    backgroundColor: Gray.white,
   },
   headerTitle: {
     fontSize: rs(18),
-    fontWeight: "600",
-    color: "#FFFFFF",
-    paddingTop: rs(8),
-    paddingBottom: rs(16),
+    fontWeight: "700",
+    color: TextColor.primary,
+    fontFamily: Fonts.bold,
   },
-  profileCard: {
+
+  // 프로필 카드
+  fixedProfileContainer: {
+    paddingHorizontal: rs(20),
+    paddingBottom: rs(20),
+    backgroundColor: Gray.white,
+    zIndex: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    elevation: 2,
+  },
+  profileGradientBox: {
+    height: rs(100),
+    borderRadius: rs(12),
+    justifyContent: "center",
+    paddingHorizontal: rs(20),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  profileContentRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#7ACE6D",
-    borderRadius: rs(12),
-    paddingVertical: rs(12),
-    paddingHorizontal: rs(10),
   },
-  profileIconContainer: {
-    width: rs(66),
-    height: rs(66),
+  profileIconBox: {
+    width: rs(44),
+    height: rs(44),
+    backgroundColor: Gray.white,
+    borderRadius: rs(12),
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  profileInfo: {
+  profileTextColumn: {
     flex: 1,
-    paddingLeft: rs(12),
+    marginLeft: rs(16),
   },
   profileName: {
-    fontSize: rs(16),
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontSize: rs(18),
+    fontWeight: "700",
+    color: Gray.white,
+    fontFamily: Fonts.bold,
+    marginBottom: rs(4),
   },
-  profileSchool: {
-    fontSize: rs(14),
-    color: "#FFFFFF",
-    opacity: 0.9,
+  profileGreeting: {
+    fontSize: rs(12),
+    fontWeight: "500",
+    color: "rgba(255, 255, 255, 0.90)",
+    fontFamily: Fonts.medium,
   },
   editButton: {
-    paddingHorizontal: rs(14),
+    paddingHorizontal: rs(12),
     paddingVertical: rs(6),
-    borderRadius: rs(14),
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.5)",
+    borderRadius: rs(12),
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
   },
   editButtonText: {
-    fontSize: rs(13),
-    color: "#FFFFFF",
+    fontSize: rs(12),
+    fontWeight: "500",
+    color: Gray.white,
+    fontFamily: Fonts.medium,
   },
-  content: {
+
+  // 메뉴 영역
+  menuScrollArea: {
     flex: 1,
-    top: rs(-20),
+    backgroundColor: Primary.textBg,
   },
+  scrollContent: {
+    paddingTop: rs(20),
+    paddingHorizontal: rs(20),
+    paddingBottom: rs(50),
+    gap: rs(16),
+  },
+
+  // 쿠폰 카드
   couponCard: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Gray.white,
     borderRadius: rs(12),
-    paddingVertical: rs(15),
+    paddingVertical: rs(16),
     alignItems: "center",
     justifyContent: "space-around",
-    marginHorizontal: rs(12),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   couponItem: {
     flex: 1,
@@ -211,67 +275,78 @@ const styles = StyleSheet.create({
   couponNumber: {
     fontSize: rs(28),
     fontWeight: "600",
+    fontFamily: Fonts.semiBold,
   },
   couponLabel: {
-    fontSize: rs(13),
-    color: "#828282",
+    fontSize: rs(12),
+    color: TextColor.tertiary,
+    fontFamily: Fonts.regular,
+    marginTop: rs(4),
   },
   couponDivider: {
     width: 1,
     height: rs(40),
-    backgroundColor: "#E0E0E0",
+    backgroundColor: Gray.gray4,
   },
-  menuCard: {
-    backgroundColor: "#FFFFFF",
+
+  // 메뉴 그룹
+  menuGroupBox: {
+    backgroundColor: Gray.white,
     borderRadius: rs(12),
-    marginHorizontal: rs(12),
-    marginTop: rs(16),
-    paddingHorizontal: rs(20),
+    paddingVertical: rs(4),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
-  menuItem: {
+  menuItemRow: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: rs(16),
+    alignItems: "center",
+    paddingVertical: rs(14),
+    paddingHorizontal: rs(16),
   },
-  menuLeft: {
+  menuItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Gray.gray2,
+    marginHorizontal: rs(16),
+    paddingHorizontal: 0,
+  },
+  menuItemLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: rs(12),
   },
-  menuText: {
-    fontSize: rs(15),
-    fontWeight: "500",
-    color: "#000000",
+  menuItemText: {
+    fontSize: rs(14),
+    fontWeight: "400",
+    color: TextColor.secondary,
+    fontFamily: Fonts.regular,
   },
-  menuRight: {
+  menuItemRight: {
     flexDirection: "row",
     alignItems: "center",
     gap: rs(8),
   },
-  menuCount: {
-    fontSize: rs(15),
-    color: "#828282",
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: "#F0F0F0",
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-    gap: rs(6),
-    paddingVertical: rs(12),
-    paddingHorizontal: rs(24),
-    borderWidth: 1,
-    borderColor: Gray.gray4,
-    borderRadius: rs(8),
-    marginVertical: rs(28),
-  },
-  logoutText: {
+  menuItemCount: {
     fontSize: rs(14),
     color: Gray.gray9,
+    fontFamily: Fonts.regular,
+  },
+
+  // 로그아웃
+  logoutButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: rs(4),
+    gap: rs(4),
+  },
+  logoutText: {
+    fontSize: rs(12),
+    fontWeight: "400",
+    color: Gray.gray9,
+    fontFamily: Fonts.regular,
   },
 });
