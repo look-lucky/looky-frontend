@@ -2,6 +2,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
+import InquiryCompleteScreen from '../../shared/screens/inquiry/InquiryCompleteScreen';
+import InquiryScreen from '../../shared/screens/inquiry/InquiryScreen';
 import CouponListScreen from './coupon-patron/CouponListScreen';
 import CouponScreen from './coupon-patron/CouponScreen';
 import HomeScreen from './home/HomeScreen';
@@ -10,8 +12,6 @@ import ChangeIdScreen from './mypage/ChangeIdScreen';
 import ChangePasswordScreen from './mypage/ChangePasswordScreen';
 import EasyLoginScreen from './mypage/EasyLoginScreen';
 import EditProfileScreen from './mypage/EditProfileScreen';
-import InquiryCompleteScreen from '../../shared/screens/inquiry/InquiryCompleteScreen';
-import InquiryScreen from '../../shared/screens/inquiry/InquiryScreen';
 import MyPageScreen from './mypage/MyPageScreen';
 import SettingScreen from './mypage/SettingScreen';
 import StoreAddScreen from './mypage/StoreAddScreen';
@@ -21,9 +21,10 @@ import TermsScreen from './mypage/TermsScreen';
 import VersionScreen from './mypage/VersionScreen';
 import WithdrawCompleteScreen from './mypage/WithdrawCompleteScreen';
 import WithdrawScreen from './mypage/WithdrawScreen';
+import ReportCompleteScreen from './review/ReportCompleteScreen';
+import ReportScreen from './review/ReportScreen';
 import ReviewScreen from './review/ReviewScreen';
 import StoreScreen from './store/StoreScreen';
-import PatronHomeScreen from './patron/HomeScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -35,6 +36,7 @@ function MainTabNavigator() {
       initialRouteName="Home"
       screenOptions={{
         tabBarActiveTintColor: '#34B262', 
+        
         tabBarInactiveTintColor: '#444444',
         headerShown: false, 
       }}
@@ -70,8 +72,7 @@ function MainTabNavigator() {
 
 export default function ShopOwnerNavigator() {
   return (
-    <Stack.Navigator initialRouteName="PatronHome" screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="PatronHome" component={PatronHomeScreen} />
+    <Stack.Navigator initialRouteName="MainTabs" screenOptions={{ headerShown: false }}>
       {/* 1. 기본 화면 탭 네비게이터 */}
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       {/* 2. 알림 화면 스택 화면 */}
@@ -106,6 +107,10 @@ export default function ShopOwnerNavigator() {
       <Stack.Screen name="Version" component={VersionScreen} options={{ headerShown: false }} />
       {/* 17. 쿠폰/단골 페이지- 전체 쿠폰 스택 화면 */}
       <Stack.Screen name="CouponList" component={CouponListScreen} options={{ headerShown: false }} />
+      {/* 18. 리뷰관리-신고 화면 스택 화면 */}
+      <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: false }} />
+      {/* 19. 리뷰관리-신고완료 화면 스택 화면 */}
+      <Stack.Screen name="ReportComplete" component={ReportCompleteScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

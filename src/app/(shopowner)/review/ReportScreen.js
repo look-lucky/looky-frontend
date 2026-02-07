@@ -2,10 +2,28 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-export default function ReportScreen({ navigation }) {
-  const [reporterType, setReporterType] = useState('user'); 
+import { useReportReview } from '@/src/api/review';
+
+// UI 라벨 → API reason enum 매핑
+const REASON_MAP = {
+  '근거 없이 악의적인 내용': 'SPAM',
+  '음란성 또는 욕설 등 부적절한 내용': 'INAPPROPRIATE_CONTENT',
+  '명예훼손 및 저작권 침해': 'INAPPROPRIATE_CONTENT',
+  '다른 매장 리뷰': 'IRRELEVANT',
+  '초상권 침해 또는 개인정보 노출': 'INAPPROPRIATE_CONTENT',
+  '서비스나 메뉴 등 대가를 목적으로 작성된 리뷰': 'SPAM',
+  '리뷰 작성 대행업체를 통해 게제된 허위 리뷰': 'SPAM',
+  '기타': 'OTHER',
+};
+
+export default function ReportScreen({ navigation, route }) {
+  const reviewId = route?.params?.reviewId;
+
+  const [reporterType, setReporterType] = useState('user');
   const [selectedReason, setSelectedReason] = useState(null);
   const [detailText, setDetailText] = useState('');
+
+  const reportMutation = useReportReview();
 
   const reasons = [
     '근거 없이 악의적인 내용',
@@ -23,7 +41,24 @@ export default function ReportScreen({ navigation }) {
       Alert.alert('알림', '신고 사유를 선택해주세요.');
       return;
     }
-    navigation.navigate('ReportComplete');
+    if (!reviewId) {
+      Alert.alert('오류', '리뷰 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    const apiReason = REASON_MAP[selectedReason] || 'OTHER';
+    const body = {
+      reason: apiReason,
+      ...(selectedReason === '기타' && detailText.trim() ? { detail: detailText.trim() } : {}),
+    };
+
+    reportMutation.mutate(
+      { reviewId, data: body },
+      {
+        onSuccess: () => navigation.navigate('ReportComplete'),
+        onError: () => Alert.alert('오류', '신고 처리 중 문제가 발생했습니다.'),
+      }
+    );
   };
 
   const RadioItem = ({ label, isSelected, onPress }) => {
@@ -117,12 +152,12 @@ export default function ReportScreen({ navigation }) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.submitButton, !selectedReason && styles.submitButtonDisabled]} 
+        <TouchableOpacity
+          style={[styles.submitButton, (!selectedReason || reportMutation.isPending) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={!selectedReason}
+          disabled={!selectedReason || reportMutation.isPending}
         >
-          <Text style={styles.submitButtonText}>신고하기</Text>
+          <Text style={styles.submitButtonText}>{reportMutation.isPending ? '처리 중...' : '신고하기'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

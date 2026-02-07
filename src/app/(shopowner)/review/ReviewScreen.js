@@ -1,42 +1,65 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-// 1. 더미 데이터
-const INITIAL_REVIEWS = [
-  {
-    id: 1,
-    author: '배고프당',
-    profileColor: '#5F6AA9',
-    date: '2026.01.08',
-    rating: 4.5,
-    content: '떡볶이가 정말 맛있어요! 매콤달콤한 맛이 최고입니다. 다음에 \n또 올게요~',
-    images: [1, 2, 3], // 이미지 있을 경우 (더미)
-    status: 'unanswered', // 미답변
-    reply: null,
-  },
-  {
-    id: 2,
-    author: '니어딜화이팅',
-    profileColor: '#A95F94',
-    date: '2026.01.08',
-    rating: 5,
-    content: '가성비가 좋아요. 양도 많고 맛도 좋습니다.',
-    images: [1, 2, 3],
-    status: 'answered', // 답변완료
-    reply: '감사합니다! 항상 맛있는 음식으로 보답하겠습니다 😊',
-  },
-];
+import { useGetReviews, useGetReviewStats } from '@/src/api/review';
+import { useGetMyStores } from '@/src/api/store';
 
 export default function ReviewScreen({navigation}) {
   const [filter, setFilter] = useState('all');
-  const [reviews, setReviews] = useState(INITIAL_REVIEWS);
-  
+
   // 답글 모달 상태
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState(null);
   const [replyText, setReplyText] = useState('');
+
+  // 1. 내 가게 정보 조회 → storeId 추출
+  const { data: storeDataResponse } = useGetMyStores();
+  const [myStoreId, setMyStoreId] = useState(null);
+  const [storeName, setStoreName] = useState('');
+
+  useEffect(() => {
+    if (storeDataResponse?.data) {
+      const myStore = Array.isArray(storeDataResponse.data)
+        ? storeDataResponse.data[0]
+        : storeDataResponse.data;
+      if (myStore) {
+        setMyStoreId(myStore.id);
+        setStoreName(myStore.name || '');
+      }
+    }
+  }, [storeDataResponse]);
+
+  // 2. 리뷰 목록 조회
+  const {
+    data: reviewsResponse,
+    isLoading: isReviewsLoading,
+    refetch: refetchReviews,
+  } = useGetReviews(myStoreId, { pageable: { page: 0, size: 100 } }, { query: { enabled: !!myStoreId } });
+
+  // 3. 리뷰 통계 조회
+  const { data: statsResponse } = useGetReviewStats(myStoreId, { query: { enabled: !!myStoreId } });
+
+  // 데이터 가공
+  const reviews = reviewsResponse?.data?.content || [];
+  const totalCount = reviewsResponse?.data?.totalElements ?? reviews.length;
+  const stats = statsResponse?.data;
+
+  // 날짜 포맷 함수
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  // 프로필 컬러 생성 (username 기반)
+  const getProfileColor = (name) => {
+    const colors = ['#5F6AA9', '#A95F94', '#6AAA5F', '#AA8B5F', '#5FA9A9', '#9A5FA9'];
+    let hash = 0;
+    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+  };
 
   // 1. 답글 달기 버튼 클릭 시
   const openReplyModal = (reviewId) => {
@@ -45,28 +68,15 @@ export default function ReviewScreen({navigation}) {
     setModalVisible(true);
   };
 
-  // 2. 답글 저장
+  // 2. 답글 저장 (TODO: 백엔드 API 추가 후 연동)
   const saveReply = () => {
     if (replyText.trim() === '') {
       Alert.alert('알림', '답글 내용을 입력해주세요.');
       return;
     }
-
-    // 리뷰 상태 업데이트 (답변완료 처리)
-    const updatedReviews = reviews.map((review) => {
-      if (review.id === selectedReviewId) {
-        return {
-          ...review,
-          status: 'answered',
-          reply: replyText,
-        };
-      }
-      return review;
-    });
-
-    setReviews(updatedReviews);
+    // TODO: 점주 답글 API 연동 필요
     setModalVisible(false);
-    Alert.alert('완료', '답글이 등록되었습니다.');
+    Alert.alert('알림', '답글 기능은 준비 중입니다.');
   };
 
   // 별점 렌더링 함수
@@ -74,11 +84,11 @@ export default function ReviewScreen({navigation}) {
     const stars = [];
     for (let i = 0; i < 5; i++) {
       stars.push(
-        <Ionicons 
-          key={i} 
-          name="star" 
-          size={rs(14)} 
-          color={i < count ? "#FBBC05" : "#DADADA"} 
+        <Ionicons
+          key={i}
+          name="star"
+          size={rs(14)}
+          color={i < count ? "#FBBC05" : "#DADADA"}
           style={{ marginRight: rs(2) }}
         />
       );
@@ -86,13 +96,21 @@ export default function ReviewScreen({navigation}) {
     return <View style={{ flexDirection: 'row' }}>{stars}</View>;
   };
 
+  if (isReviewsLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#34B262" />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
+
         {/* 상단 로고 */}
-        <Image 
-            source={require('@/assets/images/shopowner/logo2.png')} 
+        <Image
+            source={require('@/assets/images/shopowner/logo2.png')}
             style={styles.logo}
             resizeMode="contain"
         />
@@ -100,7 +118,7 @@ export default function ReviewScreen({navigation}) {
         {/* 페이지 타이틀 */}
         <View style={styles.titleContainer}>
             <Text style={styles.titleText}>
-                <Text style={styles.storeName}>채영식당</Text>
+                <Text style={styles.storeName}>{storeName || '내 가게'}</Text>
                 <Text style={styles.subText}> 의 리뷰</Text>
             </Text>
         </View>
@@ -108,14 +126,14 @@ export default function ReviewScreen({navigation}) {
         {/* 필터 및 카운트 */}
         <View style={styles.filterContainer}>
             <View style={styles.filterGroup}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={[styles.filterBtn, filter === 'all' ? styles.filterBtnActive : styles.filterBtnInactive]}
                     onPress={() => setFilter('all')}
                 >
                     <Text style={[styles.filterText, filter === 'all' ? styles.textActive : styles.textInactive]}>전체</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={[styles.filterBtn, filter === 'unread' ? styles.filterBtnActive : styles.filterBtnInactive]}
                     onPress={() => setFilter('unread')}
                 >
@@ -125,74 +143,62 @@ export default function ReviewScreen({navigation}) {
                     </View>
                 </TouchableOpacity>
             </View>
-            <Text style={styles.totalCount}>총 {reviews.length}개</Text>
+            <Text style={styles.totalCount}>총 {totalCount}개</Text>
         </View>
 
         {/* --- 리뷰 리스트 --- */}
         <View style={styles.reviewList}>
-          {reviews.map((review) => (
-            <View key={review.id} style={styles.reviewCard}>
-              
-              {/* 1. 리뷰 헤더 (프로필, 닉네임, 상태뱃지) */}
-              <View style={styles.cardHeader}>
-                <View style={[styles.profileCircle, { backgroundColor: review.profileColor }]} />
-                <Text style={styles.authorName}>{review.author}</Text>
-                
-                {/* 뱃지: 미답변 vs 답변완료 */}
-                {review.status === 'unanswered' ? (
-                   <View style={styles.badgeUnanswered}>
-                      <Text style={styles.textUnanswered}>미답변</Text>
-                   </View>
-                ) : (
-                   <View style={styles.badgeAnswered}>
-                      <Text style={styles.textAnswered}>답변완료</Text>
-                   </View>
+          {reviews.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: rs(40) }}>
+              <Text style={{ fontSize: rs(13), color: '#828282' }}>아직 리뷰가 없습니다.</Text>
+            </View>
+          ) : (
+            reviews.map((review) => (
+              <View key={review.reviewId} style={styles.reviewCard}>
+
+                {/* 1. 리뷰 헤더 (프로필, 닉네임) */}
+                <View style={styles.cardHeader}>
+                  <View style={[styles.profileCircle, { backgroundColor: getProfileColor(review.username) }]} />
+                  <Text style={styles.authorName}>{review.username}</Text>
+                </View>
+
+                {/* 2. 별점 및 날짜 */}
+                <View style={styles.ratingRow}>
+                  {renderStars(review.rating)}
+                  <Text style={styles.dateText}>{formatDate(review.createdAt)}</Text>
+                </View>
+
+                {/* 3. 리뷰 이미지 */}
+                {review.imageUrls && review.imageUrls.length > 0 && (
+                  <View style={styles.imageRow}>
+                    {review.imageUrls.map((url, idx) => (
+                      <Image key={idx} source={{ uri: url }} style={styles.reviewImage} />
+                    ))}
+                  </View>
                 )}
-              </View>
 
-              {/* 2. 별점 및 날짜 */}
-              <View style={styles.ratingRow}>
-                {renderStars(review.rating)}
-                <Text style={styles.dateText}>{review.date}</Text>
-              </View>
+                {/* 4. 리뷰 내용 */}
+                <Text style={styles.reviewContent}>{review.content}</Text>
 
-              {/* 3. 리뷰 이미지 (3개 나열) */}
-              <View style={styles.imageRow}>
-                  <View style={styles.reviewImage} />
-                  <View style={styles.reviewImage} />
-                  <View style={styles.reviewImage} />
-              </View>
-
-              {/* 4. 리뷰 내용 */}
-              <Text style={styles.reviewContent}>{review.content}</Text>
-
-              {/* 5. 하단 액션 (답글달기 버튼 OR 사장님 답글 박스) */}
-              {review.status === 'unanswered' ? (
-                // (1) 미답변일 때: 답글 달기 버튼
+                {/* 5. 하단 액션 (답글달기 버튼 + 신고) */}
                 <View style={styles.actionRow}>
-                   <TouchableOpacity 
-                      style={styles.replyButton} 
-                      onPress={() => openReplyModal(review.id)}
+                   <TouchableOpacity
+                      style={styles.replyButton}
+                      onPress={() => openReplyModal(review.reviewId)}
                     >
                       <Ionicons name="chatbubble-ellipses-outline" size={rs(12)} color="white" style={{marginRight: rs(6)}} />
                       <Text style={styles.replyButtonText}>답글 달기</Text>
                    </TouchableOpacity>
 
-                   <TouchableOpacity style={styles.reportButton} onPress={() => navigation.navigate('Report')}>
+                   <TouchableOpacity style={styles.reportButton} onPress={() => navigation.navigate('Report', { reviewId: review.reviewId })}>
                       <Ionicons name="flag-outline" size={rs(14)} color="#aaa" style={{marginRight: rs(2)}} />
                       <Text style={styles.reportText}>신고</Text>
                    </TouchableOpacity>
                 </View>
-              ) : (
-                // (2) 답변완료일 때: 사장님 답글 박스
-                <View style={styles.replyBox}>
-                    <Text style={styles.replyLabel}>사장님 답글</Text>
-                    <Text style={styles.replyContent}>{review.reply}</Text>
-                </View>
-              )}
 
-            </View>
-          ))}
+              </View>
+            ))
+          )}
         </View>
 
       </ScrollView>
@@ -204,7 +210,7 @@ export default function ReviewScreen({navigation}) {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
            behavior={Platform.OS === "ios" ? "padding" : "height"}
            style={styles.modalOverlay}
         >
@@ -215,7 +221,7 @@ export default function ReviewScreen({navigation}) {
                     <Ionicons name="close" size={rs(24)} color="#333" />
                 </TouchableOpacity>
             </View>
-            
+
             <TextInput
                 style={styles.inputBox}
                 placeholder="손님에게 감사의 마음을 전해보세요!"
