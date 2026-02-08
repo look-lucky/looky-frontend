@@ -1,5 +1,4 @@
 import { useGetCouponsByStore, useGetMyCoupons, useIssueCoupon } from '@/src/api/coupon';
-import { useAuth } from '@/src/shared/lib/auth';
 import { useCountFavorites } from '@/src/api/favorite';
 import type {
   CouponResponse,
@@ -11,20 +10,21 @@ import type {
 } from '@/src/api/generated.schemas';
 import { useGetItems } from '@/src/api/item';
 import { useGetReviews, useGetReviewStats } from '@/src/api/review';
-import { useGetStoreNewsList } from '@/src/api/store-news';
 import { useGetStore } from '@/src/api/store';
+import { useGetStoreNewsList } from '@/src/api/store-news';
 import { StoreBenefits } from '@/src/app/(student)/components/store/benefits';
 import { BottomFixedBar } from '@/src/app/(student)/components/store/bottom-bar';
-import { CouponModal } from '@/src/app/(student)/components/store/coupon-modal';
 import { StoreContent } from '@/src/app/(student)/components/store/content';
+import { CouponModal } from '@/src/app/(student)/components/store/coupon-modal';
 import { StoreHeader } from '@/src/app/(student)/components/store/header';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
+import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, BackHandler, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // 카테고리 enum → 한글 라벨
@@ -280,6 +280,15 @@ export default function StoreDetailScreen() {
   // ── 이벤트 핸들러 ──────────────────────────────────────────
 
   const handleBack = () => router.back();
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true; // true 반환 = 기본 동작(앱 종료 다이얼로그) 차단
+    });
+    return () => subscription.remove();
+  }, []);
+  
   const handleLike = () => setIsLiked(!isLiked);
   const handleCouponPress = () => {
     setIsCouponModalVisible(true);

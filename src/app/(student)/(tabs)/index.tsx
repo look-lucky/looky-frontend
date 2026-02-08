@@ -1,18 +1,18 @@
+import { useGetMyCoupons, useGetTodayCoupons } from '@/src/api/coupon';
+import { customFetch } from '@/src/api/mutator';
+import { useGetHotStores } from '@/src/api/store';
 import { CategorySection } from '@/src/app/(student)/components/home/category-section';
-import {
-  CouponItem,
-  CouponSection,
-} from '@/src/app/(student)/components/home/coupon-section';
+import { CouponSection } from '@/src/app/(student)/components/home/coupon-section';
 import { EventSection } from '@/src/app/(student)/components/home/event-section';
 import {
   HotPlaceItem,
   HotPlaceSection,
 } from '@/src/app/(student)/components/home/hot-place-section';
 import { WelcomeBanner } from '@/src/app/(student)/components/home/welcome-banner';
-import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Notify } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,89 +26,49 @@ const MOCK_USER = {
   department: '공과대학 IT시스템 공학과',
 };
 
-const MOCK_EVENTS = [
-  {
-    id: 1,
-    title: '전수당 앞! 총학생회 체육행사회',
-    description: '참여하고 커피 받아가세요!',
-    startDateTime: '2026-01-28T10:00:00',
-    endDateTime: '2026-01-28T14:00:00',
-    status: 'LIVE' as const,
-    imageUrls: [],
-  },
-  {
-    id: 2,
-    title: '알뜰이네 거리 총학생회 개강행사',
-    description: '참여하고 햄버거 받아가세요!',
-    startDateTime: '2026-01-29T10:00:00',
-    endDateTime: '2026-01-29T15:00:00',
-    status: 'UPCOMING' as const,
-    imageUrls: [],
-  },
-];
 
-const MOCK_COUPONS: CouponItem[] = [
-  {
-    id: 1,
-    storeId: 1,
-    storeName: '파리바게트',
-    title: '마감 빵 세트',
-    description: '',
-    discountType: 'PERCENT',
-    discountValue: 20,
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 2,
-    storeId: 2,
-    storeName: '카페 디딤',
-    title: '아메리카노',
-    description: '',
-    discountType: 'AMOUNT',
-    discountValue: 1500,
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 3,
-    storeId: 3,
-    storeName: '롯데리아',
-    title: '치즈볼 3구',
-    description: '',
-    discountType: 'SERVICE',
-    discountValue: 0,
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-const MOCK_HOT_PLACES: HotPlaceItem[] = [
-  {
-    id: 1,
-    rank: 1,
-    name: '000 돈까스',
-    category: '식당',
-    organization: '1,000원 할인',
-    weeklyFavoriteCount: 33,
-  },
-  {
-    id: 2,
-    rank: 2,
-    name: '카페 00',
-    category: '카페',
-    organization: '음료 1+1',
-    weeklyFavoriteCount: 20,
-  },
-  {
-    id: 3,
-    rank: 3,
-    name: '00 헬스',
-    category: '뷰티•헬스',
-    organization: '회원할인',
-    weeklyFavoriteCount: 15,
-  },
-];
 
 export default function HomePage() {
   const router = useRouter();
+
+  const { data: myCouponsRes } = useGetMyCoupons();
+  const rawCoupons = (myCouponsRes as any)?.data?.data;
+  const couponCount = Array.isArray(rawCoupons) ? rawCoupons.length : 0;
+
+  const { data: todayCouponsRes } = useGetTodayCoupons();
+  const todayCoupons = ((todayCouponsRes as any)?.data?.data ?? []).map((c: any) => ({
+    id: c.id,
+    storeId: c.storeId,
+    title: c.title ?? '',
+    description: c.description,
+    benefitType: c.benefitType,
+    benefitValue: c.benefitValue ?? '',
+    issueStartsAt: c.issueStartsAt,
+  }));
+
+  const { data: hotStoresRes } = useGetHotStores({ query: { staleTime: 5 * 60 * 1000 } });
+  const hotPlaces: HotPlaceItem[] = ((hotStoresRes as any)?.data?.data ?? []).map(
+    (s: any, index: number) => ({
+      id: s.storeId,
+      rank: index + 1,
+      name: s.name,
+      category: s.categories?.[0] ?? '',
+      organization: s.benefitContent ?? '',
+      weeklyFavoriteCount: s.favoriteGain ?? 0,
+    }),
+  );
+
+  const { data: eventsRes } = useQuery({
+    queryKey: ['home-events'],
+    queryFn: () =>
+      customFetch<{ data: { data: { content: any[] } }; status: number; headers: Headers }>(
+        '/api/events?status=UPCOMING&status=LIVE&size=10',
+        { method: 'GET' },
+      ),
+    staleTime: 3 * 60 * 1000,
+  });
+  const events = eventsRes?.data?.data?.content ?? [];
+  const eventCount = events.length;
 
   const handleNotificationPress = () => {
     router.push('/notification');
@@ -138,13 +98,13 @@ export default function HomePage() {
           userName={MOCK_USER.name}
           university={MOCK_USER.university}
           department={MOCK_USER.department}
-          couponCount={3}
-          eventCount={3}
+          couponCount={couponCount}
+          eventCount={eventCount}
         />
 
         {/* Event Section */}
         <View style={styles.section}>
-          <EventSection events={MOCK_EVENTS} />
+          <EventSection events={events} />
         </View>
 
         {/* Category Section */}
@@ -154,12 +114,12 @@ export default function HomePage() {
 
         {/* Coupon Section */}
         <View style={styles.section}>
-          <CouponSection coupons={MOCK_COUPONS} />
+          <CouponSection coupons={todayCoupons} />
         </View>
 
         {/* Hot Place Section */}
         <View style={styles.section}>
-          <HotPlaceSection places={MOCK_HOT_PLACES} />
+          <HotPlaceSection places={hotPlaces} />
         </View>
 
         <View style={styles.bottomSpacer} />

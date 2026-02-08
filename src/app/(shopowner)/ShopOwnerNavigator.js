@@ -76,7 +76,6 @@ function MainTabNavigator() {
 export default function ShopOwnerNavigator() {
   return (
     <Stack.Navigator initialRouteName="MainTabs" screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MyReview" component={MyReviewScreen} />
       {/* 1. 기본 화면 탭 네비게이터 */}
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       {/* 2. 알림 화면 스택 화면 */}
@@ -117,7 +116,10 @@ export default function ShopOwnerNavigator() {
       <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: false }} />
       {/* 19. 리뷰관리-신고완료 화면 스택 화면 */}
       <Stack.Screen name="ReportComplete" component={ReportCompleteScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="EditReview" component={EditReviewScreen} />
+      {/* 20. 리뷰관리-내 리뷰 스택 화면 */}
+      <Stack.Screen name="MyReview" component={MyReviewScreen} options={{ headerShown: false }} />
+      {/* 21. 리뷰관리-리뷰 수정 스택 화면 */}
+      <Stack.Screen name="EditReview" component={EditReviewScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

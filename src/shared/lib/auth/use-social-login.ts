@@ -43,12 +43,14 @@ export function useSocialLogin() {
     };
   }, []);
 
+  console.log("Redirect URI:", redirectUri);
+
   const login = useCallback(
     async (provider: SocialProvider): Promise<SocialLoginResult> => {
       try {
         setIsLoading(true);
 
-        const authUrl = `${BASE_URL}/oauth2/authorization/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}`;
+        const authUrl = `${BASE_URL}/oauth2/authorization/${provider}?origin=app`;
 
         console.log(`=== ${provider} 소셜 로그인 시작 ===`);
         console.log("Auth URL:", authUrl);
@@ -56,7 +58,7 @@ export function useSocialLogin() {
 
         const result = await WebBrowser.openAuthSessionAsync(
           authUrl,
-          redirectUri
+          redirectUri,
         );
 
         console.log("Browser result:", result);
@@ -96,7 +98,7 @@ export function useSocialLogin() {
             await handleAuthSuccess(
               accessToken,
               expiresIn ? parseInt(expiresIn, 10) : 3600,
-              role
+              role,
             );
 
             return { success: true };
@@ -121,7 +123,7 @@ export function useSocialLogin() {
         setIsLoading(false);
       }
     },
-    [redirectUri, handleAuthSuccess]
+    [redirectUri, handleAuthSuccess],
   );
 
   const loginWithGoogle = useCallback(() => login("google"), [login]);

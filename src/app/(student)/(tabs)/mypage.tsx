@@ -1,4 +1,6 @@
 import { useGetMyCoupons } from "@/src/api/coupon";
+import { useGetMyFavorites } from "@/src/api/favorite";
+import { useGetMyReviews } from "@/src/api/review";
 import { CommonResponseListIssueCouponResponse } from "@/src/api/generated.schemas";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
@@ -60,6 +62,20 @@ export default function MyPageTab() {
           .data,
     },
   });
+
+  const { data: favoritesRes } = useGetMyFavorites({ pageable: { page: 0, size: 100 } });
+  const { data: myReviewsRes } = useGetMyReviews({ pageable: { page: 0, size: 100 } });
+
+  const favoriteCount = useMemo(() => {
+    const content = (favoritesRes as any)?.data?.data?.content;
+    return Array.isArray(content) ? content.length : 0;
+  }, [favoritesRes]);
+
+  const reviewCount = useMemo(() => {
+    const content = (myReviewsRes as any)?.data?.data?.content;
+    if (!Array.isArray(content)) return 0;
+    return content.filter((r: any) => !r.ownerReply).length;
+  }, [myReviewsRes]);
 
   const couponCounts = useMemo(() => {
     const coupons = Array.isArray(myCouponsRes?.data) ? myCouponsRes.data : [];
@@ -168,13 +184,13 @@ export default function MyPageTab() {
             <MenuItem
               icon="bookmark-outline"
               text="찜한 매장"
-              rightText="12"
+              rightText={String(favoriteCount)}
               onPress={() => router.push('/mypage/favorite')}
             />
             <MenuItem
               icon="document-text-outline"
               text="내가 쓴 리뷰"
-              rightText="19"
+              rightText={String(reviewCount)}
               onPress={() => router.push('/mypage/my-review')}
               isLast
             />

@@ -8,12 +8,12 @@ import { SectionHeader } from './section-header';
 export interface CouponItem {
   id: number;
   storeId: number;
-  storeName: string;
+  storeName?: string;
   title: string;
-  description: string;
-  discountType: 'PERCENT' | 'AMOUNT' | 'SERVICE';
-  discountValue: number;
-  createdAt: string;
+  description?: string;
+  benefitType: 'FIXED_DISCOUNT' | 'PERCENTAGE_DISCOUNT' | 'SERVICE_GIFT';
+  benefitValue: string;
+  issueStartsAt?: string;
 }
 
 interface CouponSectionProps {
@@ -32,7 +32,8 @@ export function CouponSection({ coupons }: CouponSectionProps) {
     router.push(`/store/${storeId}`);
   };
 
-  const getTimeAgo = (dateString: string) => {
+  const getTimeAgo = (dateString?: string) => {
+    if (!dateString) return '';
     const now = new Date();
     const created = new Date(dateString);
     const diffMs = now.getTime() - created.getTime();
@@ -46,38 +47,38 @@ export function CouponSection({ coupons }: CouponSectionProps) {
   };
 
   const getDiscountDisplay = (coupon: CouponItem) => {
-    switch (coupon.discountType) {
-      case 'PERCENT':
-        return `${coupon.discountValue}% 할인`;
-      case 'AMOUNT':
-        return `${coupon.discountValue.toLocaleString()}원 쿠폰`;
-      case 'SERVICE':
+    switch (coupon.benefitType) {
+      case 'PERCENTAGE_DISCOUNT':
+        return `${coupon.benefitValue}% 할인`;
+      case 'FIXED_DISCOUNT':
+        return `${Number(coupon.benefitValue).toLocaleString()}원 쿠폰`;
+      case 'SERVICE_GIFT':
         return '서비스 증정';
       default:
         return '';
     }
   };
 
-  const getCouponIcon = (discountType: string) => {
-    switch (discountType) {
-      case 'PERCENT':
+  const getCouponIcon = (benefitType: string) => {
+    switch (benefitType) {
+      case 'PERCENTAGE_DISCOUNT':
         return '🏷️';
-      case 'AMOUNT':
+      case 'FIXED_DISCOUNT':
         return '💰';
-      case 'SERVICE':
+      case 'SERVICE_GIFT':
         return '🎁';
       default:
         return '🎫';
     }
   };
 
-  const getCouponColor = (discountType: string) => {
-    switch (discountType) {
-      case 'PERCENT':
+  const getCouponColor = (benefitType: string) => {
+    switch (benefitType) {
+      case 'PERCENTAGE_DISCOUNT':
         return Coupon.red;
-      case 'AMOUNT':
+      case 'FIXED_DISCOUNT':
         return Coupon.yellow;
-      case 'SERVICE':
+      case 'SERVICE_GIFT':
         return Coupon.green;
       default:
         return Coupon.yellow;
@@ -123,18 +124,18 @@ export function CouponSection({ coupons }: CouponSectionProps) {
             <View
               style={[
                 styles.couponTop,
-                { backgroundColor: getCouponColor(coupon.discountType) },
+                { backgroundColor: getCouponColor(coupon.benefitType) },
               ]}
             >
               <ThemedText style={styles.couponIcon}>
-                {getCouponIcon(coupon.discountType)}
+                {getCouponIcon(coupon.benefitType)}
               </ThemedText>
             </View>
             <View style={styles.couponBottom}>
               <View style={styles.timeContainer}>
                 <ThemedText style={styles.clockIcon}>⏰</ThemedText>
                 <ThemedText style={styles.timeText}>
-                  {getTimeAgo(coupon.createdAt)}
+                  {getTimeAgo(coupon.issueStartsAt)}
                 </ThemedText>
               </View>
               <ThemedText style={styles.storeName} numberOfLines={1}>

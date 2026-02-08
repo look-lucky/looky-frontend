@@ -328,8 +328,8 @@ export interface CommonResponseIssueCouponResponse {
 }
 
 export interface BizInfo {
-  pnm?: string;
   bno?: string;
+  pnm?: string;
   b_no?: string;
   start_dt?: string;
   p_nm?: string;
@@ -1459,6 +1459,8 @@ export interface PartnershipResponse {
   universityName?: string;
   category?: PartnershipResponseCategory;
   benefit?: string;
+  storeId?: number;
+  storeName?: string;
 }
 
 export interface CommonResponseListPartnershipResponse {
