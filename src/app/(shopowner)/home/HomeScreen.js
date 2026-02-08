@@ -1,15 +1,123 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
-import { Image, Modal, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Image, Modal, Platform, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+import { getCouponsByStore } from '@/src/api/coupon'; // 쿠폰 목록 조회
+import { countFavorites } from '@/src/api/favorite'; // 단골(찜) 수 조회
+import { getReviews } from '@/src/api/review'; // 리뷰 목록 조회
+import { getMyStores } from '@/src/api/store'; // 내 가게 목록 조회
+
+// [헬퍼 함수] 날짜 비교
+const isToday = (dateString) => {
+  const today = new Date();
+  const target = new Date(dateString);
+  return (
+    today.getDate() === target.getDate() &&
+    today.getMonth() === target.getMonth() &&
+    today.getFullYear() === target.getFullYear()
+  );
+};
 
 export default function HomeScreen({ navigation }) {
-  const [modalVisible, setModalVisible] = useState(false);
+  // [상태 관리]
+  const [modalVisible, setModalVisible] = useState(false); // 등급 안내 모달 표시 여부
+  const [isLoading, setIsLoading] = useState(true);        // 데이터 로딩 중인지 여부
+  const [refreshing, setRefreshing] = useState(false);     // 화면 당겨서 새로고침 여부
+
+  // 화면에 표시할 핵심 데이터
+  const [homeData, setHomeData] = useState({
+    storeId: null,      
+    storeName: "등록된 가게 없음", 
+    ownerName: "사장님", 
+    stats: {
+      regulars: 0,      
+      issuedCoupons: 0, 
+      newReviews: 0,    
+      usedCoupons: 0,   
+    }
+  });
+
+  // 서버 데이터 가져오기
+  const fetchData = async () => {
+    try {
+      const myStoresResponse = await getMyStores();
+      const myStores = myStoresResponse.data; 
+
+      if (!myStores || myStores.length === 0) {
+        setHomeData(prev => ({ ...prev, storeName: "가게를 등록해주세요" }));
+        setIsLoading(false);
+        return;
+      }
+
+      const currentStore = myStores[0]; 
+      const storeId = currentStore.id; 
+      
+      const [favCountRes, couponsRes, reviewsRes] = await Promise.all([
+        countFavorites(storeId).catch(() => ({ data: 0 })), 
+        getCouponsByStore(storeId).catch(() => ({ data: [] })), 
+        getReviews(storeId, { page: 0, size: 100 }).catch(() => ({ data: { content: [] } })), 
+      ]);
+
+      const regularsCount = favCountRes.data || 0; 
+      const coupons = couponsRes.data || [];
+      const issuedCouponsCount = coupons.length; 
+      const usedCouponsCount = coupons.reduce((acc, curr) => acc + (curr.usedCount || 0), 0); 
+      const reviewsList = reviewsRes.data.content || reviewsRes.data || []; 
+      const newReviewsCount = reviewsList.filter(review => isToday(review.createdAt)).length;
+
+      setHomeData({
+        storeId: storeId,
+        storeName: currentStore.name, 
+        ownerName: currentStore.ownerName || "이채영", 
+        stats: {
+          regulars: regularsCount,
+          issuedCoupons: issuedCouponsCount, 
+          newReviews: newReviewsCount,
+          usedCoupons: usedCouponsCount
+        }
+      });
+
+    } catch (error) {
+      console.error("홈 데이터 로딩 실패:", error);
+    } finally {
+      setIsLoading(false); 
+      setRefreshing(false); 
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, {justifyContent:'center', alignItems:'center'}]}>
+        <ActivityIndicator size="large" color="#34B262" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {/* 로고 */}
         <Image
           source={require("@/assets/images/shopowner/logo2.png")}
           style={styles.logo}
@@ -17,15 +125,16 @@ export default function HomeScreen({ navigation }) {
         />
 
         {/* --- 1. 상단 프로필 카드 --- */}
-        <View style={styles.profileCard}>
+        <TouchableOpacity style={styles.profileCard} activeOpacity={0.8}>
           <View style={styles.iconBox}>
-            <Ionicons name="storefront" size={rs(40)} color="#34B262" />
+            <Ionicons name="storefront-outline" size={rs(32)} color="#34B262" />
           </View>
           <View style={styles.textContainer}>
-            <Text style={styles.storeName}>채영식당</Text>
-            <Text style={styles.greeting}>이채영 사장님! 반가워요!</Text>
+            <Text style={styles.storeName}>{homeData.storeName}</Text>
+            <Text style={styles.greeting}>{homeData.ownerName} 사장님, 반가워요!</Text>
           </View>
-        </View>
+          <Ionicons name="chevron-down" size={rs(20)} color="#828282" />
+        </TouchableOpacity>
 
         {/* --- 2. 등급 현황 카드 --- */}
         <View style={styles.levelCardShadow}>
@@ -52,207 +161,121 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.levelValue}>세잎클로버</Text>
               </View>
 
-              {/* 정보 아이콘 (팝업 열기) */}
               <TouchableOpacity
                 style={styles.infoIcon}
                 onPress={() => setModalVisible(true)}
               >
                 <Ionicons
                   name="information-circle-outline"
-                  size={rs(20)}
-                  color="#668776"
+                  size={rs(18)}
+                  color="#628473"
                 />
               </TouchableOpacity>
             </View>
 
             <View style={styles.progressContainer}>
               <View style={styles.progressTextRow}>
-                <Text style={styles.progressLabel}>다음 등급까지</Text>
-                <Text style={styles.progressValue}>40 / 50</Text>
+                <Ionicons name="sparkles" size={rs(12)} color="#A5F3C3" style={{marginRight: 4}} />
+                <Text style={styles.progressLabel}>훌륭해요! 행운이 가득한 매장이군요</Text>
               </View>
-              <View style={styles.progressBarTrack}>
-                <View style={styles.progressBarFill} />
-              </View>
-              <View style={styles.progressDescRow}>
-                {/* 작은 클로버 아이콘(나중에 바꿔야함) */}
-                <Ionicons
-                  name="leaf"
-                  size={rs(10)}
-                  color="white"
-                  style={{ marginRight: rs(4) }}
-                />
-                <Text style={styles.progressDescText}>
-                  <Text style={{ fontWeight: "700" }}>네잎클로버</Text>까지
-                  좋아요 <Text style={{ fontWeight: "700" }}>10개</Text>{" "}
-                  남았어요!
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.cardFooter}>
-              <Text style={styles.footerText}>다음 혜택: 네잎 전용 기능</Text>
-              <Text style={[styles.footerText, styles.footerLink]}>
-                전체 혜택 보기
-              </Text>
+              <Text style={[styles.progressLabel2, {marginTop: rs(2)}]}>학생들에게 행운을 나눠주세요!</Text>
             </View>
           </LinearGradient>
         </View>
 
-        {/* --- 3. 섹션 헤더 --- */}
+        {/* --- 3. 성과 섹션 헤더 --- */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
             <Text style={styles.sectionEmoji}>📊</Text>
-            <Text style={styles.sectionTitleText}>오늘의 성과</Text>
+            <Text style={styles.sectionTitleText}>{homeData.storeName}의 성과</Text>
           </View>
-          <TouchableOpacity style={styles.moreLinkRow}>
-            <Text style={styles.moreLinkText}>자세히 보러가기</Text>
-            <Ionicons name="chevron-forward" size={rs(12)} color="#668776" />
-          </TouchableOpacity>
         </View>
 
-        {/* --- 4. 성과 통계 --- */}
+        {/* --- 4. 성과 통계 그리드 --- */}
         <View style={styles.statsContainer}>
           <View style={styles.gridRow}>
-            <View style={styles.statCard}>
-              <View style={styles.statHeader}>
-                <View style={styles.statIconBox}>
-                  <Ionicons name="home" size={rs(8)} color="#34B262" />
-                </View>
-                <Text style={styles.statTitle}>오늘 가게 페이지</Text>
-              </View>
-              <Text style={styles.statNumber}>127</Text>
-              <View style={styles.statFooter}>
-                <Text style={styles.statSubText}>명이 조회했어요</Text>
-                <View style={styles.trendBadge}>
-                  <Text style={styles.trendText}>▲ 12%</Text>
-                </View>
-              </View>
-            </View>
-            <View style={styles.statCard}>
-              <View style={styles.statHeader}>
-                <View style={styles.statIconBox}>
-                  <Ionicons name="ticket" size={rs(8)} color="#34B262" />
-                </View>
-                <Text style={styles.statTitle}>사용된 쿠폰</Text>
-              </View>
-              <Text style={styles.statNumber}>8</Text>
-              <View style={styles.statFooter}>
-                <Text style={styles.statSubText}>장 사용되었어요</Text>
-                <View style={styles.trendBadge}>
-                  <Text style={styles.trendText}>▲ 8%</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.gridRow}>
-            <View style={styles.statCard}>
-              <View style={styles.statHeader}>
-                <View style={styles.statIconBox}>
-                  <Ionicons name="people" size={rs(8)} color="#34B262" />
-                </View>
-                <Text style={styles.statTitle}>이번 주 방문</Text>
-              </View>
-              <Text style={styles.statNumber}>1,234</Text>
-            </View>
-            <View style={styles.statCard}>
-              <View style={styles.statHeader}>
-                <View style={styles.statIconBox}>
-                  <Ionicons
-                    name="chatbubble-ellipses"
-                    size={rs(8)}
-                    color="#34B262"
-                  />
-                </View>
-                <Text style={styles.statTitle}>새 리뷰</Text>
-                <Text style={styles.alertText}>미답변 2</Text>
-              </View>
-              <Text style={styles.statNumber}>15</Text>
-            </View>
-          </View>
-
-          {/* 잠금 화면 */}
-          <View style={styles.lockedOverlay}>
-            <View style={styles.lockIconCircle}>
-              <Ionicons name="lock-closed" size={rs(20)} color="#828282" />
-            </View>
-            <Text style={styles.lockedTitle}>추후 공개될 예정이에요</Text>
-            <Text style={styles.lockedSubTitle}>조금만 기다려주세요!</Text>
-            <Text style={styles.lockedSubTitle}>
-              사장님의 더 나은 편의를 위해 노력할게요!
-            </Text>
-          </View>
-        </View>
-
-        {/* --- 5. 알림 박스 --- */}
-        <View style={styles.notiBox}>
-          <View style={styles.notiHeader}>
-            <View style={styles.notiTitleRow}>
-              {/* 알림 아이콘 */}
-              <View style={styles.notiIconBox}>
-                <Ionicons name="notifications" size={rs(16)} color="#668776" />
-              </View>
-              <Text style={styles.notiTitle}>알림</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.moreLinkRow}
-              onPress={() => navigation.navigate("Notification")}
+            
+            {/* 카드 1: 단골 손님 (찜) */}
+            <TouchableOpacity 
+                style={styles.statCard}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('Coupon', { initialTab: 'patron' })}
             >
-              <Text style={styles.moreLinkText}>전체보기</Text>
-              <Ionicons name="chevron-forward" size={rs(12)} color="#668776" />
+              <View style={styles.statIconBox}>
+                <Ionicons name="people" size={rs(18)} color="#34B262" />
+              </View>
+              <View style={styles.statInfoBox}>
+                <Text style={styles.statTitle}>추가된 단골 손님</Text>
+                <Text style={styles.statNumber}>{homeData.stats.regulars}</Text>
+                <Text style={styles.statSubText}>명이 찜했어요</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* 카드 2: 발행한 쿠폰 */}
+            <TouchableOpacity 
+                style={styles.statCard}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('Coupon', { initialTab: 'coupon' })}
+            >
+              <View style={styles.statIconBox}>
+                <Ionicons name="ticket" size={rs(18)} color="#34B262" />
+              </View>
+              <View style={styles.statInfoBox}>
+                <Text style={styles.statTitle}>발행한 쿠폰</Text>
+                <Text style={styles.statNumber}>{homeData.stats.issuedCoupons}</Text>
+                <Text style={styles.statSubText}>장을 발행했어요</Text>
+              </View>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.divider} />
+          <View style={styles.gridRow}>
+            
+            {/* 카드 3: 새 리뷰 */}
+            <TouchableOpacity 
+                style={styles.statCard}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('Review')}
+            >
+              <View style={styles.statIconBox}>
+                <Ionicons name="chatbox-ellipses" size={rs(18)} color="#34B262" />
+              </View>
+              <View style={styles.statInfoBox}>
+                <Text style={styles.statTitle}>새 리뷰</Text>
+                <Text style={styles.statNumber}>{homeData.stats.newReviews}</Text>
+                <Text style={styles.statSubText}>명이 남겼어요</Text>
+              </View>
+            </TouchableOpacity>
 
-          {/* 알림 1 (리뷰 - 파랑) */}
-          <View style={[styles.notiItem, styles.notiItemUnread]}>
-            <View style={[styles.notiItemIcon, { backgroundColor: "#DBEAFE" }]}>
-              <Ionicons name="chatbubble-ellipses" size={rs(14)} color="#2563EB" />
-            </View>
-            <View style={styles.notiContent}>
-              <Text style={styles.notiText} numberOfLines={1}>
-                새로운 리뷰가 달렸습니다: ‘분위기가 너무 좋아요!’
-              </Text>
-              <Text style={styles.notiTime}>10분 전</Text>
-            </View>
-            <View style={styles.newBadgeDot} />
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* 알림 2 (쿠폰 - 노랑) */}
-          <View style={[styles.notiItem, styles.notiItemUnread]}>
-            <View style={[styles.notiItemIcon, { backgroundColor: "#FEF4C7" }]}>
-              <Ionicons name="ticket" size={rs(14)} color="#D97706" />
-            </View>
-            <View style={styles.notiContent}>
-              <Text style={styles.notiText} numberOfLines={1}>
-                10% 할인 쿠폰이 모두 소진되었습니다.
-              </Text>
-              <Text style={styles.notiTime}>1시간 전</Text>
-            </View>
-            <View style={styles.newBadgeDot} />
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* 알림 3 (좋아요 - 빨강) */}
-          <View style={styles.notiItem}>
-            <View style={[styles.notiItemIcon, { backgroundColor: "#FEE2E2" }]}>
-              <Ionicons name="heart" size={rs(14)} color="#FF3E41" />
-            </View>
-            <View style={styles.notiContent}>
-              <Text style={styles.notiText} numberOfLines={1}>
-                네잎클로버까지 좋아요 10개 남았어요!
-              </Text>
-              <Text style={styles.notiTime}>3시간 전</Text>
-            </View>
+            {/* 카드 4: 사용된 쿠폰 */}
+            <TouchableOpacity 
+                style={styles.statCard}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('Coupon', { initialTab: 'coupon' })}
+            >
+              <View style={styles.statIconBox}>
+                <Ionicons name="qr-code" size={rs(18)} color="#34B262" />
+              </View>
+              <View style={styles.statInfoBox}>
+                <Text style={styles.statTitle}>사용된 쿠폰</Text>
+                <Text style={styles.statNumber}>{homeData.stats.usedCoupons}</Text>
+                <Text style={styles.statSubText}>장 사용되었어요</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
+
+        {/* --- 5. 쿠폰 사용완료 처리 버튼 --- */}
+        <TouchableOpacity style={styles.couponProcessBtn} activeOpacity={0.8}>
+           <Ionicons name="scan-circle-outline" size={rs(20)} color="#34B262" style={{marginRight: rs(8)}}/>
+           <Text style={styles.couponProcessText}>쿠폰 사용완료 처리</Text>
+        </TouchableOpacity>
+
+        {/* 하단 여백 */}
+        <View style={{height: rs(50)}} />
+
       </ScrollView>
 
-      {/* 등급 안내 모달 (팝업창) 시작        */}
+      {/* --- [모달] 등급 안내 팝업 --- */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -260,9 +283,8 @@ export default function HomeScreen({ navigation }) {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          {/* 모달 컨텐츠 박스 */}
           <View style={styles.modalContent}>
-            {/* 1. 헤더 (아이콘 + 타이틀 + 닫기) */}
+            {/* 모달 헤더 */}
             <View style={styles.modalHeader}>
               <View style={styles.headerTitleRow}>
                 <Image
@@ -272,7 +294,6 @@ export default function HomeScreen({ navigation }) {
                 />
                 <Text style={styles.headerTitle}>클로버 등급 시스템</Text>
               </View>
-              {/* 닫기 버튼 */}
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
                 hitSlop={{ top: rs(10), bottom: rs(10), left: rs(10), right: rs(10) }}
@@ -281,9 +302,8 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* 2. 등급 리스트 */}
+            {/* 등급 리스트 */}
             <View style={styles.gradeList}>
-              {/* (1) 씨앗 */}
               <View style={styles.gradeItemBox}>
                 <Image
                   source={require("@/assets/images/shopowner/1clover.png")}
@@ -292,14 +312,9 @@ export default function HomeScreen({ navigation }) {
                 />
                 <View style={styles.gradeTextBox}>
                   <Text style={styles.gradeItemTitle}>씨앗</Text>
-                  <Text style={styles.gradeItemDesc}>
-                    아직 니어딜에 정식 등록되지 않은 상태예요.
-                  </Text>
-                  <Text style={styles.gradeItemDesc}>(입점 신청 필요)</Text>
+                  <Text style={styles.gradeItemDesc}>아직 니어딜에 정식 등록되지 않은 상태예요.</Text>
                 </View>
               </View>
-
-              {/* (2) 새싹 */}
               <View style={styles.gradeItemBox}>
                 <Image
                   source={require("@/assets/images/shopowner/2clover.png")}
@@ -308,13 +323,9 @@ export default function HomeScreen({ navigation }) {
                 />
                 <View style={styles.gradeTextBox}>
                   <Text style={styles.gradeItemTitle}>새싹</Text>
-                  <Text style={styles.gradeItemDesc}>
-                    니어딜의 파트너가 되셨군요! 환영합니다.
-                  </Text>
+                  <Text style={styles.gradeItemDesc}>니어딜의 파트너가 되셨군요! 환영합니다.</Text>
                 </View>
               </View>
-
-              {/* (3) 세잎 */}
               <View style={styles.gradeItemBox}>
                 <Image
                   source={require("@/assets/images/shopowner/3clover.png")}
@@ -323,17 +334,10 @@ export default function HomeScreen({ navigation }) {
                 />
                 <View style={styles.gradeTextBox}>
                   <Text style={styles.gradeItemTitle}>세잎</Text>
-                  <Text style={styles.gradeItemDesc}>
-                    가게 정보를 모두 등록하여 손님 맞을 준비 완료!
-                  </Text>
-                  <Text style={styles.gradeItemDesc}>
-                    학생들을 위해 행운을 나눠주세요!
-                  </Text>
+                  <Text style={styles.gradeItemDesc}>가게 정보를 모두 등록하여 손님 맞을 준비 완료!</Text>
                 </View>
               </View>
-
-              {/* (4) 네잎 */}
-              <View style={styles.gradeItemBox}> 
+              { /* <View style={styles.gradeItemBox}> 
                 <Image
                   source={require("@/assets/images/shopowner/4clover.png")}
                   style={styles.gradeImage}
@@ -341,412 +345,97 @@ export default function HomeScreen({ navigation }) {
                 />
                 <View style={styles.gradeTextBox}>
                   <Text style={styles.gradeItemTitle}>네잎</Text>
-                  <Text style={styles.gradeItemDesc}>
-                    곧 업데이트 될 예정이에요
-                  </Text>
-                  <Text style={styles.gradeItemDesc}>잠시만 기다려주세요!</Text>
+                  <Text style={styles.gradeItemDesc}>곧 업데이트 될 예정이에요. 잠시만 기다려주세요!</Text>
                 </View>
-              </View>
+              </View> */}
             </View>
           </View>
         </View>
       </Modal>
-      {/* 등급 안내 모달 (팝업창) 끝 */}
     </SafeAreaView>
   );
 }
 
+// 스타일 정의
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5", paddingTop: Platform.OS === "android" ? StatusBar.currentHeight: 0 },
   scrollContent: { paddingTop: rs(10), paddingBottom: rs(40), paddingHorizontal: rs(20) },
-  pageTitle: { fontSize: rs(24), fontWeight: "bold", marginBottom: rs(20), color: "#333", },
   logo: { width: rs(120), height: rs(30), marginBottom: rs(10), marginLeft: 0 },
-
-  // 프로필 카드
+  
+  // 프로필 카드 스타일
   profileCard: {
-    width: "100%",
-    height: rs(86),
-    backgroundColor: "white",
-    borderRadius: rs(8),
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: rs(12),
-    marginBottom: rs(20),
-    shadowColor: "rgba(0,0,0,0.05)",
-    shadowOffset: { width: rs(2), height: rs(2) },
-    shadowOpacity: 1,
-    shadowRadius: rs(4),
-    elevation: 3,
- },
+    width: "100%", height: rs(80), backgroundColor: "white", borderRadius: rs(12),
+    flexDirection: "row", alignItems: "center", paddingHorizontal: rs(16), marginBottom: rs(20),
+    shadowColor: "rgba(0,0,0,0.05)", shadowOffset: { width: 0, height: rs(2) }, shadowOpacity: 1, shadowRadius: rs(8), elevation: 4,
+  },
   iconBox: {
-    width: rs(62),
-    height: rs(62),
-    backgroundColor: "#EAF6EE",
-    borderRadius: rs(12),
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: rs(14),
+    width: rs(50), height: rs(50), backgroundColor: "#EAF6EE", borderWidth: 1, borderColor: "#EAF6EE",
+    borderRadius: rs(12), justifyContent: "center", alignItems: "center", marginRight: rs(14),
   },
-  profileImage: { width: "100%", height: "100%" },
   textContainer: { flex: 1, justifyContent: "center" },
-  storeName: { fontSize: rs(15), fontWeight: "700", color: "black", lineHeight: rs(24),},
-  greeting: { fontSize: rs(15), fontWeight: "500", color: "#828282", lineHeight: rs(24), },
-
-  // 등급 카드
+  storeName: { fontSize: rs(16), fontWeight: "700", color: "black", marginBottom: rs(5) },
+  greeting: { fontSize: rs(13), fontWeight: "400", color: "#828282" },
+  
+  // 등급 카드 스타일
   levelCardShadow: {
-    width: "100%",
-    minHeight: rs(173),
-    shadowColor: "rgba(0,0,0,0.05)",
-    shadowOffset: { width: rs(2), height: rs(2) },
-    shadowOpacity: 1,
-    shadowRadius: rs(4),
-    elevation: 3,
-    borderRadius: rs(8),
-    marginBottom: rs(25),
+    width: "100%", minHeight: rs(150), shadowColor: "rgba(0,0,0,0.05)",
+    shadowOffset: { width: rs(2), height: rs(2) }, shadowOpacity: 1, shadowRadius: rs(4), elevation: 3,
+    borderRadius: rs(12), marginBottom: rs(25),
   },
-  levelCard: { borderRadius: rs(8), overflow: "hidden", padding: rs(20), position: "relative", },
+  levelCard: { borderRadius: rs(12), overflow: "hidden", padding: rs(20), position: "relative", minHeight: rs(150), justifyContent:'space-between' },
+  decoCircleTop: { position: "absolute", width: rs(120), height: rs(120), borderRadius: rs(60), backgroundColor: "rgba(255,255,255,0.1)", top: rs(-40), right: rs(-30) },
+  decoCircleBottom: { position: "absolute", width: rs(100), height: rs(100), borderRadius: rs(50), backgroundColor: "rgba(255,255,255,0.05)", bottom: rs(-40), left: rs(-20) },
+  levelHeader: { flexDirection: "row", alignItems: "center", marginBottom: rs(10) },
+  levelIconContainer: { width: rs(50), height: rs(50), marginRight: rs(10), justifyContent: "center", alignItems: "center" },
   levelImage: { width: "100%", height: "100%" },
-  decoCircleTop: {
-    position: "absolute",
-    width: rs(98),
-    height: rs(98),
-    borderRadius: rs(49),
-    backgroundColor: "#49AA7F",
-    top: rs(-48),
-    right: rs(-40),
-  },
-  decoCircleBottom: {
-    position: "absolute",
-    width: rs(98),
-    height: rs(98),
-    borderRadius: rs(49),
-    backgroundColor: "#49AA7F",
-    bottom: rs(-60),
-    left: rs(-49),
-  },
-  levelHeader: { flexDirection: "row", alignItems: "center", marginBottom: rs(15) },
-  // 아이콘 배경 원
-  levelIconContainer: {
-    width: rs(50),
-    height: rs(49),
-    backgroundColor: "transparent",
-    borderRadius: rs(25),
-    marginRight: rs(10),
-    justifyContent: "center",
-    alignItems: "center",
-  },
   levelInfo: { flex: 1 },
-  levelLabel: {
-    color: "white",
-    fontSize: rs(12),
-    fontWeight: "500",
-    marginBottom: rs(2),
-    fontFamily: "System",
-  },
-  levelValue: {
-    color: "white",
-    fontSize: rs(17),
-    fontWeight: "700",
-    fontFamily: "System",
-  },
-  infoIcon: {
-    width: rs(20),
-    height: rs(20),
-    backgroundColor: "rgba(255,255,255,0.80)",
-    borderRadius: rs(10),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  progressContainer: {
-    backgroundColor: "#54B77E",
-    borderRadius: rs(8),
-    paddingVertical: rs(10),
-    paddingHorizontal: rs(15),
-    marginBottom: rs(15),
-  },
-  progressTextRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: rs(8),
-  },
-  progressLabel: {
-    color: "rgba(255,255,255,0.80)",
-    fontSize: rs(10),
-    fontWeight: "500",
-  },
-  progressValue: { color: "white", fontSize: rs(11), fontWeight: "600" },
-  progressBarTrack: {
-    width: "100%",
-    height: rs(6),
-    backgroundColor: "#74BD9F",
-    borderRadius: rs(3),
-    marginBottom: rs(8),
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    width: "80%",
-    height: "100%",
-    backgroundColor: "#3EAE6B",
-    borderRadius: rs(3),
-  },
-  progressDescRow: { flexDirection: "row", alignItems: "center" },
-  progressDescText: { color: "white", fontSize: rs(10) },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  footerText: {
-    color: "rgba(255,255,255,0.70)",
-    fontSize: rs(9),
-    fontWeight: "500",
-  },
-  footerLink: {
-    textDecorationLine: "underline",
-    textShadowColor: "rgba(0,0,0,0.25)",
-    textShadowOffset: { width: 0, height: rs(1) },
-    textShadowRadius: rs(4),
-  },
-
-  // 섹션 헤더
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: rs(10),
-  },
+  levelLabel: { color: "rgba(255,255,255,0.8)", fontSize: rs(11), fontWeight: "500", marginBottom: rs(2) },
+  levelValue: { color: "white", fontSize: rs(20), fontWeight: "700" },
+  infoIcon: { padding: rs(5), backgroundColor: "#FFFFFFCC", borderRadius: rs(20) },
+  progressContainer: { backgroundColor: "#54B77E", borderRadius: rs(8), paddingVertical: rs(12), paddingHorizontal: rs(15) },
+  progressTextRow: { flexDirection: "row", alignItems: "center", marginBottom: rs(2) },
+  progressLabel: { color: "white", fontSize: rs(12), fontWeight: "500" },
+  progressLabel2: { color: "#FFFFFFCC", fontSize: rs(12), fontWeight: "500" },
+  
+  // 섹션 헤더 스타일
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rs(12) },
   sectionTitleRow: { flexDirection: "row", alignItems: "center" },
-  sectionEmoji: { fontSize: rs(15), marginRight: rs(4) },
-  sectionTitleText: {
-    fontSize: rs(15),
-    fontWeight: "700",
-    color: "#668776",
-    lineHeight: rs(22),
-  },
-  moreLinkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    transform: [{ translateY: rs(3) }],
-  },
-  moreLinkText: {
-    fontSize: rs(11),
-    fontWeight: "600",
-    color: "#668776",
-    lineHeight: rs(22),
-    marginRight: rs(2),
-  },
-  moreLinkArrow: {
-    fontSize: rs(10),
-    color: "#668776",
-    marginLeft: rs(3),
-    fontWeight: "bold",
-    marginTop: rs(1),
-  },
-
-  // 통계 컨테이너
-  statsContainer: {
-    position: "relative",
-    width: "100%",
-    gap: rs(11),
-    paddingBottom: rs(20),
-    marginBottom: rs(25),
-  },
-  gridRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: rs(11),
-  },
+  sectionEmoji: { fontSize: rs(16), marginRight: rs(6) },
+  sectionTitleText: { fontSize: rs(17), fontWeight: "700", color: "#668776" },
+  
+  // 통계 카드(그리드) 스타일
+  statsContainer: { width: "100%", gap: rs(5), marginBottom: rs(20) },
+  gridRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: rs(5) },
   statCard: {
-    width: "48%",
-    height: rs(68),
-    backgroundColor: "white",
-    borderRadius: rs(8),
-    padding: rs(9),
-    justifyContent: "center",
+    width: "49%", backgroundColor: "white", borderRadius: rs(12), padding: rs(16),
+    flexDirection: 'row', alignItems: 'flex-start', shadowColor: "rgba(0,0,0,0.03)",
+    shadowOffset: { width: 0, height: rs(2) }, shadowOpacity: 1, shadowRadius: rs(4), elevation: 2,
   },
-  statHeader: { flexDirection: "row", alignItems: "center", marginBottom: rs(2) },
-  statIconBox: {
-    width: rs(14),
-    height: rs(14),
-    backgroundColor: "#EAF6EE",
-    borderRadius: rs(3),
-    marginRight: rs(5),
-    justifyContent: "center",
-    alignItems: "center",
+  statIconBox: { width: rs(40), height: rs(36), backgroundColor: "#EAF6EE", borderRadius: rs(10), justifyContent: "center", alignItems: "center", marginRight: rs(10), marginTop: rs(7) },
+  statInfoBox: { flex: 1, justifyContent: 'center' },
+  statTitle: { fontSize: rs(10), color: "#828282", fontWeight: "500", marginBottom: rs(4) },
+  statNumber: { fontSize: rs(18), fontWeight: "700", color: "black", marginBottom: rs(2) },
+  statSubText: { fontSize: rs(10), color: "#828282", fontWeight: "400" },
+  
+  // 쿠폰 처리 버튼 스타일
+  couponProcessBtn: {
+      width: '100%', height: rs(52), backgroundColor: "white", borderRadius: rs(12),
+      flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EAEAEA',
+      shadowColor: "rgba(0,0,0,0.03)", shadowOffset: { width: 0, height: rs(2) }, shadowOpacity: 1, shadowRadius: rs(4), elevation: 2,
   },
-  statTitle: { fontSize: rs(8), color: "#668776", fontWeight: "400", flex: 1 },
-  statNumber: {
-    fontSize: rs(14),
-    fontWeight: "600",
-    color: "black",
-    marginBottom: 0,
-  },
-  statFooter: { flexDirection: "row", alignItems: "center", marginTop: rs(2) },
-  statSubText: { fontSize: rs(8), color: "#668776", marginRight: rs(4) },
-  trendBadge: { flexDirection: "row", alignItems: "center" },
-  trendText: { fontSize: rs(8), color: "#34B262", fontWeight: "600" },
-  alertText: { fontSize: rs(8), color: "#34B262", fontWeight: "600" },
-
-  // 잠금 오버레이
-  lockedOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.96)",
-    zIndex: 10,
-    borderRadius: rs(12),
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 1)",
-    shadowColor: "rgba(0, 0, 0, 0.05)",
-    shadowOffset: { width: rs(2), height: rs(2) },
-    shadowOpacity: 1,
-    shadowRadius: rs(4),
-    elevation: 3,
-  },
-  lockIconCircle: {
-    width: rs(41),
-    height: rs(41),
-    backgroundColor: "rgba(218, 218, 218, 0.59)",
-    borderRadius: rs(20.5),
-    marginBottom: rs(9),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  lockedTitle: {
-    fontSize: rs(15),
-    fontWeight: "600",
-    color: "black",
-    marginBottom: rs(4),
-  },
-  lockedSubTitle: {
-    fontSize: rs(11),
-    fontWeight: "500",
-    color: "#668776",
-    lineHeight: rs(16),
-  },
-
-  // 알림 박스
-  notiBox: {
-    width: "100%",
-    backgroundColor: "white",
-    borderRadius: rs(8),
-    shadowColor: "rgba(0, 0, 0, 0.05)",
-    shadowOffset: { width: rs(2), height: rs(2) },
-    shadowOpacity: 1,
-    shadowRadius: rs(4),
-    elevation: 3,
-    paddingTop: rs(10),
-    paddingBottom: rs(5),
-    marginBottom: 0,
-  },
-  notiHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: rs(16),
-    paddingBottom: rs(10),
-    paddingTop: rs(5),
-  },
-  notiTitleRow: { flexDirection: "row", alignItems: "center" },
-  notiIconBox: {
-    width: rs(18),
-    height: rs(18),
-    marginRight: rs(5),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  notiTitle: { fontSize: rs(15), fontWeight: "700", color: "#668776" },
-  divider: {
-    height: 1,
-    backgroundColor: "rgba(130, 130, 130, 0.15)",
-    width: "100%",
-  },
-  notiItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: rs(12),
-    paddingHorizontal: rs(16),
-    backgroundColor: "white",
-  },
-  notiItemUnread: { backgroundColor: "rgba(234, 246, 238, 0.50)" },
-  notiItemIcon: {
-    width: rs(25),
-    height: rs(25),
-    borderRadius: rs(8),
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: rs(10),
-  },
-  notiContent: { flex: 1, justifyContent: "center" },
-  notiText: { fontSize: rs(12), color: "black", marginBottom: rs(2), lineHeight: rs(18) },
-  notiTime: { fontSize: rs(9), color: "#828282" },
-  newBadgeDot: {
-    width: rs(6),
-    height: rs(6),
-    backgroundColor: "#34B262",
-    borderRadius: rs(3),
-    position: "absolute",
-    right: rs(16),
-    top: rs(15),
-  },
-
-  // 모달(팝업) 관련 스타일
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: rs(335),
-    maxHeight: "50%",
-    backgroundColor: "white",
-    borderRadius: rs(10),
-    padding: rs(22),
-    alignItems: "center",
-  },
-
-  // 모달 헤더
-  modalHeader: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: rs(15),
-  },
+  couponProcessText: { fontSize: rs(15), fontWeight: '700', color: '#34B262' },
+  
+  // 모달 스타일
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
+  modalContent: { width: rs(335), backgroundColor: "white", borderRadius: rs(12), padding: rs(24), alignItems: "center" },
+  modalHeader: { width: "100%", flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rs(20) },
   headerTitleRow: { flexDirection: "row", alignItems: "center" },
-  headerImage: { width: rs(24), height: rs(24), marginRight: rs(3) },
-  headerTitle: { fontSize: rs(17), fontWeight: "700", color: "black" },
-
-  // 모달 리스트
+  headerImage: { width: rs(24), height: rs(24), marginRight: rs(6) },
+  headerTitle: { fontSize: rs(18), fontWeight: "700", color: "black" },
   gradeList: { width: "100%", gap: rs(12) },
-  gradeItemBox: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(217, 217, 217, 0.30)",
-    borderRadius: rs(10),
-    paddingVertical: rs(10),
-    paddingHorizontal: rs(16),
-  },
-  gradeImage: { width: rs(40), height: rs(40), marginRight: rs(10) },
-  gradeTextBox: { flex: 1, flexDirection: "column", justifyContent: "center" },
-  gradeItemTitle: {
-    fontSize: rs(15),
-    fontWeight: "700",
-    color: "black",
-    marginBottom: rs(4),
-  },
-  gradeItemDesc: {
-    fontSize: rs(11),
-    color: "#668776",
-    fontWeight: "600",
-    lineHeight: rs(16),
-  },
+  gradeItemBox: { width: "100%", flexDirection: "row", alignItems: "center", backgroundColor: "#F9F9F9", borderRadius: rs(10), padding: rs(12) },
+  gradeImage: { width: rs(40), height: rs(40), marginRight: rs(12) },
+  gradeTextBox: { flex: 1 },
+  gradeItemTitle: { fontSize: rs(15), fontWeight: "700", color: "black", marginBottom: rs(2) },
+  gradeItemDesc: { fontSize: rs(11), color: "#666", lineHeight: rs(16) },
 });

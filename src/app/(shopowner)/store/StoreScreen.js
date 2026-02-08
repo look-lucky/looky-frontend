@@ -2,13 +2,14 @@ import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView,
-  ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
+    ActivityIndicator,
+    Alert, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView,
+    ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 
-// API Hooks Import
-import { useCreateItem, useDeleteItem, useGetItems, useUpdateItem } from '@/src/api/item';
+
+// [API] Hooks Import
+import { useCreateItem, useGetItems, useUpdateItem } from '@/src/api/item';
 import { useGetMyStores, useUpdateStore } from '@/src/api/store';
 
 // # Helper Functions & Constants
@@ -52,8 +53,12 @@ const getFormatDate = (date) => {
 
 // # Component: StoreScreen
 export default function StoreScreen() {
+
+  const navigation = useNavigation();
   
+  // =================================================================
   // 1. API Hooks 연결 (Store & Item)
+  // =================================================================
   
   // (1) 내 가게 조회
   const { data: storeDataResponse, isLoading: isStoreLoading, refetch: refetchStore } = useGetMyStores();
@@ -63,7 +68,7 @@ export default function StoreScreen() {
   const updateStoreMutation = useUpdateStore();
 
   // (3) 메뉴(상품) 목록 조회
-  // myStoreId가 있을 때만 쿼리 실행 (enabled 옵션)
+  // myStoreId가 세팅된 후에만 쿼리 실행
   const { 
     data: itemsDataResponse, 
     isLoading: isItemsLoading, 
@@ -73,7 +78,7 @@ export default function StoreScreen() {
   // (4) 메뉴 추가/수정/삭제 Mutations
   const createItemMutation = useCreateItem();
   const updateItemMutation = useUpdateItem();
-  const deleteItemMutation = useDeleteItem();
+  // const deleteItemMutation = useDeleteItem(); // 삭제 기능 필요 시 사용
 
   // # State: UI Control
   const [activeTab, setActiveTab] = useState('info');
@@ -103,7 +108,6 @@ export default function StoreScreen() {
   const [isPaused, setIsPaused] = useState(false);
 
   // # State: Menu Management
-  // 카테고리는 API에 별도 엔드포인트가 없으므로 로컬 관리 + 아이템에서 추출(확인필요)
   const [menuCategories, setMenuCategories] = useState(['메인메뉴', '사이드', '음료/주류', '세트메뉴']);
   const [selectedCategory, setSelectedCategory] = useState('메인메뉴');
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -127,24 +131,29 @@ export default function StoreScreen() {
   const ALL_VIBES = ['1인 혼밥', '회식', '모임', '야식', '데이트'];
   const BADGE_TYPES = ['BEST', 'NEW', 'HOT', '비건'];
 
+  // =================================================================
   // 2. 데이터 바인딩 (서버 데이터 -> UI State)
+  // =================================================================
 
   // 2-1. 내 가게 정보 바인딩
   useEffect(() => {
     if (storeDataResponse?.data) {
+        // 배열로 오는지 객체로 오는지 체크
         const myStore = Array.isArray(storeDataResponse.data) ? storeDataResponse.data[0] : storeDataResponse.data;
+        
         if (myStore) {
             setMyStoreId(myStore.id);
             setStoreInfo({
                 name: myStore.name || '',
+                // 카테고리가 문자열 하나로 오면 배열로 변환
                 categories: myStore.category ? [myStore.category] : [],
-                vibes: [], 
+                vibes: [], // API에 vibes 필드가 있다면 연결 (현재 없음)
                 intro: myStore.introduction || '',
                 address: myStore.address || '',
                 detailAddress: myStore.addressDetail || '',
                 phone: myStore.phoneNumber || '',
                 logoImage: myStore.imageUrl || null,
-                bannerImage: null
+                bannerImage: null // 배너 이미지 필드가 있다면 연결
             });
         }
     }
@@ -158,77 +167,73 @@ export default function StoreScreen() {
         id: item.id,
         name: item.name,
         price: item.price ? item.price.toString() : '0',
-        desc: item.description || '', // API: description <-> UI: desc
+        desc: item.description || '', 
         category: item.category || '메인메뉴',
-        isRepresentative: item.isRecommended || false, // API: isRecommended <-> UI: isRepresentative
+        isRepresentative: item.isRecommended || false, 
         isSoldOut: item.isSoldOut || false,
-        isHidden: item.isHidden || false, // API에 필드가 있다고 가정 (없으면 로컬 처리)
-        badge: item.badge || null, // API에 필드가 있다고 가정
+        isHidden: item.isHidden || false, 
+        badge: item.badge || null, 
         image: item.imageUrl || null
     }))
     .filter(item => item.category === selectedCategory);
 
 
-  // 액션 핸들러 (API 호출)
+  // =================================================================
+  // 3. 액션 핸들러 (API 호출)
+  // =================================================================
 
   // [Store] 기본 정보 저장
   const handleBasicSave = () => {
-    console.log("🖱️ 완료 버튼 눌림!"); 
-    console.log("현재 myStoreId:", myStoreId);
-    console.log("보낼 데이터:", editBasicData);
-
-    // 가게 ID가 없는 경우
     if (!myStoreId) {
-        Alert.alert("오류", "가게 정보를 찾을 수 없습니다.\n잠시 후 다시 시도해 주세요.");
+        Alert.alert("오류", "가게 정보를 찾을 수 없습니다.");
         return;
     }
 
     // 서버로 보낼 데이터 구성
     const updateBody = {
-        name: storeInfo.name, // 이름은 변경하지 않음 (기존 값 유지)
+        name: storeInfo.name, // 이름은 수정 화면에 없으므로 기존 값 유지
         introduction: editBasicData.intro,
         address: editBasicData.address,
         addressDetail: editBasicData.detailAddress,
         phoneNumber: editBasicData.phone,
+        // category, vibes 등 추가 필드가 API에 있다면 여기에 포함
     };
 
-    // API 요청 보내기
     updateStoreMutation.mutate(
         { storeId: myStoreId, data: updateBody },
         {
             onSuccess: () => {
-                console.log("✅ 수정 성공!");
                 Alert.alert("성공", "가게 정보가 수정되었습니다.");
-                refetchStore();
+                refetchStore(); // 최신 정보 다시 불러오기
                 setBasicModalVisible(false);
             },
             onError: (err) => {
-                console.error("❌ 수정 실패:", err);
-                // 에러 메시지가 서버에서 오는지 확인필요
-                const msg = err?.response?.data?.message || "수정에 실패했습니다.";
-                Alert.alert("실패", msg);
+                console.error("수정 실패:", err);
+                Alert.alert("실패", "정보 수정 중 오류가 발생했습니다.");
             }
         }
     );
   };
 
-  // [Menu] 메뉴 추가/수정 저장
+  // 메뉴 추가/수정 저장
   const handleMenuSave = () => {
       if (!myStoreId) return;
 
-      // 공통 Payload
+      // 가격 숫자 변환
+      const priceNum = parseInt(menuForm.price.replace(/,/g, ''), 10) || 0;
+
       const payload = {
           name: menuForm.name,
-          price: parseInt(menuForm.price.replace(/,/g, ''), 10) || 0,
+          price: priceNum,
           description: menuForm.desc,
           category: menuForm.category,
           isRecommended: menuForm.isRepresentative,
           isSoldOut: menuForm.isSoldOut,
-          // badge, isHidden 등은 API 스펙에 따라 추가 필요 (현재는 기본 필드만)
-          // imageUrl: ... (이미지 업로드는 별도 로직 필요)
+          // badge: menuForm.badge, // API 지원 시 주석 해제
       };
 
       if (isEditMode && targetItemId) {
+          // 수정
           updateItemMutation.mutate(
               { itemId: targetItemId, data: payload },
               {
@@ -237,14 +242,11 @@ export default function StoreScreen() {
                       refetchItems();
                       setMenuModalVisible(false);
                   },
-                  onError: (err) => {
-                      console.error(err);
-                      Alert.alert("실패", "메뉴 수정 실패");
-                  }
+                  onError: () => Alert.alert("실패", "메뉴 수정 실패")
               }
           );
       } else {
-          // 추가 (Create)
+          // 추가
           createItemMutation.mutate(
               { storeId: myStoreId, data: payload },
               {
@@ -253,18 +255,14 @@ export default function StoreScreen() {
                       refetchItems();
                       setMenuModalVisible(false);
                   },
-                  onError: (err) => {
-                      console.error(err);
-                      Alert.alert("실패", "메뉴 등록 실패");
-                  }
+                  onError: () => Alert.alert("실패", "메뉴 등록 실패")
               }
           );
       }
   };
 
-  // [Menu] 즉시 상태 변경 (품절, 대표메뉴) - 낙관적 업데이트 대신 API 호출 후 리패치 방식 사용
+  // 즉시 상태 변경 (품절, 대표메뉴)
   const handleQuickUpdate = (item, field, value) => {
-      // 기존 데이터 + 변경된 필드
       const payload = {
           name: item.name,
           price: parseInt(item.price.replace(/,/g, ''), 10),
@@ -279,7 +277,7 @@ export default function StoreScreen() {
       updateItemMutation.mutate(
           { itemId: item.id, data: payload },
           {
-              onSuccess: () => refetchItems(), // 성공 시 목록 갱신
+              onSuccess: () => refetchItems(),
               onError: () => Alert.alert("오류", "상태 변경에 실패했습니다.")
           }
       );
@@ -309,7 +307,8 @@ export default function StoreScreen() {
   const handleHoursSave = () => {
     setOperatingHours(editHoursData); 
     setHoursModalVisible(false);
-    Alert.alert("알림", "영업시간 로컬 저장 완료 (API 연동 필요)");
+    // TODO: 영업시간 API가 생기면 여기에 연결
+    Alert.alert("알림", "영업시간이 로컬에 저장되었습니다. (서버 미연동)");
   };
 
   const toggleHoliday = (index) => {
@@ -458,7 +457,7 @@ export default function StoreScreen() {
             </View>
             
             {/* 매장 소식 (Placeholder) */}
-            <TouchableOpacity style={[styles.infoCard, { paddingVertical: rs(22) }]} activeOpacity={0.7} onPress={() => handleMockAction("매장 소식 페이지로 이동 (준비중)")}>
+            <TouchableOpacity style={[styles.infoCard, { paddingVertical: rs(22) }]} activeOpacity={0.7} onPress={() => navigation.navigate('StoreNews')}>
               <View style={styles.newsContentRow}>
                 <View style={styles.newsLeftSection}>
                     <View style={styles.timeIconCircle}><Ionicons name="megaphone" size={rs(18)} color="#34B262" /></View>
@@ -472,8 +471,8 @@ export default function StoreScreen() {
             <View style={styles.infoCard}>
                 <View style={styles.cardHeader}>
                   <View style={styles.headerTitleRow}>
-                   <View style={styles.timeIconCircle}><Ionicons name="calendar" size={rs(18)} color="#34B262" /></View>
-                   <View><Text style={styles.headerTitle}>휴무일</Text><Text style={styles.subTitle}>임시 휴무일을 터치로 지정</Text></View>
+                    <View style={styles.timeIconCircle}><Ionicons name="calendar" size={rs(18)} color="#34B262" /></View>
+                    <View><Text style={styles.headerTitle}>휴무일</Text><Text style={styles.subTitle}>임시 휴무일을 터치로 지정</Text></View>
                 </View>
               </View>
               <View style={styles.calendarControl}>
@@ -518,7 +517,7 @@ export default function StoreScreen() {
             <View style={{height: rs(20)}} />
           </View>
         ) : (
-          /* ==================== 메뉴 관리 탭 (API 연동 완료) ==================== */
+          /* ==================== 메뉴 관리 탭 ==================== */
           <View style={{flex: 1}}>
               <View style={styles.categoryScrollContainer}>
                 <View style={{ flex: 1 }}>
@@ -556,8 +555,8 @@ export default function StoreScreen() {
                                 </View>
                                 <View style={styles.menuInfo}>
                                     <View style={styles.menuTitleRow}>
-                                        <Text style={styles.menuName}>{item.name}</Text>
-                                        {item.badge && <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{item.badge}</Text></View>}
+                                            <Text style={styles.menuName}>{item.name}</Text>
+                                            {item.badge && <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{item.badge}</Text></View>}
                                     </View>
                                     <Text style={styles.menuPrice}>{Number(item.price).toLocaleString()}원</Text>
                                     <Text style={styles.menuDesc} numberOfLines={1}>{item.desc}</Text>
@@ -567,7 +566,7 @@ export default function StoreScreen() {
                                 {/* 대표메뉴 토글 */}
                                 <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isRecommended', !item.isRepresentative)}>
                                     <View style={[styles.actionCircle, item.isRepresentative ? {backgroundColor: '#FFFACA'} : {backgroundColor: '#F5F5F5'}]}>
-                                        <Ionicons name="star" size={rs(12)} color={item.isRepresentative ? "#EAB308" : "#DADADA"} />
+                                            <Ionicons name="star" size={rs(12)} color={item.isRepresentative ? "#EAB308" : "#DADADA"} />
                                     </View>
                                 </TouchableOpacity>
                                 {/* 품절 토글 */}
@@ -747,7 +746,7 @@ export default function StoreScreen() {
                 <View style={styles.modalFooter}>
                     <TouchableOpacity 
                       style={styles.modalSubmitBtn} 
-                      onPress={handleMenuSave} // API 호출 핸들러 연결
+                      onPress={handleMenuSave} 
                       disabled={createItemMutation.isPending || updateItemMutation.isPending}
                     >
                         <Text style={styles.modalSubmitText}>

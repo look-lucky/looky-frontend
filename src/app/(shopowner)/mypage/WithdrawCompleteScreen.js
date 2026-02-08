@@ -1,5 +1,6 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
 import {
   Platform,
   SafeAreaView,
@@ -10,13 +11,24 @@ import {
   View
 } from 'react-native';
 
+// [토큰 관리] 토큰 삭제 함수 임포트
+import { removeToken } from '@/src/shared/lib/auth/token';
+
 export default function WithdrawCompleteScreen({ navigation }) {
 
-  const handleGoMain = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }], 
-    });
+  const handleGoMain = async () => {
+    try {
+        // 1. 핸드폰에 저장된 토큰(로그인 정보) 삭제
+        await removeToken(); 
+    } catch (e) {
+        console.log("토큰 삭제 중 오류(무시 가능):", e);
+    } finally {
+        // 2. 로그인 화면으로 초기화 및 이동
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }], 
+        });
+    }
   };
 
   return (
