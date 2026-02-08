@@ -21,6 +21,8 @@ import TermsScreen from './mypage/TermsScreen';
 import VersionScreen from './mypage/VersionScreen';
 import WithdrawCompleteScreen from './mypage/WithdrawCompleteScreen';
 import WithdrawScreen from './mypage/WithdrawScreen';
+import EditReviewScreen from './patron/studentReview/EditReviewScreen';
+import MyReviewScreen from './patron/studentReview/MyReviewScreen';
 import ReportCompleteScreen from './review/ReportCompleteScreen';
 import ReportScreen from './review/ReportScreen';
 import ReviewScreen from './review/ReviewScreen';
@@ -73,6 +75,7 @@ function MainTabNavigator() {
 export default function ShopOwnerNavigator() {
   return (
     <Stack.Navigator initialRouteName="MainTabs" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MyReview" component={MyReviewScreen} />
       {/* 1. 기본 화면 탭 네비게이터 */}
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       {/* 2. 알림 화면 스택 화면 */}
@@ -111,6 +114,7 @@ export default function ShopOwnerNavigator() {
       <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: false }} />
       {/* 19. 리뷰관리-신고완료 화면 스택 화면 */}
       <Stack.Screen name="ReportComplete" component={ReportCompleteScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="EditReview" component={EditReviewScreen} />
     </Stack.Navigator>
   );
 }
