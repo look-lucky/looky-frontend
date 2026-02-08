@@ -1,10 +1,13 @@
+import { useGetMyCoupons } from "@/src/api/coupon";
+import { CommonResponseListIssueCouponResponse } from "@/src/api/generated.schemas";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";
-import { Fonts, Gray, Owner, Primary, Text as TextColor } from "@/src/shared/theme/theme";
+import { Fonts, Gray, Owner, Primary, System, Text as TextColor } from "@/src/shared/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useMemo } from "react";
 import {
   Alert,
   ScrollView,
@@ -50,10 +53,51 @@ export default function MyPageTab() {
   const { handleLogout } = useAuth();
   const router = useRouter();
 
+  const { data: myCouponsRes } = useGetMyCoupons({
+    query: {
+      select: (res) =>
+        (res as unknown as { data: CommonResponseListIssueCouponResponse })
+          .data,
+    },
+  });
+
+  const couponCounts = useMemo(() => {
+    const coupons = myCouponsRes?.data ?? [];
+    const now = Date.now();
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+
+    let owned = 0;
+    let expiringSoon = 0;
+    let used = 0;
+
+    for (const c of coupons) {
+      if (c.status === "USED") {
+        used++;
+      } else if (c.status === "UNUSED" || c.status === "ACTIVATED") {
+        owned++;
+        if (c.expiresAt) {
+          const expiresAt = new Date(c.expiresAt).getTime();
+          if (expiresAt - now <= threeDays && expiresAt - now > 0) {
+            expiringSoon++;
+          }
+        }
+      }
+    }
+
+    return { owned, expiringSoon, used };
+  }, [myCouponsRes]);
+
   const onLogout = () => {
     Alert.alert("로그아웃", "정말 로그아웃 하시겠습니까?", [
       { text: "취소", style: "cancel" },
-      { text: "로그아웃", style: "destructive", onPress: handleLogout },
+      {
+        text: "로그아웃",
+        style: "destructive",
+        onPress: async () => {
+          await handleLogout();
+          router.replace("/landing");
+        },
+      },
     ]);
   };
 
@@ -99,21 +143,21 @@ export default function MyPageTab() {
           <View style={styles.couponCard}>
             <View style={styles.couponItem}>
               <ThemedText style={[styles.couponNumber, { color: Primary[500] }]}>
-                4
+                {couponCounts.owned}
               </ThemedText>
               <ThemedText style={styles.couponLabel}>보유 쿠폰</ThemedText>
             </View>
             <View style={styles.couponDivider} />
             <View style={styles.couponItem}>
-              <ThemedText style={[styles.couponNumber, { color: "#EB4335" }]}>
-                2
+              <ThemedText style={[styles.couponNumber, { color: System.error }]}>
+                {couponCounts.expiringSoon}
               </ThemedText>
               <ThemedText style={styles.couponLabel}>곧 만료</ThemedText>
             </View>
             <View style={styles.couponDivider} />
             <View style={styles.couponItem}>
               <ThemedText style={[styles.couponNumber, { color: TextColor.primary }]}>
-                12
+                {couponCounts.used}
               </ThemedText>
               <ThemedText style={styles.couponLabel}>사용 완료</ThemedText>
             </View>
