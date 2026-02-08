@@ -75,7 +75,7 @@ function MainTabNavigator() {
 
 export default function ShopOwnerNavigator() {
   return (
-    <Stack.Navigator initialRouteName="MainTabs" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName="StoreManagement" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MyReview" component={MyReviewScreen} />
       {/* 1. 기본 화면 탭 네비게이터 */}
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />

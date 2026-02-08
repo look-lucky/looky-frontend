@@ -10,7 +10,7 @@ import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, System } from "@/src/shared/theme/theme";
 
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? ;
 
 type HealthStatus = "checking" | "connected" | "failed";
 

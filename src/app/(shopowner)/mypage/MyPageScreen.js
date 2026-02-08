@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/src/shared/lib/auth/auth-context';
-import React from 'react';
 import {
   Alert,
   Platform,
