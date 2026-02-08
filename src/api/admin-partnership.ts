@@ -160,8 +160,8 @@ export function useGetPartnershipsByOrganization<TData = Awaited<ReturnType<type
 
 
 /**
- * 특정 대학의 특정 조직에 제휴를 등록합니다.
- * @summary [관리자] 제휴 등록
+ * 특정 대학의 특정 조직에 제휴를 단건으로 등록합니다.
+ * @summary [관리자] 제휴 단건 등록
  */
 export type createPartnershipResponse201 = {
   data: Blob
@@ -255,7 +255,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreatePartnershipMutationError = Blob
 
     /**
- * @summary [관리자] 제휴 등록
+ * @summary [관리자] 제휴 단건 등록
  */
 export const useCreatePartnership = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPartnership>>, TError,{universityId: number;organizationId: number;data: CreatePartnershipRequest}, TContext>, request?: SecondParameter<typeof customFetch>}

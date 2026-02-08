@@ -1,5 +1,6 @@
-import { useGetMyCoupons } from "@/src/api/coupon";
+import { useActivateCoupon, useGetMyCoupons } from "@/src/api/coupon";
 import type { IssueCouponResponse } from "@/src/api/generated.schemas";
+import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { rs } from "@/src/shared/theme/scale";
@@ -13,6 +14,7 @@ import {
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -59,6 +61,30 @@ const isExpiringSoon = (expiresAt?: string) => {
   return diffDays >= 0 && diffDays <= 7;
 };
 
+const formatExpiryDateTime = (dateStr?: string) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `~ ${y}.${m}.${day}. ${h}:${min}`;
+};
+
+const formatBenefit = (type?: string, value?: string) => {
+  switch (type) {
+    case "PERCENTAGE_DISCOUNT":
+      return `${value}% 할인`;
+    case "FIXED_DISCOUNT":
+      return `${Number(value).toLocaleString()}원 할인`;
+    case "SERVICE_GIFT":
+      return "서비스 증정";
+    default:
+      return value ?? "";
+  }
+};
+
 const formatDiscount = (benefitType?: string, benefitValue?: string) => {
   if (!benefitValue) return "";
   switch (benefitType) {
@@ -77,6 +103,28 @@ export default function BenefitsTab() {
   const insets = useSafeAreaInsets();
   const [selectedFilter, setSelectedFilter] = useState<CouponFilter>("all");
   const [selectedTab, setSelectedTab] = useState<TabType>("owned");
+  const [selectedCoupon, setSelectedCoupon] = useState<IssueCouponResponse | null>(null);
+  const [couponCode, setCouponCode] = useState<string | null>(null);
+
+  const { mutate: activateCoupon, isPending: isActivating } = useActivateCoupon();
+
+  const closeModal = () => {
+    setSelectedCoupon(null);
+    setCouponCode(null);
+  };
+
+  const handleUseCoupon = () => {
+    if (!selectedCoupon?.studentCouponId) return;
+    activateCoupon(
+      { studentCouponId: selectedCoupon.studentCouponId },
+      {
+        onSuccess: (res) => {
+          const code = (res as any)?.data?.data as string;
+          if (code) setCouponCode(code);
+        },
+      },
+    );
+  };
 
   // API 호출
   const { data: myCouponsRes, isLoading } = useGetMyCoupons();
@@ -216,7 +264,12 @@ export default function BenefitsTab() {
           </View>
         ) : (
           filteredCoupons.map((coupon) => (
-            <View key={coupon.studentCouponId} style={styles.couponCard}>
+            <TouchableOpacity
+              key={coupon.studentCouponId}
+              style={styles.couponCard}
+              onPress={() => setSelectedCoupon(coupon)}
+              activeOpacity={0.8}
+            >
               <View
                 style={[
                   styles.couponIconContainer,
@@ -247,10 +300,80 @@ export default function BenefitsTab() {
                   </ThemedText>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
+
+      {/* 쿠폰 쓰기 모달 */}
+      <Modal
+        visible={selectedCoupon !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <TouchableOpacity style={styles.modalCloseButton} onPress={closeModal}>
+              <ThemedText style={styles.modalCloseText}>✕</ThemedText>
+            </TouchableOpacity>
+
+            <ThemedText style={styles.modalTitle}>쿠폰 쓰기</ThemedText>
+            <ThemedText style={styles.modalSubtitle}>
+              쿠폰 코드를 사장님께 보여드리고 바로 사용해 보세요!
+            </ThemedText>
+
+            <View style={[styles.couponDetailCard, couponCode && styles.couponDetailCardActive]}>
+              {!couponCode ? (
+                <>
+                  <ThemedText style={styles.couponDetailTitle}>
+                    {selectedCoupon?.title}
+                  </ThemedText>
+                  <ThemedText style={styles.couponDetailDesc}>
+                    {selectedCoupon?.description}
+                  </ThemedText>
+                  <View style={styles.couponDetailDivider} />
+                  <View style={styles.couponDetailRow}>
+                    <ThemedText style={styles.couponDetailLabel}>사용처</ThemedText>
+                    <ThemedText style={styles.couponDetailValue}>
+                      {selectedCoupon?.storeName}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.couponDetailRow}>
+                    <ThemedText style={styles.couponDetailLabel}>혜택</ThemedText>
+                    <ThemedText style={styles.couponDetailValue}>
+                      {formatBenefit(selectedCoupon?.benefitType, selectedCoupon?.benefitValue)}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.couponDetailRow}>
+                    <ThemedText style={styles.couponDetailLabel}>만료기한</ThemedText>
+                    <ThemedText style={styles.couponDetailValue}>
+                      {formatExpiryDateTime(selectedCoupon?.expiresAt)}
+                    </ThemedText>
+                  </View>
+                </>
+              ) : (
+                <View style={styles.codeContainer}>
+                  {couponCode.split("").map((digit, i) => (
+                    <View key={i} style={styles.codeDigitBox}>
+                      <ThemedText style={styles.codeDigit}>{digit}</ThemedText>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {!couponCode && (
+              <AppButton
+                label="사용하기"
+                onPress={handleUseCoupon}
+                disabled={isActivating}
+                style={styles.useButton}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -440,5 +563,107 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: rs(14),
     color: TextColor.tertiary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: Gray.popupBg,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: rs(20),
+  },
+  modalContainer: {
+    width: "100%",
+    backgroundColor: Gray.white,
+    borderRadius: rs(16),
+    padding: rs(24),
+    gap: rs(16),
+  },
+  modalCloseButton: {
+    position: "absolute",
+    top: rs(16),
+    right: rs(16),
+    padding: rs(4),
+  },
+  modalCloseText: {
+    fontSize: rs(18),
+    color: TextColor.secondary,
+  },
+  modalTitle: {
+    fontFamily: Fonts.bold,
+    fontSize: rs(20),
+    color: TextColor.primary,
+    textAlign: "center",
+  },
+  modalSubtitle: {
+    fontFamily: Fonts.regular,
+    fontSize: rs(13),
+    color: TextColor.secondary,
+    textAlign: "center",
+  },
+  couponDetailCard: {
+    borderWidth: 1.5,
+    borderColor: Primary["500"],
+    borderStyle: "dashed",
+    borderRadius: rs(12),
+    padding: rs(16),
+    gap: rs(8),
+  },
+  couponDetailCardActive: {
+    borderStyle: "solid",
+  },
+  couponDetailTitle: {
+    fontFamily: Fonts.bold,
+    fontSize: rs(18),
+    color: Primary["500"],
+    textAlign: "center",
+  },
+  couponDetailDesc: {
+    fontFamily: Fonts.regular,
+    fontSize: rs(12),
+    color: TextColor.secondary,
+    textAlign: "center",
+  },
+  couponDetailDivider: {
+    height: 1,
+    backgroundColor: Gray.gray3,
+    marginVertical: rs(4),
+  },
+  couponDetailRow: {
+    flexDirection: "row",
+    gap: rs(16),
+  },
+  couponDetailLabel: {
+    fontFamily: Fonts.medium,
+    fontSize: rs(12),
+    color: TextColor.secondary,
+    width: rs(48),
+  },
+  couponDetailValue: {
+    fontFamily: Fonts.regular,
+    fontSize: rs(12),
+    color: TextColor.primary,
+    flex: 1,
+  },
+  codeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignItems: "center",
+    paddingVertical: rs(16),
+  },
+  codeDigitBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: TextColor.primary,
+    paddingHorizontal: rs(8),
+    paddingBottom: rs(4),
+  },
+  codeDigit: {
+    fontFamily: Fonts.bold,
+    fontSize: rs(40),
+    color: TextColor.primary,
+  },
+  useButton: {
+    marginTop: rs(4),
   },
 });

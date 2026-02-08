@@ -575,6 +575,117 @@ export function useSearchUnclaimedStores<TData = Awaited<ReturnType<typeof searc
 
 
 /**
+ * 점주가 자신이 신청한 상점 소유 요청 목록을 조회합니다.
+ * @summary [점주] 내 상점 소유 요청 목록 조회
+ */
+export type getMyStoreClaimsResponse200 = {
+  data: Blob
+  status: 200
+}
+    
+export type getMyStoreClaimsResponseSuccess = (getMyStoreClaimsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getMyStoreClaimsResponse = (getMyStoreClaimsResponseSuccess)
+
+export const getGetMyStoreClaimsUrl = () => {
+
+
+  
+
+  return `/api/store-claims/my`
+}
+
+export const getMyStoreClaims = async ( options?: RequestInit): Promise<getMyStoreClaimsResponse> => {
+  
+  return customFetch<getMyStoreClaimsResponse>(getGetMyStoreClaimsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetMyStoreClaimsQueryKey = () => {
+    return [
+    `/api/store-claims/my`
+    ] as const;
+    }
+
+    
+export const getGetMyStoreClaimsQueryOptions = <TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyStoreClaimsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyStoreClaims>>> = ({ signal }) => getMyStoreClaims({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyStoreClaimsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyStoreClaims>>>
+export type GetMyStoreClaimsQueryError = unknown
+
+
+export function useGetMyStoreClaims<TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyStoreClaims>>,
+          TError,
+          Awaited<ReturnType<typeof getMyStoreClaims>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyStoreClaims<TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyStoreClaims>>,
+          TError,
+          Awaited<ReturnType<typeof getMyStoreClaims>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyStoreClaims<TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [점주] 내 상점 소유 요청 목록 조회
+ */
+
+export function useGetMyStoreClaims<TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyStoreClaimsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
  * 상점 소유권 요청 목록을 조회합니다. status 파라미터로 상태별 조회가 가능합니다.
  * @summary [관리자] 상점 소유권 요청 목록 조회
  */

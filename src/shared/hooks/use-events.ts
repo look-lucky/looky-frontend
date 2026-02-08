@@ -112,6 +112,7 @@ interface UseEventsOptions {
   myLocation: { lat: number; lng: number } | null;
   selectedDistance?: string; // km 단위 (0 = 무제한)
   selectedSort?: string;
+  selectedEventTypes?: EventType[]; // 선택된 이벤트 타입 필터
   enabled?: boolean;
 }
 
@@ -119,6 +120,7 @@ export function useEvents({
   myLocation,
   selectedDistance = '0',
   selectedSort = 'distance',
+  selectedEventTypes = [],
   enabled = true,
 }: UseEventsOptions) {
   // API 호출 (UPCOMING, LIVE 상태만)
@@ -151,6 +153,13 @@ export function useEvents({
   // 거리 필터 + 정렬
   const filteredEvents: Event[] = useMemo(() => {
     let result = [...visibleEvents];
+
+    // 이벤트 타입 필터
+    if (selectedEventTypes.length > 0) {
+      result = result.filter((event) =>
+        event.eventTypes.some((type) => selectedEventTypes.includes(type)),
+      );
+    }
 
     // 거리 필터
     const maxKm = parseInt(selectedDistance);
@@ -188,7 +197,7 @@ export function useEvents({
     result.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
 
     return result;
-  }, [visibleEvents, myLocation, selectedDistance, selectedSort]);
+  }, [visibleEvents, myLocation, selectedDistance, selectedSort, selectedEventTypes]);
 
   // 이벤트 마커 생성
   const eventMarkers = useMemo(

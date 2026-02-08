@@ -176,28 +176,20 @@ export function transformStoreResponse(
     distance = formatDistance(km);
   }
 
-  // 확장 필드 (타입 생성 전 임시 처리)
-  const extendedResponse = response as StoreResponse & {
-    isPartner?: boolean;
-    hasCoupon?: boolean;
-    averageRating?: number;
-    reviewCount?: number;
-  };
-
   return {
     id: String(response.id ?? 0),
     name: response.name ?? '',
     image: response.imageUrls?.[0] ?? '',
-    rating: extendedResponse.averageRating ?? 0,
-    reviewCount: extendedResponse.reviewCount ?? 0,
+    rating: response.averageRating ?? 0,
+    reviewCount: response.reviewCount ?? 0,
     distance,
     openStatus: '', // TODO: 서버에서 영업상태 제공 시 연동
     openHours: response.operatingHours ?? '',
     benefits: [], // TODO: 서버에서 혜택 목록 제공 시 연동
     lat,
     lng,
-    isPartner: extendedResponse.isPartner ?? false,
-    hasCoupon: extendedResponse.hasCoupon ?? false,
+    isPartner: response.isPartnership ?? false,
+    hasCoupon: response.hasCoupon ?? false,
     category: formatStoreCategories(response.storeCategories),
     isFavorite: false, // 기본값, 추후 즐겨찾기 목록과 비교하여 업데이트
   };

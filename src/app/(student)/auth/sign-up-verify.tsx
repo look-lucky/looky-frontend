@@ -54,7 +54,7 @@ export default function StudentVerificationPage() {
   } = useSignupStore();
 
   // Auth
-  const { handleAuthSuccess } = useAuth();
+  const { handleAuthSuccess, saveUserCollegeId } = useAuth();
 
   // Mutations
   const signupMutation = useSignupStudent();
@@ -198,8 +198,11 @@ export default function StudentVerificationPage() {
         },
       },
       {
-        onSuccess: (response) => {
+        onSuccess: async (response) => {
           console.log("회원가입 성공:", response);
+
+          // 단과대학 ID 저장
+          await saveUserCollegeId(selectedCollegeId!);
 
           // Store에 학교 정보 저장
           setSignupFields({

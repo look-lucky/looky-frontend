@@ -26,6 +26,7 @@ import type {
 
 import type {
   CreateReviewBody,
+  GetMyReviewsParams,
   GetReviewsParams,
   ReportRequest,
   UpdateReviewBody
@@ -856,6 +857,124 @@ export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewSta
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetReviewStatsQueryOptions(storeId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * 내가 작성한 리뷰 목록을 조회합니다.
+ * @summary [공통] 내 리뷰 목록 조회
+ */
+export type getMyReviewsResponse200 = {
+  data: Blob
+  status: 200
+}
+    
+export type getMyReviewsResponseSuccess = (getMyReviewsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getMyReviewsResponse = (getMyReviewsResponseSuccess)
+
+export const getGetMyReviewsUrl = (params: GetMyReviewsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reviews/my?${stringifiedParams}` : `/api/reviews/my`
+}
+
+export const getMyReviews = async (params: GetMyReviewsParams, options?: RequestInit): Promise<getMyReviewsResponse> => {
+  
+  return customFetch<getMyReviewsResponse>(getGetMyReviewsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetMyReviewsQueryKey = (params?: GetMyReviewsParams,) => {
+    return [
+    `/api/reviews/my`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getGetMyReviewsQueryOptions = <TData = Awaited<ReturnType<typeof getMyReviews>>, TError = unknown>(params: GetMyReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyReviews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyReviewsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyReviews>>> = ({ signal }) => getMyReviews(params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyReviews>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyReviews>>>
+export type GetMyReviewsQueryError = unknown
+
+
+export function useGetMyReviews<TData = Awaited<ReturnType<typeof getMyReviews>>, TError = unknown>(
+ params: GetMyReviewsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyReviews>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyReviews>>,
+          TError,
+          Awaited<ReturnType<typeof getMyReviews>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyReviews<TData = Awaited<ReturnType<typeof getMyReviews>>, TError = unknown>(
+ params: GetMyReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyReviews>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyReviews>>,
+          TError,
+          Awaited<ReturnType<typeof getMyReviews>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyReviews<TData = Awaited<ReturnType<typeof getMyReviews>>, TError = unknown>(
+ params: GetMyReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyReviews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [공통] 내 리뷰 목록 조회
+ */
+
+export function useGetMyReviews<TData = Awaited<ReturnType<typeof getMyReviews>>, TError = unknown>(
+ params: GetMyReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyReviews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyReviewsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

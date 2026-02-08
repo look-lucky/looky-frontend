@@ -1,4 +1,5 @@
 import { useGetCouponsByStore, useGetMyCoupons, useIssueCoupon } from '@/src/api/coupon';
+import { useAuth } from '@/src/shared/lib/auth';
 import { useCountFavorites } from '@/src/api/favorite';
 import type {
   CouponResponse,
@@ -63,9 +64,19 @@ export default function StoreDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { collegeId: userCollegeId } = useAuth();
   const [activeTab, setActiveTab] = useState('news');
   const [isLiked, setIsLiked] = useState(false);
-  const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null);
+  const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(userCollegeId);
+  const [hasInitializedUniversity, setHasInitializedUniversity] = useState(false);
+
+  // auth 로딩 완료 후 사용자 대학 기본값 설정
+  React.useEffect(() => {
+    if (!hasInitializedUniversity && userCollegeId !== null) {
+      setSelectedUniversityId(userCollegeId);
+      setHasInitializedUniversity(true);
+    }
+  }, [userCollegeId, hasInitializedUniversity]);
   const [isCouponModalVisible, setIsCouponModalVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollOffsetY = useRef(0);

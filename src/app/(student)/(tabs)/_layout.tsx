@@ -3,6 +3,7 @@ import { useTabBar } from "@/src/shared/contexts/tab-bar-context";
 import { BottomTabBar } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
 import { useEffect } from "react";
+import { Alert, BackHandler } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -13,6 +14,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { isTabBarVisible } = useTabBar();
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      Alert.alert("앱 종료", "앱을 종료하시겠습니까?", [
+        { text: "취소", style: "cancel" },
+        { text: "종료", style: "destructive", onPress: () => BackHandler.exitApp() },
+      ]);
+      return true;
+    });
+    return () => subscription.remove();
+  }, []);
   const tabBarHeight = 56 + insets.bottom;
 
   // 애니메이션 값: 0 = 보임, tabBarHeight = 숨김 (아래로 슬라이드)

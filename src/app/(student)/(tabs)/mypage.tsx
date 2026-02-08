@@ -62,7 +62,7 @@ export default function MyPageTab() {
   });
 
   const couponCounts = useMemo(() => {
-    const coupons = myCouponsRes?.data ?? [];
+    const coupons = Array.isArray(myCouponsRes?.data) ? myCouponsRes.data : [];
     const now = Date.now();
     const threeDays = 3 * 24 * 60 * 60 * 1000;
 
@@ -169,11 +169,13 @@ export default function MyPageTab() {
               icon="bookmark-outline"
               text="찜한 매장"
               rightText="12"
+              onPress={() => router.push('/mypage/favorite')}
             />
             <MenuItem
               icon="document-text-outline"
               text="내가 쓴 리뷰"
               rightText="19"
+              onPress={() => router.push('/mypage/my-review')}
               isLast
             />
           </View>

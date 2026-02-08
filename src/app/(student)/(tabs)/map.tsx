@@ -21,7 +21,7 @@ import {
 import { useTabBar } from '@/src/shared/contexts/tab-bar-context';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { useMapSearch } from '@/src/shared/hooks/use-map-search';
-import type { Event } from '@/src/shared/types/event';
+import type { Event, EventType } from '@/src/shared/types/event';
 import type { Store } from '@/src/shared/types/store';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Owner, Text } from '@/src/shared/theme/theme';
@@ -106,6 +106,7 @@ export default function MapTab() {
     myLocation,
     selectedDistance,
     selectedSort,
+    selectedEventTypes: selectedEvents as EventType[],
   });
 
   // 즐겨찾기 훅

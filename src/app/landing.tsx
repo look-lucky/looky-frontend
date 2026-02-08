@@ -1,3 +1,4 @@
+import { useAuth } from "@/src/shared/lib/auth";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -15,6 +16,7 @@ type HealthStatus = "checking" | "connected" | "failed";
 
 export default function LandingPage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [healthStatus, setHealthStatus] = useState<HealthStatus>("checking");
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function LandingPage() {
     if (healthStatus === "checking") return;
 
     const timer = setTimeout(() => {
-      router.replace("/auth");
+      router.replace(isAuthenticated ? "/(student)/(tabs)" : "/auth");
     }, 1000);
 
     return () => clearTimeout(timer);

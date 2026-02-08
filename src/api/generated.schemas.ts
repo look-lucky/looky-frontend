@@ -522,6 +522,8 @@ export interface CreateEventRequest {
   startDateTime: string;
   /** 이벤트 종료일시 */
   endDateTime: string;
+  /** 대학교 ID */
+  universityId: number;
 }
 
 export type UpdateStoreRequestStoreCategoriesItem = typeof UpdateStoreRequestStoreCategoriesItem[keyof typeof UpdateStoreRequestStoreCategoriesItem];
@@ -1201,6 +1203,30 @@ export interface CommonResponsePageResponseStoreNewsCommentResponse {
   data?: PageResponseStoreNewsCommentResponse;
 }
 
+export type MyStoreClaimResponseStatus = typeof MyStoreClaimResponseStatus[keyof typeof MyStoreClaimResponseStatus];
+
+
+export const MyStoreClaimResponseStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELED: 'CANCELED',
+} as const;
+
+export interface MyStoreClaimResponse {
+  id?: number;
+  storeId?: number;
+  storeName?: string;
+  representativeName?: string;
+  status?: MyStoreClaimResponseStatus;
+  createdAt?: string;
+}
+
+export interface CommonResponseListMyStoreClaimResponse {
+  isSuccess?: boolean;
+  data?: MyStoreClaimResponse[];
+}
+
 export interface CommonResponseListIssueCouponResponse {
   isSuccess?: boolean;
   data?: IssueCouponResponse[];
@@ -1702,6 +1728,13 @@ export type SearchUnclaimedStoresParams = {
 keyword: string;
 };
 
+export type GetMyReviewsParams = {
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
+};
+
 export type GetMyFavoritesParams = {
 /**
  * 페이징 정보
@@ -1722,6 +1755,10 @@ eventTypes?: GetEventsEventTypesItem[];
  * 상태 필터
  */
 status?: GetEventsStatus;
+/**
+ * 대학 ID
+ */
+universityId?: number;
 /**
  * 페이징 정보
  */

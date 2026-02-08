@@ -84,7 +84,7 @@ export default function SocialSignupPage() {
     userId: string;
     provider: string;
   }>();
-  const { handleAuthSuccess } = useAuth();
+  const { handleAuthSuccess, saveUserCollegeId } = useAuth();
   const completeSocialSignupMutation = useCompleteSocialSignup();
 
   // 폼 상태
@@ -167,6 +167,7 @@ export default function SocialSignupPage() {
             const jwtPayload = decodeJwtPayload(accessToken);
             const role = (jwtPayload?.role as UserType) ?? "ROLE_STUDENT";
 
+            await saveUserCollegeId(selectedCollegeId!);
             await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
             router.replace("/(student)/(tabs)");
           } else {

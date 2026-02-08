@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const ACCESS_TOKEN_KEY = "auth_access_token";
 const EXPIRES_AT_KEY = "auth_expires_at";
 const USER_TYPE_KEY = "auth_user_type";
+const COLLEGE_ID_KEY = "user_college_id";
 
 export interface TokenData {
   accessToken: string;
@@ -40,9 +41,17 @@ export async function getToken(): Promise<TokenData | null> {
   };
 }
 
-// getUserType 함수 추가
 export async function getUserType(): Promise<UserType | null> {
   return (await AsyncStorage.getItem(USER_TYPE_KEY)) as UserType | null;
+}
+
+export async function saveCollegeId(collegeId: number): Promise<void> {
+  await AsyncStorage.setItem(COLLEGE_ID_KEY, collegeId.toString());
+}
+
+export async function getCollegeId(): Promise<number | null> {
+  const value = await AsyncStorage.getItem(COLLEGE_ID_KEY);
+  return value ? parseInt(value, 10) : null;
 }
 
 export async function clearToken(): Promise<void> {
@@ -50,6 +59,7 @@ export async function clearToken(): Promise<void> {
     ACCESS_TOKEN_KEY,
     EXPIRES_AT_KEY,
     USER_TYPE_KEY,
+    COLLEGE_ID_KEY,
   ]);
 }
 
