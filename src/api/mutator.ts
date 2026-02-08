@@ -1,8 +1,7 @@
 // src/api/mutator.ts
 import { getToken, saveToken, clearToken, getUserType } from "@/src/shared/lib/auth/token";
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
+const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 
 // 인증 불필요한 엔드포인트
 const PUBLIC_ENDPOINTS = [
@@ -48,9 +47,13 @@ export async function customFetch<T>(
 ): Promise<T> {
   const fullUrl = url.startsWith("http") ? url : `${BASE_URL}${url}`;
 
-  // 인증 필요한 요청이면 토큰 주입
   const isPublic = PUBLIC_ENDPOINTS.some((ep) => url.startsWith(ep));
   const headers = new Headers(options.headers);
+
+  // FormData일 경우 Content-Type을 설정하지 않음 (브라우저가 boundary 자동 설정)
+  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (!isPublic) {
     const tokenData = await getToken();
@@ -59,55 +62,61 @@ export async function customFetch<T>(
     }
   }
 
-  let res = await fetch(fullUrl, { ...options, headers });
+  try {
+    let res = await fetch(fullUrl, { ...options, headers });
 
-  // 401 Unauthorized → 토큰 리프레시 시도
-  if (res.status === 401 && !isPublic && !url.includes("/refresh")) {
-    if (!isRefreshing) {
-      isRefreshing = true;
+    // 401 Unauthorized → 토큰 리프레시 시도
+    if (res.status === 401 && !isPublic && !url.includes("/refresh")) {
+      if (!isRefreshing) {
+        isRefreshing = true;
 
-      const refreshSuccess = await refreshAccessToken();
-      isRefreshing = false;
+        const refreshSuccess = await refreshAccessToken();
+        isRefreshing = false;
 
-      // 대기 중인 요청들 처리
-      refreshQueue.forEach((callback) => callback());
-      refreshQueue = [];
+        refreshQueue.forEach((callback) => callback());
+        refreshQueue = [];
 
-      if (refreshSuccess) {
-        // 새 토큰으로 재시도
+        if (refreshSuccess) {
+          const newTokenData = await getToken();
+          if (newTokenData?.accessToken) {
+            headers.set("Authorization", `Bearer ${newTokenData.accessToken}`);
+            res = await fetch(fullUrl, { ...options, headers });
+          }
+        }
+      } else {
+        await new Promise<void>((resolve) => {
+          refreshQueue.push(resolve);
+        });
+
         const newTokenData = await getToken();
         if (newTokenData?.accessToken) {
           headers.set("Authorization", `Bearer ${newTokenData.accessToken}`);
           res = await fetch(fullUrl, { ...options, headers });
         }
       }
-    } else {
-      // 리프레시 중이면 대기
-      await new Promise<void>((resolve) => {
-        refreshQueue.push(resolve);
-      });
+    }
 
-      // 리프레시 완료 후 재시도
-      const newTokenData = await getToken();
-      if (newTokenData?.accessToken) {
-        headers.set("Authorization", `Bearer ${newTokenData.accessToken}`);
-        res = await fetch(fullUrl, { ...options, headers });
+    const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+    let data: any = {};
+    if (body) {
+      try {
+        data = JSON.parse(body);
+      } catch {
+        throw new Error(
+          `서버 응답 파싱 실패 (status: ${res.status}, url: ${url}): ${body.substring(0, 200)}`,
+        );
       }
     }
-  }
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  let data = {};
-  if (body) {
-    try {
-      data = JSON.parse(body);
-    } catch {
-      throw new Error(
-        `서버 응답 파싱 실패 (status: ${res.status}, url: ${url}): ${body.substring(0, 200)}`,
-      );
+    if (!res.ok) {
+      console.error(`[API 에러] ${res.status}`, data);
+      throw { status: res.status, data, headers: res.headers };
     }
-  }
 
-  return { data, status: res.status, headers: res.headers } as T;
+    return { data, status: res.status, headers: res.headers } as T;
+  } catch (error) {
+    console.error("[네트워크/로직 에러]", error);
+    throw error;
+  }
 }

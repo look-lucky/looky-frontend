@@ -1,6 +1,7 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import React from 'react';
 import {
@@ -14,6 +15,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+
+// [API 함수 임포트]
+import { getMyStores } from '@/src/api/store'; // 내 가게 정보 가져오기 (점주 이름 확인용)
 
 // 재사용 가능한 메뉴 아이템 컴포넌트
 const MenuItem = ({ icon, text, onPress, isLast }) => (
@@ -31,6 +35,29 @@ const MenuItem = ({ icon, text, onPress, isLast }) => (
 );
 
 export default function MypageScreen({ navigation }) {
+  // [상태 관리] 점주 이름 (기본값: 루키)
+  const [ownerName, setOwnerName] = useState('루키');
+
+  // [API 호출] 내 정보(점주 이름) 가져오기
+  useEffect(() => {
+    const fetchOwnerInfo = async () => {
+      try {
+        const response = await getMyStores();
+        const myStores = response.data;
+        
+        // 등록된 가게가 있고, ownerName 정보가 있다면 업데이트
+        if (myStores && myStores.length > 0) {
+          const name = myStores[0].ownerName || '사장님'; 
+          setOwnerName(name);
+        }
+      } catch (error) {
+        console.error('점주 정보 로딩 실패:', error);
+      }
+    };
+
+    fetchOwnerInfo();
+  }, []);
+
   const { handleLogout: authLogout } = useAuth();
   const handleMockPress = (menuName) => {
     console.log(`${menuName} 클릭됨`);
@@ -81,7 +108,8 @@ export default function MypageScreen({ navigation }) {
             </View>
             {/* 텍스트 정보 */}
             <View style={styles.profileTextColumn}>
-              <Text style={styles.profileName}>루키 사장님</Text>
+              {/* [수정] 점주 이름 연결 */}
+              <Text style={styles.profileName}>{ownerName} 사장님</Text>
               <Text style={styles.profileGreeting}>오늘 하루도 행운이 가득하길 바라요!</Text>
             </View>
           </View>

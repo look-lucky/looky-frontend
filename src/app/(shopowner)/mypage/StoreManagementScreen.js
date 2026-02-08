@@ -1,7 +1,9 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   Platform,
   SafeAreaView,
@@ -13,29 +15,50 @@ import {
   View
 } from 'react-native';
 
-export default function StoreManagementScreen({ navigation, route }) {
-  // 더미 데이터
-  const [stores, setStores] = useState([
-    { id: 1, name: '모쿠모쿠 전북대점' },
-    { id: 2, name: '만계치킨 전북대점' },
-    { id: 3, name: '마이마이치킨 전북대점' },
-  ]);
+// [API] 내 가게 목록 가져오기
+import { getMyStores } from '@/src/api/store';
 
+export default function StoreManagementScreen({ navigation, route }) {
+  // [상태] 가게 목록 데이터
+  const [stores, setStores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
   const [selectedStoreId, setSelectedStoreId] = useState(null);
   
   // 삭제 완료 팝업 상태
   const [deleteSuccessVisible, setDeleteSuccessVisible] = useState(false);
 
+  // [API] 가게 목록 불러오기 함수
+  const fetchStores = async () => {
+    try {
+      setLoading(true);
+      const response = await getMyStores();
+      // response.data가 배열이라고 가정 (API 명세 확인 필요)
+      setStores(response.data || []); 
+    } catch (error) {
+      console.error('가게 목록 로딩 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // [초기 로딩 & 포커스 시 갱신]
+  useFocusEffect(
+    useCallback(() => {
+      fetchStores();
+    }, [])
+  );
+
+  // 삭제 완료 후 파라미터 처리
   useEffect(() => {
     if (route.params?.showDeleteSuccess) {
       setDeleteSuccessVisible(true);
-      // params 초기화 (재진입 시 팝업 방지, 선택사항)
+      // params 초기화
       navigation.setParams({ showDeleteSuccess: false });
       
-      if (selectedStoreId) {
-          setStores(prev => prev.filter(s => s.id !== selectedStoreId));
-          setSelectedStoreId(null);
-      }
+      // 선택 상태 초기화 및 목록 갱신
+      setSelectedStoreId(null);
+      fetchStores(); 
     }
   }, [route.params]);
 
@@ -64,6 +87,14 @@ export default function StoreManagementScreen({ navigation, route }) {
       setDeleteSuccessVisible(false);
   };
 
+  if (loading) {
+      return (
+          <View style={[styles.container, {justifyContent:'center', alignItems:'center'}]}>
+              <ActivityIndicator size="large" color="#34B262" />
+          </View>
+      );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ height: Platform.OS === 'android' ? StatusBar.currentHeight : 0, backgroundColor: 'white' }} />
@@ -85,28 +116,42 @@ export default function StoreManagementScreen({ navigation, route }) {
 
         <ScrollView style={styles.storeList} showsVerticalScrollIndicator={false}>
           <View style={styles.divider} />
-          {stores.map((store) => {
-            const isSelected = selectedStoreId === store.id;
-            return (
-              <View key={store.id}>
-                <TouchableOpacity style={styles.storeItem} onPress={() => toggleSelection(store.id)} activeOpacity={0.7}>
-                  <View style={styles.storeNameContainer}>
-                    {isSelected && <Ionicons name="checkmark-circle" size={rs(20)} color="#34B262" style={{ marginRight: rs(8) }} />}
-                    <Text style={styles.storeName}>{store.name}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={rs(16)} color="#BDBDBD" />
-                </TouchableOpacity>
-                <View style={styles.divider} />
+          {stores.length === 0 ? (
+              <View style={{padding: rs(20), alignItems:'center'}}>
+                  <Text style={{color:'#828282'}}>등록된 가게가 없습니다.</Text>
               </View>
-            );
-          })}
+          ) : (
+              stores.map((store) => {
+                const isSelected = selectedStoreId === store.id;
+                return (
+                  <View key={store.id}>
+                    <TouchableOpacity style={styles.storeItem} onPress={() => toggleSelection(store.id)} activeOpacity={0.7}>
+                      <View style={styles.storeNameContainer}>
+                        {isSelected && <Ionicons name="checkmark-circle" size={rs(20)} color="#34B262" style={{ marginRight: rs(8) }} />}
+                        <Text style={styles.storeName}>{store.name}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={rs(16)} color="#BDBDBD" />
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                  </View>
+                );
+              })
+          )}
         </ScrollView>
 
         <View style={styles.bottomButtonContainer}>
-          <TouchableOpacity style={[styles.bottomBtn, { backgroundColor: selectedStoreId ? '#828282' : '#D5D5D5' }]} disabled={!selectedStoreId} onPress={handleDeleteStore}>
+          <TouchableOpacity 
+            style={[styles.bottomBtn, { backgroundColor: selectedStoreId ? '#828282' : '#D5D5D5' }]} 
+            disabled={!selectedStoreId} 
+            onPress={handleDeleteStore}
+          >
             <Text style={styles.bottomBtnText}>삭제하기</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.bottomBtn, { backgroundColor: selectedStoreId ? '#34B262' : '#D5D5D5' }]} disabled={!selectedStoreId} onPress={handleEditStore}>
+          <TouchableOpacity 
+            style={[styles.bottomBtn, { backgroundColor: selectedStoreId ? '#34B262' : '#D5D5D5' }]} 
+            disabled={!selectedStoreId} 
+            onPress={handleEditStore}
+          >
             <Text style={styles.bottomBtnText}>수정하기</Text>
           </TouchableOpacity>
         </View>
@@ -165,7 +210,7 @@ const styles = StyleSheet.create({
   
   // 텍스트 컨테이너
   popupTextContainer: { 
-      flex: 1, // 남은 공간 차지
+      flex: 1,
       justifyContent: 'center',
       alignItems: 'center', 
       width: '100%',
@@ -183,7 +228,7 @@ const styles = StyleSheet.create({
       justifyContent: 'center', 
       alignItems: 'center', 
       position: 'absolute', 
-      bottom: rs(15) //
+      bottom: rs(15) 
   },
   buttonTextWhite: { color: 'white', fontSize: rs(14), fontWeight: '700', fontFamily: 'Pretendard' },
 });
