@@ -26,6 +26,7 @@ import MyReviewScreen from './patron/studentReview/MyReviewScreen';
 import ReportCompleteScreen from './review/ReportCompleteScreen';
 import ReportScreen from './review/ReportScreen';
 import ReviewScreen from './review/ReviewScreen';
+import StoreNewsScreen from './store/StoreNewsScreen';
 import StoreScreen from './store/StoreScreen';
 
 const Tab = createBottomTabNavigator();
@@ -110,6 +111,8 @@ export default function ShopOwnerNavigator() {
       <Stack.Screen name="Version" component={VersionScreen} options={{ headerShown: false }} />
       {/* 17. 쿠폰/단골 페이지- 전체 쿠폰 스택 화면 */}
       <Stack.Screen name="CouponList" component={CouponListScreen} options={{ headerShown: false }} />
+      {/* 18. 가게 관리 페이지-매장 관리 가게 소식 스택 화면 */}
+      <Stack.Screen name="StoreNews" component={StoreNewsScreen} />
       {/* 18. 리뷰관리-신고 화면 스택 화면 */}
       <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: false }} />
       {/* 19. 리뷰관리-신고완료 화면 스택 화면 */}

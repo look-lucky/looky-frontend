@@ -16,11 +16,17 @@ import {
     View
 } from 'react-native';
 
+// [API] 추후 비밀번호 변경 함수 임포트
+// import { changePassword } from '@/src/api/auth'; 
+
 export default function ChangePasswordScreen({ navigation }) {
   // 상태 관리
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
+
+  // 로딩 상태 (API 요청 중일 때)
+  const [isLoading, setIsLoading] = useState(false);
 
   // 비밀번호 가시성 상태
   const [showCurrentPw, setShowCurrentPw] = useState(false);
@@ -41,18 +47,15 @@ export default function ChangePasswordScreen({ navigation }) {
 
   // 새 비밀번호 입력 핸들러
   const handleNewPwChange = (text) => {
-    // 1. 허용된 문자만 입력 가능
     if (!ALLOWED_CHARS.test(text)) return;
 
     setNewPw(text);
 
-    // 복잡도 검사 (영문, 숫자, 특수문자 각각 최소 1개 포함 여부)
     const hasLetter = /[A-Za-z]/.test(text);
     const hasNum = /[0-9]/.test(text);
     const hasSpecial = /[@$!%*^#?&]/.test(text);
     const isComplexEnough = hasLetter && hasNum && hasSpecial;
 
-    // 2. 길이 및 복잡도 검사
     if (text.length > 0) {
         if (text.length < 8) {
             setPwErrorMsg('비밀번호는 최소 8자 이상이어야 합니다.');
@@ -65,7 +68,6 @@ export default function ChangePasswordScreen({ navigation }) {
         setPwErrorMsg('');
     }
 
-    // 새 비밀번호가 바뀌면 확인란과 일치 여부 다시 체크
     const isValid = text.length >= 8 && isComplexEnough;
     
     if (confirmPw.length > 0) {
@@ -81,7 +83,6 @@ export default function ChangePasswordScreen({ navigation }) {
   const handleConfirmPwChange = (text) => {
     setConfirmPw(text);
     
-    // 일치 여부 확인 (newPw의 복잡도도 함께 체크)
     const hasLetter = /[A-Za-z]/.test(newPw);
     const hasNum = /[0-9]/.test(newPw);
     const hasSpecial = /[@$!%*^#?&]/.test(newPw);
@@ -94,20 +95,33 @@ export default function ChangePasswordScreen({ navigation }) {
     }
   };
 
-  // 변경하기 핸들러 (팝업 연동)
-  const handleSubmit = () => {
+  // 변경하기 핸들러
+  const handleSubmit = async () => {
     if (currentPw.trim() === '') {
         Alert.alert('알림', '현재 비밀번호를 입력해주세요.');
         return;
     }
     
-    // [시뮬레이션] 50% 확률로 성공/실패 (실제 API 연동 시 수정)
-    const isSuccess = Math.random() > 0.5;
+    setIsLoading(true); // 로딩 시작
 
-    if (isSuccess) {
+    try {
+        // ============================================================
+        // [TODO] 비밀번호 변경 API 함수를 받으면 주석 풀기
+        // 예시: await changePassword({ oldPassword: currentPw, newPassword: newPw });
+        // ============================================================
+        
+        // [임시] 서버 요청을 흉내내는 코드 (1초 뒤 성공 처리)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // 성공 시 팝업 오픈
         setSuccessVisible(true);
-    } else {
+
+    } catch (error) {
+        console.error("비밀번호 변경 실패:", error);
+        // 실패 시 에러 팝업 오픈
         setErrorVisible(true);
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -122,11 +136,13 @@ export default function ChangePasswordScreen({ navigation }) {
       if (isRetrying) return;
       setIsRetrying(true);
 
-      // 1.5초 후 로딩 끝내고 팝업 닫기 (재시도 로직 시뮬레이션)
+      // 재시도: 팝업 닫고 다시 handleSubmit 실행
       setTimeout(() => {
           setIsRetrying(false);
           setErrorVisible(false);
-      }, 1500);
+          // 바로 다시 시도하려면 아래 주석 해제
+          // handleSubmit(); 
+      }, 500);
   };
 
   return (
@@ -227,9 +243,13 @@ export default function ChangePasswordScreen({ navigation }) {
         <TouchableOpacity 
             style={[styles.submitBtn, isMatch ? styles.submitBtnActive : styles.submitBtnDisabled]} 
             onPress={handleSubmit}
-            disabled={!isMatch}
+            disabled={!isMatch || isLoading} // 로딩 중 클릭 방지
         >
-            <Text style={styles.submitBtnText}>변경하기</Text>
+            {isLoading ? (
+                <ActivityIndicator color="white" />
+            ) : (
+                <Text style={styles.submitBtnText}>변경하기</Text>
+            )}
         </TouchableOpacity>
       </View>
 

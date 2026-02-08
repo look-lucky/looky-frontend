@@ -1,8 +1,10 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
+    ActivityIndicator,
     Dimensions,
     Image,
     Platform,
@@ -15,87 +17,136 @@ import {
     View
 } from 'react-native';
 
+// [API] 함수 임포트
+import { getCouponsByStore } from '@/src/api/coupon';
+import { getMyStores } from '@/src/api/store';
+
 const { width } = Dimensions.get('window');
 
-// [더미 데이터] 진행 중인 쿠폰
-const ACTIVE_COUPONS = [
-    { 
-        id: 1, 
-        title: '마감 빵 세트', 
-        desc: '새해 이벤트로 빵세트 할인해드려용', 
-        date: '2026년 01월 10일 17시까지', 
-        value: '20%', 
-        count: 23, 
-        type: 'percent',
-        bgColor: '#FFDDDE', 
-        Image: require('@/assets/images/shopowner/coupon-percent.png')
-    },
-    { 
-        id: 2, 
-        title: '아메리카노 할인쿠폰', 
-        desc: '새해 이벤트로 커피 할인해드려용', 
-        date: '2026년 01월 11일 18시까지', 
-        value: '1,500원', 
-        count: 23, 
-        type: 'amount', 
-        bgColor: '#BEFFD1',
-        Image: require('@/assets/images/shopowner/coupon-price.png')
-    },
-    { 
-        id: 3, 
-        title: '치즈볼 3구 증정', 
-        desc: '새해 이벤트로 치즈볼 드려용', 
-        date: '2026년 01월 13일 14시까지', 
-        value: '서비스 증정', 
-        count: 1, 
-        type: 'gift', 
-        bgColor: '#FFEABC',
-        Image: require('@/assets/images/shopowner/coupon-present.png')
-    },
-];
-
-// [더미 데이터] 종료된 쿠폰
-const EXPIRED_COUPONS = [
-    { 
-        id: 4, 
-        title: '마감 빵 세트', 
-        desc: '새해 이벤트로 빵세트 할인해드려용', 
-        date: '2026년 01월 10일 17시까지', 
-        value: '20%', 
-        count: 0, 
-        type: 'percent', 
-        bgColor: '#FFDDDE',
-    },
-    { 
-        id: 5, 
-        title: '아메리카노 할인쿠폰', 
-        desc: '새해 이벤트로 커피 할인해드려용', 
-        date: '2026년 01월 11일 18시까지', 
-        value: '1,500원', 
-        count: 7, 
-        type: 'amount', 
-        bgColor: '#BEFFD1',
-    },
-    { 
-        id: 6, 
-        title: '치즈볼 3구 증정', 
-        desc: '새해 이벤트로 치즈볼 드려용', 
-        date: '2026년 01월 13일 14시까지', 
-        value: '서비스 증정', 
-        count: 0, 
-        type: 'gift', 
-        bgColor: '#FFEABC',
-    },
-];
-
 const FILTERS = ['전체', '금액 할인', '퍼센트 할인', '서비스 증정'];
+
+// 날짜 포맷 함수
+const formatDateTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return `${date.getFullYear()}년 ${String(date.getMonth() + 1).padStart(2, '0')}월 ${String(date.getDate()).padStart(2, '0')}일 ${date.getHours()}시까지`;
+};
+
+// 쿠폰 타입에 따른 스타일 매핑 함수
+const getCouponStyleInfo = (type) => {
+    // API 타입(예상): 'PERCENT', 'AMOUNT', 'GIFT'
+    // 혹은 소문자 'percent', 'amount', 'gift'
+    const lowerType = type?.toLowerCase();
+
+    if (lowerType === 'percent' || lowerType === 'discount') { // 퍼센트
+        return {
+            typeLabel: 'percent',
+            bgColor: '#FFDDDE',
+            image: require('@/assets/images/shopowner/coupon-percent.png')
+        };
+    } else if (lowerType === 'amount') { // 금액
+        return {
+            typeLabel: 'amount',
+            bgColor: '#BEFFD1',
+            image: require('@/assets/images/shopowner/coupon-price.png')
+        };
+    } else { // 증정 (gift)
+        return {
+            typeLabel: 'gift',
+            bgColor: '#FFEABC',
+            image: require('@/assets/images/shopowner/coupon-present.png')
+        };
+    }
+};
 
 export default function CouponListScreen({ navigation, route }) {
   const initialTab = route.params?.initialTab || 'active';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedFilter, setSelectedFilter] = useState('전체');
 
-  const currentData = activeTab === 'active' ? ACTIVE_COUPONS : EXPIRED_COUPONS;
+  // [데이터 상태]
+  const [allCoupons, setAllCoupons] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // [API] 데이터 로딩
+  const fetchData = async () => {
+      try {
+          setIsLoading(true);
+          
+          // 1. 가게 ID 가져오기
+          const storeRes = await getMyStores();
+          const myStores = storeRes.data || [];
+          
+          if (myStores.length === 0) {
+              setAllCoupons([]);
+              setIsLoading(false);
+              return;
+          }
+          const storeId = myStores[0].id;
+
+          // 2. 쿠폰 목록 가져오기
+          const response = await getCouponsByStore(storeId);
+          const list = response.data || [];
+          
+          setAllCoupons(list);
+
+      } catch (error) {
+          console.error("쿠폰 리스트 로딩 실패:", error);
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
+  // 화면 포커스 시 새로고침
+  useFocusEffect(
+      useCallback(() => {
+          fetchData();
+      }, [])
+  );
+
+  // [로직] 데이터 필터링 (탭 + 상단 필터)
+  const getFilteredCoupons = () => {
+      const now = new Date();
+
+      // 1차 필터: 탭 (진행중 vs 종료)
+      let filtered = allCoupons.filter(coupon => {
+          const expireDate = new Date(coupon.expiredAt);
+          if (activeTab === 'active') {
+              return expireDate >= now;
+          } else {
+              return expireDate < now;
+          }
+      });
+
+      // 2차 필터: 카테고리 (전체/금액/퍼센트/증정)
+      if (selectedFilter !== '전체') {
+          filtered = filtered.filter(coupon => {
+              const type = coupon.type?.toLowerCase(); // API Enum 확인 필요
+              if (selectedFilter === '금액 할인') return type === 'amount';
+              if (selectedFilter === '퍼센트 할인') return type === 'percent' || type === 'discount';
+              if (selectedFilter === '서비스 증정') return type === 'gift';
+              return true;
+          });
+      }
+
+      return filtered;
+  };
+
+  const currentData = getFilteredCoupons();
+
+  // 탭 변경 핸들러 (필터 초기화 포함)
+  const handleTabChange = (tab) => {
+      setActiveTab(tab);
+      setSelectedFilter('전체'); // 탭 바꾸면 필터 초기화가 자연스러움
+  };
+
+  if (isLoading) {
+      return (
+          <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+              <ActivityIndicator size="large" color="#34B262" />
+          </View>
+      );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -137,13 +188,13 @@ export default function CouponListScreen({ navigation, route }) {
             <View style={styles.tabButtonRow}>
                 <TouchableOpacity 
                     style={styles.tabButton} 
-                    onPress={() => setActiveTab('active')}
+                    onPress={() => handleTabChange('active')}
                 >
                     <Text style={[styles.tabText, activeTab === 'active' ? styles.tabTextActive : styles.tabTextInactive]}>진행중</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     style={styles.tabButton} 
-                    onPress={() => setActiveTab('expired')}
+                    onPress={() => handleTabChange('expired')}
                 >
                     <Text style={[styles.tabText, activeTab === 'expired' ? styles.tabTextActive : styles.tabTextInactive]}>종료</Text>
                 </TouchableOpacity>
@@ -178,38 +229,64 @@ export default function CouponListScreen({ navigation, route }) {
 
         {/* 쿠폰 리스트 */}
         <View style={styles.listContainer}>
-            {currentData.map((item) => (
-                <View 
-                    key={item.id} 
-                    style={[
-                        styles.couponCard, 
-                        activeTab === 'expired' && styles.expiredCard 
-                    ]}
-                >
-                    {/* 왼쪽 아이콘 박스 */}
-                    <View style={[styles.cardIconBox, { backgroundColor: item.bgColor }, activeTab === 'expired' && { opacity: 0.5 }]}> 
-                        {item.type === 'percent' && <Image source ={require('@/assets/images/shopowner/coupon-percent.png')}  />}
-                        {item.type === 'amount' && <Image source ={require('@/assets/images/shopowner/coupon-price.png')} />}
-                        {item.type === 'gift' && <Image source ={require('@/assets/images/shopowner/coupon-present.png')} />}
-                    </View>
-
-                    {/* 가운데 정보 */}
-                    <View style={styles.cardInfo}>
-                        <Text style={[styles.cardTitle, activeTab === 'expired' && { color: '#A3A3A3' }]}>{item.title}</Text>
-                        <Text style={[styles.cardDesc, activeTab === 'expired' && { color: '#D4D4D4' }]}>{item.desc}</Text>
-                        
-                        <View style={styles.cardBottomRow}>
-                            <Text style={[styles.cardDate, activeTab === 'expired' && { color: '#D4D4D4' }]}>{item.date}</Text>
-                            <Text style={[styles.cardValue, activeTab === 'expired' && { color: '#A3A3A3' }]}>{item.value}</Text>
-                        </View>
-                    </View>
-
-                    {/* 오른쪽 뱃지 (장수) */}
-                    <View style={[styles.countBadge, activeTab === 'expired' && { backgroundColor: '#E5E7EB' }]}>
-                        <Text style={[styles.countText, activeTab === 'expired' && { color: '#9CA3AF' }]}>{item.count}장</Text>
-                    </View>
+            {currentData.length === 0 ? (
+                <View style={{ padding: rs(40), alignItems: 'center' }}>
+                    <Text style={{ color: '#828282', fontSize: rs(14) }}>
+                        {activeTab === 'active' ? '진행 중인 쿠폰이 없습니다.' : '종료된 쿠폰이 없습니다.'}
+                    </Text>
                 </View>
-            ))}
+            ) : (
+                currentData.map((item) => {
+                    const styleInfo = getCouponStyleInfo(item.type);
+                    
+                    return (
+                        <View 
+                            key={item.id} 
+                            style={[
+                                styles.couponCard, 
+                                activeTab === 'expired' && styles.expiredCard 
+                            ]}
+                        >
+                            {/* 왼쪽 아이콘 박스 */}
+                            <View style={[
+                                styles.cardIconBox, 
+                                { backgroundColor: styleInfo.bgColor }, 
+                                activeTab === 'expired' && { opacity: 0.5 }
+                            ]}> 
+                                <Image source={styleInfo.image} style={{width: rs(24), height: rs(24)}} resizeMode="contain" />
+                            </View>
+
+                            {/* 가운데 정보 */}
+                            <View style={styles.cardInfo}>
+                                <Text style={[styles.cardTitle, activeTab === 'expired' && { color: '#A3A3A3' }]}>
+                                    {item.name}
+                                </Text>
+                                <Text style={[styles.cardDesc, activeTab === 'expired' && { color: '#D4D4D4' }]}>
+                                    {item.description || '설명 없음'}
+                                </Text>
+                                
+                                <View style={styles.cardBottomRow}>
+                                    <Text style={[styles.cardDate, activeTab === 'expired' && { color: '#D4D4D4' }]}>
+                                        {formatDateTime(item.expiredAt)}
+                                    </Text>
+                                    <Text style={[styles.cardValue, activeTab === 'expired' && { color: '#A3A3A3' }]}>
+                                        {/* 값 표시 로직 (API 데이터 구조에 따라 수정 필요) */}
+                                        {item.discountValue ? (item.type === 'PERCENT' ? `${item.discountValue}%` : `${item.discountValue}원`) : '서비스 증정'}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* 오른쪽 뱃지 (장수) */}
+                            <View style={[styles.countBadge, activeTab === 'expired' && { backgroundColor: '#E5E7EB' }]}>
+                                <Text style={[styles.countText, activeTab === 'expired' && { color: '#9CA3AF' }]}>
+                                    {/* 남은 수량 or 전체 수량 */}
+                                    {item.limitCount ? `${item.limitCount}장` : '무제한'}
+                                </Text>
+                            </View>
+                        </View>
+                    );
+                })
+            )}
         </View>
 
       </ScrollView>

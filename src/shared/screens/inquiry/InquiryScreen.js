@@ -9,6 +9,7 @@ import {
     KeyboardAvoidingView,
     Modal,
     Platform,
+    RefreshControl,
     SafeAreaView,
     ScrollView,
     StatusBar,
@@ -44,10 +45,10 @@ const formatDate = (dateString) => {
 };
 
 export default function InquiryScreen({ navigation, route }) {
-  // 탭 상태 관리 ('form' | 'history')
   const initialTab = route.params?.initialTab || 'form';
   const [activeTab, setActiveTab] = useState(initialTab);
 
+  // 탭 변경 감지
   useEffect(() => {
       if (route.params?.initialTab) {
           setActiveTab(route.params.initialTab);
@@ -138,9 +139,7 @@ export default function InquiryScreen({ navigation, route }) {
 
   const historyList = inquiriesData?.data?.data?.content ?? [];
 
-  // ================= [렌더링 함수 분리] =================
-
-  // 1. 문의하기 폼 렌더링
+  // 1. 문의하기 폼
   const renderFormView = () => (
     <View style={styles.formContainer}>
         {/* 문의 유형 */}
@@ -280,7 +279,6 @@ export default function InquiryScreen({ navigation, route }) {
     );
   };
 
-  // ================= [메인 렌더링] =================
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ height: Platform.OS === 'android' ? StatusBar.currentHeight : 0, backgroundColor: 'white' }} />
@@ -292,7 +290,7 @@ export default function InquiryScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      {/* 상단 고정 영역 (제목 + 탭) */}
+      {/* 상단 고정 영역 */}
       <View style={styles.topSection}>
           <Text style={styles.pageTitle}>고객센터</Text>
           <Text style={styles.pageSubtitle}>
@@ -325,13 +323,19 @@ export default function InquiryScreen({ navigation, route }) {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={styles.content}>
-            {/* 탭 상태에 따라 다른 뷰 렌더링 (페이지 이동 X) */}
+        <ScrollView 
+            contentContainerStyle={styles.content}
+            refreshControl={
+                activeTab === 'history' ? (
+                    <RefreshControl refreshing={isLoadingHistory} onRefresh={fetchHistory} />
+                ) : null
+            }
+        >
             {activeTab === 'form' ? renderFormView() : renderHistoryView()}
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* 하단 버튼 */}
+      {/* 하단 버튼 (문의하기 탭일 때만) */}
       {activeTab === 'form' && (
           <View style={styles.bottomContainer}>
             <TouchableOpacity

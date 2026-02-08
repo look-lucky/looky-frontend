@@ -2,6 +2,8 @@ import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   Modal,
   Platform,
@@ -14,6 +16,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+
+import { withdraw } from '@/src/api/auth';
 
 const REASONS = [
   "서비스를 잘 이용하지 않아요",
@@ -29,6 +33,9 @@ export default function WithdrawScreen({ navigation }) {
   const [selectedReasons, setSelectedReasons] = useState([]);
   const [detailReason, setDetailReason] = useState('');
   
+  // 로딩 상태
+  const [isLoading, setIsLoading] = useState(false);
+
   // 탈퇴 확인 팝업 상태
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
 
@@ -59,11 +66,36 @@ export default function WithdrawScreen({ navigation }) {
     setWithdrawModalVisible(true);
   };
 
-  // 팝업 내 '확인' 버튼 클릭 (최종 탈퇴)
-  const handleFinalWithdraw = () => {
-    setWithdrawModalVisible(false);
-    // 실제 탈퇴 API 호출 로직 작성
-    navigation.navigate('WithdrawComplete');
+  // 팝업 내 '확인' 버튼 클릭 (최종 탈퇴 API 호출)
+  const handleFinalWithdraw = async () => {
+    // API 요청을 위해 데이터 정리
+    // API 명세서에 따르면 WithdrawRequest 구조가 { reason: string } 일 수 있음
+    // 복수 선택된 사유를 하나의 문자열로 합치거나, API 스펙에 맞춰 가공 필요
+    const reasonText = selectedReasons.join(', '); 
+    
+    // 최종 전송할 데이터 (API 스펙 확인 필요: 여기서는 reason과 detail을 합쳐서 전송한다고 가정)
+    const requestData = {
+        reason: reasonText, 
+        detail: detailReason 
+    };
+
+    setIsLoading(true);
+
+    try {
+        // 회원 탈퇴
+        await withdraw(requestData);
+        
+        setWithdrawModalVisible(false);
+        // 탈퇴 완료 페이지로 이동
+        navigation.navigate('WithdrawComplete');
+
+    } catch (error) {
+        console.error("회원탈퇴 실패:", error);
+        Alert.alert("오류", "회원탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        setWithdrawModalVisible(false);
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -163,7 +195,7 @@ export default function WithdrawScreen({ navigation }) {
         transparent 
         animationType="fade" 
         visible={withdrawModalVisible} 
-        onRequestClose={() => setWithdrawModalVisible(false)}
+        onRequestClose={() => !isLoading && setWithdrawModalVisible(false)} // 로딩 중 닫기 방지
       >
         <View style={styles.modalOverlay}>
             <View style={styles.popupBox}>
@@ -190,6 +222,7 @@ export default function WithdrawScreen({ navigation }) {
                     <TouchableOpacity 
                         style={styles.popupCancelBtn} 
                         onPress={() => setWithdrawModalVisible(false)}
+                        disabled={isLoading}
                     >
                         <Text style={styles.popupBtnTextWhite}>취소</Text>
                     </TouchableOpacity>
@@ -198,8 +231,13 @@ export default function WithdrawScreen({ navigation }) {
                     <TouchableOpacity 
                         style={styles.popupConfirmBtn} 
                         onPress={handleFinalWithdraw}
+                        disabled={isLoading}
                     >
-                        <Text style={styles.popupBtnTextWhite}>확인</Text>
+                        {isLoading ? (
+                            <ActivityIndicator color="white" size="small" />
+                        ) : (
+                            <Text style={styles.popupBtnTextWhite}>확인</Text>
+                        )}
                     </TouchableOpacity>
                 </View>
 

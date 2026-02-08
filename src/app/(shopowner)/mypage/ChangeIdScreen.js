@@ -17,14 +17,19 @@ import {
     View
 } from 'react-native';
 
+import { checkUsernameAvailability } from '@/src/api/auth';
+
 export default function ChangeIdScreen({ navigation }) {
-  const INITIAL_ID = 'oneieo'; // 기존 아이디
+  const INITIAL_ID = 'oneieo'; // 나중엔 실제 유저 아이디(Context 등)로 대체
 
   // 상태 관리
   const [userId, setUserId] = useState(INITIAL_ID); 
-  const [isChecked, setIsChecked] = useState(false); 
+  const [isChecked, setIsChecked] = useState(false); // 중복확인 완료 여부
   const [checkMessage, setCheckMessage] = useState(''); 
   const [isError, setIsError] = useState(false); 
+  
+  // 로딩 상태 (중복확인 중일 때)
+  const [isChecking, setIsChecking] = useState(false);
 
   // 팝업 상태
   const [successVisible, setSuccessVisible] = useState(false);
@@ -36,16 +41,18 @@ export default function ChangeIdScreen({ navigation }) {
 
   // [기능 1] 아이디 입력 핸들러 (영문/숫자만 허용)
   const handleIdChange = (text) => {
+    // 영문, 숫자만 입력 가능하도록 필터링
     const filteredText = text.replace(/[^A-Za-z0-9]/g, '');
     setUserId(filteredText);
     
+    // 입력값이 바뀌면 중복확인 상태 초기화
     setIsChecked(false);
     setCheckMessage('');
     setIsError(false);
   };
 
-  // [기능 2] 중복 확인 핸들러 (길이 제한 체크 포함)
-  const handleCheckDuplicate = () => {
+  // 중복 확인 핸들러
+  const handleCheckDuplicate = async () => {
     if (userId.trim().length === 0) {
         Alert.alert('알림', '아이디를 입력해주세요.');
         return;
@@ -59,28 +66,46 @@ export default function ChangeIdScreen({ navigation }) {
         return;
     }
 
-    // 중복 체크 (Mock Logic)
-    if (userId === 'oneieo') {
-      setIsError(true);
-      setCheckMessage('이미 사용중인 아이디입니다.');
-      setIsChecked(false); 
-    } else {
-      setIsError(false);
-      setCheckMessage('사용이 가능한 아이디입니다.');
-      setIsChecked(true); 
+    setIsChecking(true); // 로딩 시작
+
+    try {
+        // [API 호출] 서버에 이 아이디가 사용 가능한지 물어봄
+        const response = await checkUsernameAvailability({ username: userId });
+        const isAvailable = response.data; 
+
+        if (isAvailable) {
+            setIsError(false);
+            setCheckMessage('사용이 가능한 아이디입니다.');
+            setIsChecked(true); // 확인 완료 -> 변경하기 버튼 활성화
+        } else {
+            setIsError(true);
+            setCheckMessage('이미 사용중인 아이디입니다.');
+            setIsChecked(false); 
+        }
+    } catch (error) {
+        console.error('중복 확인 에러:', error);
+        // 서버에서 409 Conflict 등을 줄 경우 처리
+        setIsError(true);
+        setCheckMessage('이미 사용중이거나 사용할 수 없는 아이디입니다.');
+        setIsChecked(false);
+    } finally {
+        setIsChecking(false);
     }
   };
 
   // 변경하기 버튼 클릭
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isChecked) return;
 
-    // (테스트용) 50% 확률로 성공/실패 시뮬레이션
-    const isSuccess = Math.random() > 0.5;
-
-    if (isSuccess) {
+    // '아이디 변경(Update Username)' API가 있는지 확인 후 여기 연결
+    // auth.ts 파일에는 '정보 수정' API가 명확하지 않음
+    // 우선 '성공'한 것으로 처리
+    
+    try {
+        // const res = await updateUsername({ newUsername: userId }); // (가상 코드)
         setSuccessVisible(true);
-    } else {
+    } catch (error) {
+        console.error('아이디 변경 실패:', error);
         setErrorVisible(true);
     }
   };
@@ -91,16 +116,17 @@ export default function ChangeIdScreen({ navigation }) {
       navigation.goBack();
   };
 
-  // 실패 팝업 -> 새로고침
+  // 실패 팝업 -> 새로고침 (재시도)
   const handleRetry = () => {
       if (isRetrying) return;
       setIsRetrying(true);
 
-      // 2초 후 재시도 성공으로 가정
+      // 재시도 로직 (단순 팝업 닫기 혹은 다시 API 요청)
       setTimeout(() => {
           setIsRetrying(false);
           setErrorVisible(false); 
-      }, 2000);
+          handleSubmit(); 
+      }, 1000);
   };
 
   return (
@@ -132,19 +158,24 @@ export default function ChangeIdScreen({ navigation }) {
                     placeholder="영어, 숫자를 포함한 6~16자 이내로 입력해주세요"
                     placeholderTextColor="#BDBDBD"
                     autoCapitalize="none"
-                    maxLength={16} // [기능 2] 최대 16자 제한
+                    maxLength={16}
                 />
                 
                 {/* 중복 확인 버튼 */}
                 <TouchableOpacity 
                     style={[styles.checkButton, isIdChanged ? styles.checkButtonActive : styles.checkButtonDisabled]} 
                     onPress={handleCheckDuplicate}
-                    disabled={!isIdChanged} 
+                    disabled={!isIdChanged || isChecking} // 로딩 중 클릭 방지
                 >
-                    <Text style={styles.checkButtonText}>중복 확인</Text>
+                    {isChecking ? (
+                        <ActivityIndicator size="small" color="white" />
+                    ) : (
+                        <Text style={styles.checkButtonText}>중복 확인</Text>
+                    )}
                 </TouchableOpacity>
             </View>
 
+            {/* 상태 메시지 (성공/실패) */}
             {checkMessage !== '' && (
                 <Text style={[styles.messageText, isError ? styles.errorText : styles.successText]}>
                     {checkMessage}
