@@ -1,5 +1,5 @@
 import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
-import { checkUsernameAvailability } from "@/src/api/auth";
+import { checkUsernameAvailability, useSend, useVerify } from "@/src/api/auth";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { ThemedText } from "@/src/shared/common/themed-text";
@@ -9,6 +9,7 @@ import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/the
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -20,46 +21,6 @@ import Svg, { Circle, Path } from "react-native-svg";
 
 type UserType = "student" | "owner" | null;
 type Gender = "male" | "female";
-
-// ============================================
-// API Functions (TODO)
-// ============================================
-
-// TODO: 이메일 인증 요청 API 연동
-async function requestEmailVerification(email: string): Promise<boolean> {
-  console.log("requestEmailVerification:", email);
-  // TODO: 실제 API 호출로 교체
-  // const response = await api.post('/auth/email/send-code', { email });
-  // return response.data.success;
-  return true;
-}
-
-// TODO: 이메일 인증번호 확인 API 연동
-async function verifyEmailCode(email: string, code: string): Promise<boolean> {
-  console.log("verifyEmailCode:", email, code);
-  // TODO: 실제 API 호출로 교체
-  // const response = await api.post('/auth/email/verify', { email, code });
-  // return response.data.verified;
-  return true;
-}
-
-// TODO: 휴대폰 인증 요청 API 연동
-async function requestPhoneVerification(phone: string): Promise<boolean> {
-  console.log("requestPhoneVerification:", phone);
-  // TODO: 실제 API 호출로 교체
-  // const response = await api.post('/auth/phone/send-code', { phone });
-  // return response.data.success;
-  return true;
-}
-
-// TODO: 휴대폰 인증번호 확인 API 연동
-async function verifyPhoneCode(phone: string, code: string): Promise<boolean> {
-  console.log("verifyPhoneCode:", phone, code);
-  // TODO: 실제 API 호출로 교체
-  // const response = await api.post('/auth/phone/verify', { phone, code });
-  // return response.data.verified;
-  return true;
-}
 
 // ============================================
 // Icon Components
@@ -126,6 +87,10 @@ export default function SignupTypePage() {
   const router = useRouter();
   const setSignupFields = useSignupStore((state) => state.setSignupFields);
 
+  // API 훅
+  const sendEmailMutation = useSend();
+  const verifyEmailMutation = useVerify();
+
   // 공통 상태
   const [userType, setUserType] = useState<UserType>(null);
   const [gender, setGender] = useState<Gender>("male");
@@ -170,8 +135,8 @@ export default function SignupTypePage() {
     if (isStudent) {
       return commonValid && nickname.length >= 2 && nickname.length <= 10;
     } else {
-      // TODO: 인증 API 연동 후 isEmailVerified && isPhoneVerified 조건 복원
-      return commonValid;
+      // 점주: 이메일 인증 필수
+      return commonValid && isEmailVerified;
     }
   };
 
@@ -205,30 +170,34 @@ export default function SignupTypePage() {
 
   const handleRequestEmailCode = async () => {
     if (!email) return;
-    const success = await requestEmailVerification(email);
-    // TODO: 성공/실패 피드백 표시
-    console.log("이메일 인증 요청:", success);
+
+    try {
+      await sendEmailMutation.mutateAsync({
+        data: { email }
+      });
+      Alert.alert("인증번호 발송", "이메일로 인증번호가 발송되었습니다.");
+    } catch (error: any) {
+      console.error("이메일 발송 실패:", error);
+      Alert.alert("발송 실패", error?.message || "인증번호 발송에 실패했습니다.");
+    }
   };
 
   const handleVerifyEmailCode = async () => {
     if (!email || !emailCode) return;
-    const verified = await verifyEmailCode(email, emailCode);
-    setIsEmailVerified(verified);
-    // TODO: 인증 성공/실패 피드백 표시
-  };
 
-  const handleRequestPhoneCode = async () => {
-    if (!phone) return;
-    const success = await requestPhoneVerification(phone);
-    // TODO: 성공/실패 피드백 표시
-    console.log("휴대폰 인증 요청:", success);
-  };
-
-  const handleVerifyPhoneCode = async () => {
-    if (!phone || !phoneCode) return;
-    const verified = await verifyPhoneCode(phone, phoneCode);
-    setIsPhoneVerified(verified);
-    // TODO: 인증 성공/실패 피드백 표시
+    try {
+      await verifyEmailMutation.mutateAsync({
+        data: {
+          email,
+          code: emailCode
+        }
+      });
+      setIsEmailVerified(true);
+      Alert.alert("인증 성공", "이메일 인증이 완료되었습니다.");
+    } catch (error: any) {
+      console.error("이메일 인증 실패:", error);
+      Alert.alert("인증 실패", error?.message || "인증번호가 일치하지 않습니다.");
+    }
   };
 
   const handleNext = () => {
@@ -402,7 +371,7 @@ export default function SignupTypePage() {
                     <TouchableOpacity
                       style={[
                         styles.smallButton,
-                        { backgroundColor: usernameAvailable === true ? "#22C55E" : (username ? primaryColor : Gray.gray5) }
+                        { backgroundColor: usernameAvailable === true ? Brand.primary : (username ? primaryColor : Gray.gray5) }
                       ]}
                       onPress={handleCheckUsername}
                       disabled={!username}
@@ -459,7 +428,7 @@ export default function SignupTypePage() {
                     <TouchableOpacity
                       style={[
                         styles.smallButton,
-                        { backgroundColor: usernameAvailable === true ? "#22C55E" : (username ? primaryColor : Gray.gray5) }
+                        { backgroundColor: usernameAvailable === true ? Brand.primary : (username ? primaryColor : Gray.gray5) }
                       ]}
                       onPress={handleCheckUsername}
                       disabled={!username}
@@ -524,8 +493,8 @@ export default function SignupTypePage() {
                   </View>
                 </View>
 
-                {/* 휴대폰 번호 */}
-                <View style={styles.inputGroup}>
+                {/* TODO: 휴대폰 인증 (백엔드 API 구현 후 활성화) */}
+                {/* <View style={styles.inputGroup}>
                   <View style={styles.inputContainer}>
                     <TextInput
                       style={styles.input}
@@ -538,7 +507,6 @@ export default function SignupTypePage() {
                   </View>
                 </View>
 
-                {/* 휴대폰 인증번호 */}
                 <View style={styles.inputGroup}>
                   <View style={styles.inputContainer}>
                     <TextInput
@@ -551,7 +519,7 @@ export default function SignupTypePage() {
                     />
                     <TouchableOpacity
                       style={[styles.smallButton, { backgroundColor: phone ? Owner.primary : Gray.gray5 }]}
-                      onPress={phoneCode ? handleVerifyPhoneCode : handleRequestPhoneCode}
+                      onPress={() => {}}
                       disabled={!phone}
                     >
                       <ThemedText style={styles.smallButtonText}>
@@ -559,7 +527,7 @@ export default function SignupTypePage() {
                       </ThemedText>
                     </TouchableOpacity>
                   </View>
-                </View>
+                </View> */}
               </>
             )}
 
@@ -731,7 +699,7 @@ const styles = StyleSheet.create({
   },
   successText: {
     fontSize: rs(10),
-    color: "#22C55E",
+    color: Brand.primary,
     paddingLeft: rs(4),
   },
   hintText: {
@@ -740,7 +708,7 @@ const styles = StyleSheet.create({
     paddingLeft: rs(4),
   },
   inputSuccess: {
-    borderColor: "#22C55E",
+    borderColor: Brand.primary,
   },
   inputError: {
     borderColor: System.error,

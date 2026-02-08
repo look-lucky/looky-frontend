@@ -1,4 +1,4 @@
-import { useLogin, useSignupStudent } from "@/src/api/auth";
+import { useLogin, useSignupStudent, useSend, useVerify } from "@/src/api/auth";
 import { CommonResponseLoginResponse } from "@/src/api/generated.schemas";
 import { useAuth } from "@/src/shared/lib/auth";
 import { OrganizationResponseCategory } from "@/src/api/generated.schemas";
@@ -13,6 +13,7 @@ import { Brand, Gray, Text as TextColors } from "@/src/shared/theme/theme";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -58,6 +59,8 @@ export default function StudentVerificationPage() {
   // Mutations
   const signupMutation = useSignupStudent();
   const loginMutation = useLogin();
+  const sendEmailMutation = useSend();
+  const verifyEmailMutation = useVerify();
 
   // TODO: 실제로는 선택된 대학 ID 사용
   const universityId = 1;
@@ -67,7 +70,7 @@ export default function StudentVerificationPage() {
   const [verificationCode, setVerificationCode] = useState("");
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [timer, setTimer] = useState(295); // 4:55
-  const [isEmailVerified, setIsEmailVerified] = useState(true); // TODO: 테스트용 - 나중에 false로 변경
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   // 단과대학/학과 선택 상태
   const [selectedCollegeId, setSelectedCollegeId] = useState<number | null>(null);
@@ -129,18 +132,39 @@ export default function StudentVerificationPage() {
   };
 
   // 인증번호 발송
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     if (!email) return;
-    // TODO: API 호출
-    setIsCodeSent(true);
-    setTimer(295);
+
+    try {
+      await sendEmailMutation.mutateAsync({
+        data: { email }
+      });
+      setIsCodeSent(true);
+      setTimer(295);
+      Alert.alert("인증번호 발송", "이메일로 인증번호가 발송되었습니다.");
+    } catch (error: any) {
+      console.error("이메일 발송 실패:", error);
+      Alert.alert("발송 실패", error?.message || "인증번호 발송에 실패했습니다.");
+    }
   };
 
   // 인증번호 확인
-  const handleVerifyCode = () => {
+  const handleVerifyCode = async () => {
     if (!verificationCode) return;
-    // TODO: API 호출
-    setIsEmailVerified(true);
+
+    try {
+      await verifyEmailMutation.mutateAsync({
+        data: {
+          email,
+          code: verificationCode
+        }
+      });
+      setIsEmailVerified(true);
+      Alert.alert("인증 성공", "이메일 인증이 완료되었습니다.");
+    } catch (error: any) {
+      console.error("이메일 인증 실패:", error);
+      Alert.alert("인증 실패", error?.message || "인증번호가 일치하지 않습니다.");
+    }
   };
 
   // 폼 유효성 검사
@@ -279,7 +303,7 @@ export default function StudentVerificationPage() {
           </View>
 
           {/* 인증번호 입력 */}
-          {isCodeSent && (
+          {isCodeSent && !isEmailVerified && (
             <View style={styles.inputRow}>
               <View style={[styles.inputContainer, styles.inputFlex]}>
                 <TextInput
@@ -290,14 +314,32 @@ export default function StudentVerificationPage() {
                   onChangeText={setVerificationCode}
                   keyboardType="number-pad"
                   maxLength={6}
-                  editable={!isEmailVerified}
                 />
-                {!isEmailVerified && (
-                  <ThemedText style={styles.timerText}>
-                    {formatTimer(timer)}
-                  </ThemedText>
-                )}
+                <ThemedText style={styles.timerText}>
+                  {formatTimer(timer)}
+                </ThemedText>
               </View>
+              <TouchableOpacity
+                style={[
+                  styles.smallButton,
+                  { backgroundColor: verificationCode ? Brand.primary : Gray.gray5 },
+                ]}
+                onPress={handleVerifyCode}
+                disabled={!verificationCode}
+              >
+                <ThemedText style={styles.smallButtonText}>
+                  확인
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* 인증 완료 메시지 */}
+          {isEmailVerified && (
+            <View style={styles.successMessage}>
+              <ThemedText style={styles.successText}>
+                ✓ 이메일 인증이 완료되었습니다
+              </ThemedText>
             </View>
           )}
         </View>
@@ -476,6 +518,14 @@ const styles = StyleSheet.create({
   },
   selectFieldPlaceholder: {
     color: TextColors.placeholder,
+  },
+  successMessage: {
+    paddingVertical: rs(8),
+  },
+  successText: {
+    fontSize: rs(12),
+    color: Brand.primary,
+    fontWeight: "600",
   },
   bottomContent: {
     paddingHorizontal: rs(24),
