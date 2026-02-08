@@ -33,22 +33,22 @@ export interface Event {
 
 /**
  * 이벤트 표시 여부 판단
- * - 시작일 7일 전부터 표시
+ * - 시작일 30일 전부터 표시 (한 달 전부터)
  * - 종료일 당일 자정까지 표시
  */
 export function isEventVisible(event: Event): boolean {
   const now = new Date();
 
-  // 시작일 7일 전
-  const weekBefore = new Date(event.startDateTime);
-  weekBefore.setDate(weekBefore.getDate() - 7);
-  weekBefore.setHours(0, 0, 0, 0);
+  // 시작일 30일 전 (7일 → 30일로 변경)
+  const monthBefore = new Date(event.startDateTime);
+  monthBefore.setDate(monthBefore.getDate() - 30);
+  monthBefore.setHours(0, 0, 0, 0);
 
   // 종료일 자정 (23:59:59)
   const endOfDay = new Date(event.endDateTime);
   endOfDay.setHours(23, 59, 59, 999);
 
-  return now >= weekBefore && now <= endOfDay;
+  return now >= monthBefore && now <= endOfDay;
 }
 
 /**
