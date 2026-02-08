@@ -19,7 +19,7 @@ export default function LandingPage() {
   const { isAuthenticated } = useAuth();
   const [healthStatus, setHealthStatus] = useState<HealthStatus>("checking");
 
-const checkHealth = async () => {
+  const checkHealth = async () => {
     setHealthStatus("checking");
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
