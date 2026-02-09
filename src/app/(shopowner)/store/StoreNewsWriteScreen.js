@@ -1,7 +1,11 @@
+import { getToken } from '@/src/shared/lib/auth/token';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
 import {
+    Alert,
+    KeyboardAvoidingView,
     Platform,
     SafeAreaView,
     ScrollView,
@@ -10,15 +14,13 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
-    KeyboardAvoidingView,
-    Alert
+    View
 } from 'react-native';
 
 export default function StoreNewsWriteScreen({ navigation, route }) {
-    
+
     // 파라미터 확인 (수정 모드인지)
-    const { isEdit, newsItem } = route.params || {};
+    const { isEdit, newsItem, storeId } = route.params || {};
 
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -31,17 +33,78 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
         }
     }, [isEdit, newsItem]);
 
-    const handleSave = () => {
+    const queryClient = useQueryClient();
+
+
+
+    // 직접 API 호출을 위한 함수
+    const saveStoreNews = async () => {
         if (!title.trim() || !content.trim()) {
             Alert.alert("알림", "제목과 내용을 모두 입력해주세요.");
             return;
         }
-        
-        // TODO: API 호출 (등록 또는 수정)
-        const message = isEdit ? "매장 소식이 수정되었습니다." : "매장 소식이 등록되었습니다.";
-        Alert.alert("완료", message, [
-            { text: "확인", onPress: () => navigation.goBack() }
-        ]);
+
+        try {
+            // 1. 토큰 확보
+            const tokenData = await getToken();
+            const token = tokenData?.accessToken;
+
+            // 2. FormData 생성
+            const formData = new FormData();
+
+            // 3. JSON 데이터를 문자열로 변환하여 'request' 파트에 담기
+            const requestData = {
+                title: title,
+                content: content
+            };
+
+            formData.append("request", {
+                string: JSON.stringify(requestData),
+                type: "application/json",
+                name: "request"
+            });
+
+            // 4. (옵션) 이미지 처리 - 현재는 미구현이므로 빈 배열인 경우 생략하거나 빈 리스트 전송?
+            // BE가 images 파트를 필수로 요구한다면 빈 파일이라도 보내야 할 수 있음.
+            // 일단은 images 파트를 보내지 않음 (Optional 가정)
+
+            const url = isEdit && newsItem?.id
+                ? `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/stores/${storeId}/news/${newsItem.id}` // 수정 API 경로 확인 필요
+                : `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/stores/${storeId}/news`;
+
+            const method = isEdit ? "PATCH" : "POST";
+
+            console.log(`[StoreNews] ${method} Request to ${url}`);
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    // Content-Type은 설정하지 않음 (FormData가 자동 설정)
+                },
+                body: formData
+            });
+
+            const responseText = await response.text();
+            console.log("[StoreNews] Response:", response.status, responseText);
+
+            if (response.ok) {
+                queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/news`] });
+                Alert.alert("완료", isEdit ? "매장 소식이 수정되었습니다." : "매장 소식이 등록되었습니다.", [
+                    { text: "확인", onPress: () => navigation.goBack() }
+                ]);
+            } else {
+                throw new Error(`API Error: ${response.status} ${responseText}`);
+            }
+
+        } catch (error) {
+            console.error("[StoreNews] Save Error:", error);
+            Alert.alert("오류", "소식 저장 중 문제가 발생했습니다.");
+        }
+    };
+
+    const handleSave = () => {
+        saveStoreNews();
     };
 
     return (
@@ -50,7 +113,7 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
 
             {/* 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{top:10, bottom:10, left:10, right:10}}>
+                <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="arrow-back" size={rs(24)} color="#1B1D1F" />
                 </TouchableOpacity>
             </View>
@@ -69,7 +132,7 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
                                 <Text style={styles.requiredStar}>*</Text>
                             </View>
                             <View style={styles.textInputBox}>
-                                <TextInput 
+                                <TextInput
                                     style={styles.textInput}
                                     placeholder="제목을 입력해주세요"
                                     placeholderTextColor="#828282"
@@ -85,7 +148,7 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
                                 <Text style={styles.requiredStar}> *</Text>
                             </View>
                             <View style={styles.textAreaBox}>
-                                <TextInput 
+                                <TextInput
                                     style={[styles.textInput, { height: '100%', textAlignVertical: 'top' }]}
                                     placeholder="손님에게 전하고 싶은 매장의 소식은 무엇인가요?"
                                     placeholderTextColor="#828282"
