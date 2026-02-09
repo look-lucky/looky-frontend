@@ -42,14 +42,20 @@ export default function SignupCompletePage() {
 
   const displayName = nickname?.trim() || "닉네임";
 
+  // 소셜 로그인 여부 확인
+  const isSocialLogin = username === "소셜 로그인";
+
   // Store 데이터로 요약 카드 생성
   const rows: SummaryRow[] = [
     { label: "대학교", value: universityName || "-" },
     { label: "단과대학", value: collegeName || "-" },
     { label: "소속학과", value: departmentName || "-" },
     { label: "닉네임", value: nickname || "-" },
-    { label: "아이디", value: username || "-" },
-    { label: "비밀번호", value: password ? "●".repeat(Math.min(password.length, 12)) : "-" },
+    // 소셜 로그인이 아닌 경우에만 아이디/비밀번호 표시
+    ...(isSocialLogin ? [] : [
+      { label: "아이디", value: username || "-" },
+      { label: "비밀번호", value: password ? "●".repeat(Math.min(password.length, 12)) : "-" },
+    ]),
   ];
 
   return (

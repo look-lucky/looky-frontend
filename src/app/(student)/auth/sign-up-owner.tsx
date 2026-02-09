@@ -8,13 +8,13 @@ import { useSignupOwner, useCompleteSocialSignup } from "@/src/api/auth";
 import { useAuth } from "@/src/shared/lib/auth";
 import type { UserType } from "@/src/shared/lib/auth/token";
 import { getMyStores } from "@/src/api/store";
-import { useCreateStoreClaims } from "@/src/api/store-claim";
+import { useCreateStoreClaims, useVerifyBizRegNo } from "@/src/api/store-claim";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert } from "react-native";
+import { ActivityIndicator, Alert } from "react-native";
 import {
   Image,
   ScrollView,
@@ -83,9 +83,12 @@ export default function SignupOwnerPage() {
   const signupOwnerMutation = useSignupOwner();
   const completeSocialSignupMutation = useCompleteSocialSignup();
   const createStoreClaimMutation = useCreateStoreClaims();
+  const verifyBizRegNoMutation = useVerifyBizRegNo();
 
   // 로딩 상태
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isBizVerified, setIsBizVerified] = useState(false);
 
   // 폼 상태 (zustand에서 복원)
   const [storeName, setStoreName] = useState(savedStoreName);
@@ -109,6 +112,7 @@ export default function SignupOwnerPage() {
     storePhone.length > 0 &&
     representativeName.length > 0 &&
     businessNumber.length > 0 &&
+    isBizVerified &&
     openDate !== null;
 
   // 날짜 선택 확인
@@ -127,6 +131,46 @@ export default function SignupOwnerPage() {
 
     if (!result.canceled && result.assets[0]) {
       setBusinessImageUri(result.assets[0].uri);
+    }
+  };
+
+  // 사업자 검증
+  const handleVerifyBusiness = async () => {
+    const pureBizNum = businessNumber.replace(/-/g, '');
+
+    if (pureBizNum.length !== 10) {
+      Alert.alert('알림', '사업자등록번호 10자리를 올바르게 입력해주세요.');
+      return;
+    }
+
+    if (!representativeName || !openDate) {
+      Alert.alert('알림', '대표자명과 개업일자를 먼저 입력해주세요.');
+      return;
+    }
+
+    setIsVerifying(true);
+
+    try {
+      const formattedOpenDate = formatDate(openDate);
+
+      await verifyBizRegNoMutation.mutateAsync({
+        data: {
+          bizs: [{
+            b_no: pureBizNum,
+            p_nm: representativeName,
+            start_dt: formattedOpenDate.replace(/-/g, ''),
+          }]
+        }
+      });
+
+      setIsBizVerified(true);
+      Alert.alert('성공', '사업자 정보가 확인되었습니다.');
+    } catch (error) {
+      console.error('사업자 인증 실패:', error);
+      setIsBizVerified(false);
+      Alert.alert('실패', '유효하지 않은 사업자 번호이거나\n등록할 수 없는 번호입니다.');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -320,14 +364,37 @@ export default function SignupOwnerPage() {
         {/* 사업자등록번호 */}
         <View style={styles.inputContainer}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, isBizVerified && styles.inputDisabled]}
             placeholder="사업자등록번호"
             placeholderTextColor={TextColors.placeholder}
             value={businessNumber}
-            onChangeText={setBusinessNumber}
+            onChangeText={(text) => {
+              setBusinessNumber(text);
+              if (isBizVerified) setIsBizVerified(false);
+            }}
             keyboardType="number-pad"
+            editable={!isBizVerified}
           />
+          <TouchableOpacity
+            style={[
+              styles.verifyButton,
+              isBizVerified ? styles.verifyButtonDisabled : styles.verifyButtonActive
+            ]}
+            onPress={handleVerifyBusiness}
+            disabled={isBizVerified || isVerifying}
+          >
+            {isVerifying ? (
+              <ActivityIndicator size="small" color={Gray.white} />
+            ) : (
+              <ThemedText style={styles.verifyButtonText}>
+                {isBizVerified ? "완료" : "확인"}
+              </ThemedText>
+            )}
+          </TouchableOpacity>
         </View>
+        {isBizVerified && (
+          <ThemedText style={styles.verifiedText}>✓ 사업자 정보 확인 완료</ThemedText>
+        )}
 
         {/* 개업일자 */}
         <View style={styles.dateRow}>
@@ -517,6 +584,39 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: rs(8),
     resizeMode: "cover",
+  },
+  verifyButton: {
+    position: 'absolute',
+    right: rs(4),
+    top: '50%',
+    transform: [{ translateY: -rs(17) }],
+    paddingHorizontal: rs(12),
+    paddingVertical: rs(6),
+    borderRadius: rs(6),
+    minWidth: rs(60),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifyButtonActive: {
+    backgroundColor: Owner.primary,
+  },
+  verifyButtonDisabled: {
+    backgroundColor: Gray.gray5,
+  },
+  verifyButtonText: {
+    fontSize: rs(12),
+    fontWeight: '700',
+    color: Gray.white,
+  },
+  inputDisabled: {
+    backgroundColor: Gray.gray2,
+    color: TextColors.tertiary,
+  },
+  verifiedText: {
+    fontSize: rs(11),
+    color: Owner.primary,
+    marginTop: rs(-8),
+    marginLeft: rs(4),
   },
   bottomContent: {
     paddingTop: rs(16),
