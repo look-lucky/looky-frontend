@@ -4,8 +4,9 @@ import StarIcon from '@/assets/images/icons/store/star.svg';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import type { ReviewItem, ReviewRating } from '@/src/shared/types/store';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
+    ActivityIndicator,
     Image,
     Modal,
     StyleSheet,
@@ -23,6 +24,9 @@ interface ReviewSectionProps {
   onEditReview?: (reviewId: string) => void;
   onDeleteReview?: (reviewId: string) => void;
   onReportReview?: (reviewId: string) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }
 
 // ============================================
@@ -273,6 +277,27 @@ function ReviewItemCard({
 // ReviewSection
 // ============================================
 
+// 무한 스크롤 트리거 컴포넌트
+function LoadMoreTrigger({
+  onTrigger,
+  isLoading,
+}: {
+  onTrigger: () => void;
+  isLoading?: boolean;
+}) {
+  const handleLayout = useCallback(() => {
+    if (!isLoading) {
+      onTrigger();
+    }
+  }, [onTrigger, isLoading]);
+
+  return (
+    <View onLayout={handleLayout} style={styles.loadMoreTrigger}>
+      {isLoading && <ActivityIndicator size="small" color="#34b262" />}
+    </View>
+  );
+}
+
 export function ReviewSection({
   rating,
   reviews,
@@ -280,6 +305,9 @@ export function ReviewSection({
   onEditReview,
   onDeleteReview,
   onReportReview,
+  onLoadMore,
+  hasMore,
+  isLoadingMore,
 }: ReviewSectionProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('recent');
 
@@ -290,6 +318,12 @@ export function ReviewSection({
     // recent: 날짜 내림차순
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
+
+  const handleLoadMore = useCallback(() => {
+    if (hasMore && !isLoadingMore && onLoadMore) {
+      onLoadMore();
+    }
+  }, [hasMore, isLoadingMore, onLoadMore]);
 
   return (
     <View style={styles.container}>
@@ -306,12 +340,17 @@ export function ReviewSection({
           <ReviewItemCard
             key={review.id}
             review={review}
-            isLast={index === sortedReviews.length - 1}
+            isLast={index === sortedReviews.length - 1 && !hasMore}
             onEdit={() => onEditReview?.(review.id)}
             onDelete={() => onDeleteReview?.(review.id)}
             onReport={() => onReportReview?.(review.id)}
           />
         ))}
+
+        {/* 무한 스크롤 트리거 */}
+        {hasMore && (
+          <LoadMoreTrigger onTrigger={handleLoadMore} isLoading={isLoadingMore} />
+        )}
       </View>
     </View>
   );
@@ -324,6 +363,17 @@ export function ReviewSection({
 const styles = StyleSheet.create({
   container: {
     gap: rs(16),
+  },
+
+  // Review List
+  reviewList: {},
+
+  // Load More Trigger
+  loadMoreTrigger: {
+    paddingVertical: rs(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: rs(60),
   },
 
   // Rating Block
@@ -418,9 +468,6 @@ const styles = StyleSheet.create({
     fontSize: rs(12),
     color: '#1d1b20',
   },
-
-  // Review List
-  reviewList: {},
 
   // Review Card
   reviewCard: {

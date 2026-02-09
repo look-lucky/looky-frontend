@@ -81,6 +81,11 @@ export default function StoreDetailScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollOffsetY = useRef(0);
 
+  // 리뷰 페이지네이션 상태
+  const [reviewPage, setReviewPage] = useState(0);
+  const [allReviews, setAllReviews] = useState<any[]>([]);
+  const [hasMoreReviews, setHasMoreReviews] = useState(true);
+
   const storeId = Number(id);
 
   // ── API hooks ──────────────────────────────────────────────
@@ -137,11 +142,26 @@ export default function StoreDetailScreen() {
   const apiItems = (Array.isArray(rawItems) ? rawItems : []) as ItemResponse[];
 
   // 리뷰 목록 (paginated)
-  const { data: reviewsRes, isLoading: isReviewsLoading } = useGetReviews(
+  const { data: reviewsRes, isLoading: isReviewsLoading, isFetching: isReviewsFetching } = useGetReviews(
     storeId,
-    { page: 0, size: 20 } as any,
+    { page: reviewPage, size: 20 } as any,
   );
   const apiReviewsPage = (reviewsRes as any)?.data?.data as PageResponseReviewResponse | undefined;
+
+  // 리뷰 데이터 누적 처리
+  useEffect(() => {
+    if (apiReviewsPage?.content) {
+      if (reviewPage === 0) {
+        // 첫 페이지는 덮어쓰기
+        setAllReviews(apiReviewsPage.content);
+      } else {
+        // 이후 페이지는 추가
+        setAllReviews((prev) => [...prev, ...apiReviewsPage.content]);
+      }
+      // 마지막 페이지 체크
+      setHasMoreReviews(!apiReviewsPage.last);
+    }
+  }, [apiReviewsPage, reviewPage]);
 
   // ── 데이터 변환 ─────────────────────────────────────────────
 
@@ -217,7 +237,7 @@ export default function StoreDetailScreen() {
 
   // 리뷰: API ReviewResponse → 컴포넌트 ReviewItem 타입
   const storeReviews = useMemo(() =>
-    (apiReviewsPage?.content ?? []).map((r) => ({
+    allReviews.map((r) => ({
       id: String(r.reviewId),
       userId: '',
       nickname: r.username ?? '',
@@ -230,7 +250,7 @@ export default function StoreDetailScreen() {
       commentCount: 0, // ReviewResponse에 commentCount 없음
       isOwner: false,   // ReviewResponse에 isOwner 없음
     })),
-    [apiReviewsPage],
+    [allReviews],
   );
 
   // 매장 정보: API StoreResponse → InfoSection props
@@ -299,6 +319,11 @@ export default function StoreDetailScreen() {
   const handleWriteReview = () => router.push(`/store/${id}/review/write`);
   const handleEditReview = (reviewId: string) =>
     router.push(`/store/${id}/review/write?reviewId=${reviewId}`);
+  const handleLoadMoreReviews = () => {
+    if (!isReviewsFetching && hasMoreReviews) {
+      setReviewPage((prev) => prev + 1);
+    }
+  };
 
   // ── 로딩 / 에러 상태 ───────────────────────────────────────
 
@@ -386,6 +411,9 @@ export default function StoreDetailScreen() {
               storeInfo={storeInfo}
               scrollViewRef={scrollViewRef}
               scrollOffsetY={scrollOffsetY}
+              onLoadMoreReviews={handleLoadMoreReviews}
+              hasMoreReviews={hasMoreReviews}
+              isLoadingMoreReviews={isReviewsFetching && reviewPage > 0}
             />
           </View>
         )}

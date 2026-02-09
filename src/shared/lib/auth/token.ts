@@ -69,3 +69,11 @@ export async function isTokenValid(): Promise<boolean> {
   // 만료 1분 전부터 invalid 처리 (refresh 여유)
   return token.expiresAt > Date.now() + 60 * 1000;
 }
+
+export function decodeJwtPayload(token: string): { role?: string; sub?: string } | null {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+}

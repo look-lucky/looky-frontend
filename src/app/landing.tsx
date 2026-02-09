@@ -1,4 +1,5 @@
 import { useAuth } from "@/src/shared/lib/auth";
+import { decodeJwtPayload, getToken } from "@/src/shared/lib/auth/token";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
@@ -16,7 +17,7 @@ type HealthStatus = "checking" | "connected" | "failed";
 
 export default function LandingPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userType } = useAuth();
   const [healthStatus, setHealthStatus] = useState<HealthStatus>("checking");
 
   const checkHealth = async () => {
@@ -43,8 +44,24 @@ export default function LandingPage() {
   useEffect(() => {
     if (healthStatus !== "connected") return;
 
-    const timer = setTimeout(() => {
-      router.replace(isAuthenticated ? "/(student)/(tabs)" : "/auth");
+    const timer = setTimeout(async () => {
+      if (!isAuthenticated) {
+        router.replace("/auth");
+        return;
+      }
+
+      if (userType === "ROLE_GUEST") {
+        const tokenData = await getToken();
+        const payload = tokenData ? decodeJwtPayload(tokenData.accessToken) : null;
+        const userId = payload?.sub;
+        router.replace({
+          pathname: "/auth/sign-up-social-form",
+          params: userId ? { userId } : undefined,
+        });
+        return;
+      }
+
+      router.replace("/(student)/(tabs)");
     }, 1000);
 
     return () => clearTimeout(timer);

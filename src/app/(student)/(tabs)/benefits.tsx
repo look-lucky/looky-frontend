@@ -1,4 +1,5 @@
-import { useActivateCoupon, useGetMyCoupons } from "@/src/api/coupon";
+import { getGetMyCouponsQueryKey, useActivateCoupon, useGetMyCoupons } from "@/src/api/coupon";
+import { useQueryClient } from "@tanstack/react-query";
 import type { IssueCouponResponse } from "@/src/api/generated.schemas";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
@@ -106,6 +107,7 @@ export default function BenefitsTab() {
   const [selectedCoupon, setSelectedCoupon] = useState<IssueCouponResponse | null>(null);
   const [couponCode, setCouponCode] = useState<string | null>(null);
 
+  const queryClient = useQueryClient();
   const { mutate: activateCoupon, isPending: isActivating } = useActivateCoupon();
 
   const closeModal = () => {
@@ -120,7 +122,10 @@ export default function BenefitsTab() {
       {
         onSuccess: (res) => {
           const code = (res as any)?.data?.data as string;
-          if (code) setCouponCode(code);
+          if (code) {
+            setCouponCode(code);
+            queryClient.invalidateQueries({ queryKey: getGetMyCouponsQueryKey() });
+          }
         },
       },
     );

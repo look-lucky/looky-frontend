@@ -129,7 +129,7 @@ function StoreInfoSection({
         <ThemedText type='title' lightColor={Text.primary}>{name}</ThemedText>
         <ThemedView style={styles.ratingContainer}>
           <Ionicons name="star" size={rs(16)} color={System.star} />
-          <ThemedText type='defaultSemiBold' lightColor={Text.primary}>{rating}</ThemedText>
+          <ThemedText type='defaultSemiBold' lightColor={Text.primary}>{rating.toFixed(1)}</ThemedText>
         </ThemedView>
       </ThemedView>
 

@@ -1065,7 +1065,7 @@ export const useVerify = <TError = unknown,
       return useMutation(getVerifyMutationOptions(options), queryClient);
     }
     /**
- * 회원 가입용 이메일 인증 코드를 전송합니다.
+ * 회원 가입용 이메일 인증 코드를 전송합니다. (universityId 존재 시 도메인 검사 진행)
  * @summary [공통] 회원 가입용 이메일 인증 발송
  */
 export type sendResponse200 = {

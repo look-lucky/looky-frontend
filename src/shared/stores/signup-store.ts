@@ -18,6 +18,10 @@ interface SignupState {
   ownerEmail: string;
   ownerPhone: string;
 
+  // 소셜 로그인용
+  socialUserId: string;
+  socialProvider: string;
+
   // Step 2 (학생): student-verification.tsx에서 입력
   universityId: number | null;
   universityName: string;
@@ -56,6 +60,8 @@ const initialState: Omit<SignupState, "setSignupField" | "setSignupFields" | "re
   password: "",
   ownerEmail: "",
   ownerPhone: "",
+  socialUserId: "",
+  socialProvider: "",
   universityId: null,
   universityName: "",
   collegeId: null,
