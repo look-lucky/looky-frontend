@@ -16,10 +16,10 @@ export default function SignInPage() {
   const handleGoogleLogin = async () => {
     const result = await loginWithGoogle();
     if (result.success) {
-      if (result.needsSignup && result.userId) {
+      if (result.needsSignup && result.userId != null) {
         // 신규 회원 - 추가 정보 입력 페이지로 이동
         router.push({
-          pathname: "/auth/sign-up-social",
+          pathname: "/auth/sign-up-social-form",
           params: { userId: result.userId, provider: "google" },
         });
       } else {
@@ -34,9 +34,9 @@ export default function SignInPage() {
   const handleKakaoLogin = async () => {
     const result = await loginWithKakao();
     if (result.success) {
-      if (result.needsSignup && result.userId) {
+      if (result.needsSignup && result.userId != null) {
         router.push({
-          pathname: "/auth/sign-up-social",
+          pathname: "/auth/sign-up-social-form",
           params: { userId: result.userId, provider: "kakao" },
         });
       } else {

@@ -18,7 +18,7 @@ interface SocialLoginResult {
 }
 
 // JWT payload 디코딩
-function decodeJwtPayload(token: string): { role?: string } | null {
+function decodeJwtPayload(token: string): { role?: string; sub?: string } | null {
   try {
     const payload = token.split(".")[1];
     const decoded = atob(payload);
@@ -50,7 +50,7 @@ export function useSocialLogin() {
       try {
         setIsLoading(true);
 
-        const authUrl = `${BASE_URL}/oauth2/authorization/${provider}?origin=app`;
+        const authUrl = `${BASE_URL}/oauth2/authorization/${provider}`;
 
         console.log(`=== ${provider} 소셜 로그인 시작 ===`);
         console.log("Auth URL:", authUrl);
@@ -86,19 +86,36 @@ export function useSocialLogin() {
             };
           }
 
-          // 기존 회원 (토큰 반환)
+          // 토큰 수신
           const accessToken = params.get("accessToken");
           const expiresIn = params.get("expiresIn");
 
           if (accessToken) {
-            console.log("로그인 성공 - 토큰 수신");
             const jwtPayload = decodeJwtPayload(accessToken);
-            const role = (jwtPayload?.role as UserType) ?? "ROLE_GUEST";
+            const role = jwtPayload?.role;
 
+            // 신규 소셜 유저 - ROLE_GUEST로 반환되면 추가 정보 입력 필요
+            if (role === "ROLE_GUEST") {
+              console.log("신규 소셜 회원 - 추가 정보 입력 필요");
+              // API 호출(단과대학/학과 조회 등)을 위해 임시 토큰 저장
+              await handleAuthSuccess(
+                accessToken,
+                expiresIn ? parseInt(expiresIn, 10) : 3600,
+                "ROLE_GUEST",
+              );
+              const userId = jwtPayload?.sub ? parseInt(jwtPayload.sub, 10) : null;
+              return {
+                success: true,
+                needsSignup: true,
+                userId: userId ?? undefined,
+              };
+            }
+
+            console.log("로그인 성공 - 토큰 수신");
             await handleAuthSuccess(
               accessToken,
               expiresIn ? parseInt(expiresIn, 10) : 3600,
-              role,
+              (role as UserType) ?? "ROLE_GUEST",
             );
 
             return { success: true };

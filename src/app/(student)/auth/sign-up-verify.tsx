@@ -1,12 +1,12 @@
-import { useLogin, useSignupStudent, useSend, useVerify } from "@/src/api/auth";
-import { CommonResponseLoginResponse } from "@/src/api/generated.schemas";
-import { useAuth } from "@/src/shared/lib/auth";
-import { OrganizationResponseCategory } from "@/src/api/generated.schemas";
+import { useCompleteSocialSignup, useLogin, useSend, useSignupStudent, useVerify } from "@/src/api/auth";
+import { CommonResponseLoginResponse, OrganizationResponseCategory } from "@/src/api/generated.schemas";
 import { useGetOrganizations } from "@/src/api/organization";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
 import { ThemedText } from "@/src/shared/common/themed-text";
+import { useAuth } from "@/src/shared/lib/auth";
+import type { UserType } from "@/src/shared/lib/auth/token";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Text as TextColors } from "@/src/shared/theme/theme";
@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
@@ -50,6 +51,7 @@ export default function StudentVerificationPage() {
     birthYear,
     birthMonth,
     birthDay,
+    socialUserId,
     setSignupFields,
   } = useSignupStore();
 
@@ -59,6 +61,7 @@ export default function StudentVerificationPage() {
   // Mutations
   const signupMutation = useSignupStudent();
   const loginMutation = useLogin();
+  const completeSocialSignupMutation = useCompleteSocialSignup();
   const sendEmailMutation = useSend();
   const verifyEmailMutation = useVerify();
 
@@ -140,7 +143,7 @@ export default function StudentVerificationPage() {
         data: { email }
       });
       setIsCodeSent(true);
-      setTimer(295);
+      setTimer(300);
       Alert.alert("인증번호 발송", "이메일로 인증번호가 발송되었습니다.");
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
@@ -177,13 +180,53 @@ export default function StudentVerificationPage() {
   const handleComplete = () => {
     if (!isFormValid || !selectedCollegeId || !selectedDepartmentId) return;
 
-    // birthDate 생성 (YYYY-MM-DD)
     const birthDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
-
-    // gender 변환 (male/female → MALE/FEMALE)
     const apiGender = gender === "male" ? "MALE" : "FEMALE";
 
-    // 회원가입 API 호출
+    // 소셜 회원가입 흐름
+    if (socialUserId) {
+      completeSocialSignupMutation.mutate(
+        {
+          params: {
+            userId: parseInt(socialUserId, 10),
+            role: "ROLE_STUDENT",
+            gender: apiGender,
+            birthDate,
+            nickname,
+            universityId,
+            collegeId: selectedCollegeId,
+            departmentId: selectedDepartmentId,
+          },
+        },
+        {
+          onSuccess: async (response) => {
+            if (response.status === 200 && response.data?.data?.accessToken) {
+              const { accessToken, expiresIn } = response.data.data;
+              const jwtPayload = (() => {
+                try {
+                  return JSON.parse(atob(accessToken.split(".")[1]));
+                } catch {
+                  return null;
+                }
+              })();
+              const role = (jwtPayload?.role as UserType) ?? "ROLE_STUDENT";
+              await saveUserCollegeId(selectedCollegeId!);
+              await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
+              router.replace("/(student)/(tabs)");
+            } else {
+              Alert.alert("오류", "회원가입 처리 중 문제가 발생했습니다.");
+            }
+          },
+          onError: (error) => {
+            console.error("소셜 회원가입 실패:", error);
+            Alert.alert("오류", "회원가입에 실패했습니다. 다시 시도해주세요.");
+          },
+        }
+      );
+      return;
+    }
+
+    // 일반 회원가입 흐름
     signupMutation.mutate(
       {
         data: {
@@ -201,13 +244,11 @@ export default function StudentVerificationPage() {
         onSuccess: async (response) => {
           console.log("회원가입 성공:", response);
 
-          // 단과대학 ID 저장
           await saveUserCollegeId(selectedCollegeId!);
 
-          // Store에 학교 정보 저장
           setSignupFields({
             universityId,
-            universityName: "전북대학교", // TODO: 실제 대학명으로 교체
+            universityName: "전북대학교",
             collegeId: selectedCollegeId,
             collegeName: selectedCollegeName,
             departmentId: selectedDepartmentId,
@@ -215,7 +256,6 @@ export default function StudentVerificationPage() {
             studentEmail: email,
           });
 
-          // 자동 로그인
           loginMutation.mutate(
             { data: { username, password } },
             {
@@ -235,7 +275,6 @@ export default function StudentVerificationPage() {
               },
               onError: (loginError) => {
                 console.error("자동 로그인 실패:", loginError);
-                // 로그인 실패해도 완료 화면으로 이동 (수동 로그인 유도)
                 router.push("/auth/sign-up-done");
               },
             }
@@ -243,7 +282,6 @@ export default function StudentVerificationPage() {
         },
         onError: (error) => {
           console.error("회원가입 실패:", error);
-          // TODO: 에러 처리 (Alert 등)
         },
       }
     );

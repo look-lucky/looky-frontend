@@ -4,7 +4,9 @@ import { ThemedText } from "@/src/shared/common/themed-text";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
-import { useSignupOwner } from "@/src/api/auth";
+import { useSignupOwner, useCompleteSocialSignup } from "@/src/api/auth";
+import { useAuth } from "@/src/shared/lib/auth";
+import type { UserType } from "@/src/shared/lib/auth/token";
 import { getMyStores } from "@/src/api/store";
 import { useCreateStoreClaims } from "@/src/api/store-claim";
 import * as ImagePicker from "expo-image-picker";
@@ -70,11 +72,16 @@ export default function SignupOwnerPage() {
     birthYear,
     birthMonth,
     birthDay,
+    socialUserId,
     setSignupFields,
   } = useSignupStore();
 
+  // Auth
+  const { handleAuthSuccess } = useAuth();
+
   // API 훅
   const signupOwnerMutation = useSignupOwner();
+  const completeSocialSignupMutation = useCompleteSocialSignup();
   const createStoreClaimMutation = useCreateStoreClaims();
 
   // 로딩 상태
@@ -130,9 +137,39 @@ export default function SignupOwnerPage() {
     try {
       setIsSubmitting(true);
 
-      // 1️⃣ 회원가입 API 호출
       const birthDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
+      const apiGender = gender === "male" ? "MALE" : "FEMALE";
 
+      // 소셜 회원가입 흐름
+      if (socialUserId) {
+        const socialResponse = await completeSocialSignupMutation.mutateAsync({
+          params: {
+            userId: parseInt(socialUserId, 10),
+            role: "ROLE_OWNER",
+            gender: apiGender,
+            birthDate,
+            name: representativeName,
+            email: ownerEmail,
+          },
+        });
+
+        if (socialResponse.status === 200 && socialResponse.data?.data?.accessToken) {
+          const { accessToken, expiresIn } = socialResponse.data.data;
+          const jwtPayload = (() => {
+            try { return JSON.parse(atob(accessToken.split(".")[1])); } catch { return null; }
+          })();
+          const role = (jwtPayload?.role as UserType) ?? "ROLE_OWNER";
+          await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
+        }
+
+        // TODO: 소셜 점주는 useCompleteSocialSignup이 store 생성을 포함하지 않아
+        // 별도 store 생성 API 연동 필요
+        Alert.alert("회원가입 완료", "관리자 승인 후 서비스를 이용하실 수 있습니다.");
+        router.replace("/(shopowner)/auth/pending-approval");
+        return;
+      }
+
+      // 1️⃣ 일반 회원가입 API 호출
       const signupResponse = await signupOwnerMutation.mutateAsync({
         data: {
           username,
@@ -140,7 +177,7 @@ export default function SignupOwnerPage() {
           name: representativeName,
           email: ownerEmail,
           phone: ownerPhone,
-          gender: gender === "male" ? "MALE" : "FEMALE",
+          gender: apiGender,
           birthDate,
           storeList: [
             {
