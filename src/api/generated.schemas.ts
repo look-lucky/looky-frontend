@@ -328,8 +328,8 @@ export interface CommonResponseIssueCouponResponse {
 }
 
 export interface BizInfo {
-  bno?: string;
   pnm?: string;
+  bno?: string;
   b_no?: string;
   start_dt?: string;
   p_nm?: string;
@@ -1187,6 +1187,7 @@ export interface CommonResponseStoreNewsResponse {
 export interface StoreNewsCommentResponse {
   id?: number;
   userId?: number;
+  nickname?: string;
   content?: string;
   createdAt?: string;
   mine?: boolean;
@@ -1288,8 +1289,8 @@ export interface PageInquiryResponse {
   content?: InquiryResponse[];
   number?: number;
   sort?: SortObject;
-  numberOfElements?: number;
   last?: boolean;
+  numberOfElements?: number;
   empty?: boolean;
 }
 
@@ -1502,8 +1503,8 @@ export interface PageStoreClaimResponse {
   content?: StoreClaimResponse[];
   number?: number;
   sort?: SortObject;
-  numberOfElements?: number;
   last?: boolean;
+  numberOfElements?: number;
   empty?: boolean;
 }
 

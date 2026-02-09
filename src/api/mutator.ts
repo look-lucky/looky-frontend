@@ -50,8 +50,10 @@ export async function customFetch<T>(
   const isPublic = PUBLIC_ENDPOINTS.some((ep) => url.startsWith(ep));
   const headers = new Headers(options.headers);
 
-  // FormData일 경우 Content-Type을 설정하지 않음 (브라우저가 boundary 자동 설정)
-  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+  // FormData일 경우 Content-Type을 명시적으로 삭제하여 fetch가 multipart/form-data boundary를 자동 설정하도록 함
+  if (options.body instanceof FormData) {
+    headers.delete("Content-Type");
+  } else if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
