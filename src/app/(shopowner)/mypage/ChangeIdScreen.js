@@ -1,6 +1,6 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -18,12 +18,13 @@ import {
 } from 'react-native';
 
 import { checkUsernameAvailability } from '@/src/api/auth';
+import { changeUsername } from '@/src/api/my-page';
+import { getUsername, saveUsername } from '@/src/shared/lib/auth/token';
 
 export default function ChangeIdScreen({ navigation }) {
-  const INITIAL_ID = 'oneieo'; // 나중엔 실제 유저 아이디(Context 등)로 대체
-
   // 상태 관리
-  const [userId, setUserId] = useState(INITIAL_ID); 
+  const [initialId, setInitialId] = useState(''); // 초기 아이디
+  const [userId, setUserId] = useState(''); 
   const [isChecked, setIsChecked] = useState(false); // 중복확인 완료 여부
   const [checkMessage, setCheckMessage] = useState(''); 
   const [isError, setIsError] = useState(false); 
@@ -36,8 +37,20 @@ export default function ChangeIdScreen({ navigation }) {
   const [errorVisible, setErrorVisible] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
 
+  // [초기 로드] 현재 사용자 아이디 가져오기
+  useEffect(() => {
+    const loadCurrentUsername = async () => {
+      const currentUsername = await getUsername();
+      if (currentUsername) {
+        setInitialId(currentUsername);
+        setUserId(currentUsername);
+      }
+    };
+    loadCurrentUsername();
+  }, []);
+
   // 아이디 변경 여부 확인 (기존과 다르고 비어있지 않음)
-  const isIdChanged = userId !== INITIAL_ID && userId.length > 0;
+  const isIdChanged = userId !== initialId && userId.length > 0;
 
   // [기능 1] 아이디 입력 핸들러 (영문/숫자만 허용)
   const handleIdChange = (text) => {
@@ -97,12 +110,13 @@ export default function ChangeIdScreen({ navigation }) {
   const handleSubmit = async () => {
     if (!isChecked) return;
 
-    // '아이디 변경(Update Username)' API가 있는지 확인 후 여기 연결
-    // auth.ts 파일에는 '정보 수정' API가 명확하지 않음
-    // 우선 '성공'한 것으로 처리
-    
     try {
-        // const res = await updateUsername({ newUsername: userId }); // (가상 코드)
+        // [API 호출] 아이디 변경
+        await changeUsername({ newUsername: userId });
+
+        // [성공] 새 아이디를 저장
+        await saveUsername(userId);
+
         setSuccessVisible(true);
     } catch (error) {
         console.error('아이디 변경 실패:', error);

@@ -26,9 +26,6 @@ export default function EditProfileScreen({ navigation }) {
     else if (menuName === '비밀번호') {
         navigation.navigate('ChangePassword');
     }
-    else if (menuName === '간편 로그인') {
-        navigation.navigate('EasyLogin');
-    }
     else if (menuName === '회원탈퇴') {
         navigation.navigate('Withdraw');
     }
@@ -56,8 +53,7 @@ export default function EditProfileScreen({ navigation }) {
         {/* 메뉴 리스트 (그룹 1) */}
         <View style={styles.menuGroup}>
           <MenuRow label="아이디" onPress={() => handlePress('아이디')} />
-          <MenuRow label="비밀번호" onPress={() => handlePress('비밀번호')} />
-          <MenuRow label="간편 로그인" onPress={() => handlePress('간편 로그인')} isLast={true} />
+          <MenuRow label="비밀번호" onPress={() => handlePress('비밀번호')} isLast={true} />
         </View>
 
         <View style={styles.divider} />

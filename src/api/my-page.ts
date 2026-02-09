@@ -6,13 +6,22 @@
  * OpenAPI spec version: v1.0.0
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
-  UseMutationResult
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
@@ -27,6 +36,129 @@ import { customFetch } from './mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
+
+/**
+ * 학생의 대학, 단과대, 학과, 동아리 활동 여부를 조회합니다.
+ * @summary [학생] 내 정보 조회
+ */
+export type getStudentInfoResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getStudentInfoResponse403 = {
+  data: Blob
+  status: 403
+}
+
+export type getStudentInfoResponse404 = {
+  data: Blob
+  status: 404
+}
+    
+export type getStudentInfoResponseSuccess = (getStudentInfoResponse200) & {
+  headers: Headers;
+};
+export type getStudentInfoResponseError = (getStudentInfoResponse403 | getStudentInfoResponse404) & {
+  headers: Headers;
+};
+
+export type getStudentInfoResponse = (getStudentInfoResponseSuccess | getStudentInfoResponseError)
+
+export const getGetStudentInfoUrl = () => {
+
+
+  
+
+  return `/api/mypage/student/profile`
+}
+
+export const getStudentInfo = async ( options?: RequestInit): Promise<getStudentInfoResponse> => {
+  
+  return customFetch<getStudentInfoResponse>(getGetStudentInfoUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetStudentInfoQueryKey = () => {
+    return [
+    `/api/mypage/student/profile`
+    ] as const;
+    }
+
+    
+export const getGetStudentInfoQueryOptions = <TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentInfoQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentInfo>>> = ({ signal }) => getStudentInfo({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetStudentInfoQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentInfo>>>
+export type GetStudentInfoQueryError = Blob
+
+
+export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentInfo>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentInfo>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentInfo>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentInfo>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [학생] 내 정보 조회
+ */
+
+export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStudentInfoQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
 
 
 

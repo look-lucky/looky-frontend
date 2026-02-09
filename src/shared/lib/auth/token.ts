@@ -4,6 +4,7 @@ const ACCESS_TOKEN_KEY = "auth_access_token";
 const EXPIRES_AT_KEY = "auth_expires_at";
 const USER_TYPE_KEY = "auth_user_type";
 const COLLEGE_ID_KEY = "user_college_id";
+const USERNAME_KEY = "auth_username";
 
 export interface TokenData {
   accessToken: string;
@@ -54,12 +55,21 @@ export async function getCollegeId(): Promise<number | null> {
   return value ? parseInt(value, 10) : null;
 }
 
+export async function saveUsername(username: string): Promise<void> {
+  await AsyncStorage.setItem(USERNAME_KEY, username);
+}
+
+export async function getUsername(): Promise<string | null> {
+  return await AsyncStorage.getItem(USERNAME_KEY);
+}
+
 export async function clearToken(): Promise<void> {
   await AsyncStorage.multiRemove([
     ACCESS_TOKEN_KEY,
     EXPIRES_AT_KEY,
     USER_TYPE_KEY,
     COLLEGE_ID_KEY,
+    USERNAME_KEY,
   ]);
 }
 

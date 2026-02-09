@@ -106,6 +106,7 @@ export default function CouponListScreen({ navigation, route }) {
                     type: type,
                     discountValue: coupon.benefitValue,
                     limitCount: coupon.totalQuantity,
+                    usedCount: coupon.usedCount || 0, // 사용량 추가
                 };
             });
 
@@ -301,7 +302,9 @@ export default function CouponListScreen({ navigation, route }) {
                                     <View style={[styles.countBadge, activeTab === 'expired' && { backgroundColor: '#E5E7EB' }]}>
                                         <Text style={[styles.countText, activeTab === 'expired' && { color: '#9CA3AF' }]}>
                                             {/* 남은 수량 or 전체 수량 */}
-                                            {item.limitCount ? `${item.limitCount}장` : '무제한'}
+                                            {item.limitCount === -1
+                                                ? `${item.usedCount}장 사용됨`
+                                                : `${item.usedCount}/${item.limitCount}장`}
                                         </Text>
                                     </View>
                                 </View>

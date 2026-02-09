@@ -1,11 +1,13 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, Modal, Platform, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 
 // [API] 내 가게 조회 & 상점 통계 조회 임포트
+import { verifyCoupon } from '@/src/api/coupon';
 import { getMyStores, getStoreStats } from '@/src/api/store';
 
 export default function HomeScreen({ navigation }) {
@@ -13,6 +15,17 @@ export default function HomeScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false); // 등급 안내 모달
   const [isLoading, setIsLoading] = useState(true);        // 로딩 상태
   const [refreshing, setRefreshing] = useState(false);     // 당겨서 새로고침
+
+  // [가게 선택 모달]
+  const [isStoreModalVisible, setIsStoreModalVisible] = useState(false);
+  const [storeList, setStoreList] = useState([]);
+
+  // [새 쿠폰 - 사용 처리 모달]
+  const [usageModalVisible, setUsageModalVisible] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [verificationStatus, setVerificationStatus] = useState('idle'); // idle, valid, expired, invalid
+  const [isCouponUsed, setIsCouponUsed] = useState(false);
+  const [verifiedCouponData, setVerifiedCouponData] = useState(null); // 검증된 쿠폰 정보
 
   // 화면 데이터 상태
   const [homeData, setHomeData] = useState({
@@ -32,9 +45,8 @@ export default function HomeScreen({ navigation }) {
     try {
       // 1. 내 가게 목록 조회
       const myStoresResponse = await getMyStores();
-
-      const rawStoreData = myStoresResponse?.data;
-      const myStores = Array.isArray(rawStoreData) ? rawStoreData : rawStoreData?.data || [];
+      const myStores = myStoresResponse?.data?.data || [];
+      setStoreList(myStores);
 
       if (!myStores || myStores.length === 0) {
         setHomeData(prev => ({ ...prev, storeName: "가게를 등록해주세요" }));
@@ -42,8 +54,17 @@ export default function HomeScreen({ navigation }) {
         return;
       }
 
-      const currentStore = myStores[0];
-      const storeId = currentStore?.id;
+      // 2. 현재 선택된 가게 ID 가져오기 (AsyncStorage)
+      const savedStoreId = await AsyncStorage.getItem('SELECTED_STORE_ID');
+      let storeId = savedStoreId ? parseInt(savedStoreId, 10) : null;
+
+      // 3. 저장된 ID가 없거나 실제 목록에 없으면 첫 번째 가게 선택
+      let currentStore = myStores.find(s => s.id === storeId);
+      if (!currentStore) {
+        currentStore = myStores[0];
+        storeId = currentStore.id;
+        await AsyncStorage.setItem('SELECTED_STORE_ID', storeId.toString());
+      }
 
       if (!storeId) {
         console.error("가게 ID를 찾을 수 없습니다.");
@@ -51,12 +72,12 @@ export default function HomeScreen({ navigation }) {
         return;
       }
 
-      // 2. 상점 통계 조회 API 호출
+      // 4. 상점 통계 조회 API 호출
       console.log(`[API] 통계 조회 시작: storeId=${storeId}`);
       const statsResponse = await getStoreStats(storeId);
 
       // 통계 데이터 언랩핑
-      const statsData = statsResponse?.data?.data || statsResponse?.data || {};
+      const statsData = statsResponse?.data?.data || {};
 
       console.log("📊 [통계 데이터 수신]:", statsData);
 
@@ -65,7 +86,6 @@ export default function HomeScreen({ navigation }) {
         storeName: currentStore.name,
         ownerName: currentStore.ownerName || "사장님",
         stats: {
-          // [수정 완료] 로그 기반으로 키값 매핑
           regulars: statsData.totalRegulars || 0,
           issuedCoupons: statsData.totalIssuedCoupons || 0,
           newReviews: statsData.totalReviews || 0,
@@ -78,6 +98,18 @@ export default function HomeScreen({ navigation }) {
     } finally {
       setIsLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  // [로직] 가게 변경 핸들러
+  const handleStoreSelect = async (newStoreId) => {
+    try {
+      await AsyncStorage.setItem('SELECTED_STORE_ID', newStoreId.toString());
+      setIsStoreModalVisible(false);
+      setIsLoading(true);
+      fetchData();
+    } catch (error) {
+      console.error("가게 선택 변경 실패:", error);
     }
   };
 
@@ -95,6 +127,52 @@ export default function HomeScreen({ navigation }) {
       fetchData();
     }, [])
   );
+
+  // 날짜 포맷 헬퍼
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}까지`;
+  };
+
+  // [로직] 쿠폰 번호 검증 (API 연결)
+  const handleVerifyCoupon = async () => {
+    if (!homeData.storeId) return;
+
+    try {
+      const response = await verifyCoupon(homeData.storeId, { code: couponInput });
+      setVerificationStatus('valid');
+      setVerifiedCouponData(response.data);
+    } catch (error) {
+      console.error("쿠폰 검증 실패:", error);
+      const status = error.status;
+      if (status === 404) {
+        setVerificationStatus('invalid');
+      } else if (status === 409 || status === 400) {
+        setVerificationStatus('expired');
+      } else {
+        setVerificationStatus('invalid');
+      }
+    }
+  };
+
+  // [로직] 사용 완료 처리
+  const handleUseCoupon = () => {
+    setIsCouponUsed(true);
+    setTimeout(() => {
+      closeUsageModal();
+      fetchData(); // 데이터 갱신
+    }, 1500);
+  };
+
+  // [로직] 모달 닫기
+  const closeUsageModal = () => {
+    setUsageModalVisible(false);
+    setCouponInput('');
+    setVerificationStatus('idle');
+    setIsCouponUsed(false);
+    setVerifiedCouponData(null);
+  };
 
   if (isLoading) {
     return (
@@ -118,7 +196,11 @@ export default function HomeScreen({ navigation }) {
         />
 
         {/* --- 1. 상단 프로필 카드 --- */}
-        <TouchableOpacity style={styles.profileCard} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.profileCard}
+          activeOpacity={0.8}
+          onPress={() => setIsStoreModalVisible(true)}
+        >
           <View style={styles.iconBox}>
             <Ionicons name="storefront-outline" size={rs(32)} color="#34B262" />
           </View>
@@ -198,7 +280,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="people" size={rs(18)} color="#34B262" />
               </View>
               <View style={styles.statInfoBox}>
-                <Text style={styles.statTitle}>단골 손님</Text>
+                <Text style={statStyles.statTitle}>단골 손님</Text>
                 <Text style={styles.statNumber}>{homeData.stats.regulars}</Text>
                 <Text style={styles.statSubText}>명이 찜했어요</Text>
               </View>
@@ -214,7 +296,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="ticket" size={rs(18)} color="#34B262" />
               </View>
               <View style={styles.statInfoBox}>
-                <Text style={styles.statTitle}>발행한 쿠폰</Text>
+                <Text style={statStyles.statTitle}>발행한 쿠폰</Text>
                 <Text style={styles.statNumber}>{homeData.stats.issuedCoupons}</Text>
                 <Text style={styles.statSubText}>장을 발행했어요</Text>
               </View>
@@ -233,7 +315,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="chatbox-ellipses" size={rs(18)} color="#34B262" />
               </View>
               <View style={styles.statInfoBox}>
-                <Text style={styles.statTitle}>총 리뷰</Text>
+                <Text style={statStyles.statTitle}>총 리뷰</Text>
                 <Text style={styles.statNumber}>{homeData.stats.newReviews}</Text>
                 <Text style={styles.statSubText}>명이 남겼어요</Text>
               </View>
@@ -249,7 +331,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="qr-code" size={rs(18)} color="#34B262" />
               </View>
               <View style={styles.statInfoBox}>
-                <Text style={styles.statTitle}>사용된 쿠폰</Text>
+                <Text style={statStyles.statTitle}>사용된 쿠폰</Text>
                 <Text style={styles.statNumber}>{homeData.stats.usedCoupons}</Text>
                 <Text style={styles.statSubText}>장 사용되었어요</Text>
               </View>
@@ -258,7 +340,11 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* --- 5. 쿠폰 사용완료 처리 버튼 --- */}
-        <TouchableOpacity style={styles.couponProcessBtn} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.couponProcessBtn}
+          activeOpacity={0.8}
+          onPress={() => setUsageModalVisible(true)}
+        >
           <Ionicons name="scan-circle-outline" size={rs(20)} color="#34B262" style={{ marginRight: rs(8) }} />
           <Text style={styles.couponProcessText}>쿠폰 사용완료 처리</Text>
         </TouchableOpacity>
@@ -334,6 +420,184 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* --- [모달] 쿠폰 사용완료 처리 --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={usageModalVisible}
+        onRequestClose={closeUsageModal}
+      >
+        <TouchableWithoutFeedback onPress={closeUsageModal}>
+          <View style={styles.usageModalOverlay}>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+              >
+                <View style={[styles.usageModalContainer, verificationStatus === 'valid' && { height: rs(400) }]}>
+                  {/* 닫기 버튼 */}
+                  <TouchableOpacity
+                    style={styles.modalCloseBtn}
+                    onPress={closeUsageModal}
+                    hitSlop={{ top: rs(10), bottom: rs(10), left: rs(10), right: rs(10) }}
+                  >
+                    <Ionicons name="close" size={rs(20)} color="#828282" />
+                  </TouchableOpacity>
+
+                  {/* 타이틀 */}
+                  <View style={styles.modalTitleRow}>
+                    <View style={styles.modalTitleIconBox}>
+                      <Ionicons name="ticket" size={rs(16)} color="white" style={{ transform: [{ rotate: '-45deg' }] }} />
+                    </View>
+                    <Text style={styles.usageModalTitle}>쿠폰 번호 확인</Text>
+                  </View>
+
+                  <Text style={styles.usageModalSubtitle}>손님의 쿠폰 번호를 입력하고, 혜택을 제공해주세요</Text>
+
+                  {/* 입력창 & 확인 버튼 */}
+                  <View style={styles.usageInputRow}>
+                    <View style={styles.usageInputBox}>
+                      <TextInput
+                        style={styles.usageInput}
+                        placeholder="쿠폰 번호 입력"
+                        placeholderTextColor="#828282"
+                        value={couponInput}
+                        onChangeText={setCouponInput}
+                        keyboardType="number-pad"
+                        maxLength={4}
+                      />
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.usageConfirmBtn, { backgroundColor: couponInput.length === 4 ? '#34B262' : '#D5D5D5' }]}
+                      onPress={handleVerifyCoupon}
+                      disabled={couponInput.length !== 4}
+                    >
+                      <Text style={styles.usageConfirmText}>확인</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* [에러 메시지 영역] */}
+                  {verificationStatus === 'expired' && (
+                    <Text style={styles.errorText}>이미 사용되었거나 만료된 쿠폰입니다</Text>
+                  )}
+                  {verificationStatus === 'invalid' && (
+                    <Text style={styles.errorText}>잘못된 쿠폰 번호입니다.</Text>
+                  )}
+
+                  {/* [성공 시 쿠폰 카드 표시 영역] */}
+                  {verificationStatus === 'valid' && (
+                    <View style={{ width: '100%', alignItems: 'center', marginTop: rs(0) }}>
+                      <Text style={styles.successText}>쿠폰이 확인되었습니다</Text>
+
+                      {/* 쿠폰 티켓 UI */}
+                      <View style={[styles.ticketContainer, isCouponUsed && { opacity: 0.5 }]}>
+                        {/* 티켓 상단 (내용) */}
+                        <View style={styles.ticketTop}>
+                          <Text style={styles.ticketTitle}>{verifiedCouponData?.name || '쿠폰'}</Text>
+                          <Text style={styles.ticketDesc}>{verifiedCouponData?.description || '혜택을 확인해주세요'}</Text>
+
+                          <View style={styles.ticketInfoRow}>
+                            <Text style={styles.ticketLabel}>혜택</Text>
+                            <Text style={styles.ticketValue}>사용 확인 후 제공해주세요</Text>
+                          </View>
+                          <View style={styles.ticketInfoRow}>
+                            <Text style={styles.ticketLabel}>만료기한</Text>
+                            <Text style={styles.ticketValue}>{formatDate(verifiedCouponData?.expiredAt)}</Text>
+                          </View>
+                        </View>
+
+                        {/* 티켓 절취선 (점선) */}
+                        <View style={styles.ticketDivider}>
+                          <View style={styles.notchLeft} />
+                          <View style={styles.dashedLine} />
+                          <View style={styles.notchRight} />
+                        </View>
+
+                        {/* 티켓 하단 (번호) */}
+                        <View style={styles.ticketBottom}>
+                          <Text style={styles.ticketNumber}>{couponInput.split('').join('  ')}</Text>
+                        </View>
+
+                        {/* [사용완료 도장] */}
+                        {isCouponUsed && (
+                          <View style={styles.stampContainer}>
+                            <View style={styles.stampCircle}>
+                              <Text style={styles.stampText}>사용{'\n'}완료</Text>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* 하단 버튼 (사용완료 처리) */}
+                      <TouchableOpacity
+                        style={[styles.finalUseBtn, isCouponUsed && { backgroundColor: '#D5D5D5' }]}
+                        onPress={handleUseCoupon}
+                        disabled={isCouponUsed}
+                      >
+                        <Text style={styles.finalUseBtnText}>쿠폰 사용완료 처리</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                </View>
+              </KeyboardAvoidingView>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* --- [모달] 가게 선택 --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isStoreModalVisible}
+        onRequestClose={() => setIsStoreModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setIsStoreModalVisible(false)}>
+          <View style={styles.storeModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.storeModalContainer}>
+                <View style={styles.storeModalHeader}>
+                  <View style={styles.storeHeaderLeft}>
+                    <Ionicons name="storefront-outline" size={rs(20)} color="#35A26F" style={{ marginRight: rs(7) }} />
+                    <Text style={styles.storeModalTitle}>다른 가게 선택하기</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => {
+                    setIsStoreModalVisible(false);
+                    navigation.navigate('StoreManagement');
+                  }}>
+                    <Text style={styles.addStoreText}>+ 가게 추가</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={styles.storeListScroll} showsVerticalScrollIndicator={false}>
+                  {storeList.map((store) => (
+                    <TouchableOpacity
+                      key={store.id}
+                      style={[
+                        styles.storeCard,
+                        homeData.storeId === store.id && { borderColor: '#34B262', borderWidth: 1 }
+                      ]}
+                      onPress={() => handleStoreSelect(store.id)}
+                    >
+                      <View style={styles.storeIconBox}>
+                        <Ionicons name="storefront-outline" size={rs(24)} color="#34B262" />
+                      </View>
+                      <View style={styles.storeInfoText}>
+                        <Text style={styles.storeCardName}>{store.name}</Text>
+                        <View style={styles.statusRow}>
+                          <Ionicons name="cog-outline" size={rs(14)} color="#B7B7B7" style={{ marginRight: rs(3) }} />
+                          <Text style={styles.statusText}>매장 정보를 업데이트 해주세요!</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -395,7 +659,6 @@ const styles = StyleSheet.create({
   },
   statIconBox: { width: rs(40), height: rs(36), backgroundColor: "#EAF6EE", borderRadius: rs(10), justifyContent: "center", alignItems: "center", marginRight: rs(10), marginTop: rs(7) },
   statInfoBox: { flex: 1, justifyContent: 'center' },
-  statTitle: { fontSize: rs(10), color: "#828282", fontWeight: "500", marginBottom: rs(4) },
   statNumber: { fontSize: rs(18), fontWeight: "700", color: "black", marginBottom: rs(2) },
   statSubText: { fontSize: rs(10), color: "#828282", fontWeight: "400" },
 
@@ -411,6 +674,40 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
   modalContent: { width: rs(335), backgroundColor: "white", borderRadius: rs(12), padding: rs(24), alignItems: "center" },
   modalHeader: { width: "100%", flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: rs(20) },
+
+  // 쿠폰 사용완료 처리 모달 스타일
+  usageModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', },
+  usageModalContainer: { width: rs(331), backgroundColor: 'white', borderRadius: rs(10), paddingTop: rs(17), paddingBottom: rs(20), paddingHorizontal: rs(22), shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5, },
+  modalCloseBtn: { position: 'absolute', top: rs(15), right: rs(15), zIndex: 1, },
+  modalTitleRow: { flexDirection: 'row', alignItems: 'center', gap: rs(7), marginBottom: rs(6), },
+  modalTitleIconBox: { width: rs(23), height: rs(23), backgroundColor: '#34B262', justifyContent: 'center', alignItems: 'center', borderRadius: rs(4), },
+  usageModalTitle: { fontSize: rs(16), fontWeight: '600', fontFamily: 'Pretendard', color: 'black', },
+  usageModalSubtitle: { fontSize: rs(11), fontWeight: '500', fontFamily: 'Pretendard', color: '#668776', marginBottom: rs(20), },
+  usageInputRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: rs(10), },
+  usageInputBox: { flex: 1, height: rs(36), backgroundColor: 'white', borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0', justifyContent: 'center', paddingHorizontal: rs(16), },
+  usageInput: { fontSize: rs(14), fontFamily: 'Pretendard', fontWeight: '500', color: 'black', padding: 0, },
+  usageConfirmBtn: { width: rs(80), height: rs(36), borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', },
+  usageConfirmText: { fontSize: rs(14), fontFamily: 'Pretendard', fontWeight: '700', color: 'white', },
+  errorText: { fontSize: rs(10), color: '#FF6200', fontFamily: 'Pretendard', fontWeight: '500', marginTop: rs(6), },
+  successText: { width: '100%', fontSize: rs(10), color: '#828282', fontFamily: 'Pretendard', fontWeight: '500', marginTop: rs(5), marginBottom: rs(10), },
+  ticketContainer: { width: '100%', backgroundColor: '#F2F2F2', borderRadius: rs(0), borderWidth: 1, borderColor: 'transparent', marginBottom: rs(15), overflow: 'hidden', position: 'relative', },
+  ticketTop: { paddingVertical: rs(15), paddingHorizontal: rs(20), alignItems: 'center', },
+  ticketTitle: { fontSize: rs(18), fontWeight: '700', color: '#34B262', fontFamily: 'Pretendard', marginBottom: rs(4), },
+  ticketDesc: { fontSize: rs(12), fontWeight: '500', color: 'black', fontFamily: 'Pretendard', marginBottom: rs(15), },
+  ticketInfoRow: { width: '100%', flexDirection: 'row', marginBottom: rs(4), },
+  ticketLabel: { width: rs(50), fontSize: rs(10), fontWeight: '600', color: '#444444', fontFamily: 'Pretendard', },
+  ticketValue: { fontSize: rs(10), fontWeight: '500', color: '#828282', fontFamily: 'Pretendard', },
+  ticketDivider: { height: rs(20), flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', position: 'relative', backgroundColor: '#F2F2F2', },
+  dashedLine: { flex: 1, height: 1, borderWidth: 1, borderColor: '#D5D5D5', borderStyle: 'dashed', marginHorizontal: rs(10), },
+  notchLeft: { width: rs(20), height: rs(20), borderRadius: rs(10), backgroundColor: 'white', marginLeft: rs(-10), },
+  notchRight: { width: rs(20), height: rs(20), borderRadius: rs(10), backgroundColor: 'white', marginRight: rs(-10), },
+  ticketBottom: { paddingVertical: rs(10), alignItems: 'center', justifyContent: 'center', },
+  ticketNumber: { fontSize: rs(18), fontWeight: '700', color: 'black', fontFamily: 'Pretendard', letterSpacing: rs(8), },
+  finalUseBtn: { width: '100%', height: rs(40), backgroundColor: '#34B262', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', },
+  finalUseBtnText: { fontSize: rs(14), fontWeight: '700', color: 'white', fontFamily: 'Pretendard', },
+  stampContainer: { position: 'absolute', top: 0, bottom: 0, left: 100, right: 0, justifyContent: 'center', alignItems: 'center', zIndex: 10, },
+  stampCircle: { width: rs(64), height: rs(64), borderRadius: rs(32), borderWidth: 2, borderColor: '#34B262', justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', transform: [{ rotate: '-20deg' }], marginLeft: rs(100), marginTop: rs(20), },
+  stampText: { fontSize: rs(16), fontWeight: '700', color: '#34B262', textAlign: 'center', fontFamily: 'Pretendard', lineHeight: rs(18), },
   headerTitleRow: { flexDirection: "row", alignItems: "center" },
   headerImage: { width: rs(24), height: rs(24), marginRight: rs(6) },
   headerTitle: { fontSize: rs(18), fontWeight: "700", color: "black" },
@@ -420,4 +717,86 @@ const styles = StyleSheet.create({
   gradeTextBox: { flex: 1 },
   gradeItemTitle: { fontSize: rs(15), fontWeight: "700", color: "black", marginBottom: rs(2) },
   gradeItemDesc: { fontSize: rs(11), color: "#666", lineHeight: rs(16) },
+
+  // 가게 선택 모달 스타일
+  storeModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  storeModalContainer: {
+    width: rs(331),
+    maxHeight: rs(450),
+    backgroundColor: 'white',
+    borderRadius: rs(10),
+    paddingTop: rs(27),
+    paddingBottom: rs(20),
+    paddingHorizontal: rs(22),
+  },
+  storeModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: rs(25),
+  },
+  storeHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  storeModalTitle: {
+    fontSize: rs(16),
+    fontWeight: '600',
+    color: 'black',
+  },
+  addStoreText: {
+    fontSize: rs(10),
+    color: '#838383',
+    fontWeight: '400',
+  },
+  storeListScroll: {
+    flexGrow: 0,
+  },
+  storeCard: {
+    width: '100%',
+    height: rs(68),
+    backgroundColor: 'rgba(217, 217, 217, 0.30)',
+    borderRadius: rs(10),
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: rs(10),
+    marginBottom: rs(16),
+  },
+  storeIconBox: {
+    width: rs(50),
+    height: rs(50),
+    backgroundColor: '#EAF6EE',
+    borderRadius: rs(12),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: rs(7),
+  },
+  storeInfoText: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  storeCardName: {
+    fontSize: rs(13),
+    fontWeight: '600',
+    color: 'black',
+    marginBottom: rs(2),
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusText: {
+    fontSize: rs(11),
+    color: '#828282',
+    fontWeight: '500',
+  },
+});
+
+const statStyles = StyleSheet.create({
+  statTitle: { fontSize: rs(10), color: "#828282", fontWeight: "500", marginBottom: rs(4) },
 });

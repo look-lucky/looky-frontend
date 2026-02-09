@@ -16,8 +16,8 @@ import {
     View
 } from 'react-native';
 
-// [API] 추후 비밀번호 변경 함수 임포트
-// import { changePassword } from '@/src/api/auth'; 
+// [API] 비밀번호 변경 함수 임포트
+import { changePassword } from '@/src/api/my-page'; 
 
 export default function ChangePasswordScreen({ navigation }) {
   // 상태 관리
@@ -105,14 +105,12 @@ export default function ChangePasswordScreen({ navigation }) {
     setIsLoading(true); // 로딩 시작
 
     try {
-        // ============================================================
-        // [TODO] 비밀번호 변경 API 함수를 받으면 주석 풀기
-        // 예시: await changePassword({ oldPassword: currentPw, newPassword: newPw });
-        // ============================================================
-        
-        // [임시] 서버 요청을 흉내내는 코드 (1초 뒤 성공 처리)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        // [API 호출] 비밀번호 변경
+        await changePassword({
+            currentPassword: currentPw,
+            newPassword: newPw
+        });
+
         // 성공 시 팝업 오픈
         setSuccessVisible(true);
 

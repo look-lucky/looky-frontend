@@ -22,7 +22,7 @@ const queryClient = new QueryClient();
 // 👇 새로운 컴포넌트: userType 체크
 function AppContent() {
   const { userType, isLoading: authLoading } = useAuth();
-  
+
   const [fontsLoaded] = useFonts({
     "Pretendard-Regular": require("@/assets/font/pretendard/Pretendard-Regular.ttf"),
     "Pretendard-Medium": require("@/assets/font/pretendard/Pretendard-Medium.ttf"),

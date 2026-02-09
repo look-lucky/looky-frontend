@@ -1232,6 +1232,18 @@ export interface CommonResponseListMyStoreClaimResponse {
   data?: MyStoreClaimResponse[];
 }
 
+export interface StudentInfoResponse {
+  universityId?: number;
+  collegeId?: number;
+  departmentId?: number;
+  isClubMember?: boolean;
+}
+
+export interface CommonResponseStudentInfoResponse {
+  isSuccess?: boolean;
+  data?: StudentInfoResponse;
+}
+
 export interface CommonResponseListIssueCouponResponse {
   isSuccess?: boolean;
   data?: IssueCouponResponse[];

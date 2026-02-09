@@ -1,8 +1,9 @@
+import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import {
   Alert,
   Platform,
@@ -41,13 +42,29 @@ export default function MypageScreen({ navigation }) {
   useEffect(() => {
     const fetchOwnerInfo = async () => {
       try {
+        // 1. AsyncStorage에서 선택된 가게 ID 가져오기
+        const savedStoreId = await AsyncStorage.getItem('SELECTED_STORE_ID');
+
         const response = await getMyStores();
-        const myStores = response.data;
-        
-        // 등록된 가게가 있고, ownerName 정보가 있다면 업데이트
-        if (myStores && myStores.length > 0) {
-          const name = myStores[0].ownerName || '사장님'; 
-          setOwnerName(name);
+        const myStores = (response.data?.data || response.data || []);
+
+        // myStores가 단일 객체인 경우를 배열로 정규화
+        const normalizedList = Array.isArray(myStores) ? myStores : [myStores];
+
+        if (normalizedList.length > 0) {
+          let currentStore = null;
+          if (savedStoreId) {
+            currentStore = normalizedList.find(s => s.id === parseInt(savedStoreId, 10));
+          }
+
+          // 못 찾거나 저장된 게 없으면 첫 번째 가게 사용
+          if (!currentStore) {
+            currentStore = normalizedList[0];
+          }
+
+          if (currentStore) {
+            setOwnerName(currentStore.ownerName || '사장님');
+          }
         }
       } catch (error) {
         console.error('점주 정보 로딩 실패:', error);
@@ -62,14 +79,14 @@ export default function MypageScreen({ navigation }) {
     console.log(`${menuName} 클릭됨`);
 
     if (menuName === '가게 관리') {
-        navigation.navigate('StoreManagement');
+      navigation.navigate('StoreManagement');
     }
     else if (menuName === '내 정보 수정') {
-        navigation.navigate('EditProfile');
+      navigation.navigate('EditProfile');
     }
     else if (menuName === '고객센터') {
       navigation.navigate('Inquiry');
-   }
+    }
     else if (menuName === '설정') {
       navigation.navigate('Setting');
     }
@@ -78,8 +95,8 @@ export default function MypageScreen({ navigation }) {
   // 로그아웃 핸들러
   const handleLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
-        { text: '취소', style: 'cancel' },
-        { text: '확인', onPress: authLogout }
+      { text: '취소', style: 'cancel' },
+      { text: '확인', onPress: authLogout }
     ]);
   };
 
@@ -117,9 +134,9 @@ export default function MypageScreen({ navigation }) {
 
       {/* 3. 메뉴 리스트 */}
       <View style={styles.menuScrollArea}>
-        <ScrollView 
-            contentContainerStyle={styles.scrollContent} 
-            showsVerticalScrollIndicator={false}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
           {/* 그룹 1: 가게 관리 / 내 정보 수정 */}
           <View style={styles.menuGroupBox}>
@@ -153,10 +170,10 @@ export default function MypageScreen({ navigation }) {
 
           {/* 로그아웃 버튼 */}
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={rs(16)} color="#828282" />
-              <Text style={styles.logoutText}>로그아웃</Text>
+            <Ionicons name="log-out-outline" size={rs(16)} color="#828282" />
+            <Text style={styles.logoutText}>로그아웃</Text>
           </TouchableOpacity>
-          
+
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -169,7 +186,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
-  
+
   // [상단 헤더]
   headerContainer: {
     height: rs(50),
@@ -184,19 +201,19 @@ const styles = StyleSheet.create({
     color: 'black',
     fontFamily: 'Pretendard',
   },
-  
+
   // [프로필 카드 영역]
   fixedProfileContainer: {
     paddingHorizontal: rs(20),
     paddingBottom: rs(20),
-    backgroundColor: 'white', 
+    backgroundColor: 'white',
     zIndex: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     elevation: 2,
   },
-  profileGradientBox: { 
+  profileGradientBox: {
     height: rs(100),
     borderRadius: rs(12),
     justifyContent: 'center',
@@ -207,11 +224,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  profileContentRow: { 
+  profileContentRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  shopIconBox: { 
+  shopIconBox: {
     width: rs(44),
     height: rs(44),
     backgroundColor: 'white',
@@ -225,17 +242,17 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  profileTextColumn: { 
+  profileTextColumn: {
     justifyContent: 'center',
   },
-  profileName: { 
+  profileName: {
     fontSize: rs(18),
     fontWeight: '700',
     color: 'white',
     fontFamily: 'Pretendard',
     marginBottom: rs(4),
   },
-  profileGreeting: { 
+  profileGreeting: {
     fontSize: rs(11),
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.90)',
@@ -251,9 +268,9 @@ const styles = StyleSheet.create({
     paddingTop: rs(20),
     paddingHorizontal: rs(20),
     paddingBottom: rs(50),
-    gap: rs(15), 
+    gap: rs(15),
   },
-  menuGroupBox: { 
+  menuGroupBox: {
     backgroundColor: 'white',
     borderRadius: rs(12),
     paddingVertical: rs(5),
@@ -263,43 +280,43 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 2,
   },
-  menuItemRow: { 
+  menuItemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: rs(14),
     paddingHorizontal: rs(15),
   },
-  menuItemBorder: { 
+  menuItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5', 
-    marginHorizontal: rs(15), 
-    paddingHorizontal: 0, 
+    borderBottomColor: '#F5F5F5',
+    marginHorizontal: rs(15),
+    paddingHorizontal: 0,
   },
-  menuItemLeft: { 
+  menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(12),
   },
-  menuItemText: { 
+  menuItemText: {
     fontSize: rs(14),
     fontWeight: '400',
-    color: '#444444', 
+    color: '#444444',
     fontFamily: 'Pretendard',
   },
 
   // 로그아웃 버튼 스타일
   logoutButton: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: rs(20),
-      gap: rs(5),
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: rs(20),
+    gap: rs(5),
   },
   logoutText: {
-      fontSize: rs(12),
-      fontWeight: '400',
-      color: '#828282',
-      fontFamily: 'Pretendard',
+    fontSize: rs(12),
+    fontWeight: '400',
+    color: '#828282',
+    fontFamily: 'Pretendard',
   },
 });

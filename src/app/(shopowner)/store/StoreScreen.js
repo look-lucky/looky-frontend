@@ -1,5 +1,6 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -181,15 +182,37 @@ export default function StoreScreen() {
   // =================================================================
 
   useEffect(() => {
-    if (storeDataResponse?.data) {
-      const rawData = storeDataResponse.data;
-      const myStore = Array.isArray(rawData) ? rawData[0] : (rawData?.data ? (Array.isArray(rawData.data) ? rawData.data[0] : rawData.data) : rawData);
+    const initStore = async () => {
+      // 1. AsyncStorage에서 선택된 가게 ID 가져오기
+      const savedStoreId = await AsyncStorage.getItem('SELECTED_STORE_ID');
 
-      console.log("🏪 [StoreScreen] getMyStores response parsed:", myStore);
+      const rawData = storeDataResponse?.data;
+      const myStoresList = (Array.isArray(rawData) ? rawData : (rawData?.data ? (Array.isArray(rawData.data) ? rawData.data[0] : rawData.data) : [])) || [];
 
+      // myStoresList가 단일 객체인 경우를 배열로 정규화
+      const normalizedList = Array.isArray(myStoresList) ? myStoresList : [myStoresList];
 
-      if (myStore) {
-        setMyStoreId(myStore.id);
+      let currentStoreId = null;
+      let matchedStore = null;
+
+      if (savedStoreId) {
+        currentStoreId = parseInt(savedStoreId, 10);
+        matchedStore = normalizedList.find(s => s.id === currentStoreId);
+      }
+
+      // 저장된 ID가 없거나 리스트에서 못 찾은 경우 첫 번째 가게 사용
+      if (!matchedStore && normalizedList.length > 0) {
+        matchedStore = normalizedList[0];
+        currentStoreId = matchedStore.id;
+        await AsyncStorage.setItem('SELECTED_STORE_ID', currentStoreId.toString());
+      }
+
+      if (matchedStore) {
+        setMyStoreId(currentStoreId);
+
+        // 데이터 바인딩 로직 계속...
+        const myStore = matchedStore;
+        console.log("🏪 [StoreScreen] initStore matchedStore:", myStore);
 
         // 1. 분위기 (Enum -> 한글 변환)
         const MOOD_MAP = {
@@ -279,7 +302,9 @@ export default function StoreScreen() {
         // 3. 영업 일시 중지 초기화
         setIsPaused(myStore.isSuspended || false);
       }
-    }
+    };
+
+    initStore();
   }, [storeDataResponse]);
 
   const rawMenuList = itemsDataResponse?.data?.data || itemsDataResponse?.data || [];

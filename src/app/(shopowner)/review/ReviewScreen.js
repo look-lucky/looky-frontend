@@ -1,10 +1,11 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // [API] 훅 임포트
-import { useGetReviews, useGetReviewStats } from '@/src/api/review';
+import { useDeleteReview, useGetReviews, useGetReviewStats, useUpdateReview } from '@/src/api/review';
 import { useGetMyStores } from '@/src/api/store';
 import { getToken } from '@/src/shared/lib/auth/token';
 
@@ -12,8 +13,10 @@ export default function ReviewScreen({ navigation }) {
   const [filter, setFilter] = useState('all');
 
   // 답글 모달 상태
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedReviewId, setSelectedReviewId] = useState(null);
+  const [isReplyMode, setIsReplyMode] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null); // 실제 대댓글 대상 리뷰 객체
+  const [selectedReviewId, setSelectedReviewId] = useState(null); // Parent Review ID
+  const [editingReplyId, setEditingReplyId] = useState(null); // Reply ID (if editing)
   const [replyText, setReplyText] = useState('');
 
   // [핵심] 낙관적 업데이트를 위한 임시 답글 저장소 (새로고침 전까지 화면에 보여줌)
@@ -25,16 +28,30 @@ export default function ReviewScreen({ navigation }) {
   const [storeName, setStoreName] = useState('');
 
   useEffect(() => {
-    const rawData = storeDataResponse?.data;
-    const myStoreData = Array.isArray(rawData) ? rawData : rawData?.data;
+    const initStore = async () => {
+      // 1. AsyncStorage에서 선택된 가게 ID 가져오기
+      const savedStoreId = await AsyncStorage.getItem('SELECTED_STORE_ID');
 
-    if (myStoreData) {
-      const myStore = Array.isArray(myStoreData) ? myStoreData[0] : myStoreData;
-      if (myStore) {
-        setMyStoreId(myStore.id);
-        setStoreName(myStore.name || '');
+      const rawData = storeDataResponse?.data;
+      const myStoresList = (Array.isArray(rawData) ? rawData : rawData?.data) || [];
+
+      if (savedStoreId) {
+        setMyStoreId(parseInt(savedStoreId, 10));
+        // 상점 이름 찾기
+        const currentStore = myStoresList.find(s => s.id === parseInt(savedStoreId, 10));
+        if (currentStore) {
+          setStoreName(currentStore.name || '');
+        }
+      } else if (myStoresList.length > 0) {
+        // 저장된 게 없으면 첫 번째 가게 사용
+        const firstStore = myStoresList[0];
+        setMyStoreId(firstStore.id);
+        setStoreName(firstStore.name || '');
+        await AsyncStorage.setItem('SELECTED_STORE_ID', firstStore.id.toString());
       }
-    }
+    };
+
+    initStore();
   }, [storeDataResponse]);
 
   // 2. 리뷰 목록 조회
@@ -43,6 +60,9 @@ export default function ReviewScreen({ navigation }) {
     isLoading: isReviewsLoading,
     refetch: refetchReviews,
   } = useGetReviews(myStoreId, { pageable: { page: 0, size: 100 } }, { query: { enabled: !!myStoreId } });
+
+  const { mutate: deleteReviewMutation } = useDeleteReview();
+  const { mutate: updateReviewMutation } = useUpdateReview();
 
   // 3. 리뷰 통계 조회
   const { data: statsResponse } = useGetReviewStats(myStoreId, { query: { enabled: !!myStoreId } });
@@ -55,17 +75,20 @@ export default function ReviewScreen({ navigation }) {
   const processReviews = (list) => {
     if (!list || list.length === 0) return [];
 
-    const parents = list.filter(item => !item.parentReviewId);
-    const replies = list.filter(item => item.parentReviewId);
-
-    const combined = parents.map(parent => {
-      // 1. 서버에서 온 답글 찾기
-      const serverReply = (parent.replies && parent.replies.length > 0)
-        ? parent.replies[0]
-        : replies.find(r => r.parentReviewId === parent.reviewId);
+    // 서버에서 받은 데이터가 이미 부모 위주로 되어 있고, 자식 답글이 children에 포함된 구조임
+    const combined = list.map(parent => {
+      // 1. 서버에서 온 답글 찾기 (children 배열 확인)
+      // children이 있고, 배열이며, 길이가 0보다 크면 마지막 답글을 가져옴 (최신순?)
+      // 보통 답글은 하나만 달리지만, 여러 개라면 마지막 것이 최신일 가능성 높음
+      const serverReplies = parent.children;
+      const serverReply = (serverReplies && serverReplies.length > 0)
+        ? serverReplies[serverReplies.length - 1]
+        : null;
 
       // 2. [핵심] 서버에 없으면, 방금 내가 쓴 임시 답글(tempReplies) 확인
       const localReplyContent = tempReplies[parent.reviewId];
+      // serverReply가 있으면 그걸 쓰고, 없으면 로컬 임시 답글을 씀
+      // 단, 로컬 답글은 content만 있으므로 객체로 만들어줌
       const finalReply = serverReply || (localReplyContent ? { content: localReplyContent, isLocal: true } : null);
 
       return {
@@ -104,10 +127,49 @@ export default function ReviewScreen({ navigation }) {
   };
 
   // 1. 답글 달기 버튼 클릭 시
-  const openReplyModal = (reviewId) => {
-    setSelectedReviewId(reviewId);
-    setReplyText('');
-    setModalVisible(true);
+  const openReplyModal = (review, existingReply = null) => {
+    setReplyingTo(review);
+    setSelectedReviewId(review.reviewId);
+    if (existingReply) {
+      setEditingReplyId(existingReply.reviewId);
+      setReplyText(existingReply.content || '');
+    } else {
+      setEditingReplyId(null);
+      setReplyText('');
+    }
+    setIsReplyMode(true);
+  };
+
+  const handleDeleteReply = (replyId, parentReviewId) => {
+    Alert.alert(
+      '답글 삭제',
+      '정말로 삭제하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => {
+            deleteReviewMutation({ reviewId: replyId }, {
+              onSuccess: () => {
+                // 로컬 상태에서도 제거하여 즉시 반영
+                const newTemp = { ...tempReplies };
+                delete newTemp[parentReviewId];
+                setTempReplies(newTemp);
+
+                setTimeout(() => {
+                  refetchReviews();
+                }, 500);
+              },
+              onError: (err) => {
+                console.error("Delete Error", err);
+                Alert.alert('오류', '삭제 중 문제가 발생했습니다.');
+              }
+            });
+          }
+        }
+      ]
+    );
   };
 
   // 2. 답글 저장
@@ -118,6 +180,33 @@ export default function ReviewScreen({ navigation }) {
     }
     if (!myStoreId || !selectedReviewId) {
       Alert.alert('오류', '매장 또는 리뷰 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    // 수정 모드일 경우
+    if (editingReplyId) {
+      updateReviewMutation({
+        reviewId: editingReplyId,
+        data: {
+          request: { content: replyText.trim() }
+        }
+      }, {
+        onSuccess: () => {
+          // UI 업데이트
+          setReplyText('');
+          setEditingReplyId(null);
+          setIsReplyMode(false);
+          setReplyingTo(null);
+
+          setTimeout(() => {
+            refetchReviews();
+          }, 500);
+        },
+        onError: (err) => {
+          console.error("Update Error", err);
+          Alert.alert('오류', '수정 중 문제가 발생했습니다.');
+        }
+      });
       return;
     }
 
@@ -158,8 +247,9 @@ export default function ReviewScreen({ navigation }) {
           [selectedReviewId]: replyText.trim()
         }));
 
-        setModalVisible(false);
         setReplyText('');
+        setIsReplyMode(false);
+        setReplyingTo(null);
 
         // 안내 없이 바로 반영하거나, 짧은 토스트만 띄움
         // Alert.alert 대신 UI가 바뀌는 것을 바로 보여줌
@@ -194,6 +284,81 @@ export default function ReviewScreen({ navigation }) {
     }
     return <View style={{ flexDirection: 'row' }}>{stars}</View>;
   };
+
+  const renderReplyView = () => {
+    if (!replyingTo) return null;
+
+    return (
+      <View style={styles.replyViewContainer}>
+        <View style={styles.replyHeader}>
+          <TouchableOpacity onPress={() => { setIsReplyMode(false); setReplyingTo(null); }}>
+            <Ionicons name="chevron-back" size={rs(24)} color="black" />
+          </TouchableOpacity>
+          <Text style={styles.replyTitle}>답글달기</Text>
+          <View style={{ width: rs(24) }} />
+        </View>
+
+        <ScrollView contentContainerStyle={styles.replyScrollContent}>
+          <View style={styles.replyCard}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.profileCircle, { backgroundColor: getProfileColor(replyingTo.username) }]} />
+              <Text style={styles.authorName}>{replyingTo.username}</Text>
+              <View style={styles.badgeUnanswered}>
+                <Text style={styles.textUnanswered}>미답변</Text>
+              </View>
+            </View>
+
+            <View style={styles.ratingRow}>
+              {renderStars(replyingTo.rating)}
+              <Text style={styles.dateText}>{formatDate(replyingTo.createdAt)}</Text>
+            </View>
+
+            {replyingTo.imageUrls && replyingTo.imageUrls.length > 0 && (
+              <View style={styles.imageRow}>
+                {replyingTo.imageUrls.map((url, idx) => (
+                  <Image key={idx} source={{ uri: url }} style={styles.reviewImage} />
+                ))}
+              </View>
+            )}
+
+            <Text style={styles.reviewContent}>{replyingTo.content}</Text>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.replyInput}
+                placeholder="감사합니다! 항상 맛있는 음식으로 보답하겠습니다 😊"
+                multiline
+                value={replyText}
+                onChangeText={setReplyText}
+                maxLength={300}
+              />
+              <Text style={styles.charCount}>{replyText.length}/300</Text>
+            </View>
+
+            <Text style={styles.warningText}>
+              작성하신 답글에 부적절한 단어가 포함될 경우 답글이 삭제될 수 있습니다.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.fullSaveButton}
+              onPress={saveReply}
+            >
+              <Ionicons name="chatbubble-outline" size={rs(18)} color="white" style={{ marginRight: rs(8) }} />
+              <Text style={styles.fullSaveButtonText}>{editingReplyId ? '수정 완료' : '답글 달기'}</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
+
+  if (isReplyMode) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderReplyView()}
+      </SafeAreaView>
+    );
+  }
 
   if (isReviewsLoading) {
     return (
@@ -295,7 +460,7 @@ export default function ReviewScreen({ navigation }) {
                     <View style={styles.actionRow}>
                       <TouchableOpacity
                         style={styles.replyButton}
-                        onPress={() => openReplyModal(review.reviewId)}
+                        onPress={() => openReplyModal(review)}
                       >
                         <Ionicons name="chatbubble-ellipses-outline" size={rs(12)} color="white" style={{ marginRight: rs(6) }} />
                         <Text style={styles.replyButtonText}>답글 달기</Text>
@@ -308,7 +473,19 @@ export default function ReviewScreen({ navigation }) {
                     </View>
                   ) : (
                     <View style={styles.replyBox}>
-                      <Text style={styles.replyLabel}>사장님 답글</Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: rs(4) }}>
+                        <Text style={styles.replyLabel}>사장님 답글</Text>
+                        {!reply.isLocal && (
+                          <View style={{ flexDirection: 'row', gap: rs(8) }}>
+                            <TouchableOpacity onPress={() => openReplyModal(review, reply)}>
+                              <Text style={{ fontSize: rs(11), color: '#828282' }}>수정</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleDeleteReply(reply.reviewId, review.reviewId)}>
+                              <Text style={{ fontSize: rs(11), color: '#FF3E41' }}>삭제</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
                       <Text style={styles.replyContent}>{reply.content}</Text>
                     </View>
                   )}
@@ -321,44 +498,9 @@ export default function ReviewScreen({ navigation }) {
 
       </ScrollView>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>답글 작성하기</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={rs(24)} color="#333" />
-              </TouchableOpacity>
-            </View>
 
-            <TextInput
-              style={styles.inputBox}
-              placeholder="손님에게 감사의 마음을 전해보세요!"
-              multiline
-              value={replyText}
-              onChangeText={setReplyText}
-              autoFocus
-            />
 
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={saveReply}
-            >
-              <Text style={styles.saveButtonText}>답글 등록</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 
@@ -395,6 +537,74 @@ const styles = StyleSheet.create({
     shadowRadius: rs(4),
     elevation: 2,
   },
+  // Reply View Styles
+  replyViewContainer: { flex: 1, backgroundColor: '#F5F5F5' },
+  replyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(15),
+    backgroundColor: 'white',
+  },
+  replyTitle: { fontSize: rs(18), fontWeight: '700', color: 'black' },
+  replyScrollContent: { padding: rs(20) },
+  replyCard: {
+    backgroundColor: 'white',
+    borderRadius: rs(15),
+    padding: rs(20),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: rs(10),
+    elevation: 3,
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderColor: '#D0D0D0',
+    borderRadius: rs(12),
+    padding: rs(15),
+    marginTop: rs(10),
+    minHeight: rs(180),
+  },
+  replyInput: {
+    fontSize: rs(14),
+    color: 'black',
+    textAlignVertical: 'top',
+    height: rs(140),
+  },
+  charCount: {
+    textAlign: 'right',
+    fontSize: rs(12),
+    color: '#828282',
+    marginTop: rs(5),
+  },
+  warningText: {
+    fontSize: rs(12),
+    color: '#BDBDBD',
+    lineHeight: rs(18),
+    marginTop: rs(20),
+    marginBottom: rs(40),
+  },
+  fullSaveButton: {
+    backgroundColor: '#34B262',
+    borderRadius: rs(12),
+    height: rs(50),
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#34B262",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: rs(8),
+    elevation: 4,
+  },
+  fullSaveButtonText: {
+    color: 'white',
+    fontSize: rs(16),
+    fontWeight: '700',
+  },
+
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: rs(10) },
   profileCircle: { width: rs(31), height: rs(31), borderRadius: rs(15.5), marginRight: rs(10) },
   authorName: { fontSize: rs(14), fontWeight: '700', color: 'black', marginRight: rs(10) },
@@ -439,18 +649,4 @@ const styles = StyleSheet.create({
   replyLabel: { fontSize: rs(9), color: '#34B262', marginBottom: rs(4) },
   replyContent: { fontSize: rs(10), color: 'black', lineHeight: rs(14) },
 
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContainer: { backgroundColor: 'white', borderTopLeftRadius: rs(20), borderTopRightRadius: rs(20), padding: rs(20), minHeight: rs(300) },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: rs(20) },
-  modalTitle: { fontSize: rs(18), fontWeight: 'bold' },
-  inputBox: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: rs(10),
-    padding: rs(15),
-    height: rs(120),
-    textAlignVertical: 'top',
-    marginBottom: rs(20)
-  },
-  saveButton: { backgroundColor: '#34B262', padding: rs(15), borderRadius: rs(10), alignItems: 'center' },
-  saveButtonText: { color: 'white', fontWeight: 'bold', fontSize: rs(16) },
 });

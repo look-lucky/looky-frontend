@@ -10,7 +10,6 @@ import HomeScreen from './home/HomeScreen';
 import NotificationScreen from './home/NotificationScreen';
 import ChangeIdScreen from './mypage/ChangeIdScreen';
 import ChangePasswordScreen from './mypage/ChangePasswordScreen';
-import EasyLoginScreen from './mypage/EasyLoginScreen';
 import EditProfileScreen from './mypage/EditProfileScreen';
 import MyPageScreen from './mypage/MyPageScreen';
 import SettingScreen from './mypage/SettingScreen';
@@ -94,9 +93,7 @@ export default function ShopOwnerNavigator() {
       <Stack.Screen name="ChangeId" component={ChangeIdScreen} options={{ headerShown: false }} />
       {/* 8. 마이페이지-내 정보 수정-비밀번호 변경 화면 스택 화면 */}
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
-      {/* 9. 마이페이지-내 정보 수정-간편 로그인 화면 스택 화면 */}
-      <Stack.Screen name="EasyLogin" component={EasyLoginScreen} options={{ headerShown: false }} />
-      {/* 10. 마이페이지-내 정보 수정-회원탈퇴 화면 스택 화면 */}
+      {/* 9. 마이페이지-내 정보 수정-회원탈퇴 화면 스택 화면 */}
       <Stack.Screen name="Withdraw" component={WithdrawScreen} options={{ headerShown: false }} />
       {/* 11. 마이페이지-내 정보 수정-회원탈퇴-탈퇴확인 화면 스택 화면 */}
       <Stack.Screen name="WithdrawComplete" component={WithdrawCompleteScreen} options={{ headerShown: false }} />
