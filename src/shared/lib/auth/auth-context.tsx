@@ -6,7 +6,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Alert } from "react-native";
+import { useRouter } from "expo-router";
 import { clearToken, getCollegeId, getUserType, isTokenValid, saveCollegeId, saveToken, UserType } from "./token";
+import { authEvents } from "./auth-events";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -26,6 +29,7 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [state, setState] = useState<AuthState>({
     isAuthenticated: false,
     isLoading: true,
@@ -42,6 +46,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({ isAuthenticated: valid, isLoading: false, userType, collegeId });
     })();
   }, []);
+
+  // ✅ 이벤트 리스너: 토큰 리프레시 실패 → 자동 로그아웃
+  useEffect(() => {
+    const handleRefreshFailed = async (payload: { reason?: string }) => {
+      console.log("[AuthContext] Token refresh failed, logging out...", payload);
+
+      await clearToken();
+      setState({
+        isAuthenticated: false,
+        isLoading: false,
+        userType: null,
+        collegeId: null,
+      });
+
+      router.replace("/landing");
+
+      Alert.alert(
+        "세션 만료",
+        "로그인 세션이 만료되었습니다. 다시 로그인해주세요.",
+        [{ text: "확인" }]
+      );
+    };
+
+    authEvents.on("token-refresh-failed", handleRefreshFailed);
+
+    return () => {
+      authEvents.off("token-refresh-failed", handleRefreshFailed);
+    };
+  }, [router]);
 
   const handleAuthSuccess = useCallback(
     async (accessToken: string, expiresIn: number, userType: UserType) => {

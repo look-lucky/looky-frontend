@@ -1,5 +1,12 @@
 // src/api/mutator.ts
-import { clearToken, getToken, getUserType, saveToken } from "@/src/shared/lib/auth/token";
+import {
+  getToken,
+  saveToken,
+  clearToken,
+  getUserType,
+  isTokenExpiringSoon,
+} from "@/src/shared/lib/auth/token";
+import { authEvents } from "@/src/shared/lib/auth/auth-events";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 
@@ -28,15 +35,31 @@ async function refreshAccessToken(): Promise<boolean> {
       if (data.data?.accessToken && data.data?.expiresIn) {
         const userType = await getUserType();
         await saveToken(data.data.accessToken, data.data.expiresIn, userType || "ROLE_CUSTOMER");
+
+        // 이벤트 발행: 리프레시 성공
+        authEvents.emit("token-refresh-success", {
+          accessToken: data.data.accessToken,
+          expiresIn: data.data.expiresIn,
+        });
+
         return true;
       }
     }
 
+    // 리프레시 실패 → 이벤트 발행
     await clearToken();
+    authEvents.emit("token-refresh-failed", {
+      reason: `HTTP ${res.status}`,
+    });
     return false;
   } catch (error) {
     console.error("[Token Refresh] Failed:", error);
     await clearToken();
+
+    // 에러 발생 시에도 이벤트 발행
+    authEvents.emit("token-refresh-failed", {
+      reason: error instanceof Error ? error.message : "Unknown error",
+    });
     return false;
   }
 }
@@ -55,6 +78,28 @@ export async function customFetch<T>(
     headers.delete("Content-Type");
   } else if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+
+  // ✅ Proactive Refresh: 인증 필요한 엔드포인트이고, 토큰이 곧 만료될 예정이면 사전 갱신
+  if (!isPublic && !url.includes("/refresh")) {
+    const expiring = await isTokenExpiringSoon(2); // 2분 내 만료?
+
+    if (expiring && !isRefreshing) {
+      console.log("[Proactive Refresh] Token expiring soon, refreshing...");
+      isRefreshing = true;
+
+      const refreshSuccess = await refreshAccessToken();
+      isRefreshing = false;
+
+      // 대기 중인 요청들 처리
+      refreshQueue.forEach((callback) => callback());
+      refreshQueue = [];
+
+      if (!refreshSuccess) {
+        // Proactive refresh 실패 시 즉시 에러
+        throw { status: 401, data: { message: "Token refresh failed" } };
+      }
+    }
   }
 
   if (!isPublic) {

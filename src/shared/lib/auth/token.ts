@@ -77,3 +77,17 @@ export function decodeJwtPayload(token: string): { role?: string; sub?: string }
     return null;
   }
 }
+
+/**
+ * 토큰이 곧 만료될 예정인지 체크 (Proactive Refresh용)
+ * @param bufferMinutes 만료 몇 분 전부터 true 반환 (기본값: 2분)
+ */
+export async function isTokenExpiringSoon(bufferMinutes: number = 2): Promise<boolean> {
+  const token = await getToken();
+  if (!token) return false;
+
+  const now = Date.now();
+  const bufferMs = bufferMinutes * 60 * 1000;
+
+  return now + bufferMs >= token.expiresAt;
+}
