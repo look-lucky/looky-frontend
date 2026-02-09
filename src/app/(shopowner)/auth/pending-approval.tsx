@@ -4,10 +4,12 @@ import { AppButton } from "@/src/shared/common/app-button";
 import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
 import { useRouter } from "expo-router";
-import React from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Alert, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
+import { useGetMyStoreClaims } from "@/src/api/store-claim";
+import { useLogout } from "@/src/api/auth";
 
 // 대기 중 아이콘
 function PendingIcon() {
@@ -27,6 +29,104 @@ function PendingIcon() {
 
 export default function PendingApprovalScreen() {
   const router = useRouter();
+
+  const [isChecking, setIsChecking] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const { data: claimsData, refetch: refetchClaims } = useGetMyStoreClaims();
+  const logoutMutation = useLogout();
+
+  // 자동 승인 확인
+  useEffect(() => {
+    const checkApprovalStatus = async () => {
+      if (!claimsData?.data) return;
+
+      const claims = (claimsData.data as any)?.data;
+      if (!claims || claims.length === 0) return;
+
+      const latestClaim = claims[0];
+
+      if (latestClaim.status === 'APPROVED') {
+        Alert.alert(
+          '승인 완료',
+          '관리자 승인이 완료되었습니다. 서비스를 이용하실 수 있습니다.',
+          [
+            {
+              text: '확인',
+              onPress: () => router.push('/(shopowner)/home/HomeScreen' as any),
+            }
+          ]
+        );
+      } else if (latestClaim.status === 'REJECTED') {
+        Alert.alert(
+          '승인 거부',
+          '승인이 거부되었습니다. 고객센터로 문의해주세요.',
+          [
+            {
+              text: '확인',
+              onPress: () => router.replace('/'),
+            }
+          ]
+        );
+      }
+    };
+
+    checkApprovalStatus();
+  }, [claimsData]);
+
+  // 상태 새로고침
+  const handleRefreshStatus = async () => {
+    setIsChecking(true);
+    try {
+      await refetchClaims();
+
+      const claims = (claimsData?.data as any)?.data || [];
+      if (claims.length === 0) {
+        Alert.alert('알림', '승인 요청 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      const status = claims[0].status;
+
+      if (status === 'PENDING') {
+        Alert.alert('알림', '아직 승인 대기 중입니다.');
+      }
+    } catch (error) {
+      console.error('상태 확인 실패:', error);
+      Alert.alert('오류', '상태 확인 중 오류가 발생했습니다.');
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  // 로그아웃
+  const handleLogout = async () => {
+    Alert.alert(
+      '로그아웃',
+      '로그아웃 하시겠습니까?',
+      [
+        {
+          text: '취소',
+          style: 'cancel',
+        },
+        {
+          text: '확인',
+          onPress: async () => {
+            setIsLoggingOut(true);
+            try {
+              await logoutMutation.mutateAsync();
+              router.replace('/');
+            } catch (error) {
+              console.error('로그아웃 실패:', error);
+              Alert.alert('오류', '로그아웃 중 오류가 발생했습니다.');
+            } finally {
+              setIsLoggingOut(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
@@ -62,21 +162,16 @@ export default function PendingApprovalScreen() {
       {/* 하단 버튼 */}
       <View style={styles.bottomContent}>
         <AppButton
-          label="상태 새로고침"
+          label={isChecking ? "확인 중..." : "상태 새로고침"}
           backgroundColor={Owner.primary}
-          onPress={() => {
-            // TODO: 승인 상태 확인 API 호출
-            alert("아직 승인 대기 중입니다.");
-          }}
+          onPress={handleRefreshStatus}
+          disabled={isChecking}
         />
         <AppButton
-          label="로그아웃"
+          label={isLoggingOut ? "처리 중..." : "로그아웃"}
           backgroundColor={Gray.gray4}
-          textColor={TextColors.primary}
-          onPress={() => {
-            // TODO: 로그아웃 처리
-            router.replace("/");
-          }}
+          onPress={handleLogout}
+          disabled={isLoggingOut}
           style={{ marginTop: rs(12) }}
         />
       </View>
