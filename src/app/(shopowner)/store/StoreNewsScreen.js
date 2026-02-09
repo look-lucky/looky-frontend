@@ -1,7 +1,6 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import {
-    Alert,
     Platform,
     SafeAreaView,
     ScrollView,
@@ -12,27 +11,33 @@ import {
     View
 } from 'react-native';
 
-// [더미 데이터] 캡처 이미지 내용 반영
-const NEWS_DATA = [
-    {
-        id: 1,
-        title: "홀 운영 안내",
-        date: "2026.01.01",
-    },
-    {
-        id: 2,
-        title: "신메뉴 개발",
-        date: "2026.01.01",
-    }
-];
+import { useGetStoreNewsList } from '@/src/api/store-news';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback } from 'react';
 
-export default function StoreNewsScreen({ navigation }) {
-    
-    // 소식 추가 버튼 핸들러 (나중에 글쓰기 페이지 연결)
+export default function StoreNewsScreen({ navigation, route }) {
+    const { storeId } = route.params || {};
+
+    // API Query
+    const { data: newsResponse, isLoading, refetch } = useGetStoreNewsList(storeId, {
+        pageable: { page: 0, size: 20, sort: ['createdAt,desc'] }
+    }, {
+        enabled: !!storeId
+    });
+
+    const newsList = newsResponse?.data?.data?.content || [];
+
     const handleAddNews = () => {
-        Alert.alert("알림", "소식 작성 페이지로 이동합니다. (준비중)");
-        // navigation.navigate('StoreNewsWrite'); // 추후 연결
+        navigation.navigate('StoreNewsWrite', { storeId });
     };
+
+    useFocusEffect(
+        useCallback(() => {
+            if (storeId) {
+                refetch();
+            }
+        }, [storeId, refetch])
+    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -40,13 +45,13 @@ export default function StoreNewsScreen({ navigation }) {
 
             {/* 1. 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{top:10, bottom:10, left:10, right:10}}>
+                <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="arrow-back" size={rs(24)} color="#1B1D1F" />
                 </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
-                
+
                 {/* 2. 타이틀 영역 */}
                 <View style={styles.titleArea}>
                     <View style={styles.titleTextGroup}>
@@ -55,57 +60,68 @@ export default function StoreNewsScreen({ navigation }) {
                     </View>
 
                     {/* 소식 추가하기 버튼 (우측 상단) */}
-                    <TouchableOpacity style={styles.addBtn} onPress={handleAddNews} activeOpacity={0.7}>
-                        <View style={styles.addIconBox}>
-                            <View style={styles.greenDot} />
-                        </View>
+                    <TouchableOpacity style={styles.addBtn} onPress={handleAddNews} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name="add" size={rs(14)} color="#34B262" />
                         <Text style={styles.addBtnText}>소식 추가하기</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* 3. 소식 리스트 */}
                 <View style={styles.listContainer}>
-                    {NEWS_DATA.map((item) => (
-                        <View key={item.id} style={styles.newsCard}>
-                            {/* 카드 헤더 (아이콘/라벨 + 날짜) */}
-                            <View style={styles.cardHeader}>
-                                <View style={styles.labelRow}>
-                                    <View style={styles.newsIconBox}>
-                                        <View style={styles.newsIconInner} />
-                                    </View>
-                                    <Text style={styles.labelText}>소식</Text>
-                                </View>
-                                <Text style={styles.dateText}>{item.date}</Text>
-                            </View>
-
-                            {/* 카드 내용 (제목) */}
-                            <View style={styles.cardBody}>
-                                <Text style={styles.newsTitle}>{item.title}</Text>
-                            </View>
+                    {isLoading ? (
+                        <View style={{ padding: 20, alignItems: 'center' }}>
+                            <Text style={{ color: '#888' }}>로딩중...</Text>
                         </View>
-                    ))}
+                    ) : newsList.length === 0 ? (
+                        <View style={{ padding: 20, alignItems: 'center' }}>
+                            <Text style={{ color: '#888' }}>등록된 소식이 없습니다.</Text>
+                        </View>
+                    ) : (
+                        newsList.map((item) => (
+                            <TouchableOpacity
+                                key={item.id}
+                                style={styles.newsCard}
+                                activeOpacity={0.7}
+                                onPress={() => navigation.navigate('StoreNewsDetail', { newsItem: item, storeId })}
+                            >
+                                {/* 카드 헤더 (아이콘/라벨 + 날짜) */}
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.labelRow}>
+                                        <Ionicons name="megaphone" size={rs(16)} color="#309821" />
+                                        <Text style={styles.labelText}>소식</Text>
+                                    </View>
+                                    <Text style={styles.dateText}>{item.createdAt ? item.createdAt.substring(0, 10) : ''}</Text>
+                                </View>
+
+                                {/* 카드 내용 (제목) */}
+                                <View style={styles.cardBody}>
+                                    <Text style={styles.newsTitle}>{item.title}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))
+                    )}
                 </View>
 
             </ScrollView>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F7F7F7' },
-    
-    header: { 
-        paddingHorizontal: rs(20), 
-        paddingVertical: rs(10), 
-        justifyContent: 'center', 
+
+    header: {
+        paddingHorizontal: rs(20),
+        paddingVertical: rs(10),
+        justifyContent: 'center',
         alignItems: 'flex-start',
         backgroundColor: '#F7F7F7',
     },
 
-    content: { 
-        paddingHorizontal: rs(20), 
+    content: {
+        paddingHorizontal: rs(20),
         paddingTop: rs(10),
-        paddingBottom: rs(50) 
+        paddingBottom: rs(50)
     },
 
     // 타이틀 영역
@@ -136,24 +152,11 @@ const styles = StyleSheet.create({
     // 소식 추가하기 버튼
     addBtn: {
         position: 'absolute',
-        top: rs(5), 
+        top: rs(5),
         right: 0,
         flexDirection: 'row',
         alignItems: 'center',
         gap: rs(2),
-    },
-    addIconBox: {
-        width: rs(14),
-        height: rs(14),
-        position: 'relative',
-    },
-    greenDot: {
-        width: rs(8.75),
-        height: rs(8.75),
-        backgroundColor: '#34B262',
-        position: 'absolute',
-        top: rs(2.63),
-        left: rs(2.63),
     },
     addBtnText: {
         fontSize: rs(12),
@@ -179,7 +182,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.25,
         shadowRadius: 3,
-        elevation: 3, 
+        elevation: 3,
         gap: rs(5),
     },
 
@@ -194,20 +197,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: rs(5),
-    },
-    newsIconBox: {
-        width: rs(24),
-        height: rs(24),
-        position: 'relative',
-    },
-    newsIconInner: {
-        width: rs(20),
-        height: rs(16),
-        backgroundColor: '#309821',
-        position: 'absolute',
-        top: rs(4),
-        left: rs(2),
-        borderRadius: rs(2), // 약간의 둥글기 추가
     },
     labelText: {
         fontSize: rs(14),

@@ -1,5 +1,5 @@
 // src/api/mutator.ts
-import { getToken, saveToken, clearToken, getUserType } from "@/src/shared/lib/auth/token";
+import { clearToken, getToken, getUserType, saveToken } from "@/src/shared/lib/auth/token";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 
@@ -117,8 +117,12 @@ export async function customFetch<T>(
     }
 
     return { data, status: res.status, headers: res.headers } as T;
-  } catch (error) {
-    console.error("[네트워크/로직 에러]", error);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.log("[Network] Request cancelled (AbortError)");
+    } else {
+      console.error("[네트워크/로직 에러]", error);
+    }
     throw error;
   }
 }

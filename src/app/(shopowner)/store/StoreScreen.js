@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 // [필수] 네비게이션 훅 임포트
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from 'expo-router';
 
 // [필수] 토큰 가져오기 (Direct Fetch용)
@@ -44,6 +45,23 @@ const convert12to24 = (ampm, time12) => {
   if (ampm === '오후' && h !== 12) hour24 += 12;
   if (ampm === '오전' && h === 12) hour24 = 0;
   return `${hour24.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+};
+
+const formatPhoneNumber = (value) => {
+  if (!value) return "";
+  const num = value.replace(/[^0-9]/g, '');
+  if (num.length > 3) {
+    if (num.startsWith('02')) { // 02 (서울)
+      if (num.length <= 5) return num.replace(/(\d{2})(\d{1,3})/, '$1-$2');
+      else if (num.length <= 9) return num.replace(/(\d{2})(\d{3})(\d{1,4})/, '$1-$2-$3');
+      else return num.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+    } else { // 010, 031, 063 등
+      if (num.length <= 7) return num.replace(/(\d{3})(\d{1,4})/, '$1-$2');
+      else if (num.length <= 10) return num.replace(/(\d{3})(\d{3})(\d{1,4})/, '$1-$2-$3');
+      else return num.replace(/(\d{3})(\d{4})(\d{1,4})/, '$1-$2-$3');
+    }
+  }
+  return num;
 };
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -97,16 +115,16 @@ export default function StoreScreen() {
 
   // # State: Store Data
   const [storeInfo, setStoreInfo] = useState({
-    name: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImage: null
+    name: '', branch: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImage: null
   });
 
   const initialHours = ['월', '화', '수', '목', '금', '토', '일'].map(day => ({
-    day, open: '10:00', close: '22:00', breakStart: '14:00', breakEnd: '17:00', isClosed: false
+    day, open: '10:00', close: '22:00', breakStart: '14:00', breakEnd: '17:30', isClosed: false
   }));
   const [operatingHours, setOperatingHours] = useState(initialHours);
 
   // # State: Calendar
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedHolidays, setSelectedHolidays] = useState(['2026-01-19', '2026-01-20', '2026-01-21', '2026-01-22', '2026-01-23']);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -199,8 +217,8 @@ export default function StoreScreen() {
                   ...item,
                   open: dayData[0][0],
                   close: dayData[0][1],
-                  // breakStart: dayData[1] ? dayData[1][0] : '14:00', // 예시 파싱 로직
-                  // breakEnd: dayData[1] ? dayData[1][1] : '17:30',
+                  breakStart: dayData[1] && dayData[1][0] ? dayData[1][0] : null,
+                  breakEnd: dayData[1] && dayData[1][1] ? dayData[1][1] : null,
                   isClosed: false
                 };
               } else {
@@ -214,8 +232,12 @@ export default function StoreScreen() {
           }
         }
 
+        console.log("DEBUG: myStore object:", myStore);
+        console.log("DEBUG: Setting storeInfo with name:", myStore.name, "branch:", myStore.branch);
+
         setStoreInfo({
           name: myStore.name || '',
+          branch: myStore.branch || '',
           categories: myStore.storeCategories
             ? myStore.storeCategories.map(c => CATEGORY_EN_TO_KR[c] || c)
             : (myStore.category ? [CATEGORY_EN_TO_KR[myStore.category] || myStore.category] : []),
@@ -224,9 +246,32 @@ export default function StoreScreen() {
           address: myStore.roadAddress || myStore.jibunAddress || '', // roadAddress 우선 사용
           detailAddress: '', // 상세주소는 분리되어 있지 않아 보임, 필요하면 jibunAddress 등 활용
           phone: myStore.phone || '', // phoneNumber -> phone 수정
-          logoImage: (myStore.imageUrls && myStore.imageUrls.length > 0) ? myStore.imageUrls[0] : null, // 배열 첫번째 사용
-          bannerImage: (myStore.imageUrls && myStore.imageUrls.length > 1) ? myStore.imageUrls[1] : null
+          // 로고 제거됨, 배너는 배열의 마지막 이미지 사용 (또는 0번)
+          bannerImage: (myStore.imageUrls && myStore.imageUrls.length > 0)
+            ? myStore.imageUrls[myStore.imageUrls.length - 1]
+            : null
         });
+        console.log("📸 [StoreScreen] 매장 이미지 목록:", myStore.imageUrls);
+        console.log("📸 [StoreScreen] 설정된 배너:", (myStore.imageUrls && myStore.imageUrls.length > 0) ? myStore.imageUrls[myStore.imageUrls.length - 1] : "없음");
+
+        // 2. 휴무일 초기화 (holidayStartsAt ~ holidayEndsAt)
+        if (myStore.holidayStartsAt && myStore.holidayEndsAt) {
+          const start = new Date(myStore.holidayStartsAt);
+          const end = new Date(myStore.holidayEndsAt);
+          const dateArray = [];
+          let current = new Date(start);
+
+          while (current <= end) {
+            dateArray.push(getFormatDate(current));
+            current.setDate(current.getDate() + 1);
+          }
+          setSelectedHolidays(dateArray);
+        } else {
+          setSelectedHolidays([]);
+        }
+
+        // 3. 영업 일시 중지 초기화
+        setIsPaused(myStore.isSuspended || false);
       }
     }
   }, [storeDataResponse]);
@@ -271,13 +316,16 @@ export default function StoreScreen() {
 
       // 3. JSON 데이터를 문자열로 변환하여 'request' 파트에 담기
       const requestData = {
-        name: storeInfo.name, // 이름은 필수값이므로 기존 값 유지
+        name: editBasicData.name, // 수정된 이름 사용
+        branch: editBasicData.branch, // 지점명 추가
         introduction: editBasicData.intro,
         address: editBasicData.address,
         addressDetail: editBasicData.detailAddress,
-        phoneNumber: editBasicData.phone,
+        phone: editBasicData.phone ? editBasicData.phone.replace(/-/g, '') : '', // 하이픈 제거 후 전송 (키 이름 수정: phoneNumber -> phone)
         storeCategories: editBasicData.categories.map(c => CATEGORY_KR_TO_EN[c] || c)
       };
+
+      console.log("🚀 [handleBasicSave] Request Payload:", JSON.stringify(requestData, null, 2));
 
       // [핵심] JSON 포장 (application/json 타입 명시)
       formData.append("request", {
@@ -286,8 +334,17 @@ export default function StoreScreen() {
         name: "request"
       });
 
-      // 4. (옵션) 이미지 파일이 있다면 여기에 formData.append('file', ...) 추가
-      // 현재는 이미지를 실제로 수정하지 않으므로 생략
+      // 4. 이미지 파일이 있다면 formData에 추가 (키: image)
+      if (editBasicData.bannerImage && !editBasicData.bannerImage.startsWith('http')) {
+        const localUri = editBasicData.bannerImage;
+        const filename = localUri.split('/').pop();
+        const ext = filename.split('.').pop().toLowerCase();
+        const type = (ext === 'png') ? 'image/png' : 'image/jpeg';
+
+        // 키값 'images' (사용자 최종 확인)
+        formData.append('images', { uri: localUri, name: filename, type });
+        console.log("📸 [매장 수정] 배너 이미지 추가됨 (key: images):", filename, type);
+      }
 
       console.log("🚀 [매장 정보 수정] Direct Fetch 시작...");
 
@@ -391,8 +448,12 @@ export default function StoreScreen() {
 
   // # UI Logic Helpers
   const openBasicEditModal = () => {
-    const rawPhone = storeInfo.phone ? storeInfo.phone.replace(/-/g, '') : '';
-    setEditBasicData({ ...storeInfo, phone: rawPhone });
+    console.log("DEBUG: Opening Edit Modal. storeInfo:", storeInfo);
+    // 전화번호 포맷 적용 (수정 폼 진입 시)
+    setEditBasicData({
+      ...storeInfo,
+      phone: formatPhoneNumber(storeInfo.phone)
+    });
     setBasicModalVisible(true);
   };
 
@@ -420,6 +481,27 @@ export default function StoreScreen() {
     const newHours = [...editHoursData];
     newHours[index].isClosed = !newHours[index].isClosed;
     setEditHoursData(newHours);
+  };
+
+  const pickImage = async () => {
+    // 권한 요청
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 필요', '사진을 선택하려면 갤러리 접근 권한이 필요합니다.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [17, 10],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const selectedAsset = result.assets[0];
+      setEditBasicData(prev => ({ ...prev, bannerImage: selectedAsset.uri }));
+    }
   };
 
   const handleMockAction = (msg) => Alert.alert("알림", msg);
@@ -450,6 +532,116 @@ export default function StoreScreen() {
     if (dateStr < today) return;
     if (selectedHolidays.includes(dateStr)) setSelectedHolidays(selectedHolidays.filter(d => d !== dateStr));
     else setSelectedHolidays([...selectedHolidays, dateStr]);
+  };
+
+  const handleHolidaySave = async () => {
+    try {
+      if (selectedHolidays.length === 0) {
+        // 휴무일 없음 -> null로 전송
+        const formData = new FormData();
+        const requestData = { holidayStartsAt: null, holidayEndsAt: null };
+        formData.append('request', {
+          string: JSON.stringify(requestData),
+          type: 'application/json',
+          name: 'request'
+        });
+        await manualStoreUpdate(formData);
+        Alert.alert("성공", "휴무일 설정이 해제되었습니다.");
+        return;
+      }
+
+      // 날짜 정렬
+      const sortedDates = [...selectedHolidays].sort();
+      const startDate = sortedDates[0];
+      const endDate = sortedDates[sortedDates.length - 1];
+
+      // 중간에 빠진 날짜 경고 (Optional)
+      // API가 start~end 전체를 휴무로 잡으므로, 사용자가 띄엄띄엄 선택했다면 경고를 줄 수도 있음
+      // 여기서는 그냥 start~end로 저장한다고 가정하고 진행
+
+      const formData = new FormData();
+      const requestData = {
+        holidayStartsAt: startDate,
+        holidayEndsAt: endDate
+      };
+      formData.append('request', {
+        string: JSON.stringify(requestData),
+        type: 'application/json',
+        name: 'request'
+      });
+
+      await manualStoreUpdate(formData);
+      Alert.alert("성공", `${startDate} ~ ${endDate} 휴무일이 저장되었습니다.`);
+      refetchStore();
+    } catch (error) {
+      console.error("휴무일 저장 실패", error);
+      Alert.alert("실패", "휴무일 저장 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handlePauseToggle = async (newValue) => {
+    console.log("[handlePauseToggle] Called with:", newValue);
+    try {
+      setIsPaused(newValue); // UI 선반영
+      const formData = new FormData();
+      const requestData = { isSuspended: newValue };
+      formData.append('request', {
+        string: JSON.stringify(requestData),
+        type: 'application/json',
+        name: 'request'
+      });
+      await manualStoreUpdate(formData);
+      // 성공 메세지는 생략하거나 짧게 토스트 처리 (여기선 생략)
+      refetchStore();
+    } catch (error) {
+      console.error("영업 일시 중지 변경 실패", error);
+      setIsPaused(!newValue);
+      Alert.alert("실패", "상태 변경 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 공통 업데이트 함수
+  const manualStoreUpdate = async (formData) => {
+    try {
+      const tokenData = await getToken();
+      const token = tokenData?.accessToken;
+      // handleBasicSave와 동일한 하드코딩 URL 사용 (환경변수 이슈 배제)
+      const url = `https://api.looky.kr/api/stores/${myStoreId}`;
+
+      console.log("[manualStoreUpdate] Request URL:", url);
+
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          // 'Content-Type': 'multipart/form-data', // 자동 설정됨
+        },
+        body: formData,
+      });
+
+      console.log("[manualStoreUpdate] Response Status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[manualStoreUpdate] Response Error:", errorText);
+        throw new Error(`Failed to update store: ${response.status} ${errorText}`);
+      }
+
+      // text()로 먼저 확인 후 JSON 파싱 (안전장치)
+      const text = await response.text();
+      try {
+        const json = JSON.parse(text);
+        console.log("[manualStoreUpdate] Success:", json);
+        return json;
+      } catch (e) {
+        // 내용은 없지만 성공일 수 있음 (200 OK empty body)
+        return {};
+      }
+    } catch (err) {
+      console.error("[manualStoreUpdate] Fetch Exception:", err);
+      throw err;
+    }
   };
 
   const generateCalendar = () => {
@@ -523,23 +715,35 @@ export default function StoreScreen() {
           <View style={{ gap: rs(20) }}>
             <View style={styles.infoCard}>
               <View style={styles.cardHeader}>
-                <View style={styles.headerTitleRow}>
+                <View style={[styles.headerTitleRow, { alignItems: 'center' }]}>
                   <View style={styles.iconCircle}><Ionicons name="storefront" size={rs(14)} color="#34B262" /></View>
-                  <View>
-                    <Text style={styles.headerTitle}>기본 정보</Text>
-                    {storeInfo.name ? <Text style={styles.subTitle}>{storeInfo.name}</Text> : null}
-                  </View>
+                  <Text style={styles.headerTitle}>기본 정보</Text>
                 </View>
                 <TouchableOpacity style={styles.editButton} onPress={openBasicEditModal}>
                   <Text style={styles.editButtonText}>수정</Text>
                 </TouchableOpacity>
               </View>
+              <InfoRow icon="storefront" label="가게명" content={<Text style={styles.bodyText}>{`${storeInfo.name} ${storeInfo.branch || ''}`.trim() || "이름 없음"}</Text>} />
               <InfoRow icon="grid" label="가게 종류" content={<View style={styles.tagContainer}>{storeInfo.categories.length > 0 ? storeInfo.categories.map((cat, i) => <Tag key={i} text={cat} />) : <Text style={styles.placeholderText}>정보 없음</Text>}</View>} />
               <InfoRow icon="sparkles" label="가게 분위기" content={<View style={styles.tagContainer}>{storeInfo.vibes.length > 0 ? storeInfo.vibes.map((v, i) => <Tag key={i} text={v} />) : <Text style={styles.placeholderText}>정보 없음</Text>}</View>} />
               <InfoRow icon="information-circle" label="가게 소개" content={storeInfo.intro ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{storeInfo.intro}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
-              <InfoRow icon="image" label="가게 이미지" content={<View style={styles.imageDisplayRow}><ImagePlaceholder label="로고" size={105} /><ImagePlaceholder label="배너" size={105} /></View>} />
+              <InfoRow
+                icon="image"
+                label="가게 이미지"
+                content={
+                  <View style={styles.imageDisplayRow}>
+                    {storeInfo.bannerImage ? (
+                      <Image source={{ uri: storeInfo.bannerImage }} style={{ width: rs(153), height: rs(90), borderRadius: rs(8) }} resizeMode="cover" />
+                    ) : (
+                      <View style={{ width: rs(153), height: rs(90), backgroundColor: '#ECECECCC', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#AAAAAA' }}>
+                        <Text style={{ color: '#AAAAAA', fontSize: rs(12) }}>배너 이미지 없음</Text>
+                      </View>
+                    )}
+                  </View>
+                }
+              />
               <InfoRow icon="location" label="주소" content={<View style={{ marginTop: rs(2) }}>{storeInfo.address ? (<><Text style={styles.bodyText}>{storeInfo.address}</Text>{storeInfo.detailAddress ? <Text style={[styles.bodyText, { color: '#828282', marginTop: rs(2) }]}>{storeInfo.detailAddress}</Text> : null}</>) : <Text style={[styles.placeholderText, { marginTop: 0 }]}>정보 없음</Text>}</View>} />
-              <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{storeInfo.phone}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
+              <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{formatPhoneNumber(storeInfo.phone)}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
             </View>
 
             {/* 영업시간 */}
@@ -547,7 +751,7 @@ export default function StoreScreen() {
               <View style={styles.cardHeader}>
                 <View style={styles.headerTitleRow}>
                   <View style={styles.timeIconCircle}><Ionicons name="time" size={rs(18)} color="#34B262" /></View>
-                  <View><Text style={styles.headerTitle}>영업시간</Text><Text style={styles.subTitle}>상단: 영업시간, 하단: 브레이크타임</Text></View>
+                  <View><Text style={styles.headerTitle}>영업시간/브레이크타임</Text><Text style={styles.subTitle}>상단: 영업시간, <Text style={{ color: '#FF6200' }}>하단: 브레이크타임</Text></Text></View>
                 </View>
                 <TouchableOpacity style={styles.editButton} onPress={openHoursEditModal}><Text style={styles.editButtonText}>수정</Text></TouchableOpacity>
               </View>
@@ -579,7 +783,7 @@ export default function StoreScreen() {
             </View>
 
             {/* 매장 소식 (Placeholder) */}
-            <TouchableOpacity style={[styles.infoCard, { paddingVertical: rs(22) }]} activeOpacity={0.7} onPress={() => navigation.navigate('StoreNews')}>
+            <TouchableOpacity style={[styles.infoCard, { paddingVertical: rs(22) }]} activeOpacity={0.7} onPress={() => navigation.navigate('StoreNews', { storeId: myStoreId })}>
               <View style={styles.newsContentRow}>
                 <View style={styles.newsLeftSection}>
                   <View style={styles.timeIconCircle}><Ionicons name="megaphone" size={rs(18)} color="#34B262" /></View>
@@ -589,7 +793,7 @@ export default function StoreScreen() {
               </View>
             </TouchableOpacity>
 
-            {/* 휴무일 캘린더 (UI Only) */}
+            {/* 휴무일 캘린더 */}
             <View style={styles.infoCard}>
               <View style={styles.cardHeader}>
                 <View style={styles.headerTitleRow}>
@@ -626,13 +830,13 @@ export default function StoreScreen() {
               </View>
             </View>
 
-            {/* 영업 일시 중지 (UI Only) */}
+            {/* 영업 일시 중지 */}
             <View style={[styles.infoCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: rs(15), gap: rs(10) }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(10), flex: 1 }}>
                 <View style={styles.alertIconCircle}><Ionicons name="warning" size={rs(18)} color="#DC2626" /></View>
                 <View style={{ flex: 1 }}><Text style={styles.headerTitle}>영업 일시 중지</Text><Text style={styles.subTitle}>급한 사정 시 가게를 잠시 닫습니다</Text></View>
               </View>
-              <TouchableOpacity activeOpacity={0.8} onPress={() => setIsPaused(!isPaused)}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => handlePauseToggle(!isPaused)}>
                 <View style={[styles.customSwitch, isPaused ? styles.switchOn : styles.switchOff]}><View style={styles.switchKnob} /></View>
               </TouchableOpacity>
             </View>
@@ -754,7 +958,7 @@ export default function StoreScreen() {
               {/* 1. 기본 정보 */}
               <Text style={styles.sectionTitle}>기본 정보</Text>
 
-              {/* 사진 추가 (UI Only) */}
+              {/* 사진 추가 */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>메뉴 사진(1:1 비율 권장)</Text>
                 <TouchableOpacity style={styles.photoUploadBox} onPress={() => handleMockAction('사진 업로드 API 연동 필요')}>
@@ -887,14 +1091,59 @@ export default function StoreScreen() {
             <ScrollView contentContainerStyle={styles.modalScroll}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>기본 정보</Text>
-                <TouchableOpacity style={styles.saveButton} onPress={handleBasicSave}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: rs(8) }}>
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => setBasicModalVisible(false)}><Text style={styles.cancelButtonText}>취소</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.saveButton} onPress={handleBasicSave}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
+                </View>
+              </View>
+              <View style={[styles.editSection, { flexDirection: 'row', alignItems: 'flex-start' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', width: rs(55), marginTop: rs(6) }}>
+                  <Ionicons name="storefront" size={rs(12)} color="#828282" />
+                  <Text style={styles.labelText}>가게명</Text>
+                </View>
+                <View style={{ flex: 1, gap: rs(8) }}>
+                  <View style={styles.inputWrapper}>
+                    <TextInput style={styles.textInput} placeholder="가게명을 입력해주세요" placeholderTextColor="#666" value={editBasicData.name} onChangeText={(text) => setEditBasicData({ ...editBasicData, name: text })} />
+                  </View>
+                  <View style={styles.inputWrapper}>
+                    <TextInput style={styles.textInput} placeholder="가게 지점명을 입력해주세요(선택)" placeholderTextColor="#666" value={editBasicData.branch} onChangeText={(text) => setEditBasicData({ ...editBasicData, branch: text })} />
+                  </View>
+                </View>
               </View>
               <EditSection icon="grid" label="가게 종류"><View style={styles.selectionGrid}>{ALL_CATEGORIES.map((cat) => (<TouchableOpacity key={cat} style={[styles.selectChip, editBasicData.categories.includes(cat) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(cat, 'categories')}><Text style={[styles.chipText, editBasicData.categories.includes(cat) ? styles.chipTextActive : styles.chipTextInactive]}>{cat}</Text></TouchableOpacity>))}</View></EditSection>
               <EditSection icon="sparkles" label="가게 분위기"><View style={styles.selectionGrid}>{ALL_VIBES.map((vibe) => (<TouchableOpacity key={vibe} style={[styles.selectChip, editBasicData.vibes.includes(vibe) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(vibe, 'vibes')}><Text style={[styles.chipText, editBasicData.vibes.includes(vibe) ? styles.chipTextActive : styles.chipTextInactive]}>{vibe}</Text></TouchableOpacity>))}</View></EditSection>
               <EditSection icon="information-circle" label="가게 소개"><View style={styles.inputWrapper}><TextInput style={styles.textInput} placeholder="가게를 소개하는 글을 적어주세요" value={editBasicData.intro} onChangeText={(text) => setEditBasicData({ ...editBasicData, intro: text })} /><Text style={styles.charCount}>{editBasicData.intro.length}/50</Text></View></EditSection>
-              <EditSection icon="image" label="가게 이미지"><View style={styles.imageDisplayRow}><TouchableOpacity style={styles.uploadBoxWrapper} onPress={() => handleMockAction("갤러리 연결")}><Text style={styles.uploadLabel}>로고</Text><View style={[styles.uploadBox, { width: rs(90), height: rs(90) }]}><Ionicons name="camera" size={rs(20)} color="#aaa" /><Text style={styles.uploadPlaceholder}>로고 업로드</Text></View></TouchableOpacity><TouchableOpacity style={styles.uploadBoxWrapper} onPress={() => handleMockAction("갤러리 연결")}><Text style={styles.uploadLabel}>배너</Text><View style={[styles.uploadBox, { width: rs(90), height: rs(90) }]}><Ionicons name="image" size={rs(20)} color="#aaa" /><Text style={styles.uploadPlaceholder}>배너 업로드</Text></View></TouchableOpacity></View></EditSection>
+              <EditSection icon="image" label="가게 이미지">
+                <View style={styles.imageDisplayRow}>
+                  <TouchableOpacity style={styles.uploadBoxWrapper} onPress={pickImage}>
+                    <Text style={styles.uploadLabel}>배너</Text>
+                    <View style={[styles.uploadBox, { width: rs(153), height: rs(90) }]}>
+                      {editBasicData.bannerImage ? (
+                        <Image source={{ uri: editBasicData.bannerImage }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
+                      ) : (
+                        <>
+                          <Ionicons name="image" size={rs(20)} color="#aaa" />
+                          <Text style={styles.uploadPlaceholder}>배너 업로드</Text>
+                        </>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </EditSection>
               <EditSection icon="location" label="주소"><TouchableOpacity style={[styles.inputWrapper, { marginBottom: rs(8) }]} onPress={() => handleMockAction("주소 검색")}><Text style={[styles.textInput, { color: editBasicData.address ? 'black' : '#ccc' }]}>{editBasicData.address || "건물명, 도로명 또는 지번 검색"}</Text><Ionicons name="search" size={rs(16)} color="#ccc" style={{ marginRight: rs(10) }} /></TouchableOpacity><View style={[styles.inputWrapper, { backgroundColor: 'rgba(218, 218, 218, 0.50)' }]}><TextInput style={styles.textInput} placeholder="상세주소를 입력해주세요." value={editBasicData.detailAddress} onChangeText={(text) => setEditBasicData({ ...editBasicData, detailAddress: text })} /></View></EditSection>
-              <EditSection icon="call" label="전화번호"><View style={styles.inputWrapper}><TextInput style={styles.textInput} placeholder="숫자만 입력해주세요" keyboardType="number-pad" value={editBasicData.phone} onChangeText={(text) => setEditBasicData({ ...editBasicData, phone: text.replace(/[^0-9]/g, '') })} /></View></EditSection>
+              <EditSection icon="call" label="전화번호">
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="숫자만 입력해주세요"
+                    keyboardType="number-pad"
+                    value={editBasicData.phone}
+                    onChangeText={(text) => {
+                      setEditBasicData({ ...editBasicData, phone: formatPhoneNumber(text) });
+                    }}
+                  />
+                </View>
+              </EditSection>
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -905,10 +1154,20 @@ export default function StoreScreen() {
           <View style={[styles.modalContainer, { height: 'auto', maxHeight: rs(700) }]}>
             <ScrollView contentContainerStyle={styles.modalScroll}>
               <View style={styles.modalHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}><View style={styles.timeIconCircleSmall}><Ionicons name="time" size={rs(14)} color="#34B262" /><View style={styles.greenDotDecoSmall} /></View><Text style={styles.modalTitle}>영업시간/브레이크타임</Text></View>
-                <TouchableOpacity style={styles.saveButton} onPress={handleHoursSave}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
+                  <View style={styles.timeIconCircleSmall}>
+                    <Ionicons name="time" size={rs(22)} color="#34B262"></Ionicons>
+                  </View>
+                  <View>
+                    <Text style={styles.modalTitle}>영업시간/브레이크타임</Text>
+                    <Text style={[styles.subTitle, { marginTop: rs(1) }]}>상단: 영업시간, <Text style={{ color: '#FF7F00' }}>하단: 브레이크타임</Text></Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: rs(8) }}>
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => setHoursModalVisible(false)}><Text style={styles.cancelButtonText}>취소</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.saveButton} onPress={handleHoursSave}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
+                </View>
               </View>
-              <Text style={[styles.subTitle, { marginBottom: rs(15) }]}>상단: 영업시간, <Text style={{ color: '#FF7F00' }}>하단: 브레이크타임</Text></Text>
               {editHoursData.map((item, index) => {
                 const open12 = convert24to12(item.open); const close12 = convert24to12(item.close);
                 const breakStart12 = convert24to12(item.breakStart);
@@ -995,9 +1254,8 @@ const styles = StyleSheet.create({
   iconCircle: { width: rs(35), height: rs(35), borderRadius: rs(17.5), backgroundColor: '#E0EDE4', justifyContent: 'center', alignItems: 'center' },
   timeIconCircle: { width: rs(35), height: rs(35), borderRadius: rs(17.5), backgroundColor: '#E0EDE4', justifyContent: 'center', alignItems: 'center', position: 'relative' },
   greenDotDeco: { position: 'absolute', width: rs(6), height: rs(6), backgroundColor: '#34B262', borderRadius: rs(3), bottom: rs(8), right: rs(8) },
-  timeIconCircleSmall: { width: rs(24), height: rs(24), borderRadius: rs(12), backgroundColor: '#E0EDE4', justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  greenDotDecoSmall: { position: 'absolute', width: rs(4), height: rs(4), backgroundColor: '#34B262', borderRadius: rs(2), bottom: rs(5), right: rs(5) },
-  headerTitle: { fontSize: rs(16), fontWeight: '700', color: 'black', fontFamily: 'Pretendard' },
+  timeIconCircleSmall: { width: rs(30), height: rs(30), borderRadius: rs(15), backgroundColor: '#E0EDE4', justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  headerTitle: { fontSize: rs(16), fontWeight: '700', color: 'black', fontFamily: 'Pretendard', marginBottom: rs(3) },
   subTitle: { fontSize: rs(10), color: '#828282', fontFamily: 'Pretendard', marginTop: rs(2) },
   editButton: { backgroundColor: '#34B262', borderRadius: rs(12), paddingHorizontal: rs(12), paddingVertical: rs(6) },
   editButtonText: { color: 'white', fontSize: rs(11), fontWeight: '700', fontFamily: 'Pretendard' },
@@ -1020,7 +1278,7 @@ const styles = StyleSheet.create({
   dayText: { width: rs(30), fontSize: rs(13), fontWeight: '500', color: 'black', fontFamily: 'Pretendard', marginTop: rs(1) },
   timeDisplayContainer: { flexDirection: 'row', alignItems: 'center', gap: rs(8) },
   timeText: { fontSize: rs(11), fontWeight: '500', color: 'black', fontFamily: 'Pretendard' },
-  breakTimeText: { fontSize: rs(11), fontWeight: '500', color: '#FF6200', fontFamily: 'Pretendard' },
+  breakTimeText: { fontSize: rs(11), fontWeight: '500', color: '#FF8940', fontFamily: 'Pretendard' },
   hyphen: { fontSize: rs(13), fontWeight: '500', color: 'black' },
   hyphenOrange: { fontSize: rs(13), fontWeight: '500', color: '#FF8940' },
   closedBadge: { paddingHorizontal: rs(10), paddingVertical: rs(4), backgroundColor: '#E0EDE4', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center' },
@@ -1034,6 +1292,8 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: rs(14), fontWeight: '700', fontFamily: 'Pretendard' },
   saveButton: { width: rs(41), height: rs(23), backgroundColor: '#34B262', borderRadius: rs(12), justifyContent: 'center', alignItems: 'center' },
   saveButtonText: { color: 'white', fontSize: rs(11), fontWeight: '700', fontFamily: 'Pretendard' },
+  cancelButton: { width: rs(41), height: rs(23), backgroundColor: '#A0A0A0', borderRadius: rs(12), justifyContent: 'center', alignItems: 'center' },
+  cancelButtonText: { color: 'white', fontSize: rs(11), fontWeight: '700', fontFamily: 'Pretendard' },
   editSection: { marginBottom: rs(20) },
   selectionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(6) },
   selectChip: { paddingHorizontal: rs(10), height: rs(18), borderRadius: rs(12), justifyContent: 'center', alignItems: 'center', borderWidth: 1 },

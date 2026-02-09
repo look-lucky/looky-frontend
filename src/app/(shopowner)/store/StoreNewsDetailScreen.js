@@ -1,7 +1,11 @@
+import { useDeleteStoreNews } from '@/src/api/store-news';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import {
+    Alert,
+    Modal,
     Platform,
     SafeAreaView,
     ScrollView,
@@ -9,9 +13,8 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
-    Modal,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
 
 // [더미 데이터] 댓글 예시
@@ -22,24 +25,44 @@ const COMMENTS = [
 ];
 
 export default function StoreNewsDetailScreen({ navigation, route }) {
-    
-    const { newsItem } = route.params || {};
+
+    const { newsItem, storeId } = route.params || {};
     const [deleteModalVisible, setDeleteModalVisible] = useState(false); // 삭제 팝업 상태
+
+    const queryClient = useQueryClient();
+
+    // 삭제 Mutation
+    const deleteMutation = useDeleteStoreNews({
+        mutation: {
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/news`] });
+                Alert.alert("완료", "소식이 삭제되었습니다.", [
+                    { text: "확인", onPress: () => navigation.goBack() }
+                ]);
+            },
+            onError: (error) => {
+                console.error(error);
+                Alert.alert("오류", "소식 삭제 중 문제가 발생했습니다.");
+            }
+        }
+    });
 
     // 수정 버튼 핸들러
     const handleEdit = () => {
         // 쓰기 페이지로 이동하되, 현재 데이터를 넘겨줌 (수정 모드)
-        navigation.navigate('StoreNewsWrite', { 
+        navigation.navigate('StoreNewsWrite', {
             newsItem: newsItem,
-            isEdit: true 
+            isEdit: true,
+            storeId: storeId
         });
     };
 
     // 삭제 확인 핸들러
     const confirmDelete = () => {
         setDeleteModalVisible(false);
-        // TODO: 여기서 실제 삭제 API 호출
-        navigation.goBack();
+        if (newsItem?.id) {
+            deleteMutation.mutate({ newsId: newsItem.id });
+        }
     };
 
     return (
@@ -48,13 +71,13 @@ export default function StoreNewsDetailScreen({ navigation, route }) {
 
             {/* 1. 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{top:10, bottom:10, left:10, right:10}}>
+                <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="arrow-back" size={rs(24)} color="#1B1D1F" />
                 </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
-                
+
                 {/* 2. 가게 이름 및 날짜 */}
                 <View style={styles.topSection}>
                     <Text style={styles.storeName}>평화와 평화 구내매점</Text>
@@ -63,14 +86,14 @@ export default function StoreNewsDetailScreen({ navigation, route }) {
                             <Ionicons name="megaphone" size={rs(16)} color="#309821" />
                             <Text style={styles.tagText}>소식</Text>
                         </View>
-                        <Text style={styles.dateText}>{newsItem?.date || "2026.01.01"}</Text>
+                        <Text style={styles.dateText}>{newsItem?.createdAt ? newsItem.createdAt.substring(0, 10) : ""}</Text>
                     </View>
                 </View>
 
                 {/* 3. 본문 내용 */}
                 <View style={styles.bodySection}>
                     <View style={styles.titleRow}>
-                        <Text style={styles.newsTitle}>{newsItem?.title || "신메뉴 개발"}</Text>
+                        <Text style={styles.newsTitle}>{newsItem?.title || ""}</Text>
                         <View style={styles.editDeleteBox}>
                             <TouchableOpacity onPress={handleEdit}><Text style={styles.actionText}>수정</Text></TouchableOpacity>
                             <TouchableOpacity onPress={() => setDeleteModalVisible(true)}><Text style={styles.actionText}>삭제</Text></TouchableOpacity>
@@ -78,9 +101,7 @@ export default function StoreNewsDetailScreen({ navigation, route }) {
                     </View>
 
                     <Text style={styles.newsContent}>
-                        안녕하세요.{'\n\n'}
-                        2월에 새로 선보일 케이크 메뉴 테스터 10분을 모집합니다~{'\n\n'}
-                        정성스러운 평가 남겨주실 분들은 좋아요와 댓글 남겨주세요.
+                        {newsItem?.content || ""}
                     </Text>
 
                     {/* 이미지 영역 (3개) */}
@@ -152,18 +173,18 @@ export default function StoreNewsDetailScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: 'white' },
-    
-    header: { 
-        paddingHorizontal: rs(20), 
-        paddingVertical: rs(10), 
-        justifyContent: 'center', 
+
+    header: {
+        paddingHorizontal: rs(20),
+        paddingVertical: rs(10),
+        justifyContent: 'center',
         alignItems: 'flex-start',
         backgroundColor: 'white',
     },
 
-    content: { 
-        paddingHorizontal: rs(20), 
-        paddingBottom: rs(50) 
+    content: {
+        paddingHorizontal: rs(20),
+        paddingBottom: rs(50)
     },
 
     // 상단 스타일

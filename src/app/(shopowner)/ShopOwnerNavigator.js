@@ -26,7 +26,9 @@ import MyReviewScreen from './patron/studentReview/MyReviewScreen';
 import ReportCompleteScreen from './review/ReportCompleteScreen';
 import ReportScreen from './review/ReportScreen';
 import ReviewScreen from './review/ReviewScreen';
+import StoreNewsDetailScreen from './store/StoreNewsDetailScreen';
 import StoreNewsScreen from './store/StoreNewsScreen';
+import StoreNewsWriteScreen from './store/StoreNewsWriteScreen';
 import StoreScreen from './store/StoreScreen';
 
 const Tab = createBottomTabNavigator();
@@ -38,36 +40,36 @@ function MainTabNavigator() {
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
-        tabBarActiveTintColor: '#34B262', 
-        
+        tabBarActiveTintColor: '#34B262',
+
         tabBarInactiveTintColor: '#444444',
-        headerShown: false, 
+        headerShown: false,
       }}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen} 
-        options={{ tabBarLabel: '홈' }} 
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ tabBarLabel: '홈' }}
       />
-      <Tab.Screen 
-        name="Review" 
-        component={ReviewScreen} 
-        options={{ tabBarLabel: '리뷰관리' }} 
+      <Tab.Screen
+        name="Review"
+        component={ReviewScreen}
+        options={{ tabBarLabel: '리뷰관리' }}
       />
-      <Tab.Screen 
-        name="Store" 
-        component={StoreScreen} 
-        options={{ tabBarLabel: '가게관리' }} 
+      <Tab.Screen
+        name="Store"
+        component={StoreScreen}
+        options={{ tabBarLabel: '가게관리' }}
       />
-      <Tab.Screen 
-        name="Coupon" 
-        component={CouponScreen} 
-        options={{ tabBarLabel: '쿠폰/단골' }} 
+      <Tab.Screen
+        name="Coupon"
+        component={CouponScreen}
+        options={{ tabBarLabel: '쿠폰/단골' }}
       />
-      <Tab.Screen 
-        name="MyPage" 
-        component={MyPageScreen} 
-        options={{ tabBarLabel: '내 정보' }} 
+      <Tab.Screen
+        name="MyPage"
+        component={MyPageScreen}
+        options={{ tabBarLabel: '내 정보' }}
       />
     </Tab.Navigator>
   );
@@ -97,7 +99,7 @@ export default function ShopOwnerNavigator() {
       {/* 10. 마이페이지-내 정보 수정-회원탈퇴 화면 스택 화면 */}
       <Stack.Screen name="Withdraw" component={WithdrawScreen} options={{ headerShown: false }} />
       {/* 11. 마이페이지-내 정보 수정-회원탈퇴-탈퇴확인 화면 스택 화면 */}
-      <Stack.Screen name="WithdrawComplete" component={WithdrawCompleteScreen} options={{ headerShown: false }}/>
+      <Stack.Screen name="WithdrawComplete" component={WithdrawCompleteScreen} options={{ headerShown: false }} />
       {/* 12. 마이페이지-고객센터 스택 화면 */}
       <Stack.Screen name="Inquiry" component={InquiryScreen} options={{ headerShown: false }} />
       {/* 13. 마이페이지-고객센터-문의접수 화면 스택 화면 */}
@@ -120,6 +122,10 @@ export default function ShopOwnerNavigator() {
       <Stack.Screen name="MyReview" component={MyReviewScreen} options={{ headerShown: false }} />
       {/* 21. 리뷰관리-리뷰 수정 스택 화면 */}
       <Stack.Screen name="EditReview" component={EditReviewScreen} options={{ headerShown: false }} />
+      {/* 22. 가게 소식 작성 스택 화면 */}
+      <Stack.Screen name="StoreNewsWrite" component={StoreNewsWriteScreen} options={{ headerShown: false }} />
+      {/* 23. 가게 소식 상세 스택 화면 */}
+      <Stack.Screen name="StoreNewsDetail" component={StoreNewsDetailScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
