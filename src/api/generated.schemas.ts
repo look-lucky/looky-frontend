@@ -1187,6 +1187,7 @@ export interface CommonResponseStoreNewsResponse {
 export interface StoreNewsCommentResponse {
   id?: number;
   userId?: number;
+  nickname?: string;
   content?: string;
   createdAt?: string;
   mine?: boolean;
@@ -1229,6 +1230,18 @@ export interface MyStoreClaimResponse {
 export interface CommonResponseListMyStoreClaimResponse {
   isSuccess?: boolean;
   data?: MyStoreClaimResponse[];
+}
+
+export interface StudentInfoResponse {
+  universityId?: number;
+  collegeId?: number;
+  departmentId?: number;
+  isClubMember?: boolean;
+}
+
+export interface CommonResponseStudentInfoResponse {
+  isSuccess?: boolean;
+  data?: StudentInfoResponse;
 }
 
 export interface CommonResponseListIssueCouponResponse {
