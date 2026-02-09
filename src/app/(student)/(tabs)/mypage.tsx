@@ -1,14 +1,14 @@
 import { useGetMyCoupons } from "@/src/api/coupon";
 import { useGetMyFavorites } from "@/src/api/favorite";
-import { useGetMyReviews } from "@/src/api/review";
 import { CommonResponseListIssueCouponResponse } from "@/src/api/generated.schemas";
+import { useGetMyReviews } from "@/src/api/review";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";
 import { Fonts, Gray, Owner, Primary, System, Text as TextColor } from "@/src/shared/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
   Alert,
@@ -196,11 +196,10 @@ export default function MyPageTab() {
             />
           </View>
 
-          {/* 그룹 2: 알림 설정 / 고객센터 / 설정 */}
+          {/* 그룹 2: 고객센터 / 설정 */}
           <View style={styles.menuGroupBox}>
-            <MenuItem icon="notifications-outline" text="알림 설정" />
             <MenuItem icon="chatbubble-ellipses-outline" text="고객센터" onPress={() => router.push("/inquiry")} />
-            <MenuItem icon="settings-sharp" text="설정" isLast />
+            <MenuItem icon="settings-sharp" text="설정" isLast onPress={() => router.push('/mypage/settings')} />
           </View>
 
           {/* 로그아웃 */}
