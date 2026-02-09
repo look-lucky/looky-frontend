@@ -97,14 +97,19 @@ export default function StoreScreen() {
     refetch: refetchItems
   } = useGetItems(myStoreId, { query: { enabled: !!myStoreId } });
 
+  const [basicModalVisible, setBasicModalVisible] = useState(false);
+  const [hoursModalVisible, setHoursModalVisible] = useState(false);
+  const [holidayModalVisible, setHolidayModalVisible] = useState(false); // 휴무일 모달 상태
+
+  // Temp Data for Modals
+  const [tempSelectedHolidays, setTempSelectedHolidays] = useState([]); // 모달용 임시 휴무일 데이터
+
   // (4) 메뉴 추가/수정/삭제 Mutations
   const createItemMutation = useCreateItem();
   const updateItemMutation = useUpdateItem();
 
   // # State: UI Control
   const [activeTab, setActiveTab] = useState('info');
-  const [basicModalVisible, setBasicModalVisible] = useState(false);
-  const [hoursModalVisible, setHoursModalVisible] = useState(false);
 
   // # State: Time Picker
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -125,6 +130,7 @@ export default function StoreScreen() {
 
   // # State: Calendar
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [modalDate, setModalDate] = useState(new Date()); // 모달용 별도 날짜 상태
   const [selectedHolidays, setSelectedHolidays] = useState(['2026-01-19', '2026-01-20', '2026-01-21', '2026-01-22', '2026-01-23']);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -383,73 +389,135 @@ export default function StoreScreen() {
   };
 
   // 메뉴 추가/수정 저장
-  const handleMenuSave = () => {
+  const handleMenuSave = async () => {
     if (!myStoreId) return;
 
-    const priceNum = parseInt(menuForm.price.replace(/,/g, ''), 10) || 0;
+    if (!menuForm.name || !menuForm.price) {
+      Alert.alert("알림", "메뉴명과 가격은 필수입니다.");
+      return;
+    }
 
-    const payload = {
-      name: menuForm.name,
-      price: priceNum,
-      description: menuForm.desc,
-      category: menuForm.category,
-      isRecommended: menuForm.isRepresentative,
-      isSoldOut: menuForm.isSoldOut,
-    };
+    const priceNum = parseInt(String(menuForm.price).replace(/,/g, ''), 10) || 0;
 
-    if (isEditMode && targetItemId) {
-      updateItemMutation.mutate(
-        { itemId: targetItemId, data: payload },
-        {
-          onSuccess: () => {
-            Alert.alert("성공", "메뉴가 수정되었습니다.");
-            refetchItems();
-            setMenuModalVisible(false);
-          },
-          onError: () => Alert.alert("실패", "메뉴 수정 실패")
-        }
-      );
-    } else {
-      createItemMutation.mutate(
-        { storeId: myStoreId, data: payload },
-        {
-          onSuccess: () => {
-            Alert.alert("성공", "새 메뉴가 등록되었습니다.");
-            refetchItems();
-            setMenuModalVisible(false);
-          },
-          onError: () => Alert.alert("실패", "메뉴 등록 실패")
-        }
-      );
+    try {
+      const tokenData = await getToken();
+      const token = tokenData?.accessToken;
+      const url = isEditMode && targetItemId
+        ? `https://api.looky.kr/api/items/${targetItemId}`
+        : `https://api.looky.kr/api/stores/${myStoreId}/items`;
+      const method = isEditMode ? 'PATCH' : 'POST';
+
+      const formData = new FormData();
+      const requestData = {
+        name: menuForm.name,
+        price: priceNum,
+        description: menuForm.desc,
+        itemCategoryId: 1, // TODO: 실제 카테고리 ID 매핑 필요
+        badge: menuForm.badge,
+        hidden: menuForm.isHidden,
+        soldOut: menuForm.isSoldOut,
+        representative: menuForm.isRepresentative
+      };
+
+      formData.append('request', {
+        string: JSON.stringify(requestData),
+        type: 'application/json',
+        name: 'request'
+      });
+
+      if (menuForm.image && !menuForm.image.startsWith('http')) {
+        const localUri = menuForm.image;
+        const filename = localUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : `image/jpeg`;
+        formData.append('image', { uri: localUri, name: filename, type });
+      } else {
+        formData.append('image', "");
+      }
+
+      console.log(`[Menu Save] ${method} ${url}`);
+
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText);
+      }
+
+      Alert.alert("성공", isEditMode ? "메뉴가 수정되었습니다." : "새 메뉴가 등록되었습니다.");
+      setMenuModalVisible(false);
+      refetchItems();
+
+    } catch (error) {
+      console.error("[Menu Save Error]", error);
+      Alert.alert("실패", "메뉴 저장 중 오류가 발생했습니다.");
     }
   };
 
   // 즉시 상태 변경 (품절, 대표메뉴)
-  const handleQuickUpdate = (item, field, value) => {
-    const payload = {
-      name: item.name,
-      price: parseInt(item.price.replace(/,/g, ''), 10),
-      description: item.desc,
-      category: item.category,
-      isRecommended: item.isRepresentative,
-      isSoldOut: item.isSoldOut,
-      ...(field === 'isSoldOut' && { isSoldOut: value }),
-      ...(field === 'isRecommended' && { isRecommended: value }),
-    };
+  const handleQuickUpdate = async (item, field, value) => {
+    try {
+      const tokenData = await getToken();
+      const token = tokenData?.accessToken;
+      const url = `https://api.looky.kr/api/items/${item.id}`;
 
-    updateItemMutation.mutate(
-      { itemId: item.id, data: payload },
-      {
-        onSuccess: () => refetchItems(),
-        onError: () => Alert.alert("오류", "상태 변경에 실패했습니다.")
+      const formData = new FormData();
+      const requestData = {
+        name: item.name,
+        price: parseInt(String(item.price).replace(/,/g, ''), 10),
+        description: item.desc,
+        itemCategoryId: 1, // TODO: 실제 카테고리 ID 매핑 필요
+        badge: item.badge,
+        hidden: item.isHidden,
+        soldOut: item.isSoldOut,
+        representative: item.isRepresentative,
+        ...(field === 'isSoldOut' && { soldOut: value }),
+        ...(field === 'isRecommended' && { representative: value }),
+      };
+
+      formData.append('request', {
+        string: JSON.stringify(requestData),
+        type: 'application/json',
+        name: 'request'
+      });
+
+      // Backend requirement workaround: 'image' part must be present
+      formData.append('image', "");
+
+      console.log(`[Quick Update] PATCH ${url}`, requestData);
+
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText);
       }
-    );
+
+      refetchItems();
+
+    } catch (error) {
+      console.error("[Quick Update Error]", error);
+      Alert.alert("오류", "상태 변경에 실패했습니다.");
+    }
   };
 
   // # UI Logic Helpers
   const openBasicEditModal = () => {
     console.log("DEBUG: Opening Edit Modal. storeInfo:", storeInfo);
-    // 전화번호 포맷 적용 (수정 폼 진입 시)
     setEditBasicData({
       ...storeInfo,
       phone: formatPhoneNumber(storeInfo.phone)
@@ -526,6 +594,7 @@ export default function StoreScreen() {
 
   // # Calendar Logic
   const changeMonth = (direction) => { setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1)); };
+  const changeModalMonth = (direction) => { setModalDate(new Date(modalDate.getFullYear(), modalDate.getMonth() + direction, 1)); };
 
   const handleDatePress = (dateStr) => {
     const today = getFormatDate(new Date());
@@ -534,9 +603,56 @@ export default function StoreScreen() {
     else setSelectedHolidays([...selectedHolidays, dateStr]);
   };
 
-  const handleHolidaySave = async () => {
+  const openHolidayEditModal = () => {
+    setTempSelectedHolidays([...selectedHolidays]);
+    setModalDate(new Date(currentDate)); // 모달 열 때 현재 캘린더 날짜와 동기화
+    setHolidayModalVisible(true);
+  };
+
+  const handleTempDatePress = (dateStr) => {
+    // Range Selection Logic
+    const today = getFormatDate(new Date());
+    if (dateStr < today) return;
+
+    const sorted = [...tempSelectedHolidays].sort();
+
+    // 1. 아무것도 없을 때 -> 시작일 설정
+    if (sorted.length === 0) {
+      setTempSelectedHolidays([dateStr]);
+      return;
+    }
+
+    // 2. 이미 범위가 설정된 경우 (2개 이상) -> 초기화 후 새로운 시작일 설정
+    if (sorted.length > 1) {
+      setTempSelectedHolidays([dateStr]);
+      return;
+    }
+
+    // 3. 시작일만 있는 경우
+    const startDate = sorted[0];
+
+    if (dateStr === startDate) {
+      // 시작일 다시 클릭 -> 해제
+      setTempSelectedHolidays([]);
+    } else if (dateStr < startDate) {
+      // 시작일보다 이전 날짜 클릭 -> 새로운 시작일로 변경
+      setTempSelectedHolidays([dateStr]);
+    } else {
+      // 시작일보다 이후 날짜 클릭 -> 범위 설정 (중간 날짜 채우기)
+      const dateArray = [];
+      let current = new Date(startDate);
+      const end = new Date(dateStr);
+      while (current <= end) {
+        dateArray.push(getFormatDate(current));
+        current.setDate(current.getDate() + 1);
+      }
+      setTempSelectedHolidays(dateArray);
+    }
+  };
+
+  const handleHolidaySave = async (targetHolidays = selectedHolidays) => {
     try {
-      if (selectedHolidays.length === 0) {
+      if (targetHolidays.length === 0) {
         // 휴무일 없음 -> null로 전송
         const formData = new FormData();
         const requestData = { holidayStartsAt: null, holidayEndsAt: null };
@@ -547,17 +663,14 @@ export default function StoreScreen() {
         });
         await manualStoreUpdate(formData);
         Alert.alert("성공", "휴무일 설정이 해제되었습니다.");
+        setHolidayModalVisible(false); // 저장 후 모달 닫기
         return;
       }
 
       // 날짜 정렬
-      const sortedDates = [...selectedHolidays].sort();
+      const sortedDates = [...targetHolidays].sort();
       const startDate = sortedDates[0];
       const endDate = sortedDates[sortedDates.length - 1];
-
-      // 중간에 빠진 날짜 경고 (Optional)
-      // API가 start~end 전체를 휴무로 잡으므로, 사용자가 띄엄띄엄 선택했다면 경고를 줄 수도 있음
-      // 여기서는 그냥 start~end로 저장한다고 가정하고 진행
 
       const formData = new FormData();
       const requestData = {
@@ -572,6 +685,7 @@ export default function StoreScreen() {
 
       await manualStoreUpdate(formData);
       Alert.alert("성공", `${startDate} ~ ${endDate} 휴무일이 저장되었습니다.`);
+      setHolidayModalVisible(false); // 저장 후 모달 닫기
       refetchStore();
     } catch (error) {
       console.error("휴무일 저장 실패", error);
@@ -644,8 +758,8 @@ export default function StoreScreen() {
     }
   };
 
-  const generateCalendar = () => {
-    const year = currentDate.getFullYear(); const month = currentDate.getMonth();
+  const generateCalendar = (baseDate = currentDate) => {
+    const year = baseDate.getFullYear(); const month = baseDate.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
     const lastDate = new Date(year, month + 1, 0).getDate();
     const days = [];
@@ -660,7 +774,8 @@ export default function StoreScreen() {
     setTargetItemId(null);
     setMenuForm({
       name: '', price: '', desc: '', category: selectedCategory,
-      isRepresentative: false, badge: null, isSoldOut: false, isHidden: false
+      isRepresentative: false, badge: null, isSoldOut: false, isHidden: false,
+      image: null
     });
     setMenuModalVisible(true);
   };
@@ -670,15 +785,57 @@ export default function StoreScreen() {
     setTargetItemId(item.id);
     setMenuForm({
       name: item.name,
-      price: item.price,
+      price: String(item.price),
       desc: item.desc,
       category: item.category,
       isRepresentative: item.isRepresentative,
       badge: item.badge,
       isSoldOut: item.isSoldOut,
-      isHidden: item.isHidden
+      isHidden: item.isHidden,
+      image: item.imageUrl
     });
     setMenuModalVisible(true);
+  };
+
+  const pickMenuImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setMenuForm({ ...menuForm, image: result.assets[0].uri });
+      }
+    } catch (error) {
+      Alert.alert("오류", "이미지를 불러오는데 실패했습니다.");
+    }
+  };
+
+  const handleDeleteMenu = () => {
+    if (!targetItemId) return;
+    Alert.alert("메뉴 삭제", "정말로 이 메뉴를 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: () => {
+          deleteItemMutation.mutate(
+            { itemId: targetItemId },
+            {
+              onSuccess: () => {
+                Alert.alert("삭제 완료", "메뉴가 삭제되었습니다.");
+                setMenuModalVisible(false);
+                refetchItems();
+              },
+              onError: () => Alert.alert("실패", "메뉴 삭제에 실패했습니다.")
+            }
+          );
+        }
+      }
+    ]);
   };
 
   // 로딩 화면
@@ -798,8 +955,9 @@ export default function StoreScreen() {
               <View style={styles.cardHeader}>
                 <View style={styles.headerTitleRow}>
                   <View style={styles.timeIconCircle}><Ionicons name="calendar" size={rs(18)} color="#34B262" /></View>
-                  <View><Text style={styles.headerTitle}>휴무일</Text><Text style={styles.subTitle}>임시 휴무일을 터치로 지정</Text></View>
+                  <View><Text style={styles.headerTitle}>휴무일</Text><Text style={styles.subTitle}>임시 휴무일을 지정합니다</Text></View>
                 </View>
+                <TouchableOpacity style={styles.editButton} onPress={openHolidayEditModal}><Text style={styles.editButtonText}>수정</Text></TouchableOpacity>
               </View>
               <View style={styles.calendarControl}>
                 <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.navButton}><Ionicons name="chevron-back" size={rs(20)} color="#ccc" /></TouchableOpacity>
@@ -825,7 +983,7 @@ export default function StoreScreen() {
                   }
                   if (isPast) textStyle.push({ color: '#E0E0E0' });
 
-                  return (<View key={index} style={styles.dayCell}><TouchableOpacity style={cellStyle} onPress={() => handleDatePress(dateStr)} disabled={isPast} activeOpacity={0.8}><Text style={textStyle}>{date.getDate()}</Text></TouchableOpacity></View>);
+                  return (<View key={index} style={styles.dayCell}><TouchableOpacity style={cellStyle} disabled={true} activeOpacity={1}><Text style={textStyle}>{date.getDate()}</Text></TouchableOpacity></View>);
                 })}
               </View>
             </View>
@@ -961,9 +1119,15 @@ export default function StoreScreen() {
               {/* 사진 추가 */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>메뉴 사진(1:1 비율 권장)</Text>
-                <TouchableOpacity style={styles.photoUploadBox} onPress={() => handleMockAction('사진 업로드 API 연동 필요')}>
-                  <View style={styles.cameraIconBox}><Ionicons name="camera" size={rs(18)} color="rgba(130, 130, 130, 0.70)" /></View>
-                  <Text style={styles.photoUploadText}>사진 추가</Text>
+                <TouchableOpacity style={styles.photoUploadBox} onPress={pickMenuImage}>
+                  {menuForm.image ? (
+                    <Image source={{ uri: menuForm.image }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
+                  ) : (
+                    <>
+                      <View style={styles.cameraIconBox}><Ionicons name="camera" size={rs(18)} color="rgba(130, 130, 130, 0.70)" /></View>
+                      <Text style={styles.photoUploadText}>사진 추가</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
 
@@ -1068,17 +1232,31 @@ export default function StoreScreen() {
               <View style={{ height: rs(5) }} />
             </ScrollView>
 
-            {/* 하단 고정 추가하기 버튼 */}
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.modalSubmitBtn}
-                onPress={handleMenuSave}
-                disabled={createItemMutation.isPending || updateItemMutation.isPending}
-              >
-                <Text style={styles.modalSubmitText}>
-                  {createItemMutation.isPending || updateItemMutation.isPending ? '처리 중...' : (isEditMode ? '수정하기' : '추가하기')}
-                </Text>
-              </TouchableOpacity>
+            {/* 하단 고정 버튼 (수정 모드: 삭제 / 수정,  추가 모드: 추가하기) */}
+            <View style={[styles.modalFooter, { flexDirection: 'row', gap: rs(10), justifyContent: 'flex-end' }]}>
+              {isEditMode ? (
+                <>
+                  <TouchableOpacity
+                    style={[styles.modalSubmitBtn, { backgroundColor: 'white', borderWidth: 1, borderColor: '#ccc', width: rs(120) }]}
+                    onPress={handleDeleteMenu}
+                  >
+                    <Text style={[styles.modalSubmitText, { color: '#828282' }]}>삭제하기</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalSubmitBtn, { flex: 1, backgroundColor: '#34B262' }]}
+                    onPress={handleMenuSave}
+                  >
+                    <Text style={styles.modalSubmitText}>수정하기</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.modalSubmitBtn, { flex: 1, backgroundColor: '#34B262' }]}
+                  onPress={handleMenuSave}
+                >
+                  <Text style={styles.modalSubmitText}>추가하기</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -1222,6 +1400,60 @@ export default function StoreScreen() {
                 </View>
               </View>
             )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Holiday Edit Modal */}
+      <Modal animationType="slide" transparent={true} visible={holidayModalVisible} onRequestClose={() => setHolidayModalVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { height: rs(400) }]}>
+            <View style={styles.modalScroll}>
+              <View style={styles.modalHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
+                  <View style={styles.timeIconCircleSmall}>
+                    <Ionicons name="calendar" size={rs(22)} color="#34B262"></Ionicons>
+                  </View>
+                  <View>
+                    <Text style={styles.modalTitle}>휴무일 설정</Text>
+                    <Text style={styles.subTitle}>시작일과 종료일을 선택해주세요 (연속된 기간만 가능)</Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: rs(8) }}>
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => setHolidayModalVisible(false)}><Text style={styles.cancelButtonText}>취소</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.saveButton} onPress={() => handleHolidaySave(tempSelectedHolidays)}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.calendarControl}>
+                <TouchableOpacity onPress={() => changeModalMonth(-1)} style={styles.navButton}><Ionicons name="chevron-back" size={rs(20)} color="#ccc" /></TouchableOpacity>
+                <Text style={styles.calendarTitle}>{MONTH_NAMES[modalDate.getMonth()]} {modalDate.getFullYear()}</Text>
+                <TouchableOpacity onPress={() => changeModalMonth(1)} style={styles.navButton}><Ionicons name="chevron-forward" size={rs(20)} color="#ccc" /></TouchableOpacity>
+              </View>
+              <View style={styles.weekHeader}>
+                {WEEKDAYS.map((day, index) => (<Text key={index} style={[styles.weekText, index === 0 && { color: '#FF3E41' }, index === 6 && { color: '#007AFF' }]}>{day}</Text>))}
+              </View>
+              <View style={styles.daysGrid}>
+                {generateCalendar(modalDate).map((date, index) => {
+                  if (!date) return <View key={index} style={styles.dayCell} />;
+                  const dateStr = getFormatDate(date);
+                  const isSelected = tempSelectedHolidays.includes(dateStr);
+                  const isPast = dateStr < getFormatDate(new Date());
+                  const dayOfWeek = date.getDay();
+
+                  const cellStyle = [styles.dayBtn];
+                  const textStyle = [styles.dayTextNum];
+                  if (dayOfWeek === 0) textStyle.push({ color: '#FF3E41' }); else if (dayOfWeek === 6) textStyle.push({ color: '#007AFF' });
+                  if (isSelected) {
+                    cellStyle.push(styles.dayBtnSelected); textStyle.push({ color: 'white', fontWeight: '700' });
+                  }
+                  if (isPast) textStyle.push({ color: '#E0E0E0' });
+
+                  return (<View key={index} style={styles.dayCell}><TouchableOpacity style={cellStyle} onPress={() => handleTempDatePress(dateStr)} disabled={isPast} activeOpacity={0.8}><Text style={textStyle}>{date.getDate()}</Text></TouchableOpacity></View>);
+                })}
+              </View>
+              <View style={{ height: rs(20) }} />
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>

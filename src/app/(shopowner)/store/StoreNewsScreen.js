@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: rs(10),
         paddingVertical: rs(15),
         // 그림자 설정 (HTML: box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.25))
-        shadowColor: "#000",
+        shadowColor: "rgba(0, 0, 0, 0.25)",
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.25,
         shadowRadius: 3,
