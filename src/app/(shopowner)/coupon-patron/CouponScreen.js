@@ -499,7 +499,7 @@ export default function CouponScreen({ navigation, route }) {
                                             </Text>
                                         </View>
                                         <View style={styles.progressBarBg}>
-                                            <View style={[styles.progressBarFill, { width: coupon.total === -1 ? '100%' : `${Math.min((coupon.used / coupon.total) * 100, 100)}%` }]} />
+                                            <View style={[styles.progressBarFill, { width: coupon.total === -1 ? '15%' : `${Math.min((coupon.used / coupon.total) * 100, 100)}%` }]} />
                                         </View>
                                     </View>
                                 </View>
@@ -1188,12 +1188,16 @@ export default function CouponScreen({ navigation, route }) {
                                                     <Text style={styles.ticketDesc}>{verifiedCouponData?.description || '혜택을 확인해주세요'}</Text>
 
                                                     <View style={styles.ticketInfoRow}>
+                                                        <Text style={styles.ticketLabel}>사용처</Text>
+                                                        <Text style={styles.ticketValue}>{verifiedCouponData?.shopName}</Text>
+                                                    </View>
+                                                    <View style={styles.ticketInfoRow}>
                                                         <Text style={styles.ticketLabel}>혜택</Text>
-                                                        <Text style={styles.ticketValue}>사용 확인 후 제공해주세요</Text>
+                                                        <Text style={styles.ticketValue}>{verifiedCouponData?.benefitValue}</Text>
                                                     </View>
                                                     <View style={styles.ticketInfoRow}>
                                                         <Text style={styles.ticketLabel}>만료기한</Text>
-                                                        <Text style={styles.ticketValue}>{formatDate(verifiedCouponData?.expiredAt)}</Text>
+                                                        <Text style={styles.ticketValue}>~{formatDate(verifiedCouponData?.expiredAt)}까지</Text>
                                                     </View>
                                                 </View>
 
@@ -1206,7 +1210,11 @@ export default function CouponScreen({ navigation, route }) {
 
                                                 {/* 티켓 하단 (번호) */}
                                                 <View style={styles.ticketBottom}>
-                                                    <Text style={styles.ticketNumber}>{couponInput.split('').join('  ')}</Text>
+                                                    {couponInput.split('').map((digit, index) => (
+                                                        <View key={index} style={styles.ticketDigitBox}>
+                                                            <Text style={styles.ticketDigitText}>{digit}</Text>
+                                                        </View>
+                                                    ))}
                                                 </View>
 
                                                 {/* [사용완료 도장] */}
@@ -1321,8 +1329,10 @@ const styles = StyleSheet.create({
     dashedLine: { flex: 1, height: 1, borderWidth: 1, borderColor: '#D5D5D5', borderStyle: 'dashed', marginHorizontal: rs(10), },
     notchLeft: { width: rs(20), height: rs(20), borderRadius: rs(10), backgroundColor: 'white', marginLeft: rs(-10), },
     notchRight: { width: rs(20), height: rs(20), borderRadius: rs(10), backgroundColor: 'white', marginRight: rs(-10), },
-    ticketBottom: { paddingVertical: rs(10), alignItems: 'center', justifyContent: 'center', },
-    ticketNumber: { fontSize: rs(18), fontWeight: '700', color: 'black', fontFamily: 'Pretendard', letterSpacing: rs(8), },
+    ticketBottom: { paddingVertical: rs(20), alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: rs(12) },
+    ticketDigitBox: { borderBottomWidth: rs(1.5), borderBottomColor: '#1B1D1F', paddingHorizontal: rs(6), paddingBottom: rs(4), minWidth: rs(24), alignItems: 'center' },
+    ticketDigitText: { fontSize: rs(24), fontWeight: '700', color: '#1B1D1F', fontFamily: 'Pretendard' },
+    ticketNumber: { fontSize: rs(24), fontWeight: '700', color: '#1B1D1F', fontFamily: 'Pretendard', letterSpacing: rs(8) },
     finalUseBtn: { width: '100%', height: rs(40), backgroundColor: '#34B262', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', },
     finalUseBtnText: { fontSize: rs(14), fontWeight: '700', color: 'white', fontFamily: 'Pretendard', },
     stampContainer: { position: 'absolute', top: 0, bottom: 0, left: 100, right: 0, justifyContent: 'center', alignItems: 'center', zIndex: 10, },
