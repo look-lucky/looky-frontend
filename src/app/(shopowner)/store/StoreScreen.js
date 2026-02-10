@@ -16,7 +16,7 @@ import { useNavigation } from 'expo-router';
 import { getToken } from '@/src/shared/lib/auth/token';
 
 // [API] Hooks Import
-import { useCreateItem, useGetItems, useUpdateItem } from '@/src/api/item';
+import { useCreateItem, useDeleteItem, useGetItems, useUpdateItem } from '@/src/api/item';
 import { useGetMyStores } from '@/src/api/store';
 
 // # Helper Functions & Constants
@@ -108,6 +108,13 @@ export default function StoreScreen() {
   // (4) 메뉴 추가/수정/삭제 Mutations
   const createItemMutation = useCreateItem();
   const updateItemMutation = useUpdateItem();
+  const deleteItemMutation = useDeleteItem();
+
+  // (5) 카테고리 목록 조회
+  // [Backend Issue] 500 Internal Server Error (ByteBuddyInterceptor) - API disabled temporarily
+  // const { data: categoriesResponse, refetch: refetchCategories } = useGetItemCategories(myStoreId, { query: { enabled: !!myStoreId } });
+  const apiCategories = []; // categoriesResponse?.data?.data || [];
+
 
   // # State: UI Control
   const [activeTab, setActiveTab] = useState('info');
@@ -136,8 +143,35 @@ export default function StoreScreen() {
   const [isPaused, setIsPaused] = useState(false);
 
   // # State: Menu Management
-  const [menuCategories, setMenuCategories] = useState(['메인메뉴', '사이드', '음료/주류', '세트메뉴']);
+  // [Backend Issue] Fallback to hardcoded categories
+  const [menuCategories, setMenuCategories] = useState([]); // Initialized as empty
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false); // 카테고리 추가 입력 모드
+  const [newCategoryName, setNewCategoryName] = useState(''); // 새 카테고리 이름 입력
+
+  // 선택된 카테고리가 목록에 없으면 첫번째로 리셋
+  useEffect(() => {
+    if (menuCategories.length > 0 && !menuCategories.includes(selectedCategory)) {
+      setSelectedCategory(menuCategories[0]);
+    }
+  }, [menuCategories]);
+
+  // Helper to find category ID (since API is limited)
+  const findCategoryId = (name) => {
+    // 1. Try to find in existing menu items
+    const foundItem = menuListArray.find(item => item.category === name || item.category?.name === name);
+    if (foundItem) {
+      return foundItem.itemCategoryId || foundItem.categoryId || 1;
+    }
+    // 2. Fallback to known defaults (Hardcoded assumptions if empty)
+    const defaults = { '메인메뉴': 1, '사이드': 2, '음료/주류': 3, '세트메뉴': 4 };
+    return defaults[name] || 1;
+  };
+
+  const CATEGORY_ID_MAP = { 1: '메인메뉴', 2: '사이드', 3: '음료/주류', 4: '세트메뉴' };
+
   const [selectedCategory, setSelectedCategory] = useState('메인메뉴');
+
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
 
   const [menuModalVisible, setMenuModalVisible] = useState(false);
@@ -169,13 +203,19 @@ export default function StoreScreen() {
   const CATEGORY_EN_TO_KR = {
     'RESTAURANT': '식당',
     'BAR': '주점',
-    'CAFE': '카페',
+    'CAFE': 'CAFE',
     'ENTERTAINMENT': '놀거리',
     'BEAUTY_HEALTH': '뷰티•헬스',
     'ETC': 'ETC'
   };
   const ALL_VIBES = ['1인 혼밥', '회식', '모임', '야식', '데이트'];
   const BADGE_TYPES = ['BEST', 'NEW', 'HOT', '비건'];
+  const BADGE_MAP = {
+    'BEST': 'BEST',
+    'NEW': 'NEW',
+    'HOT': 'HOT',
+    '비건': 'VEGAN'
+  };
 
   // =================================================================
   // 2. 데이터 바인딩
@@ -298,8 +338,21 @@ export default function StoreScreen() {
     initStore();
   }, [storeDataResponse]);
 
+  // Force Refetch when menuCategories changes or simple refetch
+  // This helps UI refresh
+  useEffect(() => {
+    if (itemsDataResponse) {
+      // Optional: Log data or trigger local state update if needed
+    }
+  }, [itemsDataResponse]);
+
   const rawMenuList = itemsDataResponse?.data?.data || itemsDataResponse?.data || [];
   const menuListArray = Array.isArray(rawMenuList) ? rawMenuList : (rawMenuList.content || []);
+
+  // Calculate total representative items count
+  const representativeCount = menuListArray.filter(item =>
+    item.isRecommended || item.representative || item.isRepresentative
+  ).length;
 
   const menuList = menuListArray
     .map(item => ({
@@ -308,11 +361,17 @@ export default function StoreScreen() {
       price: item.price ? item.price.toString() : '0',
       desc: item.description || '',
       category: item.category || '메인메뉴',
-      isRepresentative: item.isRecommended || false,
-      isSoldOut: item.isSoldOut || false,
-      isHidden: item.isHidden || false,
+      isRepresentative: item.isRecommended || item.representative || item.isRepresentative || false, // Check all possible keys
+      isSoldOut: item.isSoldOut || item.soldOut || false, // Check all possible keys
+      isHidden: item.isHidden || item.hidden || false,
       badge: item.badge || null,
-      image: item.imageUrl || null
+      badge: item.badge || null,
+      image: item.imageUrl || null,
+      categoryId: item.itemCategoryId || item.categoryId || 1, // Preserve Category ID (Fallback to 1)
+      // Force category name based on ID if standard, otherwise use returned category
+      get category() {
+        return CATEGORY_ID_MAP[this.categoryId] || (item.category || '메인메뉴');
+      }
     }))
     .filter(item => item.category === selectedCategory);
 
@@ -371,7 +430,11 @@ export default function StoreScreen() {
       console.log("🚀 [매장 정보 수정] Direct Fetch 시작...");
 
       // 5. 전송
-      const response = await fetch(`https://api.looky.kr/api/stores/${myStoreId}`, {
+      console.log("🚀 [매장 정보 수정] Direct Fetch 시작...");
+
+      // 5. 전송
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+      const response = await fetch(`${baseUrl}/api/stores/${myStoreId}`, {
         method: "PATCH",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -418,22 +481,45 @@ export default function StoreScreen() {
     try {
       const tokenData = await getToken();
       const token = tokenData?.accessToken;
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
       const url = isEditMode && targetItemId
-        ? `https://api.looky.kr/api/items/${targetItemId}`
-        : `https://api.looky.kr/api/stores/${myStoreId}/items`;
+        ? `${baseUrl}/api/items/${targetItemId}`
+        : `${baseUrl}/api/stores/${myStoreId}/items`;
       const method = isEditMode ? 'PATCH' : 'POST';
 
+      // 선택된 카테고리명에 해당하는 ID 찾기 (DEPRECATED: apiCategories is empty)
+      // const targetCategory = apiCategories.find(c => c.name === menuForm.category);
+      // const categoryId = targetCategory ? targetCategory.id : 1; // Fallback needed if no match
+
       const formData = new FormData();
-      const requestData = {
-        name: menuForm.name,
-        price: priceNum,
-        description: menuForm.desc,
-        itemCategoryId: 1, // TODO: 실제 카테고리 ID 매핑 필요
-        badge: menuForm.badge,
-        hidden: menuForm.isHidden,
-        soldOut: menuForm.isSoldOut,
-        representative: menuForm.isRepresentative
-      };
+      let requestData = {};
+      const mappedBadge = BADGE_MAP[menuForm.badge] || null;
+
+      if (isEditMode) {
+        // PATCH: Use UpdateItemRequest schema (isSoldOut, isRepresentative)
+        requestData = {
+          name: menuForm.name,
+          price: priceNum,
+          description: menuForm.desc,
+          itemCategoryId: menuForm.categoryId ? menuForm.categoryId : 1,
+          badge: mappedBadge,
+          isHidden: menuForm.isHidden, // Schema: isHidden
+          isSoldOut: menuForm.isSoldOut, // Schema: isSoldOut
+          isRepresentative: menuForm.isRepresentative // Schema: isRepresentative
+        };
+      } else {
+        // POST: Use CreateItemRequest schema (soldOut, representative)
+        requestData = {
+          name: menuForm.name,
+          price: priceNum,
+          description: menuForm.desc,
+          itemCategoryId: menuForm.categoryId ? menuForm.categoryId : 1,
+          badge: mappedBadge,
+          hidden: menuForm.isHidden, // Schema: hidden
+          soldOut: menuForm.isSoldOut, // Schema: soldOut
+          representative: menuForm.isRepresentative // Schema: representative
+        };
+      }
 
       formData.append('request', {
         string: JSON.stringify(requestData),
@@ -451,7 +537,7 @@ export default function StoreScreen() {
         formData.append('image', "");
       }
 
-      console.log(`[Menu Save] ${method} ${url}`);
+      console.log(`[Menu Save] ${method} ${url}`, JSON.stringify(requestData));
 
       const response = await fetch(url, {
         method: method,
@@ -482,20 +568,28 @@ export default function StoreScreen() {
     try {
       const tokenData = await getToken();
       const token = tokenData?.accessToken;
-      const url = `https://api.looky.kr/api/items/${item.id}`;
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+      const url = `${baseUrl}/api/items/${item.id}`;
+
+      // 카테고리 ID 조회 (DEPRECATED: apiCategories is empty)
+      // const targetCategory = apiCategories.find(c => c.name === item.category);
+      // const categoryId = targetCategory ? targetCategory.id : 1;
+
+      const mappedBadge = BADGE_MAP[item.badge] || null;
 
       const formData = new FormData();
+      // PATCH Schema: isHidden, isSoldOut, isRepresentative
       const requestData = {
         name: item.name,
         price: parseInt(String(item.price).replace(/,/g, ''), 10),
         description: item.desc,
-        itemCategoryId: 1, // TODO: 실제 카테고리 ID 매핑 필요
-        badge: item.badge,
-        hidden: item.isHidden,
-        soldOut: item.isSoldOut,
-        representative: item.isRepresentative,
-        ...(field === 'isSoldOut' && { soldOut: value }),
-        ...(field === 'isRecommended' && { representative: value }),
+        itemCategoryId: item.categoryId || 1, // Use preserved ID
+        badge: mappedBadge,
+        isHidden: item.isHidden,
+        isSoldOut: item.isSoldOut,
+        isRepresentative: item.isRepresentative,
+        ...(field === 'isSoldOut' && { isSoldOut: value }), // field match logic
+        ...(field === 'isRecommended' && { isRepresentative: value }), // field match logic
       };
 
       formData.append('request', {
@@ -713,8 +807,8 @@ export default function StoreScreen() {
     try {
       const tokenData = await getToken();
       const token = tokenData?.accessToken;
-      // handleBasicSave와 동일한 하드코딩 URL 사용 (환경변수 이슈 배제)
-      const url = `https://api.looky.kr/api/stores/${myStoreId}`;
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+      const url = `${baseUrl}/api/stores/${myStoreId}`;
 
       console.log("[manualStoreUpdate] Request URL:", url);
 
@@ -762,6 +856,53 @@ export default function StoreScreen() {
     return days;
   };
 
+  const handleDeleteCategory = (categoryToDelete) => {
+    // Check if there are items in this category
+    const hasItems = menuListArray && menuListArray.some(item => item.category === categoryToDelete);
+
+    if (hasItems) {
+      Alert.alert(
+        "카테고리 삭제",
+        `'${categoryToDelete}' (해당 카테고리)에 있는 메뉴가 모두 삭제됩니다. 삭제하시겠습니까?`,
+        [
+          { text: "취소", style: "cancel" },
+          {
+            text: "삭제",
+            style: "destructive",
+            onPress: () => {
+              // Logic to delete or hide items would go here. 
+              // For now, we remove the category, effectively hiding the items from the filtered view.
+              const newCategories = menuCategories.filter(c => c !== categoryToDelete);
+              setMenuCategories(newCategories);
+              if (selectedCategory === categoryToDelete) {
+                setSelectedCategory(newCategories.length > 0 ? newCategories[0] : '');
+              }
+            }
+          }
+        ]
+      );
+    } else {
+      Alert.alert(
+        "카테고리 삭제",
+        `'${categoryToDelete}' 카테고리를 삭제하시겠습니까?`,
+        [
+          { text: "취소", style: "cancel" },
+          {
+            text: "삭제",
+            style: "destructive",
+            onPress: () => {
+              const newCategories = menuCategories.filter(c => c !== categoryToDelete);
+              setMenuCategories(newCategories);
+              if (selectedCategory === categoryToDelete) {
+                setSelectedCategory(newCategories.length > 0 ? newCategories[0] : '');
+              }
+            }
+          }
+        ]
+      );
+    }
+  };
+
   // # Menu Modal Logic
   const openAddMenuModal = () => {
     setIsEditMode(false);
@@ -769,8 +910,10 @@ export default function StoreScreen() {
     setMenuForm({
       name: '', price: '', desc: '', category: selectedCategory,
       isRepresentative: false, badge: null, isSoldOut: false, isHidden: false,
-      image: null
+      image: null,
+      categoryId: findCategoryId(selectedCategory) // Dynamically find ID
     });
+    setIsCategoryDropdownOpen(false);
     setMenuModalVisible(true);
   };
 
@@ -786,9 +929,12 @@ export default function StoreScreen() {
       badge: item.badge,
       isSoldOut: item.isSoldOut,
       isHidden: item.isHidden,
-      image: item.imageUrl
+      isHidden: item.isHidden,
+      image: item.image, // Fixed: use item.image instead of item.imageUrl
+      categoryId: item.categoryId // Load preserved ID
     });
     setMenuModalVisible(true);
+    setIsCategoryDropdownOpen(false);
   };
 
   const pickMenuImage = async () => {
@@ -797,7 +943,7 @@ export default function StoreScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 1,
+        quality: 0.5, // Reduced to fix 413 Payload Too Large
       });
 
       if (!result.canceled) {
@@ -843,622 +989,811 @@ export default function StoreScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <>
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
 
-        {/* Top Logo */}
-        <Image source={require('@/assets/images/shopowner/logo2.png')} style={styles.logo} resizeMode="contain" />
+          {/* Top Logo */}
+          <Image source={require('@/assets/images/shopowner/logo2.png')} style={styles.logo} resizeMode="contain" />
 
-        {/* Tabs */}
-        <View style={styles.tabWrapper}>
-          <View style={styles.tabContainer}>
-            <TouchableOpacity style={[styles.tabButton, activeTab === 'info' ? styles.activeTab : styles.inactiveTab]} onPress={() => setActiveTab('info')}>
-              <Text style={[styles.tabText, activeTab === 'info' ? styles.activeText : styles.inactiveText]}>매장 정보</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.tabButton, activeTab === 'management' ? styles.activeTab : styles.inactiveTab]} onPress={() => setActiveTab('management')}>
-              <Text style={[styles.tabText, activeTab === 'management' ? styles.activeText : styles.inactiveText]}>메뉴 관리</Text>
-            </TouchableOpacity>
+          {/* Tabs */}
+          <View style={styles.tabWrapper}>
+            <View style={styles.tabContainer}>
+              <TouchableOpacity style={[styles.tabButton, activeTab === 'info' ? styles.activeTab : styles.inactiveTab]} onPress={() => setActiveTab('info')}>
+                <Text style={[styles.tabText, activeTab === 'info' ? styles.activeText : styles.inactiveText]}>매장 정보</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.tabButton, activeTab === 'management' ? styles.activeTab : styles.inactiveTab]} onPress={() => setActiveTab('management')}>
+                <Text style={[styles.tabText, activeTab === 'management' ? styles.activeText : styles.inactiveText]}>메뉴 관리</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        {/* ==================== 매장 정보 탭 ==================== */}
-        {activeTab === 'info' ? (
-          <View style={{ gap: rs(20) }}>
-            <View style={styles.infoCard}>
-              <View style={styles.cardHeader}>
-                <View style={[styles.headerTitleRow, { alignItems: 'center' }]}>
-                  <View style={styles.iconCircle}><Ionicons name="storefront" size={rs(14)} color="#34B262" /></View>
-                  <Text style={styles.headerTitle}>기본 정보</Text>
+          {/* ==================== 매장 정보 탭 ==================== */}
+          {activeTab === 'info' ? (
+            <View style={{ gap: rs(20) }}>
+              <View style={styles.infoCard}>
+                <View style={styles.cardHeader}>
+                  <View style={[styles.headerTitleRow, { alignItems: 'center' }]}>
+                    <View style={styles.iconCircle}><Ionicons name="storefront" size={rs(14)} color="#34B262" /></View>
+                    <Text style={styles.headerTitle}>기본 정보</Text>
+                  </View>
+                  <TouchableOpacity style={styles.editButton} onPress={openBasicEditModal}>
+                    <Text style={styles.editButtonText}>수정</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.editButton} onPress={openBasicEditModal}>
-                  <Text style={styles.editButtonText}>수정</Text>
+                <InfoRow icon="storefront" label="가게명" content={<Text style={styles.bodyText}>{`${storeInfo.name} ${storeInfo.branch || ''}`.trim() || "이름 없음"}</Text>} />
+                <InfoRow icon="grid" label="가게 종류" content={<View style={styles.tagContainer}>{storeInfo.categories.length > 0 ? storeInfo.categories.map((cat, i) => <Tag key={i} text={cat} />) : <Text style={styles.placeholderText}>정보 없음</Text>}</View>} />
+                <InfoRow icon="sparkles" label="가게 분위기" content={<View style={styles.tagContainer}>{storeInfo.vibes.length > 0 ? storeInfo.vibes.map((v, i) => <Tag key={i} text={v} />) : <Text style={styles.placeholderText}>정보 없음</Text>}</View>} />
+                <InfoRow icon="information-circle" label="가게 소개" content={storeInfo.intro ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{storeInfo.intro}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
+                <InfoRow
+                  icon="image"
+                  label="가게 이미지"
+                  content={
+                    <View style={styles.imageDisplayRow}>
+                      {storeInfo.bannerImage ? (
+                        <Image source={{ uri: storeInfo.bannerImage }} style={{ width: rs(153), height: rs(90), borderRadius: rs(8) }} resizeMode="cover" />
+                      ) : (
+                        <View style={{ width: rs(153), height: rs(90), backgroundColor: '#ECECECCC', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#AAAAAA' }}>
+                          <Text style={{ color: '#AAAAAA', fontSize: rs(12) }}>배너 이미지 없음</Text>
+                        </View>
+                      )}
+                    </View>
+                  }
+                />
+                <InfoRow icon="location" label="주소" content={<View style={{ marginTop: rs(2) }}>{storeInfo.address ? (<><Text style={styles.bodyText}>{storeInfo.address}</Text>{storeInfo.detailAddress ? <Text style={[styles.bodyText, { color: '#828282', marginTop: rs(2) }]}>{storeInfo.detailAddress}</Text> : null}</>) : <Text style={[styles.placeholderText, { marginTop: 0 }]}>정보 없음</Text>}</View>} />
+                <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{formatPhoneNumber(storeInfo.phone)}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
+              </View>
+
+              {/* 영업시간 */}
+              <View style={styles.infoCard}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.headerTitleRow}>
+                    <View style={styles.timeIconCircle}><Ionicons name="time" size={rs(18)} color="#34B262" /></View>
+                    <View><Text style={styles.headerTitle}>영업시간/브레이크타임</Text><Text style={styles.subTitle}>상단: 영업시간, <Text style={{ color: '#FF6200' }}>하단: 브레이크타임</Text></Text></View>
+                  </View>
+                  <TouchableOpacity style={styles.editButton} onPress={openHoursEditModal}><Text style={styles.editButtonText}>수정</Text></TouchableOpacity>
+                </View>
+                <View style={{ gap: rs(8) }}>
+                  {operatingHours.map((item, index) => (
+                    <View key={index} style={[styles.hourRow, item.isClosed && { opacity: 0.3 }]}>
+                      <Text style={styles.dayText}>{item.day}</Text>
+                      {item.isClosed ? (
+                        <View style={styles.closedBadge}><Text style={styles.timeText}>휴무</Text></View>
+                      ) : (
+                        <View style={{ flexDirection: 'column', gap: rs(4) }}>
+                          <View style={styles.timeDisplayContainer}>
+                            <Text style={styles.timeText}>{item.open}</Text>
+                            <Text style={styles.hyphen}>-</Text>
+                            <Text style={styles.timeText}>{item.close}</Text>
+                          </View>
+                          {(item.breakStart && item.breakEnd) && (
+                            <View style={styles.timeDisplayContainer}>
+                              <Text style={styles.breakTimeText}>{item.breakStart}</Text>
+                              <Text style={styles.hyphenOrange}>-</Text>
+                              <Text style={styles.breakTimeText}>{item.breakEnd}</Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* 매장 소식 (Placeholder) */}
+              <TouchableOpacity style={[styles.infoCard, { paddingVertical: rs(22) }]} activeOpacity={0.7} onPress={() => navigation.navigate('StoreNews', { storeId: myStoreId })}>
+                <View style={styles.newsContentRow}>
+                  <View style={styles.newsLeftSection}>
+                    <View style={styles.timeIconCircle}><Ionicons name="megaphone" size={rs(18)} color="#34B262" /></View>
+                    <View><Text style={styles.headerTitle}>매장 소식</Text><Text style={styles.subTitle}>고객에게 전할 공지사항</Text></View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={rs(18)} color="#34B262" />
+                </View>
+              </TouchableOpacity>
+
+              {/* 휴무일 캘린더 */}
+              <View style={styles.infoCard}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.headerTitleRow}>
+                    <View style={styles.timeIconCircle}><Ionicons name="calendar" size={rs(18)} color="#34B262" /></View>
+                    <View><Text style={styles.headerTitle}>휴무일</Text><Text style={styles.subTitle}>임시 휴무일을 지정합니다</Text></View>
+                  </View>
+                  <TouchableOpacity style={styles.editButton} onPress={openHolidayEditModal}><Text style={styles.editButtonText}>수정</Text></TouchableOpacity>
+                </View>
+                <View style={styles.calendarControl}>
+                  <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.navButton}><Ionicons name="chevron-back" size={rs(20)} color="#ccc" /></TouchableOpacity>
+                  <Text style={styles.calendarTitle}>{MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}</Text>
+                  <TouchableOpacity onPress={() => changeMonth(1)} style={styles.navButton}><Ionicons name="chevron-forward" size={rs(20)} color="#ccc" /></TouchableOpacity>
+                </View>
+                <View style={styles.weekHeader}>
+                  {WEEKDAYS.map((day, index) => (<Text key={index} style={[styles.weekText, index === 0 && { color: '#FF3E41' }, index === 6 && { color: '#007AFF' }]}>{day}</Text>))}
+                </View>
+                <View style={styles.daysGrid}>
+                  {generateCalendar().map((date, index) => {
+                    if (!date) return <View key={index} style={styles.dayCell} />;
+                    const dateStr = getFormatDate(date);
+                    const isSelected = selectedHolidays.includes(dateStr);
+                    const isPast = dateStr < getFormatDate(new Date());
+                    const dayOfWeek = date.getDay();
+
+                    const cellStyle = [styles.dayBtn];
+                    const textStyle = [styles.dayTextNum];
+                    if (dayOfWeek === 0) textStyle.push({ color: '#FF3E41' }); else if (dayOfWeek === 6) textStyle.push({ color: '#007AFF' });
+                    if (isSelected) {
+                      cellStyle.push(styles.dayBtnSelected); textStyle.push({ color: 'white', fontWeight: '700' });
+                    }
+                    if (isPast) textStyle.push({ color: '#E0E0E0' });
+
+                    return (<View key={index} style={styles.dayCell}><TouchableOpacity style={cellStyle} disabled={true} activeOpacity={1}><Text style={textStyle}>{date.getDate()}</Text></TouchableOpacity></View>);
+                  })}
+                </View>
+              </View>
+
+              {/* 영업 일시 중지 */}
+              <View style={[styles.infoCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: rs(15), gap: rs(10) }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(10), flex: 1 }}>
+                  <View style={styles.alertIconCircle}><Ionicons name="warning" size={rs(18)} color="#DC2626" /></View>
+                  <View style={{ flex: 1 }}><Text style={styles.headerTitle}>영업 일시 중지</Text><Text style={styles.subTitle}>급한 사정 시 가게를 잠시 닫습니다</Text></View>
+                </View>
+                <TouchableOpacity activeOpacity={0.8} onPress={() => handlePauseToggle(!isPaused)}>
+                  <View style={[styles.customSwitch, isPaused ? styles.switchOn : styles.switchOff]}><View style={styles.switchKnob} /></View>
                 </TouchableOpacity>
               </View>
-              <InfoRow icon="storefront" label="가게명" content={<Text style={styles.bodyText}>{`${storeInfo.name} ${storeInfo.branch || ''}`.trim() || "이름 없음"}</Text>} />
-              <InfoRow icon="grid" label="가게 종류" content={<View style={styles.tagContainer}>{storeInfo.categories.length > 0 ? storeInfo.categories.map((cat, i) => <Tag key={i} text={cat} />) : <Text style={styles.placeholderText}>정보 없음</Text>}</View>} />
-              <InfoRow icon="sparkles" label="가게 분위기" content={<View style={styles.tagContainer}>{storeInfo.vibes.length > 0 ? storeInfo.vibes.map((v, i) => <Tag key={i} text={v} />) : <Text style={styles.placeholderText}>정보 없음</Text>}</View>} />
-              <InfoRow icon="information-circle" label="가게 소개" content={storeInfo.intro ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{storeInfo.intro}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
-              <InfoRow
-                icon="image"
-                label="가게 이미지"
-                content={
-                  <View style={styles.imageDisplayRow}>
-                    {storeInfo.bannerImage ? (
-                      <Image source={{ uri: storeInfo.bannerImage }} style={{ width: rs(153), height: rs(90), borderRadius: rs(8) }} resizeMode="cover" />
-                    ) : (
-                      <View style={{ width: rs(153), height: rs(90), backgroundColor: '#ECECECCC', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#AAAAAA' }}>
-                        <Text style={{ color: '#AAAAAA', fontSize: rs(12) }}>배너 이미지 없음</Text>
+              <View style={{ height: rs(20) }} />
+            </View>
+          ) : (
+            /* ==================== 메뉴 관리 탭 ==================== */
+            <View style={{ flex: 1 }}>
+              <View style={styles.categoryScrollContainer}>
+                <View style={{ flex: 1 }}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center', paddingRight: rs(10) }}>
+                    {menuCategories.map((category, index) => (
+                      <TouchableOpacity key={index} style={[styles.categoryTab, selectedCategory === category ? styles.categoryTabSelected : styles.categoryTabUnselected]} onPress={() => setSelectedCategory(category)}>
+                        <Text style={[styles.categoryText, selectedCategory === category ? styles.categoryTextSelected : styles.categoryTextUnselected]}>{category}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+                <TouchableOpacity style={styles.addCategoryBtn} onPress={() => setCategoryModalVisible(true)}>
+                  <View style={styles.addCategoryIcon}><Ionicons name="add" size={rs(14)} color="#34B262" /></View>
+                  <Text style={styles.addCategoryText}>메뉴 카테고리</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* 메뉴 리스트 영역 */}
+              {isItemsLoading ? (
+                <ActivityIndicator size="small" color="#34B262" style={{ marginVertical: 20 }} />
+              ) : menuList.length > 0 ? (
+                <View style={styles.menuListContainer}>
+                  {menuList.map((item) => (
+                    <View key={item.id} style={styles.menuCard}>
+                      <View style={styles.dragHandle}>
+                        <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
+                        <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
+                        <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
                       </View>
+                      <View style={[styles.menuContent, item.isSoldOut && { opacity: 0.5 }]}>
+                        <View style={styles.menuImageContainer}>
+                          {item.image ? (
+                            <Image source={{ uri: item.image }} style={styles.menuImage} resizeMode="cover" />
+                          ) : (
+                            <View style={styles.menuImagePlaceholder} />
+                          )}
+                          {item.isSoldOut && <View style={styles.soldOutOverlay} />}
+                          {item.isRepresentative && <View style={styles.imageStarBadge}><Ionicons name="star" size={rs(8)} color="white" /></View>}
+                        </View>
+                        <View style={styles.menuInfo}>
+                          <View style={styles.menuTitleRow}>
+                            <Text style={styles.menuName}>{item.name}</Text>
+                            {item.badge && <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{item.badge}</Text></View>}
+                          </View>
+                          <Text style={styles.menuPrice}>{Number(item.price).toLocaleString()}원</Text>
+                          <Text style={styles.menuDesc} numberOfLines={1}>{item.desc}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.menuActions}>
+                        {/* 대표메뉴 토글 */}
+                        <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isRecommended', !item.isRepresentative)}>
+                          <View style={[styles.actionCircle, item.isRepresentative ? { backgroundColor: '#FFFACA' } : { backgroundColor: '#F5F5F5' }]}>
+                            <Ionicons name="star" size={rs(12)} color={item.isRepresentative ? "#EAB308" : "#DADADA"} />
+                          </View>
+                        </TouchableOpacity>
+                        {/* 품절 토글 */}
+                        <View style={styles.soldOutContainer}>
+                          <Text style={styles.soldOutLabel}>품절</Text>
+                          <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isSoldOut', !item.isSoldOut)}>
+                            <View style={[styles.soldOutSwitch, item.isSoldOut ? styles.soldOutOn : styles.soldOutOff]}><View style={styles.soldOutKnob} /></View>
+                          </TouchableOpacity>
+                        </View>
+                        {/* 수정 */}
+                        <TouchableOpacity onPress={() => openEditMenuModal(item)}>
+                          <Ionicons name="pencil" size={rs(16)} color="#828282" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={{ height: rs(200), justifyContent: 'center', alignItems: 'center', gap: rs(10) }}>
+                  <Ionicons name="restaurant-outline" size={rs(40)} color="#ccc" />
+                  <Text style={{ color: '#ccc' }}>등록된 메뉴가 없습니다.</Text>
+                </View>
+              )}
+
+              {/* + 메뉴 추가하기 버튼 (Floating) */}
+              <View style={{ height: rs(80) }} />
+
+              {/* 카테고리 관리 모달 (UI Only) */}
+              <Modal transparent={true} visible={categoryModalVisible} animationType="fade" onRequestClose={() => setCategoryModalVisible(false)}>
+                <TouchableOpacity style={styles.catModalOverlay} activeOpacity={1} onPress={() => setCategoryModalVisible(false)}>
+                  <View style={[styles.catModalContent, { width: '80%', maxHeight: rs(400) }]}>
+                    <ScrollView style={{ maxHeight: rs(300) }} nestedScrollEnabled={true}>
+                      {menuCategories.map((cat, idx) => (
+                        <View
+                          key={idx}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            paddingRight: rs(10),
+                            borderRadius: rs(8),
+                            marginVertical: rs(2),
+                            marginHorizontal: rs(8)
+                          }}
+                        >
+                          <TouchableOpacity
+                            style={{
+                              flex: 1,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              paddingHorizontal: rs(12),
+                              paddingVertical: rs(10),
+                              backgroundColor: selectedCategory === cat ? '#F6A823' : 'transparent',
+                              borderRadius: rs(8)
+                            }}
+                            onPress={() => {
+                              setSelectedCategory(cat);
+                              setCategoryModalVisible(false);
+                            }}
+                          >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
+                              {selectedCategory === cat && <Ionicons name="checkmark" size={rs(14)} color="white" />}
+                              <Text style={[styles.dropdownItemText, selectedCategory === cat && styles.dropdownItemTextChecked]}>{cat}</Text>
+                            </View>
+                          </TouchableOpacity>
+
+                          {/* Delete Button */}
+                          <TouchableOpacity
+                            style={{ padding: rs(10), justifyContent: 'center', alignItems: 'center' }}
+                            onPress={() => handleDeleteCategory(cat)}
+                          >
+                            <Ionicons name="trash-outline" size={rs(16)} color="#828282" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+
+                      {/* 인라인 카테고리 추가 입력 (모달용) */}
+                      {isAddingCategory ? (
+                        <View style={{ paddingHorizontal: rs(10), paddingVertical: rs(8) }}>
+                          <View style={styles.newCategoryInputBox}>
+                            <TextInput
+                              style={styles.newCategoryInput}
+                              placeholder="새 카테고리 입력"
+                              value={newCategoryName}
+                              onChangeText={setNewCategoryName}
+                              maxLength={20}
+                              autoFocus={true}
+                              onSubmitEditing={() => {
+                                if (newCategoryName.trim()) {
+                                  setMenuCategories([...menuCategories, newCategoryName.trim()]);
+                                  setNewCategoryName('');
+                                  setIsAddingCategory(false);
+                                }
+                              }}
+                            />
+                            <Text style={styles.charCount}>{newCategoryName.length}/20</Text>
+                          </View>
+                        </View>
+                      ) : null}
+                    </ScrollView>
+
+                    {/* + 카테고리 추가 버튼 (모달용) */}
+                    {!isAddingCategory && (
+                      <TouchableOpacity
+                        style={[styles.dropdownItem, { justifyContent: 'center' }]}
+                        onPress={() => setIsAddingCategory(true)}
+                      >
+                        <Ionicons name="add" size={rs(14)} color="#828282" />
+                        <Text style={{ color: '#828282', fontSize: rs(11), marginLeft: rs(4) }}>카테고리 추가</Text>
+                      </TouchableOpacity>
                     )}
                   </View>
-                }
-              />
-              <InfoRow icon="location" label="주소" content={<View style={{ marginTop: rs(2) }}>{storeInfo.address ? (<><Text style={styles.bodyText}>{storeInfo.address}</Text>{storeInfo.detailAddress ? <Text style={[styles.bodyText, { color: '#828282', marginTop: rs(2) }]}>{storeInfo.detailAddress}</Text> : null}</>) : <Text style={[styles.placeholderText, { marginTop: 0 }]}>정보 없음</Text>}</View>} />
-              <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{formatPhoneNumber(storeInfo.phone)}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
-            </View>
+                </TouchableOpacity>
+              </Modal>
+            </View >
+          )
+          }
+        </ScrollView >
 
-            {/* 영업시간 */}
-            <View style={styles.infoCard}>
-              <View style={styles.cardHeader}>
-                <View style={styles.headerTitleRow}>
-                  <View style={styles.timeIconCircle}><Ionicons name="time" size={rs(18)} color="#34B262" /></View>
-                  <View><Text style={styles.headerTitle}>영업시간/브레이크타임</Text><Text style={styles.subTitle}>상단: 영업시간, <Text style={{ color: '#FF6200' }}>하단: 브레이크타임</Text></Text></View>
-                </View>
-                <TouchableOpacity style={styles.editButton} onPress={openHoursEditModal}><Text style={styles.editButtonText}>수정</Text></TouchableOpacity>
+        {/* =================================================================
+          # Modal: Menu Add/Edit (메뉴 추가/수정) - API 연결됨
+          ================================================================= */}
+        < Modal animationType="slide" transparent={true} visible={menuModalVisible} onRequestClose={() => setMenuModalVisible(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.menuModalHeader}>
+                <Text style={styles.modalTitle}>{isEditMode ? '메뉴 수정' : '메뉴 추가'}</Text>
+                <TouchableOpacity onPress={() => setMenuModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Ionicons name="close" size={rs(24)} color="#333" />
+                </TouchableOpacity>
               </View>
-              <View style={{ gap: rs(8) }}>
-                {operatingHours.map((item, index) => (
-                  <View key={index} style={[styles.hourRow, item.isClosed && { opacity: 0.3 }]}>
-                    <Text style={styles.dayText}>{item.day}</Text>
-                    {item.isClosed ? (
-                      <View style={styles.closedBadge}><Text style={styles.timeText}>휴무</Text></View>
-                    ) : (
-                      <View style={{ flexDirection: 'column', gap: rs(4) }}>
-                        <View style={styles.timeDisplayContainer}>
-                          <Text style={styles.timeText}>{item.open}</Text>
-                          <Text style={styles.hyphen}>-</Text>
-                          <Text style={styles.timeText}>{item.close}</Text>
-                        </View>
-                        {(item.breakStart && item.breakEnd) && (
-                          <View style={styles.timeDisplayContainer}>
-                            <Text style={styles.breakTimeText}>{item.breakStart}</Text>
-                            <Text style={styles.hyphenOrange}>-</Text>
-                            <Text style={styles.breakTimeText}>{item.breakEnd}</Text>
+
+              <ScrollView contentContainerStyle={styles.modalScroll}>
+                {/* 1. 기본 정보 */}
+                <Text style={styles.sectionTitle}>기본 정보</Text>
+
+                {/* 사진 추가 */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>메뉴 사진(1:1 비율 권장)</Text>
+                  {menuForm.image ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(15) }}>
+                      <Image source={{ uri: menuForm.image }} style={{ width: rs(80), height: rs(80), borderRadius: rs(8) }} resizeMode="cover" />
+                      <TouchableOpacity style={styles.changePhotoBtn} onPress={pickMenuImage}>
+                        <Text style={styles.changePhotoBtnText}>사진 변경</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity style={styles.photoUploadBox} onPress={pickMenuImage}>
+                      <Ionicons name="camera" size={rs(30)} color="rgba(130, 130, 130, 0.70)" />
+                      <Text style={styles.photoUploadText}>사진 추가</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* 메뉴명 */}
+                <View style={styles.inputGroup}>
+                  <View style={{ flexDirection: 'row' }}><Text style={styles.inputLabel}>메뉴명 </Text><Text style={styles.requiredStar}>*</Text></View>
+                  <View style={styles.textInputBox}>
+                    <TextInput style={styles.textInput} placeholder="예: 마늘간장치킨" placeholderTextColor="#999" value={menuForm.name} onChangeText={(t) => setMenuForm({ ...menuForm, name: t })} />
+                    <Text style={styles.charCount}>{menuForm.name.length}/20</Text>
+                  </View>
+                </View>
+
+                {/* 가격 */}
+                <View style={styles.inputGroup}>
+                  <View style={{ flexDirection: 'row' }}><Text style={styles.inputLabel}>가격 </Text><Text style={styles.requiredStar}>*</Text></View>
+                  <View style={styles.textInputBox}>
+                    <TextInput style={styles.textInput} keyboardType="numeric" placeholder="0" placeholderTextColor="#999" value={menuForm.price} onChangeText={(t) => setMenuForm({ ...menuForm, price: t })} />
+                    <Text style={styles.unitText}>원</Text>
+                  </View>
+                </View>
+
+                {/* 설명 */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>메뉴 설명</Text>
+                  <View style={[styles.textInputBox, { height: rs(60), alignItems: 'flex-start', paddingVertical: rs(10) }]}>
+                    <TextInput style={[styles.textInput, { height: '100%' }]} multiline placeholder="메뉴 설명을 입력해주세요" placeholderTextColor="#999" value={menuForm.desc} onChangeText={(t) => setMenuForm({ ...menuForm, desc: t })} />
+                  </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                {/* 2. 카테고리 및 속성 */}
+                <Text style={styles.sectionTitle}>카테고리 및 속성</Text>
+
+                {/* 메뉴 카테고리 (dropdown) */}
+                <View style={[styles.inputGroup, { zIndex: 1000 }]}>
+                  <Text style={styles.inputLabel}>메뉴 카테고리</Text>
+                  <View style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                      style={[styles.dropdownBox, isCategoryDropdownOpen && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}
+                      onPress={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.dropdownText}>{menuForm.category}</Text>
+                      <Ionicons name={isCategoryDropdownOpen ? "caret-up" : "caret-down"} size={rs(10)} color="#333" />
+                    </TouchableOpacity>
+
+                    {isCategoryDropdownOpen && (
+                      <View style={styles.dropdownList}>
+                        {menuCategories.length > 0 ? (
+                          <>
+                            <ScrollView style={{ maxHeight: rs(200) }} nestedScrollEnabled={true}>
+                              {menuCategories.map((cat, idx) => (
+                                <TouchableOpacity
+                                  key={idx}
+                                  style={[
+                                    styles.dropdownItem,
+                                    menuForm.category === cat && styles.dropdownItemChecked,
+                                    { borderRadius: rs(8), marginVertical: rs(2), marginHorizontal: rs(8) }
+                                  ]}
+                                  onPress={() => {
+                                    const newId = findCategoryId(cat);
+                                    setMenuForm({ ...menuForm, category: cat, categoryId: newId });
+                                    // setIsCategoryDropdownOpen(false); // Keep open as requested
+                                  }}
+                                >
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
+                                    {menuForm.category === cat && <Ionicons name="checkmark" size={rs(14)} color="white" />}
+                                    <Text style={[styles.dropdownItemText, menuForm.category === cat && styles.dropdownItemTextChecked]}>{cat}</Text>
+                                  </View>
+                                  {/* 삭제 버튼 등 추가 가능 */}
+                                </TouchableOpacity>
+                              ))}
+
+                              {/* 인라인 카테고리 추가 입력 */}
+                              {isAddingCategory ? (
+                                <View style={{ paddingHorizontal: rs(10), paddingVertical: rs(8) }}>
+                                  <View style={styles.newCategoryInputBox}>
+                                    <TextInput
+                                      style={styles.newCategoryInput}
+                                      placeholder="새 카테고리 입력"
+                                      value={newCategoryName}
+                                      onChangeText={setNewCategoryName}
+                                      maxLength={20}
+                                      autoFocus={true}
+                                      onSubmitEditing={() => {
+                                        if (newCategoryName.trim()) {
+                                          setMenuCategories([...menuCategories, newCategoryName.trim()]);
+                                          setNewCategoryName('');
+                                          setIsAddingCategory(false);
+                                        }
+                                      }}
+                                    />
+                                    <Text style={styles.charCount}>{newCategoryName.length}/20</Text>
+                                  </View>
+                                </View>
+                              ) : null}
+                            </ScrollView>
+
+                            {/* + 카테고리 추가 버튼 */}
+                            {!isAddingCategory && (
+                              <TouchableOpacity
+                                style={[styles.dropdownItem, { justifyContent: 'center' }]} // Removed borderTopWidth
+                                onPress={() => setIsAddingCategory(true)}
+                              >
+                                <Ionicons name="add" size={rs(14)} color="#828282" />
+                                <Text style={{ color: '#828282', fontSize: rs(11), marginLeft: rs(4) }}>카테고리 추가</Text>
+                              </TouchableOpacity>
+                            )}
+                          </>
+                        ) : (
+                          <View style={{ padding: rs(20), alignItems: 'center', gap: rs(10) }}>
+                            <Text style={{ fontSize: rs(12), color: 'black', textAlign: 'center', lineHeight: rs(18) }}>카테고리가 없습니다.{'\n'}추가로 생성해주세요</Text>
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: rs(4), marginTop: rs(5) }} onPress={() => setIsAddingCategory(true)}>
+                              <Ionicons name="add" size={rs(14)} color="#828282" />
+                              <Text style={{ fontSize: rs(12), color: '#828282', fontWeight: '500' }}>카테고리 생성</Text>
+                            </TouchableOpacity>
                           </View>
                         )}
                       </View>
                     )}
                   </View>
-                ))}
-              </View>
-            </View>
-
-            {/* 매장 소식 (Placeholder) */}
-            <TouchableOpacity style={[styles.infoCard, { paddingVertical: rs(22) }]} activeOpacity={0.7} onPress={() => navigation.navigate('StoreNews', { storeId: myStoreId })}>
-              <View style={styles.newsContentRow}>
-                <View style={styles.newsLeftSection}>
-                  <View style={styles.timeIconCircle}><Ionicons name="megaphone" size={rs(18)} color="#34B262" /></View>
-                  <View><Text style={styles.headerTitle}>매장 소식</Text><Text style={styles.subTitle}>고객에게 전할 공지사항</Text></View>
                 </View>
-                <Ionicons name="chevron-forward" size={rs(18)} color="#34B262" />
-              </View>
-            </TouchableOpacity>
 
-            {/* 휴무일 캘린더 */}
-            <View style={styles.infoCard}>
-              <View style={styles.cardHeader}>
-                <View style={styles.headerTitleRow}>
-                  <View style={styles.timeIconCircle}><Ionicons name="calendar" size={rs(18)} color="#34B262" /></View>
-                  <View><Text style={styles.headerTitle}>휴무일</Text><Text style={styles.subTitle}>임시 휴무일을 지정합니다</Text></View>
-                </View>
-                <TouchableOpacity style={styles.editButton} onPress={openHolidayEditModal}><Text style={styles.editButtonText}>수정</Text></TouchableOpacity>
-              </View>
-              <View style={styles.calendarControl}>
-                <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.navButton}><Ionicons name="chevron-back" size={rs(20)} color="#ccc" /></TouchableOpacity>
-                <Text style={styles.calendarTitle}>{MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}</Text>
-                <TouchableOpacity onPress={() => changeMonth(1)} style={styles.navButton}><Ionicons name="chevron-forward" size={rs(20)} color="#ccc" /></TouchableOpacity>
-              </View>
-              <View style={styles.weekHeader}>
-                {WEEKDAYS.map((day, index) => (<Text key={index} style={[styles.weekText, index === 0 && { color: '#FF3E41' }, index === 6 && { color: '#007AFF' }]}>{day}</Text>))}
-              </View>
-              <View style={styles.daysGrid}>
-                {generateCalendar().map((date, index) => {
-                  if (!date) return <View key={index} style={styles.dayCell} />;
-                  const dateStr = getFormatDate(date);
-                  const isSelected = selectedHolidays.includes(dateStr);
-                  const isPast = dateStr < getFormatDate(new Date());
-                  const dayOfWeek = date.getDay();
-
-                  const cellStyle = [styles.dayBtn];
-                  const textStyle = [styles.dayTextNum];
-                  if (dayOfWeek === 0) textStyle.push({ color: '#FF3E41' }); else if (dayOfWeek === 6) textStyle.push({ color: '#007AFF' });
-                  if (isSelected) {
-                    cellStyle.push(styles.dayBtnSelected); textStyle.push({ color: 'white', fontWeight: '700' });
-                  }
-                  if (isPast) textStyle.push({ color: '#E0E0E0' });
-
-                  return (<View key={index} style={styles.dayCell}><TouchableOpacity style={cellStyle} disabled={true} activeOpacity={1}><Text style={textStyle}>{date.getDate()}</Text></TouchableOpacity></View>);
-                })}
-              </View>
-            </View>
-
-            {/* 영업 일시 중지 */}
-            <View style={[styles.infoCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: rs(15), gap: rs(10) }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(10), flex: 1 }}>
-                <View style={styles.alertIconCircle}><Ionicons name="warning" size={rs(18)} color="#DC2626" /></View>
-                <View style={{ flex: 1 }}><Text style={styles.headerTitle}>영업 일시 중지</Text><Text style={styles.subTitle}>급한 사정 시 가게를 잠시 닫습니다</Text></View>
-              </View>
-              <TouchableOpacity activeOpacity={0.8} onPress={() => handlePauseToggle(!isPaused)}>
-                <View style={[styles.customSwitch, isPaused ? styles.switchOn : styles.switchOff]}><View style={styles.switchKnob} /></View>
-              </TouchableOpacity>
-            </View>
-            <View style={{ height: rs(20) }} />
-          </View>
-        ) : (
-          /* ==================== 메뉴 관리 탭 ==================== */
-          <View style={{ flex: 1 }}>
-            <View style={styles.categoryScrollContainer}>
-              <View style={{ flex: 1 }}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center', paddingRight: rs(10) }}>
-                  {menuCategories.map((category, index) => (
-                    <TouchableOpacity key={index} style={[styles.categoryTab, selectedCategory === category ? styles.categoryTabSelected : styles.categoryTabUnselected]} onPress={() => setSelectedCategory(category)}>
-                      <Text style={[styles.categoryText, selectedCategory === category ? styles.categoryTextSelected : styles.categoryTextUnselected]}>{category}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-              <TouchableOpacity style={styles.addCategoryBtn} onPress={() => setCategoryModalVisible(true)}>
-                <View style={styles.addCategoryIcon}><Ionicons name="add" size={rs(14)} color="#34B262" /></View>
-                <Text style={styles.addCategoryText}>메뉴 카테고리</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* 메뉴 리스트 영역 */}
-            {isItemsLoading ? (
-              <ActivityIndicator size="small" color="#34B262" style={{ marginVertical: 20 }} />
-            ) : menuList.length > 0 ? (
-              <View style={styles.menuListContainer}>
-                {menuList.map((item) => (
-                  <View key={item.id} style={styles.menuCard}>
-                    <View style={styles.dragHandle}>
-                      <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
-                      <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
-                      <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
-                    </View>
-                    <View style={[styles.menuContent, item.isSoldOut && { opacity: 0.5 }]}>
-                      <View style={styles.menuImageContainer}>
-                        <View style={styles.menuImagePlaceholder} />
-                        {item.isSoldOut && <View style={styles.soldOutOverlay} />}
-                        {item.isRepresentative && <View style={styles.imageStarBadge}><Ionicons name="star" size={rs(8)} color="white" /></View>}
-                      </View>
-                      <View style={styles.menuInfo}>
-                        <View style={styles.menuTitleRow}>
-                          <Text style={styles.menuName}>{item.name}</Text>
-                          {item.badge && <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{item.badge}</Text></View>}
-                        </View>
-                        <Text style={styles.menuPrice}>{Number(item.price).toLocaleString()}원</Text>
-                        <Text style={styles.menuDesc} numberOfLines={1}>{item.desc}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.menuActions}>
-                      {/* 대표메뉴 토글 */}
-                      <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isRecommended', !item.isRepresentative)}>
-                        <View style={[styles.actionCircle, item.isRepresentative ? { backgroundColor: '#FFFACA' } : { backgroundColor: '#F5F5F5' }]}>
-                          <Ionicons name="star" size={rs(12)} color={item.isRepresentative ? "#EAB308" : "#DADADA"} />
-                        </View>
-                      </TouchableOpacity>
-                      {/* 품절 토글 */}
-                      <View style={styles.soldOutContainer}>
-                        <Text style={styles.soldOutLabel}>품절</Text>
-                        <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isSoldOut', !item.isSoldOut)}>
-                          <View style={[styles.soldOutSwitch, item.isSoldOut ? styles.soldOutOn : styles.soldOutOff]}><View style={styles.soldOutKnob} /></View>
-                        </TouchableOpacity>
-                      </View>
-                      {/* 수정 */}
-                      <TouchableOpacity onPress={() => openEditMenuModal(item)}>
-                        <Ionicons name="pencil" size={rs(16)} color="#828282" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View style={{ height: rs(200), justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: '#ccc' }}>등록된 메뉴가 없습니다.</Text>
-              </View>
-            )}
-
-            {/* + 메뉴 추가하기 버튼 (하단) */}
-            <TouchableOpacity style={styles.addMenuButton} onPress={openAddMenuModal}>
-              <View style={styles.addMenuIconBox}><Ionicons name="add" size={rs(10)} color="#34B262" /></View>
-              <Text style={styles.addMenuText}>메뉴 추가하기</Text>
-            </TouchableOpacity>
-            <View style={{ height: rs(30) }} />
-
-            {/* 카테고리 관리 모달 (UI Only) */}
-            <Modal transparent={true} visible={categoryModalVisible} animationType="fade" onRequestClose={() => setCategoryModalVisible(false)}>
-              <TouchableOpacity style={styles.catModalOverlay} activeOpacity={1} onPress={() => setCategoryModalVisible(false)}>
-                <View style={styles.catModalContent}>
-                  {menuCategories.map((cat, idx) => (
-                    <View key={idx} style={styles.catModalItem}>
-                      <View style={{ width: rs(25), height: rs(20), backgroundColor: idx === 0 ? '#F6A823' : 'white', borderRadius: rs(8) }} />
-                      <View style={styles.catModalIconBoxWhite}><Ionicons name="reorder-two" size={rs(12)} color={idx === 0 ? 'white' : '#DADADA'} /></View>
-                      <Text style={idx === 0 ? styles.catModalTextWhite : styles.catModalTextBlack}>{cat}</Text>
-                    </View>
-                  ))}
-                </View>
-              </TouchableOpacity>
-            </Modal>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* =================================================================
-          # Modal: Menu Add/Edit (메뉴 추가/수정) - API 연결됨
-          ================================================================= */}
-      <Modal animationType="slide" transparent={true} visible={menuModalVisible} onRequestClose={() => setMenuModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.menuModalHeader}>
-              <Text style={styles.modalTitle}>{isEditMode ? '메뉴 수정' : '메뉴 추가'}</Text>
-              <TouchableOpacity onPress={() => setMenuModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Ionicons name="close" size={rs(24)} color="#333" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.modalScroll}>
-              {/* 1. 기본 정보 */}
-              <Text style={styles.sectionTitle}>기본 정보</Text>
-
-              {/* 사진 추가 */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>메뉴 사진(1:1 비율 권장)</Text>
-                <TouchableOpacity style={styles.photoUploadBox} onPress={pickMenuImage}>
-                  {menuForm.image ? (
-                    <Image source={{ uri: menuForm.image }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
-                  ) : (
-                    <>
-                      <View style={styles.cameraIconBox}><Ionicons name="camera" size={rs(18)} color="rgba(130, 130, 130, 0.70)" /></View>
-                      <Text style={styles.photoUploadText}>사진 추가</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {/* 메뉴명 */}
-              <View style={styles.inputGroup}>
-                <View style={{ flexDirection: 'row' }}><Text style={styles.inputLabel}>메뉴명 </Text><Text style={styles.requiredStar}>*</Text></View>
-                <View style={styles.textInputBox}>
-                  <TextInput style={styles.textInput} placeholder="예: 마늘간장치킨" placeholderTextColor="#999" value={menuForm.name} onChangeText={(t) => setMenuForm({ ...menuForm, name: t })} />
-                  <Text style={styles.charCount}>{menuForm.name.length}/20</Text>
-                </View>
-              </View>
-
-              {/* 가격 */}
-              <View style={styles.inputGroup}>
-                <View style={{ flexDirection: 'row' }}><Text style={styles.inputLabel}>가격 </Text><Text style={styles.requiredStar}>*</Text></View>
-                <View style={styles.textInputBox}>
-                  <TextInput style={styles.textInput} keyboardType="numeric" placeholder="0" placeholderTextColor="#999" value={menuForm.price} onChangeText={(t) => setMenuForm({ ...menuForm, price: t })} />
-                  <Text style={styles.unitText}>원</Text>
-                </View>
-              </View>
-
-              {/* 설명 */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>메뉴 설명</Text>
-                <View style={[styles.textInputBox, { height: rs(60), alignItems: 'flex-start', paddingVertical: rs(10) }]}>
-                  <TextInput style={[styles.textInput, { height: '100%' }]} multiline placeholder="메뉴 설명을 입력해주세요" placeholderTextColor="#999" value={menuForm.desc} onChangeText={(t) => setMenuForm({ ...menuForm, desc: t })} />
-                </View>
-              </View>
-
-              <View style={styles.divider} />
-
-              {/* 2. 카테고리 및 속성 */}
-              <Text style={styles.sectionTitle}>카테고리 및 속성</Text>
-
-              {/* 메뉴 카테고리 (dropdown) */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>메뉴 카테고리</Text>
-                <View style={styles.dropdownBox}>
-                  <Text style={styles.dropdownText}>{menuForm.category}</Text>
-                  <Ionicons name="caret-down" size={rs(10)} color="#333" />
-                </View>
-              </View>
-
-              {/* 대표 메뉴 설정 */}
-              <TouchableOpacity style={styles.optionRow} onPress={() => setMenuForm({ ...menuForm, isRepresentative: !menuForm.isRepresentative })}>
-                <View style={[styles.checkBoxSquare, menuForm.isRepresentative && { backgroundColor: '#34B262', borderColor: '#34B262' }]}>
-                  {menuForm.isRepresentative && <Ionicons name="checkmark" size={rs(10)} color="white" />}
-                </View>
-                <View>
-                  <Text style={styles.optionTitle}>우리 가게 대표 메뉴로 설정</Text>
-                  <Text style={styles.optionDesc}>고객 앱 최상단 '사장님 추천' 영역에 우선 노출됩니다</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* 배지 설정 (badge 필드 가정) */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>배지설정</Text>
-                <View style={{ flexDirection: 'row', gap: rs(8) }}>
-                  {BADGE_TYPES.map((badge) => (
+                {/* 대표 메뉴 설정 */}
+                {(() => {
+                  const isLimitReached = representativeCount >= 5 && !menuForm.isRepresentative;
+                  return (
                     <TouchableOpacity
-                      key={badge}
-                      style={[styles.badgeChip, menuForm.badge === badge ? styles.badgeChipSelected : styles.badgeChipUnselected]}
-                      onPress={() => setMenuForm({ ...menuForm, badge: menuForm.badge === badge ? null : badge })}
+                      style={[styles.optionRow, isLimitReached && { backgroundColor: '#F0F0F0' }]}
+                      onPress={() => {
+                        if (!isLimitReached) {
+                          setMenuForm({ ...menuForm, isRepresentative: !menuForm.isRepresentative });
+                        }
+                      }}
+                      activeOpacity={isLimitReached ? 1 : 0.7}
                     >
-                      <Text style={[styles.badgeText, menuForm.badge === badge ? { color: 'white', fontWeight: '600' } : { color: 'black' }]}>{badge}</Text>
+                      <View style={[
+                        styles.checkBoxSquare,
+                        menuForm.isRepresentative && { backgroundColor: '#34B262', borderColor: '#34B262' },
+                        isLimitReached && { backgroundColor: '#BDBDBD', borderColor: '#BDBDBD', borderRadius: rs(8) }
+                      ]}>
+                        {(menuForm.isRepresentative || isLimitReached) && <Ionicons name="checkmark" size={rs(10)} color="white" />}
+                      </View>
+                      <View>
+                        <Text style={[styles.optionTitle, isLimitReached && { color: '#828282' }]}>우리 가게 대표 메뉴로 설정</Text>
+                        <Text style={styles.optionDesc}>
+                          {isLimitReached ? "이미 5개의 대표 메뉴를 설정했어요" : "고객 앱 최상단 '사장님 추천' 영역에 우선 노출됩니다"}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+                  );
+                })()}
 
-              <View style={styles.divider} />
-
-              {/* 3. 상태 설정 */}
-              <Text style={styles.sectionTitle}>상태 설정</Text>
-
-              {/* 품절 토글 */}
-              <View style={styles.toggleRow}>
-                <View>
-                  <Text style={styles.optionTitle}>품절</Text>
-                  <Text style={styles.optionDesc}>품절 시 고객에게 표시됩니다</Text>
-                </View>
-                <TouchableOpacity onPress={() => setMenuForm({ ...menuForm, isSoldOut: !menuForm.isSoldOut })}>
-                  <View style={[styles.menuToggleSwitch, menuForm.isSoldOut ? styles.menuToggleOn : styles.menuToggleOff]}>
-                    <View style={styles.menuToggleKnob} />
+                {/* 배지 설정 (badge 필드 가정) */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>배지설정</Text>
+                  <View style={{ flexDirection: 'row', gap: rs(8) }}>
+                    {BADGE_TYPES.map((badge) => (
+                      <TouchableOpacity
+                        key={badge}
+                        style={[styles.badgeChip, menuForm.badge === badge ? styles.badgeChipSelected : styles.badgeChipUnselected]}
+                        onPress={() => setMenuForm({ ...menuForm, badge: menuForm.badge === badge ? null : badge })}
+                      >
+                        <Text style={[styles.badgeText, menuForm.badge === badge ? { color: 'white', fontWeight: '600' } : { color: 'black' }]}>{badge}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                </TouchableOpacity>
-              </View>
-
-              {/* 숨기기 토글 */}
-              <View style={styles.toggleRow}>
-                <View>
-                  <Text style={styles.optionTitle}>메뉴 숨기기</Text>
-                  <Text style={styles.optionDesc}>메뉴판에서 임시로 숨깁니다</Text>
                 </View>
-                <TouchableOpacity onPress={() => setMenuForm({ ...menuForm, isHidden: !menuForm.isHidden })}>
-                  <View style={[styles.menuToggleSwitch, menuForm.isHidden ? styles.menuToggleOn : styles.menuToggleOff]}>
-                    <View style={styles.menuToggleKnob} />
+
+                <View style={styles.divider} />
+
+                {/* 3. 상태 설정 */}
+                <Text style={styles.sectionTitle}>상태 설정</Text>
+
+                {/* 품절 토글 */}
+                <View style={styles.toggleRow}>
+                  <View>
+                    <Text style={styles.optionTitle}>품절</Text>
+                    <Text style={styles.optionDesc}>품절 시 고객에게 표시됩니다</Text>
                   </View>
-                </TouchableOpacity>
-              </View>
-
-              <View style={{ height: rs(5) }} />
-            </ScrollView>
-
-            {/* 하단 고정 버튼 (수정 모드: 삭제 / 수정,  추가 모드: 추가하기) */}
-            <View style={[styles.modalFooter, { flexDirection: 'row', gap: rs(10), justifyContent: 'flex-end' }]}>
-              {isEditMode ? (
-                <>
-                  <TouchableOpacity
-                    style={[styles.modalSubmitBtn, { backgroundColor: 'white', borderWidth: 1, borderColor: '#ccc', width: rs(120) }]}
-                    onPress={handleDeleteMenu}
-                  >
-                    <Text style={[styles.modalSubmitText, { color: '#828282' }]}>삭제하기</Text>
+                  <TouchableOpacity onPress={() => setMenuForm({ ...menuForm, isSoldOut: !menuForm.isSoldOut })}>
+                    <View style={[styles.menuToggleSwitch, menuForm.isSoldOut ? styles.menuToggleOn : styles.menuToggleOff]}>
+                      <View style={styles.menuToggleKnob} />
+                    </View>
                   </TouchableOpacity>
+                </View>
+
+                {/* 숨기기 토글 */}
+                <View style={styles.toggleRow}>
+                  <View>
+                    <Text style={styles.optionTitle}>메뉴 숨기기</Text>
+                    <Text style={styles.optionDesc}>메뉴판에서 임시로 숨깁니다</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setMenuForm({ ...menuForm, isHidden: !menuForm.isHidden })}>
+                    <View style={[styles.menuToggleSwitch, menuForm.isHidden ? styles.menuToggleOn : styles.menuToggleOff]}>
+                      <View style={styles.menuToggleKnob} />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ height: rs(5) }} />
+              </ScrollView>
+
+              {/* 하단 고정 버튼 (수정 모드: 삭제 / 수정,  추가 모드: 추가하기) */}
+              <View style={[styles.modalFooter, { flexDirection: 'row', gap: rs(10), justifyContent: 'flex-end' }]}>
+                {isEditMode ? (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.modalSubmitBtn, { backgroundColor: 'white', borderWidth: 1, borderColor: '#ccc', width: rs(120) }]}
+                      onPress={handleDeleteMenu}
+                    >
+                      <Text style={[styles.modalSubmitText, { color: '#828282' }]}>삭제하기</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalSubmitBtn, { flex: 1, backgroundColor: '#34B262' }]}
+                      onPress={handleMenuSave}
+                    >
+                      <Text style={styles.modalSubmitText}>수정하기</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
                   <TouchableOpacity
                     style={[styles.modalSubmitBtn, { flex: 1, backgroundColor: '#34B262' }]}
                     onPress={handleMenuSave}
                   >
-                    <Text style={styles.modalSubmitText}>수정하기</Text>
+                    <Text style={styles.modalSubmitText}>추가하기</Text>
                   </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.modalSubmitBtn, { flex: 1, backgroundColor: '#34B262' }]}
-                  onPress={handleMenuSave}
-                >
-                  <Text style={styles.modalSubmitText}>추가하기</Text>
-                </TouchableOpacity>
-              )}
+                )}
+              </View>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+          </KeyboardAvoidingView>
+        </Modal >
 
-      {/* Basic Modal & Hours Modal */}
-      <Modal animationType="slide" transparent={true} visible={basicModalVisible} onRequestClose={() => setBasicModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <ScrollView contentContainerStyle={styles.modalScroll}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>기본 정보</Text>
-                <View style={{ flexDirection: 'row', gap: rs(8) }}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => setBasicModalVisible(false)}><Text style={styles.cancelButtonText}>취소</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.saveButton} onPress={handleBasicSave}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
-                </View>
-              </View>
-              <View style={[styles.editSection, { flexDirection: 'row', alignItems: 'flex-start' }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', width: rs(55), marginTop: rs(6) }}>
-                  <Ionicons name="storefront" size={rs(12)} color="#828282" />
-                  <Text style={styles.labelText}>가게명</Text>
-                </View>
-                <View style={{ flex: 1, gap: rs(8) }}>
-                  <View style={styles.inputWrapper}>
-                    <TextInput style={styles.textInput} placeholder="가게명을 입력해주세요" placeholderTextColor="#666" value={editBasicData.name} onChangeText={(text) => setEditBasicData({ ...editBasicData, name: text })} />
-                  </View>
-                  <View style={styles.inputWrapper}>
-                    <TextInput style={styles.textInput} placeholder="가게 지점명을 입력해주세요(선택)" placeholderTextColor="#666" value={editBasicData.branch} onChangeText={(text) => setEditBasicData({ ...editBasicData, branch: text })} />
+        {/* Basic Modal & Hours Modal */}
+        < Modal animationType="slide" transparent={true} visible={basicModalVisible} onRequestClose={() => setBasicModalVisible(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <ScrollView contentContainerStyle={styles.modalScroll}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>기본 정보</Text>
+                  <View style={{ flexDirection: 'row', gap: rs(8) }}>
+                    <TouchableOpacity style={styles.cancelButton} onPress={() => setBasicModalVisible(false)}><Text style={styles.cancelButtonText}>취소</Text></TouchableOpacity>
+                    <TouchableOpacity style={styles.saveButton} onPress={handleBasicSave}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
                   </View>
                 </View>
-              </View>
-              <EditSection icon="grid" label="가게 종류"><View style={styles.selectionGrid}>{ALL_CATEGORIES.map((cat) => (<TouchableOpacity key={cat} style={[styles.selectChip, editBasicData.categories.includes(cat) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(cat, 'categories')}><Text style={[styles.chipText, editBasicData.categories.includes(cat) ? styles.chipTextActive : styles.chipTextInactive]}>{cat}</Text></TouchableOpacity>))}</View></EditSection>
-              <EditSection icon="sparkles" label="가게 분위기"><View style={styles.selectionGrid}>{ALL_VIBES.map((vibe) => (<TouchableOpacity key={vibe} style={[styles.selectChip, editBasicData.vibes.includes(vibe) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(vibe, 'vibes')}><Text style={[styles.chipText, editBasicData.vibes.includes(vibe) ? styles.chipTextActive : styles.chipTextInactive]}>{vibe}</Text></TouchableOpacity>))}</View></EditSection>
-              <EditSection icon="information-circle" label="가게 소개"><View style={styles.inputWrapper}><TextInput style={styles.textInput} placeholder="가게를 소개하는 글을 적어주세요" value={editBasicData.intro} onChangeText={(text) => setEditBasicData({ ...editBasicData, intro: text })} /><Text style={styles.charCount}>{editBasicData.intro.length}/50</Text></View></EditSection>
-              <EditSection icon="image" label="가게 이미지">
-                <View style={styles.imageDisplayRow}>
-                  <TouchableOpacity style={styles.uploadBoxWrapper} onPress={pickImage}>
-                    <Text style={styles.uploadLabel}>배너</Text>
-                    <View style={[styles.uploadBox, { width: rs(153), height: rs(90) }]}>
-                      {editBasicData.bannerImage ? (
-                        <Image source={{ uri: editBasicData.bannerImage }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
-                      ) : (
-                        <>
-                          <Ionicons name="image" size={rs(20)} color="#aaa" />
-                          <Text style={styles.uploadPlaceholder}>배너 업로드</Text>
-                        </>
-                      )}
+                <View style={[styles.editSection, { flexDirection: 'row', alignItems: 'flex-start' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', width: rs(55), marginTop: rs(6) }}>
+                    <Ionicons name="storefront" size={rs(12)} color="#828282" />
+                    <Text style={styles.labelText}>가게명</Text>
+                  </View>
+                  <View style={{ flex: 1, gap: rs(8) }}>
+                    <View style={styles.inputWrapper}>
+                      <TextInput style={styles.textInput} placeholder="가게명을 입력해주세요" placeholderTextColor="#666" value={editBasicData.name} onChangeText={(text) => setEditBasicData({ ...editBasicData, name: text })} />
                     </View>
-                  </TouchableOpacity>
-                </View>
-              </EditSection>
-              <EditSection icon="location" label="주소"><TouchableOpacity style={[styles.inputWrapper, { marginBottom: rs(8) }]} onPress={() => handleMockAction("주소 검색")}><Text style={[styles.textInput, { color: editBasicData.address ? 'black' : '#ccc' }]}>{editBasicData.address || "건물명, 도로명 또는 지번 검색"}</Text><Ionicons name="search" size={rs(16)} color="#ccc" style={{ marginRight: rs(10) }} /></TouchableOpacity><View style={[styles.inputWrapper, { backgroundColor: 'rgba(218, 218, 218, 0.50)' }]}><TextInput style={styles.textInput} placeholder="상세주소를 입력해주세요." value={editBasicData.detailAddress} onChangeText={(text) => setEditBasicData({ ...editBasicData, detailAddress: text })} /></View></EditSection>
-              <EditSection icon="call" label="전화번호">
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="숫자만 입력해주세요"
-                    keyboardType="number-pad"
-                    value={editBasicData.phone}
-                    onChangeText={(text) => {
-                      setEditBasicData({ ...editBasicData, phone: formatPhoneNumber(text) });
-                    }}
-                  />
-                </View>
-              </EditSection>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <Modal animationType="slide" transparent={true} visible={hoursModalVisible} onRequestClose={() => setHoursModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { height: 'auto', maxHeight: rs(700) }]}>
-            <ScrollView contentContainerStyle={styles.modalScroll}>
-              <View style={styles.modalHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
-                  <View style={styles.timeIconCircleSmall}>
-                    <Ionicons name="time" size={rs(22)} color="#34B262"></Ionicons>
-                  </View>
-                  <View>
-                    <Text style={styles.modalTitle}>영업시간/브레이크타임</Text>
-                    <Text style={[styles.subTitle, { marginTop: rs(1) }]}>상단: 영업시간, <Text style={{ color: '#FF7F00' }}>하단: 브레이크타임</Text></Text>
-                  </View>
-                </View>
-                <View style={{ flexDirection: 'row', gap: rs(8) }}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => setHoursModalVisible(false)}><Text style={styles.cancelButtonText}>취소</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.saveButton} onPress={handleHoursSave}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
-                </View>
-              </View>
-              {editHoursData.map((item, index) => {
-                const open12 = convert24to12(item.open); const close12 = convert24to12(item.close);
-                const breakStart12 = convert24to12(item.breakStart);
-                const breakEnd12 = convert24to12(item.breakEnd);
-
-                return (
-                  <View key={index} style={styles.editHourRow}>
-                    <Text style={styles.editHourDay}>{item.day}</Text>
-                    <View style={{ flex: 1, gap: rs(8) }}>
-                      {/* 1. 영업시간 (기본) */}
-                      <View style={styles.timeInputGroup}>
-                        <TouchableOpacity style={styles.timeInputBox} onPress={() => !item.isClosed && openTimePicker(index, 'open')} activeOpacity={0.7}><Text style={styles.timeLabel}>{open12.ampm}</Text><Text style={styles.timeValue}>{open12.time}</Text><Ionicons name="caret-down" size={rs(10)} color="black" /></TouchableOpacity>
-                        <Text style={{ marginHorizontal: 5, color: 'black' }}>~</Text>
-                        <TouchableOpacity style={styles.timeInputBox} onPress={() => !item.isClosed && openTimePicker(index, 'close')} activeOpacity={0.7}><Text style={styles.timeLabel}>{close12.ampm}</Text><Text style={styles.timeValue}>{close12.time}</Text><Ionicons name="caret-down" size={rs(10)} color="black" /></TouchableOpacity>
-                      </View>
-
-                      {/* 2. 브레이크 타임 (주황색) */}
-                      <View style={styles.timeInputGroup}>
-                        <TouchableOpacity style={[styles.timeInputBox, { borderColor: '#FF7F00' }]} onPress={() => !item.isClosed && openTimePicker(index, 'breakStart')} activeOpacity={0.7}>
-                          <Text style={[styles.timeLabel, { color: '#FF7F00' }]}>{breakStart12.ampm}</Text>
-                          <Text style={[styles.timeValue, { color: '#FF7F00' }]}>{breakStart12.time}</Text>
-                          <Ionicons name="caret-down" size={rs(10)} color="#FF7F00" />
-                        </TouchableOpacity>
-                        <Text style={{ marginHorizontal: 5, color: '#FF7F00' }}>~</Text>
-                        <TouchableOpacity style={[styles.timeInputBox, { borderColor: '#FF7F00' }]} onPress={() => !item.isClosed && openTimePicker(index, 'breakEnd')} activeOpacity={0.7}>
-                          <Text style={[styles.timeLabel, { color: '#FF7F00' }]}>{breakEnd12.ampm}</Text>
-                          <Text style={[styles.timeValue, { color: '#FF7F00' }]}>{breakEnd12.time}</Text>
-                          <Ionicons name="caret-down" size={rs(10)} color="#FF7F00" />
-                        </TouchableOpacity>
-                      </View>
-
-                      {item.isClosed && <View style={styles.blurOverlay} />}
+                    <View style={styles.inputWrapper}>
+                      <TextInput style={styles.textInput} placeholder="가게 지점명을 입력해주세요(선택)" placeholderTextColor="#666" value={editBasicData.branch} onChangeText={(text) => setEditBasicData({ ...editBasicData, branch: text })} />
                     </View>
-                    <TouchableOpacity style={styles.checkboxContainer} onPress={() => toggleHoliday(index)}>
-                      <View style={[styles.checkbox, item.isClosed && styles.checkboxChecked]}>{item.isClosed && <Ionicons name="checkmark" size={rs(10)} color="white" />}</View><Text style={styles.checkboxLabel}>휴무</Text>
+                  </View>
+                </View>
+                <EditSection icon="grid" label="가게 종류"><View style={styles.selectionGrid}>{ALL_CATEGORIES.map((cat) => (<TouchableOpacity key={cat} style={[styles.selectChip, editBasicData.categories.includes(cat) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(cat, 'categories')}><Text style={[styles.chipText, editBasicData.categories.includes(cat) ? styles.chipTextActive : styles.chipTextInactive]}>{cat}</Text></TouchableOpacity>))}</View></EditSection>
+                <EditSection icon="sparkles" label="가게 분위기"><View style={styles.selectionGrid}>{ALL_VIBES.map((vibe) => (<TouchableOpacity key={vibe} style={[styles.selectChip, editBasicData.vibes.includes(vibe) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(vibe, 'vibes')}><Text style={[styles.chipText, editBasicData.vibes.includes(vibe) ? styles.chipTextActive : styles.chipTextInactive]}>{vibe}</Text></TouchableOpacity>))}</View></EditSection>
+                <EditSection icon="information-circle" label="가게 소개"><View style={styles.inputWrapper}><TextInput style={styles.textInput} placeholder="가게를 소개하는 글을 적어주세요" value={editBasicData.intro} onChangeText={(text) => setEditBasicData({ ...editBasicData, intro: text })} /><Text style={styles.charCount}>{editBasicData.intro.length}/50</Text></View></EditSection>
+                <EditSection icon="image" label="가게 이미지">
+                  <View style={styles.imageDisplayRow}>
+                    <TouchableOpacity style={styles.uploadBoxWrapper} onPress={pickImage}>
+                      <Text style={styles.uploadLabel}>배너</Text>
+                      <View style={[styles.uploadBox, { width: rs(153), height: rs(90) }]}>
+                        {editBasicData.bannerImage ? (
+                          <Image source={{ uri: editBasicData.bannerImage }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
+                        ) : (
+                          <>
+                            <Ionicons name="image" size={rs(20)} color="#aaa" />
+                            <Text style={styles.uploadPlaceholder}>배너 업로드</Text>
+                          </>
+                        )}
+                      </View>
                     </TouchableOpacity>
                   </View>
-                )
-              })}
-              <View style={{ height: rs(20) }} />
-            </ScrollView>
-            {pickerVisible && (
-              <View style={styles.bottomSheetOverlay}>
-                <TouchableOpacity style={styles.bottomSheetBackdrop} activeOpacity={1} onPress={() => setPickerVisible(false)} />
-                <View style={styles.bottomSheetContainer}>
-                  <View style={styles.bottomSheetHeader}><Text style={styles.bottomSheetTitle}>시간 선택</Text><TouchableOpacity onPress={confirmTimePicker}><Text style={styles.confirmText}>확인</Text></TouchableOpacity></View>
-                  <View style={styles.pickerBody}>
-                    <View style={styles.pickerColumn}><Text style={styles.pickerColumnTitle}>오전/오후</Text><ScrollView style={{ height: rs(150) }} showsVerticalScrollIndicator={false}>{['오전', '오후'].map(ampm => (<TouchableOpacity key={ampm} style={[styles.pickerItem, tempAmpm === ampm && styles.pickerItemSelected]} onPress={() => setTempAmpm(ampm)}><Text style={[styles.pickerItemText, tempAmpm === ampm && styles.pickerItemTextSelected]}>{ampm}</Text>{tempAmpm === ampm && <Ionicons name="checkmark" size={rs(16)} color="#34B262" />}</TouchableOpacity>))}</ScrollView></View>
-                    <View style={{ width: 1, height: '80%', backgroundColor: '#eee' }} />
-                    <View style={styles.pickerColumn}><Text style={styles.pickerColumnTitle}>시간 (5분 단위)</Text><ScrollView style={{ height: rs(150) }} showsVerticalScrollIndicator={false}>{TIME_12H.map(time => (<TouchableOpacity key={time} style={[styles.pickerItem, tempTime === time && styles.pickerItemSelected]} onPress={() => setTempTime(time)}><Text style={[styles.pickerItemText, tempTime === time && styles.pickerItemTextSelected]}>{time}</Text>{tempTime === time && <Ionicons name="checkmark" size={rs(16)} color="#34B262" />}</TouchableOpacity>))}</ScrollView></View>
+                </EditSection>
+                <EditSection icon="location" label="주소"><TouchableOpacity style={[styles.inputWrapper, { marginBottom: rs(8) }]} onPress={() => handleMockAction("주소 검색")}><Text style={[styles.textInput, { color: editBasicData.address ? 'black' : '#ccc' }]}>{editBasicData.address || "건물명, 도로명 또는 지번 검색"}</Text><Ionicons name="search" size={rs(16)} color="#ccc" style={{ marginRight: rs(10) }} /></TouchableOpacity><View style={[styles.inputWrapper, { backgroundColor: 'rgba(218, 218, 218, 0.50)' }]}><TextInput style={styles.textInput} placeholder="상세주소를 입력해주세요." value={editBasicData.detailAddress} onChangeText={(text) => setEditBasicData({ ...editBasicData, detailAddress: text })} /></View></EditSection>
+                <EditSection icon="call" label="전화번호">
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="숫자만 입력해주세요"
+                      keyboardType="number-pad"
+                      value={editBasicData.phone}
+                      onChangeText={(text) => {
+                        setEditBasicData({ ...editBasicData, phone: formatPhoneNumber(text) });
+                      }}
+                    />
                   </View>
-                </View>
-              </View>
-            )}
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* Holiday Edit Modal */}
-      <Modal animationType="slide" transparent={true} visible={holidayModalVisible} onRequestClose={() => setHolidayModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { height: rs(400) }]}>
-            <View style={styles.modalScroll}>
-              <View style={styles.modalHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
-                  <View style={styles.timeIconCircleSmall}>
-                    <Ionicons name="calendar" size={rs(22)} color="#34B262"></Ionicons>
-                  </View>
-                  <View>
-                    <Text style={styles.modalTitle}>휴무일 설정</Text>
-                    <Text style={styles.subTitle}>휴무 날짜를 선택해주세요</Text>
-                  </View>
-                </View>
-                <View style={{ flexDirection: 'row', gap: rs(8) }}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => setHolidayModalVisible(false)}><Text style={styles.cancelButtonText}>취소</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.saveButton} onPress={() => handleHolidaySave(tempSelectedHolidays)}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.calendarControl}>
-                <TouchableOpacity onPress={() => changeModalMonth(-1)} style={styles.navButton}><Ionicons name="chevron-back" size={rs(20)} color="#ccc" /></TouchableOpacity>
-                <Text style={styles.calendarTitle}>{MONTH_NAMES[modalDate.getMonth()]} {modalDate.getFullYear()}</Text>
-                <TouchableOpacity onPress={() => changeModalMonth(1)} style={styles.navButton}><Ionicons name="chevron-forward" size={rs(20)} color="#ccc" /></TouchableOpacity>
-              </View>
-              <View style={styles.weekHeader}>
-                {WEEKDAYS.map((day, index) => (<Text key={index} style={[styles.weekText, index === 0 && { color: '#FF3E41' }, index === 6 && { color: '#007AFF' }]}>{day}</Text>))}
-              </View>
-              <View style={styles.daysGrid}>
-                {generateCalendar(modalDate).map((date, index) => {
-                  if (!date) return <View key={index} style={styles.dayCell} />;
-                  const dateStr = getFormatDate(date);
-                  const isSelected = tempSelectedHolidays.includes(dateStr);
-
-                  const today = new Date();
-                  const twoMonthsLater = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60);
-                  const isPast = dateStr < getFormatDate(today);
-                  const isOutRange = dateStr > getFormatDate(twoMonthsLater);
-                  const isDisabled = isPast || isOutRange;
-
-                  const dayOfWeek = date.getDay();
-
-                  const cellStyle = [styles.dayBtn];
-                  const textStyle = [styles.dayTextNum];
-                  if (dayOfWeek === 0) textStyle.push({ color: '#FF3E41' }); else if (dayOfWeek === 6) textStyle.push({ color: '#007AFF' });
-                  if (isSelected) {
-                    cellStyle.push(styles.dayBtnSelected); textStyle.push({ color: 'white', fontWeight: '700' });
-                  }
-                  if (isDisabled) textStyle.push({ color: '#E0E0E0' });
-
-                  return (<View key={index} style={styles.dayCell}><TouchableOpacity style={cellStyle} onPress={() => handleTempDatePress(dateStr)} disabled={isDisabled} activeOpacity={0.8}><Text style={textStyle}>{date.getDate()}</Text></TouchableOpacity></View>);
-                })}
-              </View>
-              <View style={{ height: rs(20) }} />
+                </EditSection>
+              </ScrollView>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+          </KeyboardAvoidingView>
+        </Modal >
 
-    </SafeAreaView>
+        <Modal animationType="slide" transparent={true} visible={hoursModalVisible} onRequestClose={() => setHoursModalVisible(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+            <View style={[styles.modalContainer, { height: 'auto', maxHeight: rs(700) }]}>
+              <ScrollView contentContainerStyle={styles.modalScroll}>
+                <View style={styles.modalHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
+                    <View style={styles.timeIconCircleSmall}>
+                      <Ionicons name="time" size={rs(22)} color="#34B262"></Ionicons>
+                    </View>
+                    <View>
+                      <Text style={styles.modalTitle}>영업시간/브레이크타임</Text>
+                      <Text style={[styles.subTitle, { marginTop: rs(1) }]}>상단: 영업시간, <Text style={{ color: '#FF7F00' }}>하단: 브레이크타임</Text></Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: rs(8) }}>
+                    <TouchableOpacity style={styles.cancelButton} onPress={() => setHoursModalVisible(false)}><Text style={styles.cancelButtonText}>취소</Text></TouchableOpacity>
+                    <TouchableOpacity style={styles.saveButton} onPress={handleHoursSave}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
+                  </View>
+                </View>
+                {editHoursData.map((item, index) => {
+                  const open12 = convert24to12(item.open); const close12 = convert24to12(item.close);
+                  const breakStart12 = convert24to12(item.breakStart);
+                  const breakEnd12 = convert24to12(item.breakEnd);
+
+                  return (
+                    <View key={index} style={styles.editHourRow}>
+                      <Text style={styles.editHourDay}>{item.day}</Text>
+                      <View style={{ flex: 1, gap: rs(8) }}>
+                        {/* 1. 영업시간 (기본) */}
+                        <View style={styles.timeInputGroup}>
+                          <TouchableOpacity style={styles.timeInputBox} onPress={() => !item.isClosed && openTimePicker(index, 'open')} activeOpacity={0.7}><Text style={styles.timeLabel}>{open12.ampm}</Text><Text style={styles.timeValue}>{open12.time}</Text><Ionicons name="caret-down" size={rs(10)} color="black" /></TouchableOpacity>
+                          <Text style={{ marginHorizontal: 5, color: 'black' }}>~</Text>
+                          <TouchableOpacity style={styles.timeInputBox} onPress={() => !item.isClosed && openTimePicker(index, 'close')} activeOpacity={0.7}><Text style={styles.timeLabel}>{close12.ampm}</Text><Text style={styles.timeValue}>{close12.time}</Text><Ionicons name="caret-down" size={rs(10)} color="black" /></TouchableOpacity>
+                        </View>
+
+                        {/* 2. 브레이크 타임 (주황색) */}
+                        <View style={styles.timeInputGroup}>
+                          <TouchableOpacity style={[styles.timeInputBox, { borderColor: '#FF7F00' }]} onPress={() => !item.isClosed && openTimePicker(index, 'breakStart')} activeOpacity={0.7}>
+                            <Text style={[styles.timeLabel, { color: '#FF7F00' }]}>{breakStart12.ampm}</Text>
+                            <Text style={[styles.timeValue, { color: '#FF7F00' }]}>{breakStart12.time}</Text>
+                            <Ionicons name="caret-down" size={rs(10)} color="#FF7F00" />
+                          </TouchableOpacity>
+                          <Text style={{ marginHorizontal: 5, color: '#FF7F00' }}>~</Text>
+                          <TouchableOpacity style={[styles.timeInputBox, { borderColor: '#FF7F00' }]} onPress={() => !item.isClosed && openTimePicker(index, 'breakEnd')} activeOpacity={0.7}>
+                            <Text style={[styles.timeLabel, { color: '#FF7F00' }]}>{breakEnd12.ampm}</Text>
+                            <Text style={[styles.timeValue, { color: '#FF7F00' }]}>{breakEnd12.time}</Text>
+                            <Ionicons name="caret-down" size={rs(10)} color="#FF7F00" />
+                          </TouchableOpacity>
+                        </View>
+
+                        {item.isClosed && <View style={styles.blurOverlay} />}
+                      </View>
+                      <TouchableOpacity style={styles.checkboxContainer} onPress={() => toggleHoliday(index)}>
+                        <View style={[styles.checkbox, item.isClosed && styles.checkboxChecked]}>{item.isClosed && <Ionicons name="checkmark" size={rs(10)} color="white" />}</View><Text style={styles.checkboxLabel}>휴무</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )
+                })}
+                <View style={{ height: rs(20) }} />
+              </ScrollView>
+              {pickerVisible && (
+                <View style={styles.bottomSheetOverlay}>
+                  <TouchableOpacity style={styles.bottomSheetBackdrop} activeOpacity={1} onPress={() => setPickerVisible(false)} />
+                  <View style={styles.bottomSheetContainer}>
+                    <View style={styles.bottomSheetHeader}><Text style={styles.bottomSheetTitle}>시간 선택</Text><TouchableOpacity onPress={confirmTimePicker}><Text style={styles.confirmText}>확인</Text></TouchableOpacity></View>
+                    <View style={styles.pickerBody}>
+                      <View style={styles.pickerColumn}><Text style={styles.pickerColumnTitle}>오전/오후</Text><ScrollView style={{ height: rs(150) }} showsVerticalScrollIndicator={false}>{['오전', '오후'].map(ampm => (<TouchableOpacity key={ampm} style={[styles.pickerItem, tempAmpm === ampm && styles.pickerItemSelected]} onPress={() => setTempAmpm(ampm)}><Text style={[styles.pickerItemText, tempAmpm === ampm && styles.pickerItemTextSelected]}>{ampm}</Text>{tempAmpm === ampm && <Ionicons name="checkmark" size={rs(16)} color="#34B262" />}</TouchableOpacity>))}</ScrollView></View>
+                      <View style={{ width: 1, height: '80%', backgroundColor: '#eee' }} />
+                      <View style={styles.pickerColumn}><Text style={styles.pickerColumnTitle}>시간 (5분 단위)</Text><ScrollView style={{ height: rs(150) }} showsVerticalScrollIndicator={false}>{TIME_12H.map(time => (<TouchableOpacity key={time} style={[styles.pickerItem, tempTime === time && styles.pickerItemSelected]} onPress={() => setTempTime(time)}><Text style={[styles.pickerItemText, tempTime === time && styles.pickerItemTextSelected]}>{time}</Text>{tempTime === time && <Ionicons name="checkmark" size={rs(16)} color="#34B262" />}</TouchableOpacity>))}</ScrollView></View>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+
+        {/* Holiday Edit Modal */}
+        <Modal animationType="slide" transparent={true} visible={holidayModalVisible} onRequestClose={() => setHolidayModalVisible(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+            <View style={[styles.modalContainer, { height: rs(400) }]}>
+              <View style={styles.modalScroll}>
+                <View style={styles.modalHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
+                    <View style={styles.timeIconCircleSmall}>
+                      <Ionicons name="calendar" size={rs(22)} color="#34B262"></Ionicons>
+                    </View>
+                    <View>
+                      <Text style={styles.modalTitle}>휴무일 설정</Text>
+                      <Text style={styles.subTitle}>휴무 날짜를 선택해주세요</Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: rs(8) }}>
+                    <TouchableOpacity style={styles.cancelButton} onPress={() => setHolidayModalVisible(false)}><Text style={styles.cancelButtonText}>취소</Text></TouchableOpacity>
+                    <TouchableOpacity style={styles.saveButton} onPress={() => handleHolidaySave(tempSelectedHolidays)}><Text style={styles.saveButtonText}>완료</Text></TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.calendarControl}>
+                  <TouchableOpacity onPress={() => changeModalMonth(-1)} style={styles.navButton}><Ionicons name="chevron-back" size={rs(20)} color="#ccc" /></TouchableOpacity>
+                  <Text style={styles.calendarTitle}>{MONTH_NAMES[modalDate.getMonth()]} {modalDate.getFullYear()}</Text>
+                  <TouchableOpacity onPress={() => changeModalMonth(1)} style={styles.navButton}><Ionicons name="chevron-forward" size={rs(20)} color="#ccc" /></TouchableOpacity>
+                </View>
+                <View style={styles.weekHeader}>
+                  {WEEKDAYS.map((day, index) => (<Text key={index} style={[styles.weekText, index === 0 && { color: '#FF3E41' }, index === 6 && { color: '#007AFF' }]}>{day}</Text>))}
+                </View>
+                <View style={styles.daysGrid}>
+                  {generateCalendar(modalDate).map((date, index) => {
+                    if (!date) return <View key={index} style={styles.dayCell} />;
+                    const dateStr = getFormatDate(date);
+                    const isSelected = tempSelectedHolidays.includes(dateStr);
+
+                    const today = new Date();
+                    const twoMonthsLater = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60);
+                    const isPast = dateStr < getFormatDate(today);
+                    const isOutRange = dateStr > getFormatDate(twoMonthsLater);
+                    const isDisabled = isPast || isOutRange;
+
+                    const dayOfWeek = date.getDay();
+
+                    const cellStyle = [styles.dayBtn];
+                    const textStyle = [styles.dayTextNum];
+                    if (dayOfWeek === 0) textStyle.push({ color: '#FF3E41' }); else if (dayOfWeek === 6) textStyle.push({ color: '#007AFF' });
+                    if (isSelected) {
+                      cellStyle.push(styles.dayBtnSelected); textStyle.push({ color: 'white', fontWeight: '700' });
+                    }
+                    if (isDisabled) textStyle.push({ color: '#E0E0E0' });
+
+                    return (<View key={index} style={styles.dayCell}><TouchableOpacity style={cellStyle} onPress={() => handleTempDatePress(dateStr)} disabled={isDisabled} activeOpacity={0.8}><Text style={textStyle}>{date.getDate()}</Text></TouchableOpacity></View>);
+                  })}
+                </View>
+                <View style={{ height: rs(20) }} />
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+
+      </SafeAreaView >
+      {/* Floating Action Button (Outside ScrollView) */}
+      {activeTab === 'management' && (
+        <View style={styles.floatingButtonArea}>
+          <TouchableOpacity style={styles.floatingAddBtn} onPress={openAddMenuModal} activeOpacity={0.8}>
+            <Ionicons name="add" size={rs(20)} color="white" />
+            <Text style={styles.floatingAddBtnText}>메뉴 추가하기</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
   );
 }
 
@@ -1590,7 +1925,12 @@ const styles = StyleSheet.create({
   addCategoryBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(2), paddingLeft: rs(5) },
   addCategoryIcon: { width: rs(14), height: rs(14), justifyContent: 'center', alignItems: 'center' },
   addCategoryText: { color: '#34B262', fontSize: rs(10), fontWeight: '500', fontFamily: 'Inter' },
-  catModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)' },
+  // Floating Button Style
+  floatingButtonArea: { position: 'absolute', bottom: rs(20), left: 0, right: 0, alignItems: 'center', justifyContent: 'center', zIndex: 100 },
+  floatingAddBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#34B262', paddingVertical: rs(12), paddingHorizontal: rs(24), borderRadius: rs(30), shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65, elevation: 8 },
+  floatingAddBtnText: { color: 'white', fontSize: rs(14), fontWeight: '700', marginLeft: rs(6), fontFamily: 'Pretendard' },
+
+  catModalOverlay: { flex: 1, justifyContent: 'flex-start', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)', paddingTop: rs(250) },
   catModalContent: { width: rs(287), backgroundColor: 'white', borderRadius: rs(12), padding: rs(5), shadowColor: "#000", shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.05, elevation: 5 },
   catModalItem: { flexDirection: 'row', alignItems: 'center', gap: rs(5), paddingVertical: rs(3), paddingHorizontal: rs(5), height: rs(26), borderRadius: rs(8) },
   catModalIconBox: { width: rs(16), height: rs(16), borderRadius: rs(8), overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
@@ -1606,6 +1946,7 @@ const styles = StyleSheet.create({
   menuContent: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: rs(10) },
   menuImageContainer: { position: 'relative' },
   menuImagePlaceholder: { width: rs(56), height: rs(56), borderRadius: rs(12), backgroundColor: '#EDF3EF' },
+  menuImage: { width: rs(56), height: rs(56), borderRadius: rs(12) },
   soldOutOverlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: rs(12), zIndex: 1 },
   imageStarBadge: { position: 'absolute', top: rs(-5), left: rs(-5), width: rs(16), height: rs(16), borderRadius: rs(8), backgroundColor: '#FACC15', justifyContent: 'center', alignItems: 'center', zIndex: 10, borderWidth: 1, borderColor: 'white' },
   menuInfo: { flex: 1, justifyContent: 'center' },
@@ -1639,7 +1980,9 @@ const styles = StyleSheet.create({
   unitText: { fontSize: rs(11), color: '#828282', fontFamily: 'Inter' },
   divider: { height: rs(1), backgroundColor: '#E5E5E5', marginVertical: rs(20) },
   dropdownBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: rs(36), borderWidth: 1, borderColor: '#DADADA', borderRadius: rs(8), paddingHorizontal: rs(10) },
-  dropdownText: { fontSize: rs(11), fontFamily: 'Inter', color: 'black' },
+  dropdownText: { fontSize: rs(11), fontFamily: 'Inter', color: 'black', marginTop: rs(2) },
+  changePhotoBtn: { paddingHorizontal: rs(12), paddingVertical: rs(8), borderWidth: 1, borderColor: '#DADADA', borderRadius: rs(8), backgroundColor: 'white' },
+  changePhotoBtnText: { fontSize: rs(11), color: '#333', fontWeight: '500', fontFamily: 'Pretendard' },
   optionRow: { flexDirection: 'row', alignItems: 'flex-start', padding: rs(10), backgroundColor: '#F4F7F4', borderRadius: rs(8), gap: rs(10), marginBottom: rs(15) },
   checkBoxSquare: { width: rs(16), height: rs(16), borderWidth: 1, borderColor: '#DADADA', borderRadius: rs(4), backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', marginTop: rs(2) },
   optionTitle: { fontSize: rs(11), fontWeight: '500', fontFamily: 'Inter', color: 'black' },
@@ -1655,5 +1998,12 @@ const styles = StyleSheet.create({
   menuToggleKnob: { width: rs(18), height: rs(18), borderRadius: rs(9), backgroundColor: 'white', shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, elevation: 1 },
   modalFooter: { padding: rs(20), borderTopWidth: 1, borderColor: '#eee', backgroundColor: 'white' },
   modalSubmitBtn: { backgroundColor: '#34B262', borderRadius: rs(8), height: rs(42), justifyContent: 'center', alignItems: 'center' },
-  modalSubmitText: { color: 'white', fontSize: rs(14), fontWeight: '700', fontFamily: 'Inter' }
+  modalSubmitText: { color: 'white', fontSize: rs(14), fontWeight: '700', fontFamily: 'Inter' },
+  dropdownList: { position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'white', borderWidth: 1, borderColor: '#DADADA', borderTopWidth: 0, borderBottomLeftRadius: rs(8), borderBottomRightRadius: rs(8), zIndex: 1000, elevation: 5, overflow: 'hidden', paddingBottom: rs(5) },
+  dropdownItem: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', paddingHorizontal: rs(12), paddingVertical: rs(10), marginHorizontal: rs(5), borderRadius: rs(8) },
+  dropdownItemChecked: { backgroundColor: '#F6A823' },
+  dropdownItemText: { fontSize: rs(11), color: '#333', fontFamily: 'Inter' },
+  dropdownItemTextChecked: { color: 'white', fontWeight: '700' },
+  newCategoryInputBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#DADADA', borderRadius: rs(8), paddingHorizontal: rs(10), height: rs(36), backgroundColor: 'white' },
+  newCategoryInput: { flex: 1, fontSize: rs(11), color: 'black', padding: 0, fontFamily: 'Pretendard' },
 });
