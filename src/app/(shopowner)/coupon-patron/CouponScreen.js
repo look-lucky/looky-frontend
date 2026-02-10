@@ -499,7 +499,7 @@ export default function CouponScreen({ navigation, route }) {
                                             </Text>
                                         </View>
                                         <View style={styles.progressBarBg}>
-                                            <View style={[styles.progressBarFill, { width: coupon.total === -1 ? '100%' : `${Math.min((coupon.used / coupon.total) * 100, 100)}%` }]} />
+                                            <View style={[styles.progressBarFill, { width: coupon.total === -1 ? '15%' : `${Math.min((coupon.used / coupon.total) * 100, 100)}%` }]} />
                                         </View>
                                     </View>
                                 </View>

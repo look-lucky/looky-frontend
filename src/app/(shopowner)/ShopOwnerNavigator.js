@@ -1,6 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { Platform } from 'react-native';
+
 
 import InquiryCompleteScreen from '../../shared/screens/inquiry/InquiryCompleteScreen';
 import InquiryScreen from '../../shared/screens/inquiry/InquiryScreen';
@@ -38,12 +41,35 @@ function MainTabNavigator() {
   return (
     <Tab.Navigator
       initialRouteName="Home"
-      screenOptions={{
+      screenOptions={({ route }) => ({
         tabBarActiveTintColor: '#34B262',
-
         tabBarInactiveTintColor: '#444444',
         headerShown: false,
-      }}
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          height: Platform.OS === 'ios' ? 88 : 60,
+          paddingTop: 12,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+        },
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'Home') {
+            iconName = 'home';
+          } else if (route.name === 'Review') {
+            iconName = 'chatbubble';
+          } else if (route.name === 'Store') {
+            iconName = 'storefront';
+          } else if (route.name === 'Coupon') {
+            iconName = 'ticket';
+          } else if (route.name === 'MyPage') {
+            iconName = 'person';
+          }
+
+          // Return the filled icon with the appropriate color (active/inactive handled by color prop)
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
     >
       <Tab.Screen
         name="Home"
@@ -71,6 +97,7 @@ function MainTabNavigator() {
         options={{ tabBarLabel: '내 정보' }}
       />
     </Tab.Navigator>
+
   );
 }
 

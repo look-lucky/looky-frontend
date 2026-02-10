@@ -69,7 +69,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "@react-native-seoul/kakao-login",
       {
-        kakaoAppKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY,
+        kakaoAppKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY ?? "",
       },
     ],
     [
