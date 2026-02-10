@@ -1,12 +1,12 @@
 // 카테고리 탭 (디자인 시안 기준)
 export const CATEGORY_TABS = [
   { id: 'all', label: '전체' },
+  { id: 'EVENT', label: '이벤트' },
   { id: 'RESTAURANT', label: '식당' },
   { id: 'BAR', label: '주점' },
   { id: 'CAFE', label: '카페' },
   { id: 'ENTERTAINMENT', label: '놀거리' },
   { id: 'BEAUTY_HEALTH', label: '뷰티·헬스' },
-  { id: 'EVENT', label: '이벤트' },
   { id: 'ETC', label: 'ETC' },
 ];
 
