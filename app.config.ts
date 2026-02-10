@@ -48,7 +48,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "@mj-studio/react-native-naver-map",
       {
-        client_id: "iiun93671l",
+        client_id: process.env.EXPO_PUBLIC_NAVER_MAP_CLIENT_ID ?? "",
       },
     ],
     [
