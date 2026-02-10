@@ -9,8 +9,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "generate": "node scripts/patch-openapi.js && npx orval && node scripts/patch-generated.js",
-    "eas-install": "npm install --include=dev",
-    "prebuild": "npm run eas-install"
+    "eas-build-pre-install": "npm install --package-lock-only"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
