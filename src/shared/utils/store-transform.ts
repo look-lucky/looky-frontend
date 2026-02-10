@@ -53,111 +53,110 @@ export function formatDistance(km: number): string {
 
 /**
  * 영업시간 JSON 문자열을 현재 요일에 맞게 파싱
- * 입력: '{"Mon": "11:00-21:00", "Tue": "11:00-21:00", ..., "Sun": "Closed"}'
- * 출력: "11:00-21:00" 또는 "휴무"
+ * 입력: '{"0": [["10:00","20:00"], ["15:00","17:00"]], ..., "6": [["11:00","19:00"], null]}'
+ * 키: 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
+ * 출력: "10:00 ~ 20:00" 또는 "휴무"
  */
 export function formatOperatingHours(operatingHours: string): string {
   if (!operatingHours) return '';
 
   try {
     const parsed = JSON.parse(operatingHours);
-    const dayKeys = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const today = new Date().getDay(); // 0 = Sunday
-    const todayKey = dayKeys[today];
-    const todayHours = parsed[todayKey];
+    // JS getDay(): 0=일, 1=월 ~ 6=토 → 키: 0=월~6=일
+    const key = String((new Date().getDay() + 6) % 7);
+    const slot = parsed[key]; // [["10:00","20:00"], ["15:00","17:00"] | null]
 
-    if (!todayHours || todayHours === 'Closed') {
-      return '휴무';
+    if (!slot || !slot[0]) return '휴무';
+
+    const [open, close] = slot[0] as [string, string];
+    const base = `${open} ~ ${close}`;
+
+    if (slot[1]) {
+      const [bOpen, bClose] = slot[1] as [string, string];
+      return `${base} (브레이크 ${bOpen} ~ ${bClose})`;
     }
 
-    return todayHours;
+    return base;
   } catch {
-    // 파싱 실패 시 원본 반환
     return operatingHours;
   }
 }
 
 /**
  * 전체 요일별 영업시간 파싱
- * 입력: '{"Mon": "11:00-21:00", "Tue": "11:00-21:00", ..., "Sun": "Closed"}'
- * 출력: [{ day: '월요일', hours: '11:00-21:00' }, ...]
+ * 입력: '{"0": [["10:00","20:00"], ["15:00","17:00"]], ..., "6": [["11:00","19:00"], null]}'
+ * 키: 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
+ * 출력: [{ day: '월요일', hours: '10:00 ~ 20:00 (브레이크 15:00 ~ 17:00)' }, ...]
  */
 export function parseAllOperatingHours(operatingHours: string): Array<{ day: string; hours: string }> {
-  const dayLabels = {
-    Mon: '월요일',
-    Tue: '화요일',
-    Wed: '수요일',
-    Thu: '목요일',
-    Fri: '금요일',
-    Sat: '토요일',
-    Sun: '일요일',
-  };
+  const dayLabels = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
 
   if (!operatingHours) return [];
 
   try {
     const parsed = JSON.parse(operatingHours);
-    return Object.entries(dayLabels).map(([key, label]) => ({
-      day: label,
-      hours: parsed[key] === 'Closed' ? '휴무' : parsed[key] || '-',
-    }));
+    return dayLabels.map((label, i) => {
+      const slot = parsed[String(i)];
+      if (!slot || !slot[0]) return { day: label, hours: '휴무' };
+
+      const [open, close] = slot[0] as [string, string];
+      const base = `${open} ~ ${close}`;
+      const hours = slot[1]
+        ? `${base} (브레이크 ${(slot[1] as [string, string])[0]} ~ ${(slot[1] as [string, string])[1]})`
+        : base;
+
+      return { day: label, hours };
+    });
   } catch {
     return [];
   }
 }
 
 /**
- * 현재 영업 중인지 확인
- * 입력: '{"Mon": "11:00-21:00", ...}' 또는 "11:00-21:00"
- * 출력: "영업중" | "휴무" | "영업종료"
+ * 현재 영업 중인지 확인 (브레이크타임 고려)
+ * 입력: '{"0": [["10:00","20:00"], ["15:00","17:00"]], ..., "6": [["11:00","19:00"], null]}'
+ * 출력: "영업중" | "브레이크" | "휴무" | "영업종료"
  */
 export function getOpenStatus(operatingHours: string): string {
   if (!operatingHours) return '';
 
   const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-  const currentTime = currentHour * 60 + currentMinute; // 분 단위로 변환
+  const currentTime = now.getHours() * 60 + now.getMinutes();
 
-  let todayHours = operatingHours;
+  const toMinutes = (hhmm: string) => {
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + m;
+  };
 
-  // JSON 형식인 경우 오늘 요일의 영업시간 추출
+  const isInRange = (start: string, end: string) => {
+    const s = toMinutes(start);
+    let e = toMinutes(end);
+    // 새벽 마감 (예: 22:00~02:00)
+    if (e < s) e += 24 * 60;
+    const t = currentTime < s ? currentTime + 24 * 60 : currentTime;
+    return t >= s && t < e;
+  };
+
   try {
     const parsed = JSON.parse(operatingHours);
-    const dayKeys = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const todayKey = dayKeys[now.getDay()];
-    todayHours = parsed[todayKey] ?? '';
+    const key = String((now.getDay() + 6) % 7);
+    const slot = parsed[key];
+
+    if (!slot || !slot[0]) return '휴무';
+
+    const [open, close] = slot[0] as [string, string];
+    if (!isInRange(open, close)) return '영업종료';
+
+    // 브레이크타임 체크
+    if (slot[1]) {
+      const [bOpen, bClose] = slot[1] as [string, string];
+      if (isInRange(bOpen, bClose)) return '브레이크';
+    }
+
+    return '영업중';
   } catch {
-    // JSON이 아니면 그대로 사용
+    return '';
   }
-
-  if (!todayHours || todayHours === 'Closed') {
-    return '휴무';
-  }
-
-  // "11:00-21:00" 형식 파싱
-  const match = todayHours.match(/(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})/);
-  if (!match) return '';
-
-  const [, openHour, openMin, closeHour, closeMin] = match;
-  const openTime = parseInt(openHour) * 60 + parseInt(openMin);
-  let closeTime = parseInt(closeHour) * 60 + parseInt(closeMin);
-
-  // 새벽까지 영업하는 경우 (예: 18:00-02:00)
-  if (closeTime < openTime) {
-    closeTime += 24 * 60;
-    // 자정 이후인 경우 현재 시간도 보정
-    const adjustedCurrentTime = currentTime < openTime ? currentTime + 24 * 60 : currentTime;
-    if (adjustedCurrentTime >= openTime && adjustedCurrentTime < closeTime) {
-      return '영업중';
-    }
-  } else {
-    if (currentTime >= openTime && currentTime < closeTime) {
-      return '영업중';
-    }
-  }
-
-  return '영업종료';
 }
 
 /**
