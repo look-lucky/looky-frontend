@@ -1,6 +1,5 @@
-import { useGetMyCoupons } from "@/src/api/coupon";
+import { getGetMyCouponsQueryKey, useGetMyCoupons } from "@/src/api/coupon";
 import { useGetMyFavorites } from "@/src/api/favorite";
-import { CommonResponseListIssueCouponResponse } from "@/src/api/generated.schemas";
 import { useGetStudentInfo } from "@/src/api/my-page";
 import { useGetMyReviews } from "@/src/api/review";
 import { ThemedText } from "@/src/shared/common/themed-text";
@@ -8,9 +7,10 @@ import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";
 import { Fonts, Gray, Owner, Primary, System, Text as TextColor } from "@/src/shared/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo } from "react";
 import {
   Alert,
   ScrollView,
@@ -56,17 +56,18 @@ export default function MyPageTab() {
   const { handleLogout } = useAuth();
   const router = useRouter();
 
-  const { data: myCouponsRes } = useGetMyCoupons({
-    query: {
-      select: (res) =>
-        (res as unknown as { data: CommonResponseListIssueCouponResponse })
-          .data,
-    },
-  });
+  const queryClient = useQueryClient();
 
+  const { data: myCouponsRes } = useGetMyCoupons();
   const { data: favoritesRes } = useGetMyFavorites({ pageable: { page: 0, size: 100 } });
   const { data: myReviewsRes } = useGetMyReviews({ pageable: { page: 0, size: 100 } });
   const { data: studentInfo } = useGetStudentInfo();
+
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: getGetMyCouponsQueryKey() });
+    }, [queryClient])
+  );
 
   const favoriteCount = useMemo(() => {
     const content = (favoritesRes as any)?.data?.data?.content;
@@ -80,7 +81,8 @@ export default function MyPageTab() {
   }, [myReviewsRes]);
 
   const couponCounts = useMemo(() => {
-    const coupons = Array.isArray(myCouponsRes?.data) ? myCouponsRes.data : [];
+    const rawCoupons = (myCouponsRes as any)?.data?.data;
+    const coupons = Array.isArray(rawCoupons) ? rawCoupons : [];
     const now = Date.now();
     const threeDays = 3 * 24 * 60 * 60 * 1000;
 
@@ -89,9 +91,9 @@ export default function MyPageTab() {
     let used = 0;
 
     for (const c of coupons) {
-      if (c.status === "USED") {
+      if (c.status === "USED" || c.status === "ACTIVATED" || c.status === "EXPIRED") {
         used++;
-      } else if (c.status === "UNUSED" || c.status === "ACTIVATED") {
+      } else if (c.status === "UNUSED") {
         owned++;
         if (c.expiresAt) {
           const expiresAt = new Date(c.expiresAt).getTime();
@@ -140,10 +142,10 @@ export default function MyPageTab() {
             </View>
             <View style={styles.profileTextColumn}>
               <ThemedText style={styles.profileName}>
-                {studentInfo?.data?.nickname ?? "알 수 없음"}
+                {(studentInfo as any)?.data?.data?.nickname ?? "알 수 없음"}
               </ThemedText>
               <ThemedText style={styles.profileGreeting}>
-                {studentInfo?.data?.universityName ?? "대학교 정보 없음"} {studentInfo?.data?.collegeName ?? ""} {studentInfo?.data?.departmentName ?? ""}
+                {(studentInfo as any)?.data?.data?.universityName ?? "대학교 정보 없음"} {(studentInfo as any)?.data?.data?.collegeName ?? ""} {(studentInfo as any)?.data?.data?.departmentName ?? ""}
               </ThemedText>
             </View>
             <TouchableOpacity style={styles.editButton}>
