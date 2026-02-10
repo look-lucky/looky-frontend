@@ -1,4 +1,4 @@
-import { useCreateInquiry, useGetInquiries } from '@/src/api/고객센터-api';
+import { useCreateInquiry, useGetInquiries } from '@/src/api/customer-support';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
