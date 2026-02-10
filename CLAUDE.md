@@ -16,3 +16,11 @@
 - gap 우선, margin 최소화
 - px 단위는 4단위 (4, 8, 12, 16, 20, 24, 28)
 - 컴포넌트명은 PascalCase
+
+## API 코드 생성 (orval)
+
+- API 코드 재생성 시 `npm run orval` 대신 반드시 `npm run generate` 사용
+  - `scripts/patch-openapi.js`가 먼저 실행되어 openapi.json의 한글 태그를 영어로 변환함
+  - 한글 파일명(예: `고객센터-api.ts`)은 EAS Build를 깨뜨리기 때문
+- 한글 태그 → 영어 매핑은 `scripts/patch-openapi.js`의 `TAG_TRANSLATIONS`에서 관리
+  - 백엔드에서 새 한글 태그가 추가되면 해당 파일에 항목 추가 필요

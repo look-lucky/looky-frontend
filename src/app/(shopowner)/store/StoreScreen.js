@@ -17,6 +17,7 @@ import { getToken } from '@/src/shared/lib/auth/token';
 
 // [API] Hooks Import
 import { useCreateItem, useDeleteItem, useGetItems, useUpdateItem } from '@/src/api/item';
+import { useCreateItemCategory, useDeleteItemCategory, useGetItemCategories } from '@/src/api/item-category';
 import { useGetMyStores } from '@/src/api/store';
 
 // # Helper Functions & Constants
@@ -59,7 +60,7 @@ const formatPhoneNumber = (value) => {
     } else { // 010, 031, 063 등
       if (num.length <= 7) return num.replace(/(\d{3})(\d{1,4})/, '$1-$2');
       else if (num.length <= 10) return num.replace(/(\d{3})(\d{3})(\d{1,4})/, '$1-$2-$3');
-      else return num.replace(/(\d{3})(\d{4})(\d{1,4})/, '$1-$2-$3');
+      else return num.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
     }
   }
   return num;
@@ -346,7 +347,7 @@ export default function StoreScreen() {
           'QUIET': '조용한',
           'LIVELY': '활기찬',
           'SOLO_DINING': '1인 혼밥',
-          'LATE_NIGHT_SNACK': '야식',
+          'LATE_NIGHT': '야식',
           'COMPANY_DINNER': '회식',
           // 필요에 따라 추가
         };
@@ -478,6 +479,7 @@ export default function StoreScreen() {
       const formData = new FormData();
 
       // 3. JSON 데이터를 문자열로 변환하여 'request' 파트에 담기
+
       const requestData = {
         name: editBasicData.name, // 수정된 이름 사용
         branch: editBasicData.branch, // 지점명 추가
@@ -485,7 +487,20 @@ export default function StoreScreen() {
         address: editBasicData.address,
         addressDetail: editBasicData.detailAddress,
         phone: editBasicData.phone ? editBasicData.phone.replace(/-/g, '') : '', // 하이픈 제거 후 전송 (키 이름 수정: phoneNumber -> phone)
-        storeCategories: editBasicData.categories.map(c => CATEGORY_KR_TO_EN[c] || c)
+        storeCategories: editBasicData.categories.map(c => CATEGORY_KR_TO_EN[c] || c),
+        storeMoods: editBasicData.vibes.map(v => {
+          // 한글 -> 영어 변환 매핑 (API 스펙에 맞게)
+          const VIBE_KR_TO_EN = {
+            '모임': 'GROUP_GATHERING',
+            '데이트': 'ROMANTIC',
+            '조용한': 'QUIET',
+            '활기찬': 'LIVELY',
+            '1인 혼밥': 'SOLO_DINING',
+            '야식': 'LATE_NIGHT',
+            '회식': 'COMPANY_DINNER'
+          };
+          return VIBE_KR_TO_EN[v] || v;
+        })
       };
 
       console.log("🚀 [handleBasicSave] Request Payload:", JSON.stringify(requestData, null, 2));
@@ -531,6 +546,19 @@ export default function StoreScreen() {
 
       if (response.ok) {
         Alert.alert("성공", "가게 정보가 수정되었습니다.");
+        // [Fix 1] Update local storeInfo state immediately to reflect changes in basic info card
+        setStoreInfo(prev => ({
+          ...prev,
+          name: editBasicData.name,
+          branch: editBasicData.branch,
+          intro: editBasicData.intro,
+          address: editBasicData.address,
+          detailAddress: editBasicData.detailAddress,
+          phone: editBasicData.phone,
+          categories: editBasicData.categories,
+          vibes: editBasicData.vibes,
+          bannerImage: editBasicData.bannerImage // Update banner image if changed
+        }));
         refetchStore(); // 데이터 새로고침
         setBasicModalVisible(false);
       } else {
@@ -731,10 +759,109 @@ export default function StoreScreen() {
     }
   };
 
-  const handleHoursSave = () => {
-    setOperatingHours(editHoursData);
-    setHoursModalVisible(false);
-    Alert.alert("알림", "영업시간이 저장되었습니다.");
+  const handleHoursSave = async () => {
+    try {
+      const tokenData = await getToken();
+      const token = tokenData?.accessToken;
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+
+      // Construct JSON object for operating hours
+      // Format: { "0": [["OPEN", "CLOSE"], ["BREAK_START", "BREAK_END"] or null], ... }
+      const hoursJson = {};
+      editHoursData.forEach((item, index) => {
+        const key = index.toString();
+        if (item.isClosed) {
+          // If closed, maybe we send null or specific closed format? 
+          // Based on user request: "1": [["10:30", "22:00"], null] implies it retains times but maybe second param is null?
+          // Wait, user said: "1": [["10:30", "22:00"], null].
+          // And "0": [["10:30", "22:00"], ["13:00","15:00"]].
+          // It seems [OpenTime, BreakTime]. 
+          // If closed, usually it handled by `isClosed` flag elsewhere OR maybe empty array? 
+          // BUT `StoreScreen` `initStore` logic (lines 380) checks `dayData[0]`. 
+          // If `isClosed` is true, we should probably send something that indicates closed.
+          // However, user specifically asked for `null` in second slot for 'No Break Time'.
+          // Let's assume for now we send the times even if closed (maybe backend uses another flag? or we send empty?)
+          // Actually, look at `initStore`: `if (dayData && ... dayData[0])`.
+          // If I send `null` for the whole day, it might be closed.
+          // Let's follow the user's explicit example for Monday (index 1?):
+          // "1": [["10:30", "22:00"], null] 
+          // This looks like "Open 10:30-22:00, No Break".
+          // If it was closed, maybe the user didn't show the closed example properly or "1" was just an example of a day WITHOUT break.
+          // Let's look at `initStore` again.
+          // `if (dayData && ...)` -> `isClosed = false`. Else `isClosed = true`.
+          // So if I want to set it CLOSED, I should probably NOT send data for that key, or send `null`.
+          // `hoursJson[key] = null;` or `[]`?
+          // User said: "If I modify Monday break time... send like this..."
+          // I will assume for OPEN days: `[ [open, close], [breakStart, breakEnd] ]`.
+          // For BREAK TIME: If null -> `null`.
+          // For CLOSED days: I will try sending `null` or `[]`. 
+          // But wait, if I want to save "Closed", I must satisfy `initStore`'s "else" condition.
+          // `initStore` checks `dayData[0]`. So if I send `[null, null]`, it might close it.
+          // Or simply omitting the key?
+          // Let's try sending `[]` for closed days to be safe, or check if existing data has format.
+          // Actually, if I look at the user request again, all days 0-6 are present.
+          // "1": [["10:30", "22:00"], null] -> This is likely "Open, No Break".
+          // If the user meant "1" is closed, then `[["10:30", "22:00"], null]` would mean "Closed"? No, that looks like open hours.
+          // I will assume the user's example "1" was just "Another day with no break".
+          // Implementation:
+          // Open: `[[item.open, item.close], (item.breakStart && item.breakEnd) ? [item.breakStart, item.breakEnd] : null]`
+          // Closed: `[]` (To trigger `dayData[0]` check fail in `initStore`)
+
+          if (item.isClosed) {
+            hoursJson[key] = [];
+          } else {
+            const openTimes = [item.open, item.close];
+            const breakTimes = (item.breakStart && item.breakEnd) ? [item.breakStart, item.breakEnd] : null;
+            hoursJson[key] = [openTimes, breakTimes];
+          }
+        } else {
+          const openTimes = [item.open, item.close];
+          const breakTimes = (item.breakStart && item.breakEnd) ? [item.breakStart, item.breakEnd] : null;
+          hoursJson[key] = [openTimes, breakTimes];
+        }
+      });
+
+      const formData = new FormData();
+      formData.append("request", {
+        string: JSON.stringify({ operatingHours: JSON.stringify(hoursJson) }),
+        // Note: The structure is `request: { operatingHours: "STRINGIFIED_JSON" }` based on user saying "operatingHours": "..."
+        // Wait, standard `STORE UPDATE` usually takes flat fields or nested?
+        // User said: "operatingHours": "{\"0\": ...}" 
+        // This implies `operatingHours` field in the JSON body is a STRING.
+        type: "application/json",
+        name: "request"
+      });
+      // append image ('') to satisfy multipart if needed, or maybe not if just updating info? 
+      // `handleBasicSave` appends `images` if exists. Here we might not need it? 
+      // Safest to append empty string if backend requires it, but let's try without first as it's a specific patch.
+      // Actually, `handleQuickUpdate` appended `image: ""` workaround, so I should probably do it too.
+      formData.append('image', "");
+
+      console.log("🚀 [Hours Save] Payload:", JSON.stringify(hoursJson, null, 2));
+
+      const response = await fetch(`${baseUrl}/api/stores/${myStoreId}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/json",
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        setOperatingHours(editHoursData);
+        setHoursModalVisible(false);
+        Alert.alert("성공", "영업시간이 저장되었습니다.");
+        refetchStore();
+      } else {
+        const errText = await response.text();
+        console.error("비정상 응답:", errText);
+        Alert.alert("실패", "영업시간 저장 실패");
+      }
+    } catch (error) {
+      console.error("영업시간 저장 에러:", error);
+      Alert.alert("오류", "저장 중 문제가 발생했습니다.");
+    }
   };
 
   const toggleHoliday = (index) => {
@@ -1068,18 +1195,26 @@ export default function StoreScreen() {
                   label="가게 이미지"
                   content={
                     <View style={styles.imageDisplayRow}>
+                      {/* 1. Store Logo (Square) - Placeholder if not available */}
+                      <View style={{ width: rs(90), height: rs(90), backgroundColor: '#ECECECCC', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#AAAAAA' }}>
+                        {/* Assuming myStore.imageUrls[0] might be logo, or just placeholder for now as per user request structure */}
+                        <Ionicons name="image" size={rs(24)} color="#AAAAAA" />
+                        <Text style={{ color: '#AAAAAA', fontSize: rs(10), marginTop: rs(4) }}>가게 이미지</Text>
+                      </View>
+
+                      {/* 2. Banner Image (1.7:1) */}
                       {storeInfo.bannerImage ? (
                         <Image source={{ uri: storeInfo.bannerImage }} style={{ width: rs(153), height: rs(90), borderRadius: rs(8) }} resizeMode="cover" />
                       ) : (
                         <View style={{ width: rs(153), height: rs(90), backgroundColor: '#ECECECCC', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#AAAAAA' }}>
-                          <Text style={{ color: '#AAAAAA', fontSize: rs(12) }}>배너 이미지 없음</Text>
+                          <Text style={{ color: '#AAAAAA', fontSize: rs(12) }}>배너 없음</Text>
                         </View>
                       )}
                     </View>
                   }
                 />
                 <InfoRow icon="location" label="주소" content={<View style={{ marginTop: rs(2) }}>{storeInfo.address ? (<><Text style={styles.bodyText}>{storeInfo.address}</Text>{storeInfo.detailAddress ? <Text style={[styles.bodyText, { color: '#828282', marginTop: rs(2) }]}>{storeInfo.detailAddress}</Text> : null}</>) : <Text style={[styles.placeholderText, { marginTop: 0 }]}>정보 없음</Text>}</View>} />
-                <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{formatPhoneNumber(storeInfo.phone)}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
+                <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{formatPhoneNumber(storeInfo.phone)}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} style={{ marginBottom: 0 }} />
               </View>
 
               {/* 영업시간 */}
@@ -1104,12 +1239,14 @@ export default function StoreScreen() {
                             <Text style={styles.hyphen}>-</Text>
                             <Text style={styles.timeText}>{item.close}</Text>
                           </View>
-                          {(item.breakStart && item.breakEnd) && (
+                          {(item.breakStart && item.breakEnd) ? (
                             <View style={styles.timeDisplayContainer}>
                               <Text style={styles.breakTimeText}>{item.breakStart}</Text>
                               <Text style={styles.hyphenOrange}>-</Text>
                               <Text style={styles.breakTimeText}>{item.breakEnd}</Text>
                             </View>
+                          ) : (
+                            <Text style={{ fontSize: rs(12), color: '#999' }}>브레이크타임 없음</Text>
                           )}
                         </View>
                       )}
@@ -1643,17 +1780,20 @@ export default function StoreScreen() {
                 <EditSection icon="sparkles" label="가게 분위기"><View style={styles.selectionGrid}>{ALL_VIBES.map((vibe) => (<TouchableOpacity key={vibe} style={[styles.selectChip, editBasicData.vibes.includes(vibe) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(vibe, 'vibes')}><Text style={[styles.chipText, editBasicData.vibes.includes(vibe) ? styles.chipTextActive : styles.chipTextInactive]}>{vibe}</Text></TouchableOpacity>))}</View></EditSection>
                 <EditSection icon="information-circle" label="가게 소개"><View style={styles.inputWrapper}><TextInput style={styles.textInput} placeholder="가게를 소개하는 글을 적어주세요" value={editBasicData.intro} onChangeText={(text) => setEditBasicData({ ...editBasicData, intro: text })} /><Text style={styles.charCount}>{editBasicData.intro.length}/50</Text></View></EditSection>
                 <EditSection icon="image" label="가게 이미지">
-                  <View style={styles.imageDisplayRow}>
+                  <View style={[styles.imageDisplayRow, { justifyContent: 'flex-start' }]}>
+                    {/* Banner Image Upload Box - Right Aligned in Row context (but here left in wrapper)
+                      User requested: "기본 정보 수정 팝업창에서 배너 그리고 사진 박스?를 가게 이미지 오른쪽 정렬로 오게 해줘" 
+                      and "이미지 박스 안에 배너 추가(텍스트 위에 카메라 아이콘 추가해줘)텍스트 적어줘" 
+                  */}
                     <TouchableOpacity style={styles.uploadBoxWrapper} onPress={pickImage}>
-                      <Text style={styles.uploadLabel}>배너</Text>
-                      <View style={[styles.uploadBox, { width: rs(153), height: rs(90) }]}>
+                      <View style={[styles.uploadBox, { width: rs(153), height: rs(90), alignSelf: 'flex-start' }]}>
                         {editBasicData.bannerImage ? (
                           <Image source={{ uri: editBasicData.bannerImage }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
                         ) : (
-                          <>
-                            <Ionicons name="image" size={rs(20)} color="#aaa" />
-                            <Text style={styles.uploadPlaceholder}>배너 업로드</Text>
-                          </>
+                          <View style={{ alignItems: 'center', justifyContent: 'center', gap: rs(4) }}>
+                            <Ionicons name="camera" size={rs(24)} color="#5c5757ff" />
+                            <Text style={styles.uploadPlaceholder}>배너 추가</Text>
+                          </View>
                         )}
                       </View>
                     </TouchableOpacity>
@@ -1714,14 +1854,24 @@ export default function StoreScreen() {
                         </View>
 
                         {/* 2. 브레이크 타임 (주황색) */}
-                        <View style={styles.timeInputGroup}>
-                          <TouchableOpacity style={[styles.timeInputBox, { borderColor: '#FF7F00' }]} onPress={() => !item.isClosed && openTimePicker(index, 'breakStart')} activeOpacity={0.7}>
+                        <View style={[styles.timeInputGroup, (!item.breakStart || item.isClosed) && { opacity: 0.3 }]}>
+                          <TouchableOpacity
+                            style={[styles.timeInputBox, { borderColor: '#FF7F00' }]}
+                            onPress={() => !item.isClosed && openTimePicker(index, 'breakStart')}
+                            activeOpacity={0.7}
+                            disabled={item.isClosed}
+                          >
                             <Text style={[styles.timeLabel, { color: '#FF7F00' }]}>{breakStart12.ampm}</Text>
                             <Text style={[styles.timeValue, { color: '#FF7F00' }]}>{breakStart12.time}</Text>
                             <Ionicons name="caret-down" size={rs(10)} color="#FF7F00" />
                           </TouchableOpacity>
                           <Text style={{ marginHorizontal: 5, color: '#FF7F00' }}>~</Text>
-                          <TouchableOpacity style={[styles.timeInputBox, { borderColor: '#FF7F00' }]} onPress={() => !item.isClosed && openTimePicker(index, 'breakEnd')} activeOpacity={0.7}>
+                          <TouchableOpacity
+                            style={[styles.timeInputBox, { borderColor: '#FF7F00' }]}
+                            onPress={() => !item.isClosed && openTimePicker(index, 'breakEnd')}
+                            activeOpacity={0.7}
+                            disabled={item.isClosed}
+                          >
                             <Text style={[styles.timeLabel, { color: '#FF7F00' }]}>{breakEnd12.ampm}</Text>
                             <Text style={[styles.timeValue, { color: '#FF7F00' }]}>{breakEnd12.time}</Text>
                             <Ionicons name="caret-down" size={rs(10)} color="#FF7F00" />
@@ -1830,7 +1980,7 @@ export default function StoreScreen() {
 }
 
 // Sub-Components
-const InfoRow = ({ icon, label, content }) => (<View style={styles.rowSection}><View style={styles.fixedLabel}><Ionicons name={icon} size={rs(12)} color="#828282" /><Text style={styles.labelText}>{label}</Text></View><View style={styles.contentArea}>{content}</View></View>);
+const InfoRow = ({ icon, label, content, style }) => (<View style={[styles.rowSection, style]}><View style={styles.fixedLabel}><Ionicons name={icon} size={rs(12)} color="#828282" /><Text style={styles.labelText}>{label}</Text></View><View style={styles.contentArea}>{content}</View></View>);
 const EditSection = ({ icon, label, children }) => (<View style={styles.editSection}><View style={styles.labelRow}><Ionicons name={icon} size={rs(12)} color="#828282" /><Text style={styles.labelText}>{label}</Text></View>{children}</View>);
 const Tag = ({ text }) => <View style={styles.tagBox}><Text style={styles.tagText}>{text}</Text></View>;
 const ImagePlaceholder = ({ label, size = 90 }) => (<View style={styles.uploadBoxWrapper}><Text style={styles.uploadLabel}>{label}</Text><View style={[styles.uploadBox, { width: rs(size), height: rs(size) }]}><Ionicons name={label === '로고' ? 'camera' : 'image'} size={rs(24)} color="#aaa" /><Text style={styles.uploadPlaceholder}>{label} 업로드</Text></View></View>);
