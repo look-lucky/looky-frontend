@@ -135,7 +135,7 @@ export default function OwnerOnboardingPage() {
         </View>
 
         <AppButton
-          label={currentIndex === SLIDES.length - 1 ? "🍀 루키 시작하기" : "로그인하기"}
+          label={currentIndex === SLIDES.length - 1 ? "🍀 루키 시작하기" : "다음으로"}
           backgroundColor={Owner.primary}
           onPress={handleComplete}
           style={styles.loginButton}
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     backgroundColor: Gray.gray3,
   },
   loginButton: {
-    width: "100%",
-    paddingVertical: rs(14),
+    width: rs(200),
+    paddingVertical: rs(12),
   },
 });
