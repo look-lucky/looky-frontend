@@ -6,12 +6,13 @@ import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { rs } from "@/src/shared/theme/scale";
-import { Brand, Fonts, Gray, Text as TextColors } from "@/src/shared/theme/theme";
+import { Brand, Fonts, Gray, System, Text as TextColors } from "@/src/shared/theme/theme";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  AppState,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -52,6 +53,7 @@ export default function ChangeUniversityScreen() {
   const [verificationCode, setVerificationCode] = useState("");
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [timer, setTimer] = useState(295);
+  const [expiryTime, setExpiryTime] = useState<number | null>(null); // 만료 시간 (timestamp)
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [message, setMessage] = useState("");
@@ -69,18 +71,39 @@ export default function ChangeUniversityScreen() {
   const selectedUniversityName =
     universities.find((u: any) => u.id === selectedUniversityId)?.name ?? "";
 
-  // 타이머 로직
+  // 타이머 로직 - 실제 만료 시간 기반으로 계산
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
-    if (isCodeSent && timer > 0 && !isEmailVerified) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
+    if (!isCodeSent || !expiryTime || isEmailVerified) return;
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000));
+      setTimer(remaining);
     };
-  }, [isCodeSent, timer, isEmailVerified]);
+
+    // 즉시 한 번 업데이트
+    updateTimer();
+
+    // 매초 업데이트
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [isCodeSent, expiryTime, isEmailVerified]);
+
+  // AppState 변경 감지 - 앱이 다시 활성화될 때 타이머 재계산
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active" && expiryTime && !isEmailVerified) {
+        const now = Date.now();
+        const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000));
+        setTimer(remaining);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [expiryTime, isEmailVerified]);
 
   // 재발송 쿨다운
   useEffect(() => {
@@ -116,6 +139,7 @@ export default function ChangeUniversityScreen() {
     setEmail("");
     setVerificationCode("");
     setIsCodeSent(false);
+    setExpiryTime(null);
     setIsEmailVerified(false);
     setMessage("");
   };
@@ -128,9 +152,13 @@ export default function ChangeUniversityScreen() {
       await sendEmailMutation.mutateAsync({
         data: { email, universityId: selectedUniversityId },
       });
+      const now = Date.now();
+      const expiry = now + 300000; // 5분 (300초 = 300,000ms)
       setIsCodeSent(true);
+      setExpiryTime(expiry);
       setTimer(300);
       setResendCooldown(5);
+      setVerificationCode(""); // 재발송 시 인증번호 초기화
       showMessage("인증번호가 발송되었습니다.");
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
@@ -141,6 +169,12 @@ export default function ChangeUniversityScreen() {
   // 인증번호 확인
   const handleVerifyCode = async () => {
     if (!verificationCode) return;
+
+    // 타이머 만료 체크
+    if (timer <= 0) {
+      showMessage("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.");
+      return;
+    }
 
     try {
       await verifyEmailMutation.mutateAsync({
@@ -267,9 +301,22 @@ export default function ChangeUniversityScreen() {
                     onChangeText={setVerificationCode}
                     keyboardType="number-pad"
                     maxLength={6}
+                    editable={timer > 0}
                   />
-                  <ThemedText style={styles.timerText}>{formatTimer(timer)}</ThemedText>
+                  <ThemedText style={[styles.timerText, timer <= 0 && styles.timerExpired]}>{formatTimer(timer)}</ThemedText>
                 </View>
+                <TouchableOpacity
+                  style={[
+                    styles.smallButton,
+                    { backgroundColor: verificationCode && timer > 0 ? Brand.primary : Gray.gray5 },
+                  ]}
+                  onPress={handleVerifyCode}
+                  disabled={!verificationCode || timer <= 0}
+                >
+                  <ThemedText style={styles.smallButtonText}>
+                    확인
+                  </ThemedText>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -401,6 +448,9 @@ const styles = StyleSheet.create({
     color: Brand.primary,
     fontWeight: "600",
     fontFamily: Fonts.semiBold,
+  },
+  timerExpired: {
+    color: System.error,
   },
   inlineMessage: {
     fontSize: rs(12),
