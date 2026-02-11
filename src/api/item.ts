@@ -198,14 +198,21 @@ export const getCreateItemUrl = (storeId: number,) => {
 
 export const createItem = async (storeId: number,
     createItemBody: CreateItemBody, options?: RequestInit): Promise<createItemResponse> => {
-  
+    const formData = new FormData();
+if(createItemBody.image !== undefined) {
+ formData.append(`image`, createItemBody.image);
+ }
+if(createItemBody.request !== undefined) {
+ formData.append(`request`, JSON.stringify(createItemBody.request));
+ }
+
   return customFetch<createItemResponse>(getCreateItemUrl(storeId),
   {      
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createItemBody,)
+    method: 'POST'
+    ,
+    body: 
+      formData,
   }
 );}
 
@@ -506,14 +513,21 @@ export const getUpdateItemUrl = (itemId: number,) => {
 
 export const updateItem = async (itemId: number,
     updateItemBody: UpdateItemBody, options?: RequestInit): Promise<updateItemResponse> => {
-  
+    const formData = new FormData();
+if(updateItemBody.image !== undefined) {
+ formData.append(`image`, updateItemBody.image);
+ }
+if(updateItemBody.request !== undefined) {
+ formData.append(`request`, JSON.stringify(updateItemBody.request));
+ }
+
   return customFetch<updateItemResponse>(getUpdateItemUrl(itemId),
   {      
     ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateItemBody,)
+    method: 'PATCH'
+    ,
+    body: 
+      formData,
   }
 );}
 

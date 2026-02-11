@@ -353,8 +353,8 @@ export interface CommonResponseIssueCouponResponse {
 }
 
 export interface BizInfo {
-  pnm?: string;
   bno?: string;
+  pnm?: string;
   b_no?: string;
   start_dt?: string;
   p_nm?: string;
@@ -1163,6 +1163,7 @@ export interface StudentInfoResponse {
   collegeName?: string;
   departmentName?: string;
   isClubMember?: boolean;
+  username?: string;
 }
 
 export interface CommonResponseStudentInfoResponse {
@@ -1562,7 +1563,7 @@ export const GetStoresMoodsItem = {
 
 export type CreateStoreBody = {
   /** 상품 이미지 목록 */
-  images?: string[];
+  images?: Blob[];
   request: StoreCreateRequest;
 };
 
@@ -1588,13 +1589,13 @@ pageable: Pageable;
 
 export type CreateStoreNewsBody = {
   /** 소식 이미지 목록 */
-  images?: string[];
+  images?: Blob[];
   request: CreateStoreNewsRequest;
 };
 
 export type CreateItemBody = {
   /** 상품 이미지 */
-  image?: string;
+  image?: Blob;
   request?: CreateItemRequest;
 };
 
@@ -1655,14 +1656,14 @@ export type CreateEventBody = {
 
 export type UpdateStoreBody = {
   request: StoreUpdateRequest;
-  images?: string[];
+  images?: Blob[];
 };
 
 export type UpdateItemCategoryBody = {[key: string]: string};
 
 export type UpdateStoreNewsBody = {
   /** 변경할 소식 이미지 목록 */
-  images?: string[];
+  images?: Blob[];
   request: UpdateStoreNewsRequest;
 };
 
@@ -1674,7 +1675,7 @@ export type UpdateReviewBody = {
 
 export type UpdateItemBody = {
   /** 변경할 상품 이미지 */
-  image?: string;
+  image?: Blob;
   request?: UpdateItemRequest;
 };
 

@@ -204,14 +204,19 @@ export const getCreateStoreNewsUrl = (storeId: number,) => {
 
 export const createStoreNews = async (storeId: number,
     createStoreNewsBody: CreateStoreNewsBody, options?: RequestInit): Promise<createStoreNewsResponse> => {
-  
+    const formData = new FormData();
+if(createStoreNewsBody.images !== undefined) {
+ createStoreNewsBody.images.forEach(value => formData.append(`images`, value));
+ }
+formData.append(`request`, JSON.stringify(createStoreNewsBody.request));
+
   return customFetch<createStoreNewsResponse>(getCreateStoreNewsUrl(storeId),
   {      
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createStoreNewsBody,)
+    method: 'POST'
+    ,
+    body: 
+      formData,
   }
 );}
 
@@ -773,14 +778,19 @@ export const getUpdateStoreNewsUrl = (newsId: number,) => {
 
 export const updateStoreNews = async (newsId: number,
     updateStoreNewsBody: UpdateStoreNewsBody, options?: RequestInit): Promise<updateStoreNewsResponse> => {
-  
+    const formData = new FormData();
+if(updateStoreNewsBody.images !== undefined) {
+ updateStoreNewsBody.images.forEach(value => formData.append(`images`, value));
+ }
+formData.append(`request`, JSON.stringify(updateStoreNewsBody.request));
+
   return customFetch<updateStoreNewsResponse>(getUpdateStoreNewsUrl(newsId),
   {      
     ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateStoreNewsBody,)
+    method: 'PATCH'
+    ,
+    body: 
+      formData,
   }
 );}
 
