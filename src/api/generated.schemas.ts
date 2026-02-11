@@ -178,10 +178,7 @@ export type CreateCouponRequestStatus = typeof CreateCouponRequestStatus[keyof t
 
 
 export const CreateCouponRequestStatus = {
-  DRAFT: 'DRAFT',
-  SCHEDULED: 'SCHEDULED',
   ACTIVE: 'ACTIVE',
-  STOPPED: 'STOPPED',
   EXPIRED: 'EXPIRED',
 } as const;
 
@@ -189,7 +186,8 @@ export interface CreateCouponRequest {
   title: string;
   issueStartsAt?: string;
   issueEndsAt?: string;
-  totalQuantity: number;
+  validDays: number;
+  totalQuantity?: number;
   limitPerUser: number;
   benefitType: CreateCouponRequestBenefitType;
   benefitValue?: string;
@@ -355,8 +353,8 @@ export interface CommonResponseIssueCouponResponse {
 }
 
 export interface BizInfo {
-  bno?: string;
   pnm?: string;
+  bno?: string;
   b_no?: string;
   start_dt?: string;
   p_nm?: string;
@@ -410,6 +408,7 @@ export interface StudentSignupRequest {
   universityId?: number;
   collegeId?: number;
   departmentId?: number;
+  isClubMember?: boolean;
 }
 
 export type OwnerSignupRequestGender = typeof OwnerSignupRequestGender[keyof typeof OwnerSignupRequestGender];
@@ -500,6 +499,7 @@ export interface CompleteSocialSignupRequest {
   universityId?: number;
   collegeId?: number;
   departmentId?: number;
+  isClubMember?: boolean;
   name?: string;
   email?: string;
 }
@@ -582,6 +582,13 @@ export interface JsonNullableListLocalDate {
 }
 
 /**
+ * 유지할 이미지 ID 목록 (누락된 ID는 삭제됨)
+ */
+export interface JsonNullableListLong {
+  present?: boolean;
+}
+
+/**
  * 가게 카테고리 목록
  */
 export interface JsonNullableListStoreCategory {
@@ -612,6 +619,7 @@ export interface StoreUpdateRequest {
   storeMoods?: JsonNullableListStoreMood;
   holidayDates?: JsonNullableListLocalDate;
   isSuspended?: JsonNullableBoolean;
+  preserveImageIds?: JsonNullableListLong;
 }
 
 /**
@@ -620,6 +628,7 @@ export interface StoreUpdateRequest {
 export interface UpdateStoreNewsRequest {
   title?: JsonNullableString;
   content?: JsonNullableString;
+  preserveImageIds?: JsonNullableListLong;
 }
 
 /**
@@ -635,6 +644,7 @@ export interface JsonNullableInteger {
 export interface UpdateReviewRequest {
   content?: JsonNullableString;
   rating?: JsonNullableInteger;
+  preserveImageIds?: JsonNullableListLong;
 }
 
 /**
@@ -711,6 +721,7 @@ export interface UpdateCouponRequest {
   title?: JsonNullableString;
   issueStartsAt?: JsonNullableLocalDateTime;
   issueEndsAt?: JsonNullableLocalDateTime;
+  validDays?: JsonNullableInteger;
   totalQuantity?: JsonNullableInteger;
   limitPerUser?: JsonNullableInteger;
   benefitType?: JsonNullableCouponBenefitType;
@@ -805,6 +816,8 @@ export interface OrganizationResponse {
   universityName?: string;
   category?: OrganizationResponseCategory;
   name?: string;
+  parentId?: number;
+  parentName?: string;
   expiresAt?: string;
 }
 
@@ -817,10 +830,7 @@ export type CouponResponseStatus = typeof CouponResponseStatus[keyof typeof Coup
 
 
 export const CouponResponseStatus = {
-  DRAFT: 'DRAFT',
-  SCHEDULED: 'SCHEDULED',
   ACTIVE: 'ACTIVE',
-  STOPPED: 'STOPPED',
   EXPIRED: 'EXPIRED',
 } as const;
 
@@ -839,6 +849,7 @@ export interface CouponResponse {
   title?: string;
   issueStartsAt?: string;
   issueEndsAt?: string;
+  validDays?: number;
   totalQuantity?: number;
   limitPerUser?: number;
   status?: CouponResponseStatus;
@@ -1050,6 +1061,8 @@ export interface ItemResponse {
   imageUrl?: string;
   itemOrder?: number;
   badge?: ItemResponseBadge;
+  categoryId?: number;
+  categoryName?: string;
   hidden?: boolean;
   soldOut?: boolean;
   representative?: boolean;
@@ -1563,7 +1576,7 @@ pageable: Pageable;
 export type CreateReviewBody = {
   request: CreateReviewRequest;
   /** 리뷰 이미지 목록 */
-  images?: string[];
+  images?: Blob[];
 };
 
 export type GetStoreNewsListParams = {
@@ -1581,7 +1594,7 @@ export type CreateStoreNewsBody = {
 
 export type CreateItemBody = {
   /** 상품 이미지 */
-  image: string;
+  image?: string;
   request?: CreateItemRequest;
 };
 
@@ -1656,7 +1669,7 @@ export type UpdateStoreNewsBody = {
 export type UpdateReviewBody = {
   request: UpdateReviewRequest;
   /** 리뷰 이미지 목록 */
-  images?: string[];
+  images?: Blob[];
 };
 
 export type UpdateItemBody = {

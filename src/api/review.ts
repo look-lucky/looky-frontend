@@ -221,14 +221,19 @@ export const getCreateReviewUrl = (storeId: number,) => {
 
 export const createReview = async (storeId: number,
     createReviewBody: CreateReviewBody, options?: RequestInit): Promise<createReviewResponse> => {
-  
+    const formData = new FormData();
+formData.append(`request`, JSON.stringify(createReviewBody.request));
+if(createReviewBody.images !== undefined) {
+ createReviewBody.images.forEach(value => formData.append(`images`, value));
+ }
+
   return customFetch<createReviewResponse>(getCreateReviewUrl(storeId),
   {      
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createReviewBody,)
+    method: 'POST'
+    ,
+    body: 
+      formData,
   }
 );}
 
@@ -690,14 +695,19 @@ export const getUpdateReviewUrl = (reviewId: number,) => {
 
 export const updateReview = async (reviewId: number,
     updateReviewBody: UpdateReviewBody, options?: RequestInit): Promise<updateReviewResponse> => {
-  
+    const formData = new FormData();
+formData.append(`request`, JSON.stringify(updateReviewBody.request));
+if(updateReviewBody.images !== undefined) {
+ updateReviewBody.images.forEach(value => formData.append(`images`, value));
+ }
+
   return customFetch<updateReviewResponse>(getUpdateReviewUrl(reviewId),
   {      
     ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateReviewBody,)
+    method: 'PATCH'
+    ,
+    body: 
+      formData,
   }
 );}
 
