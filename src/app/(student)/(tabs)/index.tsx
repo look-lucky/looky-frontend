@@ -10,11 +10,10 @@ import {
 } from '@/src/app/(student)/components/home/hot-place-section';
 import { WelcomeBanner } from '@/src/app/(student)/components/home/welcome-banner';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray, Notify } from '@/src/shared/theme/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { Gray } from '@/src/shared/theme/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import NearDealLogo from '@/assets/images/logo/neardeal-logo.svg';
@@ -70,10 +69,6 @@ export default function HomePage() {
   const events = eventsRes?.data?.data?.content ?? [];
   const eventCount = events.length;
 
-  const handleNotificationPress = () => {
-    router.push('/notification');
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -84,13 +79,6 @@ export default function HomePage() {
         {/* Header */}
         <View style={styles.header}>
           <NearDealLogo width={rs(92)} height={rs(28)} />
-          <TouchableOpacity
-            style={styles.notificationButton}
-            onPress={handleNotificationPress}
-          >
-            <Ionicons name="notifications-outline" size={rs(24)} color={Gray.black} />
-            <View style={styles.notificationDot} />
-          </TouchableOpacity>
         </View>
 
         {/* Welcome Banner */}
@@ -141,22 +129,8 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: rs(12),
-  },
-  notificationButton: {
-    position: 'relative',
-    padding: rs(4),
-  },
-  notificationDot: {
-    position: 'absolute',
-    top: rs(4),
-    right: rs(4),
-    width: rs(8),
-    height: rs(8),
-    borderRadius: rs(4),
-    backgroundColor: Notify.importHeart,
   },
   section: {
     marginTop: rs(16),

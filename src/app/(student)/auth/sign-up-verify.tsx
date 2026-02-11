@@ -1,6 +1,7 @@
 import { useCompleteSocialSignup, useLogin, useSend, useSignupStudent, useVerify } from "@/src/api/auth";
 import { CommonResponseLoginResponse, OrganizationResponseCategory } from "@/src/api/generated.schemas";
-import { useGetOrganizations } from "@/src/api/organization";
+import { useGetDepartmentsByCollege, useGetOrganizations } from "@/src/api/organization";
+import { useGetUniversities } from "@/src/api/university";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
@@ -65,8 +66,9 @@ export default function StudentVerificationPage() {
   const sendEmailMutation = useSend();
   const verifyEmailMutation = useVerify();
 
-  // TODO: 실제로는 선택된 대학 ID 사용
-  const universityId = 1;
+  // 대학 선택 상태
+  const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null);
+  const [universityModalVisible, setUniversityModalVisible] = useState(false);
 
   // 이메일 인증 상태
   const [email, setEmail] = useState("");
@@ -74,6 +76,7 @@ export default function StudentVerificationPage() {
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [timer, setTimer] = useState(295); // 4:55
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // 단과대학/학과 선택 상태
   const [selectedCollegeId, setSelectedCollegeId] = useState<number | null>(null);
@@ -81,8 +84,19 @@ export default function StudentVerificationPage() {
   const [collegeModalVisible, setCollegeModalVisible] = useState(false);
   const [departmentModalVisible, setDepartmentModalVisible] = useState(false);
 
-  // 소속 목록 조회 (React Query)
-  const { data: organizationsData } = useGetOrganizations(universityId);
+  // 대학 목록 조회
+  const { data: universitiesData } = useGetUniversities();
+  const universities = Array.isArray(universitiesData?.data?.data) ? universitiesData.data.data : [];
+  const universityOptions: SelectOption[] = universities.map(u => ({
+    id: u.id ?? 0,
+    label: u.name ?? "",
+  }));
+  const selectedUniversityName = universities.find(u => u.id === selectedUniversityId)?.name ?? "";
+
+  // 소속 목록 조회 (단과대학용)
+  const { data: organizationsData } = useGetOrganizations(selectedUniversityId!, {
+    query: { enabled: selectedUniversityId !== null },
+  });
   const rawOrganizations = organizationsData?.data?.data;
   const organizations = Array.isArray(rawOrganizations) ? rawOrganizations : [];
 
@@ -92,12 +106,12 @@ export default function StudentVerificationPage() {
     [organizations]
   );
 
-  // 선택된 단과대학의 학과 목록 필터링
-  // TODO: parentId 필드가 API response에 없어서 일단 전체 학과 목록 사용
-  const departments = useMemo(() =>
-    organizations.filter(org => org.category === OrganizationResponseCategory.DEPARTMENT),
-    [organizations]
-  );
+  // 선택된 단과대학의 학과 목록 조회
+  const { data: departmentsData } = useGetDepartmentsByCollege(selectedCollegeId!, {
+    query: { enabled: selectedCollegeId !== null },
+  });
+  const rawDepartments = (departmentsData as any)?.data?.data;
+  const departments = Array.isArray(rawDepartments) ? rawDepartments : [];
 
   // SelectModal용 옵션 변환
   const collegeOptions: SelectOption[] = colleges.map(college => ({
@@ -105,14 +119,14 @@ export default function StudentVerificationPage() {
     label: college.name ?? "",
   }));
 
-  const departmentOptions: SelectOption[] = departments.map(dept => ({
+  const departmentOptions: SelectOption[] = departments.map((dept: any) => ({
     id: dept.id ?? 0,
     label: dept.name ?? "",
   }));
 
   // 선택된 단과대학/학과 이름
   const selectedCollegeName = colleges.find(c => c.id === selectedCollegeId)?.name ?? "";
-  const selectedDepartmentName = departments.find(d => d.id === selectedDepartmentId)?.name ?? "";
+  const selectedDepartmentName = departments.find((d: any) => d.id === selectedDepartmentId)?.name ?? "";
 
   // 타이머 로직
   useEffect(() => {
@@ -127,6 +141,15 @@ export default function StudentVerificationPage() {
     };
   }, [isCodeSent, timer, isEmailVerified]);
 
+  // 재발송 쿨다운 타이머
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
+
   // 타이머 포맷 (MM:SS)
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -136,14 +159,15 @@ export default function StudentVerificationPage() {
 
   // 인증번호 발송
   const handleSendCode = async () => {
-    if (!email) return;
+    if (!email || !selectedUniversityId) return;
 
     try {
       await sendEmailMutation.mutateAsync({
-        data: { email, universityId }
+        data: { email, universityId: selectedUniversityId }
       });
       setIsCodeSent(true);
       setTimer(300);
+      setResendCooldown(10);
       Alert.alert("인증번호 발송", "이메일로 인증번호가 발송되었습니다.");
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
@@ -172,13 +196,14 @@ export default function StudentVerificationPage() {
 
   // 폼 유효성 검사
   const isFormValid =
+    selectedUniversityId !== null &&
     isEmailVerified &&
     selectedCollegeId !== null &&
     selectedDepartmentId !== null;
 
   // 완료 처리
   const handleComplete = () => {
-    if (!isFormValid || !selectedCollegeId || !selectedDepartmentId) return;
+    if (!isFormValid || !selectedUniversityId || !selectedCollegeId || !selectedDepartmentId) return;
 
     const birthDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
     const apiGender = gender === "male" ? "MALE" : "FEMALE";
@@ -193,7 +218,7 @@ export default function StudentVerificationPage() {
             gender: apiGender,
             birthDate,
             nickname,
-            universityId,
+            universityId: selectedUniversityId,
             collegeId: selectedCollegeId,
             departmentId: selectedDepartmentId,
           },
@@ -214,8 +239,8 @@ export default function StudentVerificationPage() {
 
               // Store에 회원가입 정보 저장 (sign-up-done 화면에서 표시하기 위함)
               setSignupFields({
-                universityId,
-                universityName: "전북대학교",
+                universityId: selectedUniversityId,
+                universityName: selectedUniversityName,
                 collegeId: selectedCollegeId,
                 collegeName: selectedCollegeName,
                 departmentId: selectedDepartmentId,
@@ -248,7 +273,7 @@ export default function StudentVerificationPage() {
           nickname,
           gender: apiGender,
           birthDate,
-          universityId,
+          universityId: selectedUniversityId,
           collegeId: selectedCollegeId,
           departmentId: selectedDepartmentId,
         },
@@ -260,8 +285,8 @@ export default function StudentVerificationPage() {
           await saveUserCollegeId(selectedCollegeId!);
 
           setSignupFields({
-            universityId,
-            universityName: "전북대학교",
+            universityId: selectedUniversityId,
+            universityName: selectedUniversityName,
             collegeId: selectedCollegeId,
             collegeName: selectedCollegeName,
             departmentId: selectedDepartmentId,
@@ -322,6 +347,27 @@ export default function StudentVerificationPage() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* 대학 선택 섹션 */}
+        <View style={styles.section}>
+          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+            대학 선택
+          </ThemedText>
+          <TouchableOpacity
+            style={styles.selectField}
+            onPress={() => setUniversityModalVisible(true)}
+          >
+            <ThemedText
+              style={[
+                styles.selectFieldText,
+                !selectedUniversityId && styles.selectFieldPlaceholder,
+              ]}
+            >
+              {selectedUniversityName || "대학을 선택해주세요"}
+            </ThemedText>
+            <ChevronDownIcon />
+          </TouchableOpacity>
+        </View>
+
         {/* 대학 이메일 인증 섹션 */}
         <View style={styles.section}>
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
@@ -345,13 +391,13 @@ export default function StudentVerificationPage() {
             <TouchableOpacity
               style={[
                 styles.smallButton,
-                { backgroundColor: email && !isEmailVerified ? Brand.primary : Gray.gray5 },
+                { backgroundColor: email && !isEmailVerified && resendCooldown <= 0 ? Brand.primary : Gray.gray5 },
               ]}
               onPress={handleSendCode}
-              disabled={!email || isEmailVerified}
+              disabled={!email || isEmailVerified || resendCooldown > 0}
             >
               <ThemedText style={styles.smallButtonText}>
-                인증번호 받기
+                {resendCooldown > 0 ? `재발송 (${resendCooldown}초)` : isCodeSent ? "인증번호 재발송" : "인증번호 받기"}
               </ThemedText>
             </TouchableOpacity>
           </View>
@@ -413,7 +459,7 @@ export default function StudentVerificationPage() {
                 !selectedCollegeId && styles.selectFieldPlaceholder,
               ]}
             >
-              {selectedCollegeName || "경상대학"}
+              {selectedCollegeName || "단과대학을 선택해주세요"}
             </ThemedText>
             <ChevronDownIcon />
           </TouchableOpacity>
@@ -435,7 +481,7 @@ export default function StudentVerificationPage() {
                 !selectedDepartmentId && styles.selectFieldPlaceholder,
               ]}
             >
-              {selectedDepartmentName || "경영학과"}
+              {selectedDepartmentName || "학과를 선택해주세요"}
             </ThemedText>
             <ChevronDownIcon />
           </TouchableOpacity>
@@ -451,6 +497,20 @@ export default function StudentVerificationPage() {
           disabled={!isFormValid}
         />
       </View>
+
+      {/* 대학 선택 모달 */}
+      <SelectModal
+        visible={universityModalVisible}
+        options={universityOptions}
+        selectedId={selectedUniversityId ?? 0}
+        onSelect={(id) => {
+          setSelectedUniversityId(id as number);
+          setSelectedCollegeId(null);
+          setSelectedDepartmentId(null);
+        }}
+        onClose={() => setUniversityModalVisible(false)}
+        title="대학"
+      />
 
       {/* 단과대학 선택 모달 */}
       <SelectModal

@@ -48,14 +48,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "@mj-studio/react-native-naver-map",
       {
-        client_id: "iiun93671l",
+        client_id: process.env.EXPO_PUBLIC_NAVER_MAP_CLIENT_ID ?? "",
       },
     ],
     [
       "expo-build-properties",
       {
         android: {
-          kotlinVersion: "2.0.21",
+          kotlinVersion: "2.1.20",
           extraMavenRepos: [
             "https://repository.map.naver.com/archive/maven",
             "https://devrepo.kakao.com/nexus/content/groups/public/",
@@ -82,6 +82,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+  updates: {
+    url: "https://u.expo.dev/554fbeb0-4c38-4f44-86c2-6591b905ee36",
+  },
+  runtimeVersion: {
+    policy: "appVersion",
   },
   extra: {
     router: {},

@@ -1,6 +1,7 @@
 import { useCompleteSocialSignup } from "@/src/api/auth";
 import { OrganizationResponseCategory } from "@/src/api/generated.schemas";
-import { useGetOrganizations } from "@/src/api/organization";
+import { useGetDepartmentsByCollege, useGetOrganizations } from "@/src/api/organization";
+import { useGetUniversities } from "@/src/api/university";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
@@ -97,14 +98,26 @@ export default function SocialSignupPage() {
   const [nickname, setNickname] = useState("");
 
   // 대학/단과대학/학과 선택
-  const universityId = 1; // TODO: 대학 선택 구현
+  const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null);
+  const [universityModalVisible, setUniversityModalVisible] = useState(false);
   const [selectedCollegeId, setSelectedCollegeId] = useState<number | null>(null);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
   const [collegeModalVisible, setCollegeModalVisible] = useState(false);
   const [departmentModalVisible, setDepartmentModalVisible] = useState(false);
 
-  // 소속 목록 조회
-  const { data: organizationsData } = useGetOrganizations(universityId);
+  // 대학 목록 조회
+  const { data: universitiesData } = useGetUniversities();
+  const universities = Array.isArray(universitiesData?.data?.data) ? universitiesData.data.data : [];
+  const universityOptions: SelectOption[] = universities.map((u) => ({
+    id: u.id ?? 0,
+    label: u.name ?? "",
+  }));
+  const selectedUniversityName = universities.find((u) => u.id === selectedUniversityId)?.name ?? "";
+
+  // 소속 목록 조회 (단과대학용)
+  const { data: organizationsData } = useGetOrganizations(selectedUniversityId!, {
+    query: { enabled: selectedUniversityId !== null },
+  });
   const rawOrganizations = organizationsData?.data?.data;
   const organizations = Array.isArray(rawOrganizations) ? rawOrganizations : [];
 
@@ -113,23 +126,25 @@ export default function SocialSignupPage() {
     [organizations]
   );
 
-  const departments = useMemo(
-    () => organizations.filter((org) => org.category === OrganizationResponseCategory.DEPARTMENT),
-    [organizations]
-  );
+  // 선택된 단과대학의 학과 목록 조회
+  const { data: departmentsData } = useGetDepartmentsByCollege(selectedCollegeId!, {
+    query: { enabled: selectedCollegeId !== null },
+  });
+  const rawDepartments = (departmentsData as any)?.data?.data;
+  const departments = Array.isArray(rawDepartments) ? rawDepartments : [];
 
   const collegeOptions: SelectOption[] = colleges.map((college) => ({
     id: college.id ?? 0,
     label: college.name ?? "",
   }));
 
-  const departmentOptions: SelectOption[] = departments.map((dept) => ({
+  const departmentOptions: SelectOption[] = departments.map((dept: any) => ({
     id: dept.id ?? 0,
     label: dept.name ?? "",
   }));
 
   const selectedCollegeName = colleges.find((c) => c.id === selectedCollegeId)?.name ?? "";
-  const selectedDepartmentName = departments.find((d) => d.id === selectedDepartmentId)?.name ?? "";
+  const selectedDepartmentName = departments.find((d: any) => d.id === selectedDepartmentId)?.name ?? "";
 
   // 폼 유효성 검사
   const isFormValid =
@@ -138,6 +153,7 @@ export default function SocialSignupPage() {
     birthDay.length >= 1 &&
     nickname.length >= 2 &&
     nickname.length <= 10 &&
+    selectedUniversityId !== null &&
     selectedCollegeId !== null &&
     selectedDepartmentId !== null;
 
@@ -155,7 +171,7 @@ export default function SocialSignupPage() {
           gender: apiGender,
           birthDate,
           nickname,
-          universityId,
+          universityId: selectedUniversityId!,
           collegeId: selectedCollegeId!,
           departmentId: selectedDepartmentId!,
         },
@@ -176,8 +192,8 @@ export default function SocialSignupPage() {
               nickname: nickname,
               username: "소셜 로그인",
               password: "",
-              universityId: universityId,
-              universityName: "전북대학교",
+              universityId: selectedUniversityId!,
+              universityName: selectedUniversityName,
               collegeId: selectedCollegeId!,
               collegeName: selectedCollegeName,
               departmentId: selectedDepartmentId!,
@@ -294,6 +310,27 @@ export default function SocialSignupPage() {
           </View>
         </View>
 
+        {/* 대학 선택 */}
+        <View style={styles.section}>
+          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+            대학 선택
+          </ThemedText>
+          <TouchableOpacity
+            style={styles.selectField}
+            onPress={() => setUniversityModalVisible(true)}
+          >
+            <ThemedText
+              style={[
+                styles.selectFieldText,
+                !selectedUniversityId && styles.selectFieldPlaceholder,
+              ]}
+            >
+              {selectedUniversityName || "대학을 선택해주세요"}
+            </ThemedText>
+            <ChevronDownIcon />
+          </TouchableOpacity>
+        </View>
+
         {/* 단과대학 선택 */}
         <View style={styles.section}>
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
@@ -346,6 +383,19 @@ export default function SocialSignupPage() {
           disabled={!isFormValid || completeSocialSignupMutation.isPending}
         />
       </View>
+
+      <SelectModal
+        visible={universityModalVisible}
+        options={universityOptions}
+        selectedId={selectedUniversityId ?? 0}
+        onSelect={(id) => {
+          setSelectedUniversityId(id as number);
+          setSelectedCollegeId(null);
+          setSelectedDepartmentId(null);
+        }}
+        onClose={() => setUniversityModalVisible(false)}
+        title="대학"
+      />
 
       <SelectModal
         visible={collegeModalVisible}
