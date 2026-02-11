@@ -2,7 +2,7 @@ import { ConfigContext, ExpoConfig } from "expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "rn-app",
+  name: "Looky",
   slug: "rn-app",
   owner: "looky123",
   version: "1.0.0",

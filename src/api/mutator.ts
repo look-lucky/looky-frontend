@@ -16,6 +16,7 @@ const PUBLIC_ENDPOINTS = [
   "/api/auth/signup",
   "/api/auth/refresh",
   "/api/auth/check-username",
+  "/api/universities",
 ];
 
 let refreshPromise: Promise<boolean> | null = null;
