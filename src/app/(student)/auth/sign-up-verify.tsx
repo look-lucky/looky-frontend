@@ -379,7 +379,7 @@ export default function StudentVerificationPage() {
             <View style={[styles.inputContainer, styles.inputFlex]}>
               <TextInput
                 style={styles.input}
-                placeholder="학생인증을 위한 메일을 입력해주세요"
+                placeholder="학교 메일을 입력해주세요"
                 placeholderTextColor={TextColors.placeholder}
                 value={email}
                 onChangeText={setEmail}
@@ -599,6 +599,7 @@ const styles = StyleSheet.create({
     fontFamily: "Pretendard",
   },
   smallButton: {
+    flexShrink: 0,
     paddingHorizontal: rs(12),
     borderRadius: rs(8),
     height: rs(44),

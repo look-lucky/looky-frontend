@@ -187,7 +187,6 @@ export const CreateCouponRequestStatus = {
 
 export interface CreateCouponRequest {
   title: string;
-  description?: string;
   issueStartsAt?: string;
   issueEndsAt?: string;
   totalQuantity: number;
@@ -204,6 +203,31 @@ export interface VerifyCouponRequest {
    * @maxLength 4
    */
   code: string;
+}
+
+export type VerifyCouponResponseBenefitType = typeof VerifyCouponResponseBenefitType[keyof typeof VerifyCouponResponseBenefitType];
+
+
+export const VerifyCouponResponseBenefitType = {
+  FIXED_DISCOUNT: 'FIXED_DISCOUNT',
+  PERCENTAGE_DISCOUNT: 'PERCENTAGE_DISCOUNT',
+  SERVICE_GIFT: 'SERVICE_GIFT',
+} as const;
+
+export interface VerifyCouponResponse {
+  studentCouponId?: number;
+  studentNickname?: string;
+  couponTitle?: string;
+  benefitType?: VerifyCouponResponseBenefitType;
+  benefitValue?: string;
+  issuedAt?: string;
+  expiresAt?: string;
+  isExpired?: boolean;
+}
+
+export interface CommonResponseVerifyCouponResponse {
+  isSuccess?: boolean;
+  data?: VerifyCouponResponse;
 }
 
 /**
@@ -320,7 +344,6 @@ export interface IssueCouponResponse {
   issuedAt?: string;
   expiresAt?: string;
   title?: string;
-  description?: string;
   benefitType?: IssueCouponResponseBenefitType;
   benefitValue?: string;
   storeName?: string;
@@ -686,7 +709,6 @@ export interface JsonNullableCouponStatus {
  */
 export interface UpdateCouponRequest {
   title?: JsonNullableString;
-  description?: JsonNullableString;
   issueStartsAt?: JsonNullableLocalDateTime;
   issueEndsAt?: JsonNullableLocalDateTime;
   totalQuantity?: JsonNullableInteger;
@@ -815,7 +837,6 @@ export interface CouponResponse {
   id?: number;
   storeId?: number;
   title?: string;
-  description?: string;
   issueStartsAt?: string;
   issueEndsAt?: string;
   totalQuantity?: number;
@@ -824,7 +845,9 @@ export interface CouponResponse {
   benefitType?: CouponResponseBenefitType;
   benefitValue?: string;
   minOrderAmount?: number;
-  isIssued?: boolean;
+  downloadCount?: number;
+  usedCount?: number;
+  isDownloaded?: boolean;
 }
 
 export interface CommonResponseListCouponResponse {
@@ -1123,6 +1146,9 @@ export interface StudentInfoResponse {
   universityId?: number;
   collegeId?: number;
   departmentId?: number;
+  universityName?: string;
+  collegeName?: string;
+  departmentName?: string;
   isClubMember?: boolean;
 }
 
