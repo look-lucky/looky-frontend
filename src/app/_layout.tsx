@@ -49,6 +49,7 @@ function AppContent() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="landing" />
+        <Stack.Screen name="onboarding" />
         <Stack.Screen name="signin" />
         <Stack.Screen name="(tabs)" />
       </Stack>
