@@ -4,6 +4,9 @@ import { Gray, Owner } from '@/src/shared/theme/theme';
 import { useRouter } from 'expo-router';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+import BannerCoupon from '@/assets/images/icons/home/banner-coupon.svg';
+import BannerEvent from '@/assets/images/icons/home/banner-event.svg';
+
 interface WelcomeBannerProps {
   userName: string;
   university: string;
@@ -32,38 +35,34 @@ export function WelcomeBanner({
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <View style={styles.leftColumn}>
         <View style={styles.textContainer}>
-          <ThemedText style={styles.greeting}>
-            안녕하세요 {userName}님 !
+          <ThemedText type="subtitle" lightColor={Gray.white}>
+            안녕하세요 {userName}님!
           </ThemedText>
-          <ThemedText style={styles.affiliation}>
+          <ThemedText type="caption" lightColor={Gray.white}>
             {university} {department}
           </ThemedText>
-          <ThemedText style={styles.description}>
+          <ThemedText type="caption" lightColor={Gray.white} style={{ marginTop: rs(8) }}>
             학교 앞에서 바로 쓸 수 있는 혜택이 있어요.
           </ThemedText>
         </View>
-        <Image
-          source={require('@/assets/images/icons/home/clover-home.png')}
-          style={styles.cloverImage}
-          resizeMode="contain"
-        />
+        <View style={styles.statsContainer}>
+          <TouchableOpacity style={styles.statItem} onPress={handleCouponPress}>
+            <BannerCoupon width={rs(20)} height={rs(20)} />
+            <ThemedText style={styles.statText}>쿠폰 {couponCount}장</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.statItem} onPress={handleEventPress}>
+            <BannerEvent width={rs(20)} height={rs(20)} />
+            <ThemedText style={styles.statText}>이벤트 {eventCount}개</ThemedText>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.statsContainer}>
-        <TouchableOpacity style={styles.statItem} onPress={handleCouponPress}>
-          <View style={[styles.statIcon, styles.couponIcon]}>
-            <ThemedText style={styles.statIconText}>🏪</ThemedText>
-          </View>
-          <ThemedText style={styles.statText}>쿠폰 {couponCount}장</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.statItem} onPress={handleEventPress}>
-          <View style={[styles.statIcon, styles.eventIcon]}>
-            <ThemedText style={styles.statIconText}>💰</ThemedText>
-          </View>
-          <ThemedText style={styles.statText}>이벤트 {eventCount}개</ThemedText>
-        </TouchableOpacity>
-      </View>
+      <Image
+        source={require('@/assets/images/icons/home/clover-home.png')}
+        style={styles.cloverImage}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -71,40 +70,19 @@ export function WelcomeBanner({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: Owner.primary,
-    borderRadius: rs(16),
+    borderRadius: rs(12),
     padding: rs(20),
-    gap: rs(16),
-  },
-  content: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
-  textContainer: {
+  leftColumn: {
     flex: 1,
-    gap: rs(4),
+    gap: rs(12),
   },
-  greeting: {
-    fontSize: rs(18),
-    fontWeight: '700',
-    color: Gray.white,
-  },
-  affiliation: {
-    fontSize: rs(12),
-    fontWeight: '500',
-    color: Gray.white,
-    opacity: 0.9,
-  },
-  description: {
-    fontSize: rs(12),
-    fontWeight: '400',
-    color: Gray.white,
-    opacity: 0.8,
-    marginTop: rs(4),
-  },
+  textContainer: {},
   cloverImage: {
-    width: rs(80),
-    height: rs(80),
+    width: rs(96),
+    height: rs(96),
   },
   statsContainer: {
     flexDirection: 'row',
@@ -118,22 +96,6 @@ const styles = StyleSheet.create({
     paddingVertical: rs(8),
     paddingHorizontal: rs(12),
     borderRadius: rs(20),
-  },
-  statIcon: {
-    width: rs(20),
-    height: rs(20),
-    borderRadius: rs(10),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  couponIcon: {
-    backgroundColor: '#FF6B6B',
-  },
-  eventIcon: {
-    backgroundColor: '#FFD93D',
-  },
-  statIconText: {
-    fontSize: rs(10),
   },
   statText: {
     fontSize: rs(12),

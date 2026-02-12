@@ -22,7 +22,6 @@ interface StoreSearchParams {
   keyword?: string;
   categories?: string[];
   moods?: string[];
-  sort?: string[];
   page?: number;
   size?: number;
 }
@@ -33,7 +32,6 @@ async function fetchStores(params: StoreSearchParams) {
   if (params.keyword) qs.append('keyword', params.keyword);
   params.categories?.forEach((c) => qs.append('categories', c));
   params.moods?.forEach((m) => qs.append('moods', m));
-  params.sort?.forEach((s) => qs.append('sort', s));
   qs.append('page', String(params.page ?? 0));
   qs.append('size', String(params.size ?? 50));
 
@@ -198,14 +196,6 @@ export function useMapSearch() {
       })),
     [filteredStores],
   );
-
-  // 디버깅 로그
-  console.log('[useMapSearch] rawData:', JSON.stringify(rawData?.data)?.substring(0, 300));
-  console.log('[useMapSearch] rawData content:', rawData?.data?.data?.content?.length ?? 0, 'stores');
-  console.log('[useMapSearch] storeResponses:', storeResponses.length);
-  console.log('[useMapSearch] filteredStores:', filteredStores.length);
-  console.log('[useMapSearch] markers:', markers.length);
-  console.log('[useMapSearch] viewMode:', viewMode, '| selectedCategory:', selectedCategory, '| isLoading:', isLoading, '| isError:', isError);
 
   // 선택된 가게
   const selectedStore = useMemo(() => {

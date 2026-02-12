@@ -1,3 +1,4 @@
+import LightingIcon from '@/assets/images/icons/home/lighting.svg';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Coupon, Gray, Text as TextColor } from '@/src/shared/theme/theme';
@@ -88,7 +89,7 @@ export function CouponSection({ coupons }: CouponSectionProps) {
     return (
       <View style={styles.container}>
         <SectionHeader
-          icon="🍀"
+          icon={<LightingIcon width={rs(10)} height={rs(20)} />}
           title="오늘 발급된 따끈한 쿠폰"
           onMorePress={handleMorePress}
         />

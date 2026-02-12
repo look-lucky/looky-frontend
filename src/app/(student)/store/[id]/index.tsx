@@ -185,7 +185,7 @@ export default function StoreDetailScreen() {
   const storeLikeCount = favoriteCount ?? 0;
 
   // TODO: 백엔드 필드 추가 후 API 연동 (현재 API에 없는 필드)
-  const storeCloverGrowth = 0; // TODO: 클로버 등급 API 추가 후 연동
+  const storeCloverGrade = apiStore?.cloverGrade;
   const storeUniversity = '';  // TODO: StoreResponse에 university 필드 추가 후 연동
   const storeIsPartner = false; // TODO: StoreResponse에 isPartner 필드 추가 후 연동
   const storeBenefits: string[] = []; // TODO: 혜택 API 추가 후 연동
@@ -363,7 +363,7 @@ export default function StoreDetailScreen() {
       >
         <StoreHeader
           image={storeImage}
-          cloverGrowth={storeCloverGrowth}
+          cloverGrade={storeCloverGrade}
           isLiked={isLiked}
           name={storeName}
           rating={storeRating}

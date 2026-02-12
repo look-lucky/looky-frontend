@@ -7,11 +7,13 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
+  Keyboard,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -114,85 +116,87 @@ export default function LoginPage() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      {/* Header with back button */}
-      <View style={styles.header}>
-        <ArrowLeft onPress={() => router.back()} />
-      </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        {/* Header with back button */}
+        <View style={styles.header}>
+          <ArrowLeft onPress={() => router.back()} />
+        </View>
 
-      {/* Top content with subtitle and logo */}
-      <View style={styles.topContent}>
-        <Text style={styles.subtitle}>우리대학 제휴혜택이 궁금할 땐?</Text>
-        <NearDealLogo width={rs(169)} height={rs(57)} />
-      </View>
+        {/* Top content with subtitle and logo */}
+        <View style={styles.topContent}>
+          <Text style={styles.subtitle}>우리대학 제휴혜택이 궁금할 땐?</Text>
+          <NearDealLogo width={rs(169)} height={rs(57)} />
+        </View>
 
-      {/* Center content with input fields */}
-      <View style={styles.centerContent}>
-        <View style={styles.inputWrapper}>
-          {/* Username input */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="아이디"
-              placeholderTextColor="#828282"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-            />
+        {/* Center content with input fields */}
+        <View style={styles.centerContent}>
+          <View style={styles.inputWrapper}>
+            {/* Username input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="아이디"
+                placeholderTextColor="#828282"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Password input with eye icon */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="비밀번호"
+                placeholderTextColor="#828282"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <EyeOffIcon color="#d5d5d5" />
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Password input with eye icon */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="비밀번호"
-              placeholderTextColor="#828282"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
-            >
-              <EyeOffIcon color="#d5d5d5" />
-            </TouchableOpacity>
+          {/* Links row */}
+          <View style={styles.linksRow}>
+            <Pressable onPress={handleSignup}>
+              <Text style={styles.linkTextBold}>회원가입</Text>
+            </Pressable>
+            <View style={styles.linkDivider} />
+            <Pressable onPress={handleFindId}>
+              <Text style={styles.linkText}>아이디 찾기</Text>
+            </Pressable>
+            <View style={styles.linkDivider} />
+            <Pressable onPress={handleFindPassword}>
+              <Text style={styles.linkText}>비밀번호 찾기</Text>
+            </Pressable>
           </View>
         </View>
 
-        {/* Links row */}
-        <View style={styles.linksRow}>
-          <Pressable onPress={handleSignup}>
-            <Text style={styles.linkTextBold}>회원가입</Text>
-          </Pressable>
-          <View style={styles.linkDivider} />
-          <Pressable onPress={handleFindId}>
-            <Text style={styles.linkText}>아이디 찾기</Text>
-          </Pressable>
-          <View style={styles.linkDivider} />
-          <Pressable onPress={handleFindPassword}>
-            <Text style={styles.linkText}>비밀번호 찾기</Text>
-          </Pressable>
+        {/* Bottom content with login button */}
+        <View style={styles.bottomContent}>
+          <TouchableOpacity
+            style={[
+              styles.loginButton,
+              loginMutation.isPending && styles.loginButtonDisabled,
+            ]}
+            onPress={handleLogin}
+            disabled={loginMutation.isPending}
+          >
+            <Text style={styles.loginButtonText}>
+              {loginMutation.isPending ? "로그인 중..." : "로그인"}
+            </Text>
+          </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Bottom content with login button */}
-      <View style={styles.bottomContent}>
-        <TouchableOpacity
-          style={[
-            styles.loginButton,
-            loginMutation.isPending && styles.loginButtonDisabled,
-          ]}
-          onPress={handleLogin}
-          disabled={loginMutation.isPending}
-        >
-          <Text style={styles.loginButtonText}>
-            {loginMutation.isPending ? "로그인 중..." : "로그인"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 

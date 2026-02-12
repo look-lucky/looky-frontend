@@ -1,3 +1,4 @@
+import type { StoreResponseCloverGrade } from '@/src/api/generated.schemas';
 import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { ThemedView } from '@/src/shared/common/themed-view';
@@ -9,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   Image,
+  ImageSourcePropType,
   LayoutAnimation,
   Platform,
   StyleSheet,
@@ -17,6 +19,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const CLOVER_IMAGES: Record<string, ImageSourcePropType> = {
+  SEED: require('@/assets/images/icons/store/clover-one.png'),
+  SPROUT: require('@/assets/images/icons/store/clover-two.png'),
+  THREE_LEAF: require('@/assets/images/icons/store/clover-three.png'),
+};
 
 // Android LayoutAnimation 활성화
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -29,7 +37,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 interface StoreHeaderProps {
   image: string;
-  cloverGrowth: number;
+  cloverGrade?: StoreResponseCloverGrade;
   isLiked: boolean;
   name: string;
   rating: number;
@@ -50,18 +58,19 @@ interface StoreHeaderProps {
 
 function MainImageSection({
   image,
-  cloverGrowth,
+  cloverGrade,
   isLiked,
   onBack,
   onLike,
 }: {
   image: string;
-  cloverGrowth: number;
+  cloverGrade?: StoreResponseCloverGrade;
   isLiked: boolean;
   onBack: () => void;
   onLike: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const cloverImage = cloverGrade ? CLOVER_IMAGES[cloverGrade] : null;
 
   return (
     <ThemedView style={styles.imageContainer}>
@@ -85,12 +94,11 @@ function MainImageSection({
         />
       </TouchableOpacity>
 
-      <ThemedView style={styles.cloverBadge}>
-        <ThemedView style={styles.cloverIcon}>
-          <ThemedText style={styles.cloverEmoji}>🍀</ThemedText>
+      {cloverImage && (
+        <ThemedView style={styles.cloverBadge}>
+          <Image source={cloverImage} style={styles.cloverImage} />
         </ThemedView>
-        <ThemedText style={styles.cloverText}>{cloverGrowth}%</ThemedText>
-      </ThemedView>
+      )}
     </ThemedView>
   );
 }
@@ -206,7 +214,7 @@ function TagSection({
 
 export function StoreHeader({
   image,
-  cloverGrowth,
+  cloverGrade,
   isLiked,
   name,
   rating,
@@ -238,7 +246,7 @@ export function StoreHeader({
     <>
       <MainImageSection
         image={image}
-        cloverGrowth={cloverGrowth}
+        cloverGrade={cloverGrade}
         isLiked={isLiked}
         onBack={onBack}
         onLike={onLike}
@@ -311,27 +319,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: rs(16),
     bottom: rs(16),
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: rs(10),
-    paddingVertical: rs(6),
-    gap: rs(4),
   },
-  cloverIcon: {
-    width: rs(20),
-    height: rs(20),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cloverEmoji: {
-    fontSize: rs(14),
-  },
-  cloverText: {
-    fontSize: rs(12),
-    fontWeight: '600',
-    color: Text.primary,
+  cloverImage: {
+    width: rs(25),
+    height: rs(25),
+    resizeMode: 'contain',
   },
 
   // StoreInfoSection

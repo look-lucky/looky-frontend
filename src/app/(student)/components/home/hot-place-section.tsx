@@ -1,3 +1,4 @@
+import TrendingUpIcon from '@/assets/images/icons/home/Vector.svg';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Text as TextColor } from '@/src/shared/theme/theme';
@@ -76,8 +77,8 @@ export function HotPlaceSection({ places }: HotPlaceSectionProps) {
             </View>
             <View style={styles.placeInfo}>
               <View style={styles.placeNameRow}>
-                <ThemedText style={styles.placeName}>{place.name}</ThemedText>
-                <ThemedText style={styles.placeCategory}>
+                <ThemedText type="defaultSemiBold">{place.name}</ThemedText>
+                <ThemedText type="caption" lightColor={Gray.gray9}>
                   {place.category}
                 </ThemedText>
               </View>
@@ -86,7 +87,7 @@ export function HotPlaceSection({ places }: HotPlaceSectionProps) {
               </ThemedText>
             </View>
             <View style={styles.favoriteContainer}>
-              <ThemedText style={styles.favoriteArrow}>↗</ThemedText>
+              <TrendingUpIcon width={rs(11)} height={rs(6)} />
               <ThemedText style={styles.favoriteCount}>
                 +{place.weeklyFavoriteCount}회
               </ThemedText>
@@ -110,7 +111,8 @@ const styles = StyleSheet.create({
   rankingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: rs(16),
+    paddingHorizontal: rs(16),
+    paddingVertical: rs(12),
   },
   rankingItemBorder: {
     borderBottomWidth: 1,
@@ -130,8 +132,7 @@ const styles = StyleSheet.create({
   },
   placeInfo: {
     flex: 1,
-    marginLeft: rs(12),
-    gap: rs(2),
+    paddingHorizontal: rs(12),
   },
   placeNameRow: {
     flexDirection: 'row',
