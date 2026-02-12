@@ -344,6 +344,7 @@ export interface IssueCouponResponse {
   title?: string;
   benefitType?: IssueCouponResponseBenefitType;
   benefitValue?: string;
+  minOrderAmount?: number;
   storeName?: string;
 }
 
