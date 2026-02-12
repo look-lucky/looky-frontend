@@ -78,7 +78,7 @@ export default function HomePage() {
 
         {/* Welcome Banner */}
         <WelcomeBanner
-          userName={studentInfo?.username ?? '학생'}
+          userName={studentInfo?.nickname ?? studentInfo?.username ?? '학생'}
           university={studentInfo?.universityName ?? '대학교'}
           department={`${studentInfo?.collegeName ?? ''} ${studentInfo?.departmentName ?? ''}`.trim()}
           couponCount={couponCount}
