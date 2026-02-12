@@ -67,6 +67,14 @@ export default function StudentOnboardingPage() {
     router.replace("/auth");
   }, [router]);
 
+  const handleNext = useCallback(() => {
+    if (currentIndex < SLIDES.length - 1) {
+      flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
+    } else {
+      handleComplete();
+    }
+  }, [currentIndex, handleComplete]);
+
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && viewableItems[0].index != null) {
@@ -137,7 +145,7 @@ export default function StudentOnboardingPage() {
         <AppButton
           label={currentIndex === SLIDES.length - 1 ? "🍀 루키 시작하기" : "다음으로"}
           backgroundColor={Brand.primary}
-          onPress={handleComplete}
+          onPress={handleNext}
           style={styles.loginButton}
         />
       </View>
