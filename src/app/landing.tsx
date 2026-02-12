@@ -18,7 +18,7 @@ type HealthStatus = "checking" | "connected" | "failed";
 
 export default function LandingPage() {
   const router = useRouter();
-  const { isAuthenticated, userType } = useAuth();
+  const { isAuthenticated, isLoading, userType } = useAuth();
   const [healthStatus, setHealthStatus] = useState<HealthStatus>("checking");
 
   const checkHealth = async () => {
@@ -44,6 +44,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (healthStatus !== "connected") return;
+    if (isLoading) return;
 
     const timer = setTimeout(async () => {
       const onboardingDone = await AsyncStorage.getItem("onboarding_completed");
@@ -72,7 +73,7 @@ export default function LandingPage() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [healthStatus, router]);
+  }, [healthStatus, isLoading, isAuthenticated, userType, router]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
