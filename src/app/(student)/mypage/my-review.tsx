@@ -3,7 +3,9 @@ import type {
   ReviewResponse,
 } from '@/src/api/generated.schemas';
 import { useDeleteReview, useGetMyReviews } from '@/src/api/review';
+import { AppButton } from '@/src/shared/common/app-button';
 import { rs } from '@/src/shared/theme/scale';
+import { Brand, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -258,16 +260,19 @@ export default function MyReview() {
                 <Text style={styles.popupTitle}>리뷰를 삭제하시겠어요?</Text>
                 <Text style={styles.popupSubtitle}>삭제된 리뷰는 복구할 수 없어요</Text>
               </View>
-              <View style={styles.popupBtnContainer}>
-                <TouchableOpacity
-                  style={styles.popupBtnGray}
+              <View style={styles.popupBtnRow}>
+                <AppButton
+                  label="아니요"
+                  backgroundColor={Gray.gray5}
+                  style={styles.popupBtnHalf}
                   onPress={() => setDeletePopupVisible(false)}
-                >
-                  <Text style={styles.popupBtnTextWhite}>아니요</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.popupBtnGreen} onPress={confirmDelete}>
-                  <Text style={styles.popupBtnTextWhite}>삭제할게요</Text>
-                </TouchableOpacity>
+                />
+                <AppButton
+                  label="삭제할게요"
+                  backgroundColor={Brand.primaryDarken}
+                  style={styles.popupBtnHalf}
+                  onPress={confirmDelete}
+                />
               </View>
             </View>
           </View>
@@ -287,14 +292,12 @@ export default function MyReview() {
                   사장님이 답글을 남겨주셔서 수정이 불가합니다.
                 </Text>
               </View>
-              <View style={styles.popupBtnContainerOne}>
-                <TouchableOpacity
-                  style={styles.popupBtnFullGreen}
-                  onPress={() => setEditErrorPopupVisible(false)}
-                >
-                  <Text style={styles.popupBtnTextWhite}>확인</Text>
-                </TouchableOpacity>
-              </View>
+              <AppButton
+                label="확인"
+                backgroundColor={Brand.primaryDarken}
+                style={styles.popupBtnFull}
+                onPress={() => setEditErrorPopupVisible(false)}
+              />
             </View>
           </View>
         </Modal>
@@ -442,18 +445,20 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Gray.popupBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   popupContainer: {
     width: rs(335),
-    backgroundColor: 'white',
+    backgroundColor: Gray.white,
     borderRadius: rs(10),
     paddingTop: rs(40),
     paddingBottom: rs(25),
+    paddingHorizontal: rs(20),
     alignItems: 'center',
-    shadowColor: '#000',
+    gap: rs(20),
+    shadowColor: Gray.black,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
@@ -461,54 +466,30 @@ const styles = StyleSheet.create({
   },
   popupTextContainer: {
     alignItems: 'center',
-    marginBottom: rs(20),
-    paddingHorizontal: rs(10),
+    gap: rs(8),
   },
   popupTitle: {
     fontSize: rs(20),
     fontWeight: '700',
-    color: 'black',
+    color: TextColor.primary,
     fontFamily: 'Pretendard',
-    marginBottom: rs(5),
     textAlign: 'center',
   },
   popupSubtitle: {
     fontSize: rs(14),
     fontWeight: '500',
-    color: '#828282',
+    color: TextColor.placeholder,
     fontFamily: 'Pretendard',
     textAlign: 'center',
   },
-  popupBtnContainer: { flexDirection: 'row', gap: rs(7) },
-  popupBtnGray: {
-    width: rs(150),
-    paddingVertical: rs(10),
-    backgroundColor: '#D5D5D5',
-    borderRadius: rs(8),
-    justifyContent: 'center',
-    alignItems: 'center',
+  popupBtnRow: {
+    flexDirection: 'row',
+    gap: rs(8),
   },
-  popupBtnGreen: {
-    width: rs(150),
-    paddingVertical: rs(10),
-    backgroundColor: '#34B262',
-    borderRadius: rs(8),
-    justifyContent: 'center',
-    alignItems: 'center',
+  popupBtnHalf: {
+    flex: 1,
   },
-  popupBtnTextWhite: {
-    fontSize: rs(14),
-    fontWeight: '700',
-    color: 'white',
-    fontFamily: 'Pretendard',
-  },
-  popupBtnContainerOne: { width: '100%', alignItems: 'center' },
-  popupBtnFullGreen: {
-    width: rs(300),
-    paddingVertical: rs(10),
-    backgroundColor: '#34B262',
-    borderRadius: rs(8),
-    justifyContent: 'center',
-    alignItems: 'center',
+  popupBtnFull: {
+    width: rs(295),
   },
 });

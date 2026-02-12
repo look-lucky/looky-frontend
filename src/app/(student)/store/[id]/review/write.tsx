@@ -3,7 +3,7 @@ import { AppButton } from '@/src/shared/common/app-button';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
-import { Colors } from '@/src/shared/theme/theme';
+import { Brand, Colors, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -11,8 +11,10 @@ import React, { useState } from 'react';
 import {
   Alert,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
   View,
@@ -53,17 +55,19 @@ export default function ReviewWriteScreen() {
   const [rating, setRating] = useState(0);
   const [reviewContent, setReviewContent] = useState('');
   const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
 
   const { mutate: createReview, isPending } = useCreateReview({
     mutation: {
       onSuccess: () => {
-        router.back();
+        setSuccessVisible(true);
       },
       onError: (error: any) => {
         if (error?.status === 409) {
           Alert.alert('알림', '이미 작성한 리뷰가 있습니다.');
         } else {
-          Alert.alert('오류', '리뷰 등록에 실패했습니다. 다시 시도해주세요.');
+          setErrorVisible(true);
         }
       },
     },
@@ -246,6 +250,62 @@ export default function ReviewWriteScreen() {
           disabled={isSubmitDisabled}
         />
       </View>
+
+      {/* 등록 완료 팝업 */}
+      <Modal
+        transparent
+        visible={successVisible}
+        animationType="fade"
+        onRequestClose={() => { setSuccessVisible(false); router.back(); }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.popupContainer}>
+            <View style={styles.popupTextContainer}>
+              <Text style={styles.popupTitle}>리뷰가 등록되었어요!</Text>
+              <Text style={styles.popupSubtitle}>
+                사장님이 직접 확인하신 후 답변드릴 예정입니다
+              </Text>
+            </View>
+            <AppButton
+              label="확인"
+              backgroundColor={Brand.primaryDarken}
+              style={styles.popupBtn}
+              onPress={() => { setSuccessVisible(false); router.back(); }}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* 등록 실패 팝업 */}
+      <Modal
+        transparent
+        visible={errorVisible}
+        animationType="fade"
+        onRequestClose={() => setErrorVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.popupContainer}>
+            <View style={styles.popupTextContainer}>
+              <Text style={styles.popupTitle}>리뷰 등록에 실패했어요</Text>
+              <Text style={styles.popupSubtitle}>다시 시도해주세요</Text>
+            </View>
+            <View style={styles.popupBtnRow}>
+              <AppButton
+                label="취소"
+                backgroundColor={Gray.gray5}
+                style={styles.popupBtnHalf}
+                onPress={() => setErrorVisible(false)}
+              />
+              <AppButton
+                label="다시 시도하기"
+                backgroundColor={Brand.primaryDarken}
+                style={styles.popupBtnHalf}
+                onPress={() => { setErrorVisible(false); handleSubmit(); }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -376,5 +436,54 @@ const styles = StyleSheet.create({
     paddingTop: rs(16),
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: Gray.popupBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  popupContainer: {
+    width: rs(335),
+    backgroundColor: Gray.white,
+    borderRadius: rs(10),
+    paddingTop: rs(40),
+    paddingBottom: rs(25),
+    paddingHorizontal: rs(20),
+    alignItems: 'center',
+    gap: rs(20),
+    shadowColor: Gray.black,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  popupTextContainer: {
+    alignItems: 'center',
+    gap: rs(8),
+  },
+  popupTitle: {
+    fontSize: rs(20),
+    fontWeight: '700',
+    color: TextColor.primary,
+    fontFamily: 'Pretendard',
+    textAlign: 'center',
+  },
+  popupSubtitle: {
+    fontSize: rs(14),
+    fontWeight: '500',
+    color: TextColor.placeholder,
+    fontFamily: 'Pretendard',
+    textAlign: 'center',
+  },
+  popupBtn: {
+    width: rs(295),
+  },
+  popupBtnRow: {
+    flexDirection: 'row',
+    gap: rs(8),
+  },
+  popupBtnHalf: {
+    flex: 1,
   },
 });

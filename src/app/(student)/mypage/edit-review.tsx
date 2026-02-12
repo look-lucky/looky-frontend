@@ -1,5 +1,7 @@
 import { useUpdateReview } from '@/src/api/review';
+import { AppButton } from '@/src/shared/common/app-button';
 import { rs } from '@/src/shared/theme/scale';
+import { Brand, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -305,14 +307,12 @@ export default function EditReview() {
               <Text style={styles.popupTitle}>리뷰가 수정되었어요!</Text>
               <Text style={styles.popupSubtitle}>정성스러운 후기 감사합니다</Text>
             </View>
-            <View style={styles.popupBtnContainerOne}>
-              <TouchableOpacity
-                style={styles.popupBtnFullGreen}
-                onPress={handleConfirmSuccess}
-              >
-                <Text style={styles.popupBtnTextWhite}>확인</Text>
-              </TouchableOpacity>
-            </View>
+            <AppButton
+              label="확인"
+              backgroundColor={Brand.primaryDarken}
+              style={styles.popupBtn}
+              onPress={handleConfirmSuccess}
+            />
           </View>
         </View>
       </Modal>
@@ -453,18 +453,20 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Gray.popupBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   popupContainer: {
     width: rs(335),
-    backgroundColor: 'white',
+    backgroundColor: Gray.white,
     borderRadius: rs(10),
     paddingTop: rs(40),
     paddingBottom: rs(25),
+    paddingHorizontal: rs(20),
     alignItems: 'center',
-    shadowColor: '#000',
+    gap: rs(20),
+    shadowColor: Gray.black,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
@@ -472,37 +474,23 @@ const styles = StyleSheet.create({
   },
   popupTextContainer: {
     alignItems: 'center',
-    marginBottom: rs(20),
-    paddingHorizontal: rs(10),
+    gap: rs(8),
   },
   popupTitle: {
     fontSize: rs(20),
     fontWeight: '700',
-    color: 'black',
+    color: TextColor.primary,
     fontFamily: 'Pretendard',
-    marginBottom: rs(5),
     textAlign: 'center',
   },
   popupSubtitle: {
     fontSize: rs(14),
     fontWeight: '500',
-    color: '#828282',
+    color: TextColor.placeholder,
     fontFamily: 'Pretendard',
     textAlign: 'center',
   },
-  popupBtnContainerOne: { width: '100%', alignItems: 'center' },
-  popupBtnFullGreen: {
-    width: rs(300),
-    paddingVertical: rs(10),
-    backgroundColor: '#34B262',
-    borderRadius: rs(8),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  popupBtnTextWhite: {
-    fontSize: rs(14),
-    fontWeight: '700',
-    color: 'white',
-    fontFamily: 'Pretendard',
+  popupBtn: {
+    width: rs(295),
   },
 });
