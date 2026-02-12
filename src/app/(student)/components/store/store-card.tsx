@@ -29,12 +29,25 @@ export function StoreCard({ store, onPress, onBookmarkPress }: StoreCardProps) {
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
-      {/* 썸네일 이미지 */}
-      <Image
-        source={{ uri: store.image }}
-        style={styles.image}
-        defaultSource={require('@/assets/images/icon.png')}
-      />
+      {/* 이미지 + 북마크 */}
+      <View style={styles.imageWrapper}>
+        <Image
+          source={{ uri: store.image }}
+          style={styles.image}
+          defaultSource={require('@/assets/images/icon.png')}
+        />
+        <TouchableOpacity
+          style={styles.bookmarkButton}
+          onPress={handleBookmarkPress}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons
+            name={store.isFavorite ? 'bookmark' : 'bookmark-outline'}
+            size={rs(22)}
+            color={store.isFavorite ? Gray.black : Gray.gray5}
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* 정보 영역 */}
       <View style={styles.info}>
@@ -92,41 +105,29 @@ export function StoreCard({ store, onPress, onBookmarkPress }: StoreCardProps) {
           </View>
         )}
       </View>
-
-      {/* 북마크 아이콘 (절대 위치) */}
-      <TouchableOpacity
-        style={styles.bookmarkButton}
-        onPress={handleBookmarkPress}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons
-          name={store.isFavorite ? 'bookmark' : 'bookmark-outline'}
-          size={rs(22)}
-          color={store.isFavorite ? Gray.black : Gray.gray5}
-        />
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    paddingVertical: rs(12),
+    flexDirection: 'column',
     borderBottomWidth: 1,
     borderBottomColor: Gray.gray3,
+    paddingBottom: rs(16),
+    marginTop: rs(16),
+  },
+  imageWrapper: {
     position: 'relative',
   },
   image: {
-    width: rs(140),
-    height: rs(100),
-    borderRadius: rs(8),
+    width: '100%',
+    height: rs(180),
+    borderRadius: rs(12),
     backgroundColor: Gray.gray3,
   },
   info: {
-    flex: 1,
-    marginLeft: rs(12),
-    paddingRight: rs(28), // 북마크 아이콘 공간 확보
+    marginTop: rs(12),
     gap: rs(4),
   },
   name: {
@@ -197,8 +198,8 @@ const styles = StyleSheet.create({
   },
   bookmarkButton: {
     position: 'absolute',
-    top: rs(12),
-    right: 0,
+    top: rs(8),
+    right: rs(8),
     padding: rs(4),
   },
 });
