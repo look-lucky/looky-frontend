@@ -3,6 +3,7 @@ import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  AppState,
   StyleSheet,
   Text,
   TextInput,
@@ -16,15 +17,42 @@ export default function SigninEmailPage() {
   const [email, setEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [timeLeft, setTimeLeft] = useState(295); // 4:55 in seconds
+  const [expiryTime, setExpiryTime] = useState<number | null>(null); // 만료 시간 (timestamp)
   const [showVerification, setShowVerification] = useState(false);
 
+  // 타이머 로직 - 실제 만료 시간 기반으로 계산
   useEffect(() => {
-    if (!showVerification || timeLeft <= 0) return;
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
+    if (!showVerification || !expiryTime) return;
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000));
+      setTimeLeft(remaining);
+    };
+
+    // 즉시 한 번 업데이트
+    updateTimer();
+
+    // 매초 업데이트
+    const interval = setInterval(updateTimer, 1000);
+
     return () => clearInterval(interval);
-  }, [showVerification, timeLeft]);
+  }, [showVerification, expiryTime]);
+
+  // AppState 변경 감지 - 앱이 다시 활성화될 때 타이머 재계산
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active" && expiryTime && showVerification) {
+        const now = Date.now();
+        const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000));
+        setTimeLeft(remaining);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [expiryTime, showVerification]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -34,9 +62,26 @@ export default function SigninEmailPage() {
 
   const handleGetVerificationCode = () => {
     if (email) {
+      const now = Date.now();
+      const expiry = now + 300000; // 5분 (300초 = 300,000ms)
       setShowVerification(true);
-      setTimeLeft(295);
+      setExpiryTime(expiry);
+      setTimeLeft(300);
+      setVerificationCode(""); // 재발송 시 인증번호 초기화
     }
+  };
+
+  const handleVerifyCode = () => {
+    if (!verificationCode) return;
+
+    // 타이머 만료 체크
+    if (timeLeft <= 0) {
+      alert("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.");
+      return;
+    }
+
+    // 여기에 실제 인증 로직 추가
+    console.log("인증번호 확인:", verificationCode);
   };
 
   const handleFindPassword = () => {
@@ -103,9 +148,15 @@ export default function SigninEmailPage() {
                 onChangeText={setVerificationCode}
                 maxLength={6}
                 keyboardType="numeric"
+                editable={timeLeft > 0}
               />
               <TouchableOpacity
-                style={[styles.smallButton, { backgroundColor: "#40ce2b" }]}
+                style={[
+                  styles.smallButton,
+                  { backgroundColor: verificationCode && timeLeft > 0 ? "#40ce2b" : "#d5d5d5" }
+                ]}
+                onPress={handleVerifyCode}
+                disabled={!verificationCode || timeLeft <= 0}
               >
                 <Text style={[styles.smallButtonText, { textAlign: "center" }]}>
                   확인
@@ -114,10 +165,11 @@ export default function SigninEmailPage() {
             </View>
             <View style={styles.verificationRow}>
               <Text style={styles.errorText}>
-                {" "}
-                인증번호 6자리를 입력해주세요
+                {timeLeft <= 0 ? " 인증 시간이 만료되었습니다" : " 인증번호 6자리를 입력해주세요"}
               </Text>
-              <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+              <Text style={[styles.timerText, timeLeft <= 0 && { color: "#ff6200" }]}>
+                {formatTime(timeLeft)}
+              </Text>
             </View>
           </View>
         )}

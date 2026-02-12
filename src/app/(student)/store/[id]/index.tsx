@@ -1,4 +1,4 @@
-import { useGetCouponsByStore, useGetMyCoupons, useIssueCoupon } from '@/src/api/coupon';
+import { useDownloadCoupon, useGetCouponsByStore, useGetMyCoupons } from '@/src/api/coupon';
 import { useCountFavorites } from '@/src/api/favorite';
 import type {
   CouponResponse,
@@ -115,7 +115,7 @@ export default function StoreDetailScreen() {
   const myCoupons = (Array.isArray(rawMyCoupons) ? rawMyCoupons : []) as any[];
 
   // 쿠폰 발급 mutation
-  const issueCouponMutation = useIssueCoupon({
+  const issueCouponMutation = useDownloadCoupon({
     mutation: {
       onSuccess: () => {
         Alert.alert('쿠폰 발급 완료', '내 쿠폰함에서 확인하세요');
@@ -156,7 +156,7 @@ export default function StoreDetailScreen() {
         setAllReviews(apiReviewsPage.content);
       } else {
         // 이후 페이지는 추가
-        setAllReviews((prev) => [...prev, ...apiReviewsPage.content]);
+        setAllReviews((prev) => [...prev, ...(apiReviewsPage.content ?? [])]);
       }
       // 마지막 페이지 체크
       setHasMoreReviews(!apiReviewsPage.last);
@@ -195,10 +195,10 @@ export default function StoreDetailScreen() {
     apiCoupons.map((c) => ({
       id: String(c.id),
       title: c.title ?? '',
-      description: c.description ?? '',
-      discount: '', // TODO: 백엔드에 할인 금액/비율 필드 없음 — 추가 요청 필요
+      description: '',
+      discount: c.benefitValue ?? '',
       expiryDate: c.issueEndsAt ? `${formatDate(c.issueEndsAt)}까지` : '',
-      targetOrganizationId: c.targetOrganizationId ?? null,
+      isDownloaded: c.isDownloaded ?? false,
     })),
     [apiCoupons],
   );
@@ -283,11 +283,7 @@ export default function StoreDetailScreen() {
     ? UNIVERSITY_OPTIONS.find((opt) => opt.id === selectedUniversityId)?.label ?? storeUniversity
     : storeUniversity;
 
-  const filteredCoupons = storeCoupons.filter(
-    (coupon) =>
-      !coupon.targetOrganizationId ||
-      coupon.targetOrganizationId === selectedUniversityId,
-  );
+  const filteredCoupons = storeCoupons;
 
   // 이미 발급받은 쿠폰 ID 목록
   const issuedCouponIds = useMemo(() =>

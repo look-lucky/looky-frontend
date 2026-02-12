@@ -22,8 +22,7 @@ export function WelcomeBanner({
   const router = useRouter();
 
   const handleCouponPress = () => {
-    // TODO: 내 쿠폰함으로 이동
-    router.push('/(student)/(tabs)/benefits');
+    router.push('/(student)/(tabs)/map');
   };
 
   const handleEventPress = () => {

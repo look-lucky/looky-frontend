@@ -8,7 +8,7 @@ import type { UserType } from "./token";
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 
-export type SocialProvider = "google" | "kakao";
+export type SocialProvider = "google" | "kakao" | "apple";
 
 interface SocialLoginResult {
   success: boolean;
@@ -31,6 +31,7 @@ function decodeJwtPayload(token: string): { role?: string; sub?: string } | null
 export function useSocialLogin() {
   const { handleAuthSuccess } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
 
   // 딥링크 콜백 URL
   const redirectUri = Linking.createURL("auth/callback");
@@ -49,6 +50,7 @@ export function useSocialLogin() {
     async (provider: SocialProvider): Promise<SocialLoginResult> => {
       try {
         setIsLoading(true);
+        setLoadingProvider(provider);
 
         const authUrl = `${BASE_URL}/oauth2/authorization/${provider}`;
 
@@ -138,6 +140,7 @@ export function useSocialLogin() {
         };
       } finally {
         setIsLoading(false);
+        setLoadingProvider(null);
       }
     },
     [redirectUri, handleAuthSuccess],
@@ -145,12 +148,15 @@ export function useSocialLogin() {
 
   const loginWithGoogle = useCallback(() => login("google"), [login]);
   const loginWithKakao = useCallback(() => login("kakao"), [login]);
+  const loginWithApple = useCallback(() => login("apple"), [login]);
 
   return {
     login,
     loginWithGoogle,
     loginWithKakao,
+    loginWithApple,
     isLoading,
+    loadingProvider,
     redirectUri,
   };
 }

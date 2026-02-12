@@ -5,6 +5,7 @@ import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Colors } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -28,6 +29,8 @@ const RATING_MESSAGES = [
 ];
 
 const MIN_REVIEW_LENGTH = 10;
+const MAX_REVIEW_LENGTH = 300;
+const MAX_PHOTOS = 3;
 
 const COLORS = {
   primary: '#40CE2B',
@@ -49,7 +52,7 @@ export default function ReviewWriteScreen() {
 
   const [rating, setRating] = useState(0);
   const [reviewContent, setReviewContent] = useState('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
 
   const { mutate: createReview, isPending } = useCreateReview({
     mutation: {
@@ -77,6 +80,13 @@ export default function ReviewWriteScreen() {
 
   const handleSubmit = () => {
     if (isSubmitDisabled) return;
+
+    const images = photos.map((asset) => ({
+      uri: asset.uri,
+      type: asset.mimeType || 'image/jpeg',
+      name: asset.fileName || `review_${Date.now()}.jpg`,
+    }));
+
     createReview({
       storeId: Number(id),
       data: {
@@ -84,12 +94,41 @@ export default function ReviewWriteScreen() {
           content: reviewContent.trim(),
           rating,
         },
-        images: photos.length > 0 ? photos : undefined,
+        images: images.length > 0 ? (images as any) : undefined,
       },
     });
   };
 
-  const handleAddPhoto = () => console.log('Add photo'); // TODO: 이미지 피커 연동
+  const handleAddPhoto = async () => {
+    if (photos.length >= MAX_PHOTOS) {
+      Alert.alert('알림', `사진은 최대 ${MAX_PHOTOS}장까지 첨부할 수 있습니다.`);
+      return;
+    }
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('알림', '사진 접근 권한이 필요합니다.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_PHOTOS - photos.length,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const oversized = result.assets.find(
+        (a) => a.fileSize && a.fileSize > 10 * 1024 * 1024,
+      );
+      if (oversized) {
+        Alert.alert('알림', '10MB 이하의 사진만 업로드할 수 있습니다.');
+        return;
+      }
+      setPhotos((prev) => [...prev, ...result.assets].slice(0, MAX_PHOTOS));
+    }
+  };
   
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -140,16 +179,21 @@ export default function ReviewWriteScreen() {
             매장과 관련된 사진을 업로드 해주세요.
           </ThemedText>
           <View style={styles.photoContainer}>
-            <TouchableOpacity
-              style={styles.addPhotoButton}
-              onPress={handleAddPhoto}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="camera-outline" size={rs(24)} color={COLORS.textSecondary} />
-            </TouchableOpacity>
+            {photos.length < MAX_PHOTOS && (
+              <TouchableOpacity
+                style={styles.addPhotoButton}
+                onPress={handleAddPhoto}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="camera-outline" size={rs(24)} color={COLORS.textSecondary} />
+                <ThemedText lightColor={COLORS.textSecondary} style={{ fontSize: rs(10) }}>
+                  {photos.length}/{MAX_PHOTOS}
+                </ThemedText>
+              </TouchableOpacity>
+            )}
             {photos.map((photo, index) => (
               <View key={index} style={styles.photoItem}>
-                <Image source={{ uri: photo }} style={styles.photoImage} />
+                <Image source={{ uri: photo.uri }} style={styles.photoImage} />
                 <TouchableOpacity
                   style={styles.removePhotoButton}
                   onPress={() => handleRemovePhoto(index)}
@@ -168,7 +212,7 @@ export default function ReviewWriteScreen() {
           <LabelRow
             label="리뷰 작성"
             required
-            rightText={`${reviewContent.length}/최소 ${MIN_REVIEW_LENGTH}자 이상`}
+            rightText={`${reviewContent.length}/${MAX_REVIEW_LENGTH}`}
           />
           <TextInput
             style={styles.textInput}
@@ -178,6 +222,7 @@ export default function ReviewWriteScreen() {
             value={reviewContent}
             onChangeText={setReviewContent}
             textAlignVertical="top"
+            maxLength={MAX_REVIEW_LENGTH}
           />
         </View>
 

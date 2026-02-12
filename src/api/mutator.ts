@@ -16,6 +16,11 @@ const PUBLIC_ENDPOINTS = [
   "/api/auth/signup",
   "/api/auth/refresh",
   "/api/auth/check-username",
+  "/api/auth/email",
+  "/api/auth/find-",
+  "/api/auth/complete-social-signup",
+  "/api/universities",
+  "/api/organizations",
 ];
 
 let refreshPromise: Promise<boolean> | null = null;
@@ -93,7 +98,7 @@ export async function customFetch<T>(
       const refreshSuccess = await refreshPromise;
 
       if (!refreshSuccess) {
-        throw { status: 401, data: { message: "Token refresh failed" } };
+        console.log("[Proactive Refresh] Failed, proceeding with request anyway");
       }
     }
   }
@@ -108,8 +113,8 @@ export async function customFetch<T>(
   try {
     let res = await fetch(fullUrl, { ...options, headers });
 
-    // 401 Unauthorized → 토큰 리프레시 시도
-    if (res.status === 401 && !isPublic && !url.includes("/refresh")) {
+    // 401 Unauthorized → 토큰 리프레시 시도 (public 엔드포인트도 서버가 인증 요구할 수 있으므로 시도)
+    if (res.status === 401 && !url.includes("/refresh")) {
       if (!refreshPromise) {
         refreshPromise = refreshAccessToken().finally(() => {
           refreshPromise = null;

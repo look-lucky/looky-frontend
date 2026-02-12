@@ -258,8 +258,109 @@ export const useCreateCoupon = <TError = Blob,
       return useMutation(getCreateCouponMutationOptions(options), queryClient);
     }
     /**
- * 손님이 제시한 4자리 코드를 입력하여 사용 처리합니다.
- * @summary [점주] 쿠폰 사용 확인 (코드 검증)
+ * 조회된 쿠폰을 실제로 사용 처리합니다.
+ * @summary [점주] 쿠폰 사용 확정
+ */
+export type useCouponResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type useCouponResponse403 = {
+  data: Blob
+  status: 403
+}
+
+export type useCouponResponse404 = {
+  data: Blob
+  status: 404
+}
+
+export type useCouponResponse422 = {
+  data: Blob
+  status: 422
+}
+    
+export type useCouponResponseSuccess = (useCouponResponse200) & {
+  headers: Headers;
+};
+export type useCouponResponseError = (useCouponResponse403 | useCouponResponse404 | useCouponResponse422) & {
+  headers: Headers;
+};
+
+export type useCouponResponse = (useCouponResponseSuccess | useCouponResponseError)
+
+export const getUseCouponUrl = (storeId: number,
+    studentCouponId: number,) => {
+
+
+  
+
+  return `/api/stores/${storeId}/coupons/${studentCouponId}/use`
+}
+
+export const useCoupon = async (storeId: number,
+    studentCouponId: number, options?: RequestInit): Promise<useCouponResponse> => {
+  
+  return customFetch<useCouponResponse>(getUseCouponUrl(storeId,studentCouponId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+
+export const getUseCouponMutationOptions = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof useCoupon>>, TError,{storeId: number;studentCouponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof useCoupon>>, TError,{storeId: number;studentCouponId: number}, TContext> => {
+
+const mutationKey = ['useCoupon'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof useCoupon>>, {storeId: number;studentCouponId: number}> = (props) => {
+          const {storeId,studentCouponId} = props ?? {};
+
+          return  useCoupon(storeId,studentCouponId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UseCouponMutationResult = NonNullable<Awaited<ReturnType<typeof useCoupon>>>
+    
+    export type UseCouponMutationError = Blob
+
+    /**
+ * @summary [점주] 쿠폰 사용 확정
+ */
+export const useUseCoupon = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof useCoupon>>, TError,{storeId: number;studentCouponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof useCoupon>>,
+        TError,
+        {storeId: number;studentCouponId: number},
+        TContext
+      > => {
+      return useMutation(getUseCouponMutationOptions(options), queryClient);
+    }
+    /**
+ * 손님이 제시한 4자리 코드를 입력하여 혜택 및 사용자 정보를 확인합니다. (상태 변경 없음)
+ * @summary [점주] 쿠폰 코드 조회 (검증)
  */
 export type verifyCouponResponse200 = {
   data: Blob
@@ -270,11 +371,16 @@ export type verifyCouponResponse404 = {
   data: Blob
   status: 404
 }
+
+export type verifyCouponResponse422 = {
+  data: Blob
+  status: 422
+}
     
 export type verifyCouponResponseSuccess = (verifyCouponResponse200) & {
   headers: Headers;
 };
-export type verifyCouponResponseError = (verifyCouponResponse404) & {
+export type verifyCouponResponseError = (verifyCouponResponse404 | verifyCouponResponse422) & {
   headers: Headers;
 };
 
@@ -285,7 +391,7 @@ export const getVerifyCouponUrl = (storeId: number,) => {
 
   
 
-  return `/api/stores/${storeId}/coupons/verify`
+  return `/api/stores/${storeId}/coupons/verify `
 }
 
 export const verifyCoupon = async (storeId: number,
@@ -336,7 +442,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type VerifyCouponMutationError = Blob
 
     /**
- * @summary [점주] 쿠폰 사용 확인 (코드 검증)
+ * @summary [점주] 쿠폰 코드 조회 (검증)
  */
 export const useVerifyCoupon = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCoupon>>, TError,{storeId: number;data: VerifyCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -448,44 +554,44 @@ export const useActivateCoupon = <TError = Blob,
       return useMutation(getActivateCouponMutationOptions(options), queryClient);
     }
     /**
- * 사용자가 쿠폰을 발급받습니다.
- * @summary [학생] 쿠폰 발급
+ * 점주가 자신의 쿠폰을 수동으로 만료시킵니다.
+ * @summary [점주] 쿠폰 수동 만료
  */
-export type issueCouponResponse200 = {
+export type expireCouponResponse200 = {
   data: Blob
   status: 200
 }
 
-export type issueCouponResponse404 = {
+export type expireCouponResponse403 = {
+  data: Blob
+  status: 403
+}
+
+export type expireCouponResponse404 = {
   data: Blob
   status: 404
 }
-
-export type issueCouponResponse422 = {
-  data: Blob
-  status: 422
-}
     
-export type issueCouponResponseSuccess = (issueCouponResponse200) & {
+export type expireCouponResponseSuccess = (expireCouponResponse200) & {
   headers: Headers;
 };
-export type issueCouponResponseError = (issueCouponResponse404 | issueCouponResponse422) & {
+export type expireCouponResponseError = (expireCouponResponse403 | expireCouponResponse404) & {
   headers: Headers;
 };
 
-export type issueCouponResponse = (issueCouponResponseSuccess | issueCouponResponseError)
+export type expireCouponResponse = (expireCouponResponseSuccess | expireCouponResponseError)
 
-export const getIssueCouponUrl = (couponId: number,) => {
+export const getExpireCouponUrl = (couponId: number,) => {
 
 
   
 
-  return `/api/coupons/${couponId}/issue`
+  return `/api/coupons/${couponId}/expire`
 }
 
-export const issueCoupon = async (couponId: number, options?: RequestInit): Promise<issueCouponResponse> => {
+export const expireCoupon = async (couponId: number, options?: RequestInit): Promise<expireCouponResponse> => {
   
-  return customFetch<issueCouponResponse>(getIssueCouponUrl(couponId),
+  return customFetch<expireCouponResponse>(getExpireCouponUrl(couponId),
   {      
     ...options,
     method: 'POST'
@@ -497,11 +603,11 @@ export const issueCoupon = async (couponId: number, options?: RequestInit): Prom
 
 
 
-export const getIssueCouponMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof issueCoupon>>, TError,{couponId: number}, TContext> => {
+export const getExpireCouponMutationOptions = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof expireCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof expireCoupon>>, TError,{couponId: number}, TContext> => {
 
-const mutationKey = ['issueCoupon'];
+const mutationKey = ['expireCoupon'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -511,10 +617,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof issueCoupon>>, {couponId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof expireCoupon>>, {couponId: number}> = (props) => {
           const {couponId} = props ?? {};
 
-          return  issueCoupon(couponId,requestOptions)
+          return  expireCoupon(couponId,requestOptions)
         }
 
 
@@ -524,22 +630,116 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type IssueCouponMutationResult = NonNullable<Awaited<ReturnType<typeof issueCoupon>>>
+    export type ExpireCouponMutationResult = NonNullable<Awaited<ReturnType<typeof expireCoupon>>>
     
-    export type IssueCouponMutationError = Blob
+    export type ExpireCouponMutationError = Blob
 
     /**
- * @summary [학생] 쿠폰 발급
+ * @summary [점주] 쿠폰 수동 만료
  */
-export const useIssueCoupon = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useExpireCoupon = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof expireCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof issueCoupon>>,
+        Awaited<ReturnType<typeof expireCoupon>>,
         TError,
         {couponId: number},
         TContext
       > => {
-      return useMutation(getIssueCouponMutationOptions(options), queryClient);
+      return useMutation(getExpireCouponMutationOptions(options), queryClient);
+    }
+    /**
+ * 사용자가 쿠폰을 다운로드받습니다.
+ * @summary [학생] 쿠폰 다운로드
+ */
+export type downloadCouponResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type downloadCouponResponse404 = {
+  data: Blob
+  status: 404
+}
+
+export type downloadCouponResponse422 = {
+  data: Blob
+  status: 422
+}
+    
+export type downloadCouponResponseSuccess = (downloadCouponResponse200) & {
+  headers: Headers;
+};
+export type downloadCouponResponseError = (downloadCouponResponse404 | downloadCouponResponse422) & {
+  headers: Headers;
+};
+
+export type downloadCouponResponse = (downloadCouponResponseSuccess | downloadCouponResponseError)
+
+export const getDownloadCouponUrl = (couponId: number,) => {
+
+
+  
+
+  return `/api/coupons/${couponId}/download`
+}
+
+export const downloadCoupon = async (couponId: number, options?: RequestInit): Promise<downloadCouponResponse> => {
+  
+  return customFetch<downloadCouponResponse>(getDownloadCouponUrl(couponId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+
+export const getDownloadCouponMutationOptions = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downloadCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof downloadCoupon>>, TError,{couponId: number}, TContext> => {
+
+const mutationKey = ['downloadCoupon'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof downloadCoupon>>, {couponId: number}> = (props) => {
+          const {couponId} = props ?? {};
+
+          return  downloadCoupon(couponId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DownloadCouponMutationResult = NonNullable<Awaited<ReturnType<typeof downloadCoupon>>>
+    
+    export type DownloadCouponMutationError = Blob
+
+    /**
+ * @summary [학생] 쿠폰 다운로드
+ */
+export const useDownloadCoupon = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downloadCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof downloadCoupon>>,
+        TError,
+        {couponId: number},
+        TContext
+      > => {
+      return useMutation(getDownloadCouponMutationOptions(options), queryClient);
     }
     /**
  * 쿠폰을 삭제합니다. (본인 상점만 가능)

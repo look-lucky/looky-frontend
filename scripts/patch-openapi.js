@@ -32,9 +32,32 @@ if (schema.paths) {
   }
 }
 
+// binary 필드가 있는 엔드포인트의 content-type을 multipart/form-data로 변환
+// 서버가 multipart를 기대하지만 OpenAPI spec이 application/json으로 잘못 명시된 경우 수정
+const MULTIPART_OPERATIONS = ["createReview", "updateReview"];
+
+if (schema.paths) {
+  for (const methods of Object.values(schema.paths)) {
+    for (const operation of Object.values(methods ?? {})) {
+      if (
+        MULTIPART_OPERATIONS.includes(operation?.operationId) &&
+        operation?.requestBody?.content?.["application/json"]
+      ) {
+        const jsonContent = operation.requestBody.content["application/json"];
+        delete operation.requestBody.content["application/json"];
+        operation.requestBody.content["multipart/form-data"] = jsonContent;
+        console.log(
+          `[patch-openapi] ${operation.operationId}: application/json → multipart/form-data`
+        );
+        patched = true;
+      }
+    }
+  }
+}
+
 if (patched) {
   fs.writeFileSync(openapiPath, JSON.stringify(schema, null, 2), "utf-8");
   console.log("[patch-openapi] openapi.json 패치 완료");
 } else {
-  console.log("[patch-openapi] 변환할 한글 태그 없음, 스킵");
+  console.log("[patch-openapi] 변환할 항목 없음, 스킵");
 }

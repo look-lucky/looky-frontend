@@ -16,6 +16,9 @@ const STORE_MARKER_ICONS = {
   nonPartnerNoCoupon: require('@/assets/images/icons/map/clover-gray.png'),
 };
 
+// 내 위치 마커 아이콘
+const MY_LOCATION_ICON = require('@/assets/images/icons/map/user.png');
+
 // 이벤트 마커 아이콘 PNG
 const EVENT_MARKER_ICONS: Record<EventType, any> = {
   FOOD_EVENT: require('@/assets/images/icons/map/event-food.png'),
@@ -81,6 +84,7 @@ interface NaverMapProps {
   center?: { lat: number; lng: number };
   markers?: StoreMarkerData[];
   eventMarkers?: EventMarkerData[];
+  myLocation?: { lat: number; lng: number } | null;
   onMapClick?: (lat: number, lng: number) => void;
   onMarkerClick?: (markerId: string) => void;
   onEventMarkerClick?: (markerId: string) => void;
@@ -95,6 +99,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
       center = { lat: 35.8358, lng: 127.1294 }, // 전북대학교 기본 좌표
       markers = [],
       eventMarkers = [],
+      myLocation = null,
       onMapClick,
       onMarkerClick,
       onEventMarkerClick,
@@ -140,6 +145,18 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
             onMapClick?.(event.latitude, event.longitude);
           }}
         >
+          {/* 내 위치 마커 */}
+          {myLocation && (
+            <NaverMapMarkerOverlay
+              latitude={myLocation.lat}
+              longitude={myLocation.lng}
+              width={rs(20)}
+              height={rs(20)}
+              anchor={{ x: 0.5, y: 0.5 }}
+              zIndex={1000}
+              image={MY_LOCATION_ICON}
+            />
+          )}
           {/* 가게 마커 */}
           {markers.map((marker) => (
             <NaverMapMarkerOverlay

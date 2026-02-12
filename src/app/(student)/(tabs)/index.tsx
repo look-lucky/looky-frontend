@@ -1,4 +1,5 @@
 import { useGetMyCoupons, useGetTodayCoupons } from '@/src/api/coupon';
+import { useGetStudentInfo } from '@/src/api/my-page';
 import { customFetch } from '@/src/api/mutator';
 import { useGetHotStores } from '@/src/api/store';
 import { CategorySection } from '@/src/app/(student)/components/home/category-section';
@@ -18,17 +19,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import NearDealLogo from '@/assets/images/logo/neardeal-logo.svg';
 
-// Mock 데이터
-const MOCK_USER = {
-  name: '선지원',
-  university: '전북대학교',
-  department: '공과대학 IT시스템 공학과',
-};
-
-
-
 export default function HomePage() {
   const router = useRouter();
+
+  const { data: studentInfoRes } = useGetStudentInfo();
+  const studentInfo = (studentInfoRes as any)?.data?.data;
 
   const { data: myCouponsRes } = useGetMyCoupons();
   const rawCoupons = (myCouponsRes as any)?.data?.data;
@@ -83,9 +78,9 @@ export default function HomePage() {
 
         {/* Welcome Banner */}
         <WelcomeBanner
-          userName={MOCK_USER.name}
-          university={MOCK_USER.university}
-          department={MOCK_USER.department}
+          userName={studentInfo?.username ?? '학생'}
+          university={studentInfo?.universityName ?? '대학교'}
+          department={`${studentInfo?.collegeName ?? ''} ${studentInfo?.departmentName ?? ''}`.trim()}
           couponCount={couponCount}
           eventCount={eventCount}
         />

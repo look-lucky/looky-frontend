@@ -24,8 +24,7 @@ export function HotPlaceSection({ places }: HotPlaceSectionProps) {
   const router = useRouter();
 
   const handleMorePress = () => {
-    // TODO: 매장 목록 (인기순) 화면으로 이동
-    router.push('/stores?sort=popular');
+    router.push('/map');
   };
 
   const handlePlacePress = (placeId: number) => {

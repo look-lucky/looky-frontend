@@ -578,6 +578,7 @@ export default function MapTab() {
         center={mapCenter}
         markers={isEventOnlyMode ? [] : markers}
         eventMarkers={eventMarkers}
+        myLocation={myLocation}
         onMapClick={onMapClick}
         onMarkerClick={onMarkerClick}
         onEventMarkerClick={onEventMarkerClick}

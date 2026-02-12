@@ -200,14 +200,19 @@ export const getCreateStoreUrl = () => {
 }
 
 export const createStore = async (createStoreBody: CreateStoreBody, options?: RequestInit): Promise<createStoreResponse> => {
-  
+    const formData = new FormData();
+if(createStoreBody.images !== undefined) {
+ createStoreBody.images.forEach(value => formData.append(`images`, value));
+ }
+formData.append(`request`, JSON.stringify(createStoreBody.request));
+
   return customFetch<createStoreResponse>(getCreateStoreUrl(),
   {      
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createStoreBody,)
+    method: 'POST'
+    ,
+    body: 
+      formData,
   }
 );}
 
@@ -609,14 +614,19 @@ export const getUpdateStoreUrl = (storeId: number,) => {
 
 export const updateStore = async (storeId: number,
     updateStoreBody: UpdateStoreBody, options?: RequestInit): Promise<updateStoreResponse> => {
-  
+    const formData = new FormData();
+formData.append(`request`, JSON.stringify(updateStoreBody.request));
+if(updateStoreBody.images !== undefined) {
+ updateStoreBody.images.forEach(value => formData.append(`images`, value));
+ }
+
   return customFetch<updateStoreResponse>(getUpdateStoreUrl(storeId),
   {      
     ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateStoreBody,)
+    method: 'PATCH'
+    ,
+    body: 
+      formData,
   }
 );}
 

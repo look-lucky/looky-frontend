@@ -9,7 +9,7 @@ import { Fonts, Gray, Owner, Primary, System, Text as TextColor } from "@/src/sh
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo } from "react";
 import {
   Alert,
@@ -54,8 +54,6 @@ const MenuItem = ({
 export default function MyPageTab() {
   const insets = useSafeAreaInsets();
   const { handleLogout } = useAuth();
-  const router = useRouter();
-
   const queryClient = useQueryClient();
 
   const { data: myCouponsRes } = useGetMyCoupons();
@@ -115,7 +113,7 @@ export default function MyPageTab() {
         style: "destructive",
         onPress: async () => {
           await handleLogout();
-          router.replace("/landing");
+          router.replace("/landing" as any);
         },
       },
     ]);
@@ -142,13 +140,13 @@ export default function MyPageTab() {
             </View>
             <View style={styles.profileTextColumn}>
               <ThemedText style={styles.profileName}>
-                {(studentInfo as any)?.data?.data?.nickname ?? "알 수 없음"}
+                {(studentInfo as any)?.data?.data?.username ?? "알 수 없음"}
               </ThemedText>
               <ThemedText style={styles.profileGreeting}>
                 {(studentInfo as any)?.data?.data?.universityName ?? "대학교 정보 없음"} {(studentInfo as any)?.data?.data?.collegeName ?? ""} {(studentInfo as any)?.data?.data?.departmentName ?? ""}
               </ThemedText>
             </View>
-            <TouchableOpacity style={styles.editButton}>
+            <TouchableOpacity style={styles.editButton} onPress={() => router.push('/mypage/profile-edit' as any)}>
               <ThemedText style={styles.editButtonText}>수정</ThemedText>
             </TouchableOpacity>
           </View>
@@ -191,21 +189,21 @@ export default function MyPageTab() {
               icon="bookmark-outline"
               text="찜한 매장"
               rightText={String(favoriteCount)}
-              onPress={() => router.push('/mypage/favorite')}
+              onPress={() => router.push('/mypage/favorite' as any)}
             />
             <MenuItem
               icon="document-text-outline"
               text="내가 쓴 리뷰"
               rightText={String(reviewCount)}
-              onPress={() => router.push('/mypage/my-review')}
+              onPress={() => router.push('/mypage/my-review' as any)}
               isLast
             />
           </View>
 
           {/* 그룹 2: 고객센터 / 설정 */}
           <View style={styles.menuGroupBox}>
-            <MenuItem icon="chatbubble-ellipses-outline" text="고객센터" onPress={() => router.push("/inquiry")} />
-            <MenuItem icon="settings-sharp" text="설정" isLast onPress={() => router.push('/mypage/settings')} />
+            <MenuItem icon="chatbubble-ellipses-outline" text="고객센터" onPress={() => router.push("/inquiry" as any)} />
+            <MenuItem icon="settings-sharp" text="설정" isLast onPress={() => router.push('/mypage/settings' as any)} />
           </View>
 
           {/* 로그아웃 */}

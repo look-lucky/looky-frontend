@@ -112,6 +112,27 @@ const formatDiscount = (benefitType?: string, benefitValue?: string) => {
   }
 };
 
+const getTimeRemaining = (expiresAt?: string) => {
+  if (!expiresAt) return "";
+  const now = new Date();
+  const expiry = new Date(expiresAt);
+  const diffMs = expiry.getTime() - now.getTime();
+
+  if (diffMs < 0) return "만료됨";
+
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays >= 1) {
+    return `${diffDays}일 남음`;
+  }
+  if (diffHours >= 1) {
+    return `${diffHours}시간 남음`;
+  }
+  return `${diffMinutes}분 남음`;
+};
+
 export default function BenefitsTab() {
   const insets = useSafeAreaInsets();
   const [selectedFilter, setSelectedFilter] = useState<CouponFilter>("all");
@@ -326,16 +347,26 @@ export default function BenefitsTab() {
                       {coupon.title ?? `쿠폰 #${coupon.studentCouponId}`}
                     </ThemedText>
                     <ThemedText style={styles.couponDescription}>
-                      {coupon.description ?? ""}
+                      {coupon.storeName ?? ""}
                     </ThemedText>
                   </View>
                   <View style={styles.couponFooter}>
-                    <ThemedText style={styles.couponExpireDate}>
-                      {formatDate(coupon.expiresAt)}
-                    </ThemedText>
-                    <ThemedText style={styles.couponDiscount}>
-                      {formatDiscount(coupon.benefitType, coupon.benefitValue)}
-                    </ThemedText>
+                    <View style={styles.couponMetaRow}>
+                      <ThemedText style={styles.couponMinOrder}>
+                        최소 주문 {coupon.minOrderAmount ? `${Number(coupon.minOrderAmount).toLocaleString()}원` : "-"}
+                      </ThemedText>
+                      <ThemedText style={styles.couponExpireDate}>
+                        {formatExpiryDateTime(coupon.expiresAt)}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.couponMetaRow}>
+                      <ThemedText style={styles.couponDiscount}>
+                        {formatDiscount(coupon.benefitType, coupon.benefitValue)}
+                      </ThemedText>
+                      <ThemedText style={styles.couponTimeRemaining}>
+                        {getTimeRemaining(coupon.expiresAt)}
+                      </ThemedText>
+                    </View>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -426,6 +457,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(16),
     height: rs(44),
     justifyContent: "center",
+    alignItems: "flex-start",
     backgroundColor: Gray.white,
   },
   bannerPadding: {
@@ -603,9 +635,18 @@ const styles = StyleSheet.create({
     color: TextColor.placeholder,
   },
   couponFooter: {
+    gap: rs(4),
+  },
+  couponMetaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  couponMinOrder: {
+    fontFamily: Fonts.regular,
+    fontSize: rs(10),
+    lineHeight: rs(14),
+    color: TextColor.secondary,
   },
   couponExpireDate: {
     fontFamily: Fonts.medium,
@@ -618,6 +659,12 @@ const styles = StyleSheet.create({
     fontSize: rs(14),
     lineHeight: rs(20),
     color: TextColor.primary,
+  },
+  couponTimeRemaining: {
+    fontFamily: Fonts.medium,
+    fontSize: rs(10),
+    lineHeight: rs(14),
+    color: "#DC2626",
   },
   loadingContainer: {
     paddingVertical: rs(40),

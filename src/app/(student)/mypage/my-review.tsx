@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -66,8 +67,12 @@ export default function MyReview() {
     if (reply) {
       setEditErrorPopupVisible(true);
     } else {
+      const imageUrlsParam = review.imageUrls && review.imageUrls.length > 0
+        ? encodeURIComponent(JSON.stringify(review.imageUrls))
+        : '';
+
       router.push(
-        `/mypage/edit-review?reviewId=${review.reviewId}&storeName=${encodeURIComponent(review.storeName ?? '')}&rating=${review.rating}&content=${encodeURIComponent(review.content ?? '')}`
+        `/mypage/edit-review?reviewId=${review.reviewId}&storeName=${encodeURIComponent(review.storeName ?? '')}&rating=${review.rating}&content=${encodeURIComponent(review.content ?? '')}&imageUrls=${imageUrlsParam}`
       );
     }
   };
@@ -178,6 +183,19 @@ export default function MyReview() {
                     />
                   ))}
                 </View>
+
+                {/* 리뷰 이미지 */}
+                {review.imageUrls && review.imageUrls.length > 0 && (
+                  <View style={styles.imageContainer}>
+                    {review.imageUrls.map((url, idx) => (
+                      <Image
+                        key={idx}
+                        source={{ uri: url }}
+                        style={styles.reviewImage}
+                      />
+                    ))}
+                  </View>
+                )}
 
                 <Text style={styles.reviewContent}>{review.content}</Text>
 
@@ -298,18 +316,13 @@ const styles = StyleSheet.create({
   summaryBanner: {
     marginHorizontal: rs(20),
     marginBottom: rs(20),
-    backgroundColor: 'rgba(52, 178, 98, 0.10)',
+    backgroundColor: 'rgba(52, 178, 98, 0.08)',
     borderRadius: rs(12),
     paddingVertical: rs(12),
     paddingHorizontal: rs(15),
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(14),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
   },
   summaryIconBox: {
     width: rs(42),
@@ -354,6 +367,18 @@ const styles = StyleSheet.create({
   },
   reviewDate: { fontSize: rs(12), color: '#828282', fontFamily: 'Pretendard' },
   starRow: { flexDirection: 'row', gap: rs(2), marginBottom: rs(10) },
+  imageContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: rs(8),
+    marginBottom: rs(8),
+  },
+  reviewImage: {
+    width: rs(80),
+    height: rs(80),
+    borderRadius: rs(8),
+    backgroundColor: '#E0E0E0',
+  },
   reviewContent: {
     fontSize: rs(14),
     color: 'black',

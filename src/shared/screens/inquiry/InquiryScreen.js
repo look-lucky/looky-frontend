@@ -1,6 +1,8 @@
-import { useCreateInquiry, useGetInquiries } from '@/src/api/customer-support';
+import { useGetInquiries } from '@/src/api/customer-support';
+import { customFetch } from '@/src/api/mutator';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
+import { useMutation } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
@@ -67,7 +69,19 @@ export default function InquiryScreen({ navigation, route }) {
     const isContentValid = content.trim().length >= 1 && content.trim().length <= 500;
     const canSubmit = isTypeSelected && isTitleValid && isContentValid;
 
-    const { mutate: submitInquiry, isPending: isSubmitting } = useCreateInquiry();
+    const { mutate: submitInquiry, isPending: isSubmitting } = useMutation({
+        mutationFn: async ({ request, images }) => {
+            const formData = new FormData();
+            formData.append('request', JSON.stringify(request));
+            if (images) {
+                images.forEach(img => formData.append('images', img));
+            }
+            return customFetch('/api/inquiries', {
+                method: 'POST',
+                body: formData,
+            });
+        },
+    });
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -106,14 +120,12 @@ export default function InquiryScreen({ navigation, route }) {
 
         submitInquiry(
             {
-                data: {
-                    request: {
-                        type: inquiryTypeKey,
-                        title: title.trim(),
-                        content: content.trim(),
-                    },
-                    ...(images.length > 0 ? { images } : {}),
+                request: {
+                    type: inquiryTypeKey,
+                    title: title.trim(),
+                    content: content.trim(),
                 },
+                images: images.length > 0 ? images : undefined,
             },
             {
                 onSuccess: () => {
@@ -132,7 +144,7 @@ export default function InquiryScreen({ navigation, route }) {
         setExpandedId(expandedId === id ? null : id);
     };
 
-    const { data: inquiriesData, isLoading: isHistoryLoading } = useGetInquiries(
+    const { data: inquiriesData, isLoading: isHistoryLoading, refetch, isRefetching } = useGetInquiries(
         { page: 0, size: 20 },
         { query: { enabled: activeTab === 'history' } }
     );
@@ -327,7 +339,7 @@ export default function InquiryScreen({ navigation, route }) {
                     contentContainerStyle={styles.content}
                     refreshControl={
                         activeTab === 'history' ? (
-                            <RefreshControl refreshing={isLoadingHistory} onRefresh={fetchHistory} />
+                            <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
                         ) : null
                     }
                 >

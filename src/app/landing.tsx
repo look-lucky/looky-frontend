@@ -1,5 +1,6 @@
 import { useAuth } from "@/src/shared/lib/auth";
 import { decodeJwtPayload, getToken } from "@/src/shared/lib/auth/token";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
@@ -45,6 +46,12 @@ export default function LandingPage() {
     if (healthStatus !== "connected") return;
 
     const timer = setTimeout(async () => {
+      const onboardingDone = await AsyncStorage.getItem("onboarding_completed");
+      if (!onboardingDone) {
+        router.replace("/onboarding");
+        return;
+      }
+
       if (!isAuthenticated) {
         router.replace("/auth");
         return;

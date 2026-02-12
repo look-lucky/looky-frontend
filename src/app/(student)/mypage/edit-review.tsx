@@ -1,9 +1,12 @@
 import { useUpdateReview } from '@/src/api/review';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -24,11 +27,13 @@ export default function EditReview() {
     storeName,
     rating: initialRating,
     content: initialContent,
+    imageUrls: initialImageUrls,
   } = useLocalSearchParams<{
     reviewId: string;
     storeName: string;
     rating: string;
     content: string;
+    imageUrls?: string;
   }>();
 
   const [rating, setRating] = useState(Number(initialRating) || 5);
@@ -36,6 +41,27 @@ export default function EditReview() {
     decodeURIComponent(initialContent || '')
   );
   const [editSuccessVisible, setEditSuccessVisible] = useState(false);
+
+  // 이미지 관련 상태
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
+
+  const MAX_PHOTOS = 3;
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+  // 기존 이미지 초기화
+  useEffect(() => {
+    if (initialImageUrls) {
+      try {
+        const urls = JSON.parse(decodeURIComponent(initialImageUrls));
+        if (Array.isArray(urls)) {
+          setExistingImages(urls);
+        }
+      } catch (e) {
+        console.error('Failed to parse imageUrls:', e);
+      }
+    }
+  }, [initialImageUrls]);
 
   const { mutate: updateReview } = useUpdateReview();
 
@@ -56,12 +82,66 @@ export default function EditReview() {
     }
   };
 
+  // 사진 추가 핸들러
+  const handleAddPhoto = async () => {
+    const totalPhotos = existingImages.length + newImages.length;
+    if (totalPhotos >= MAX_PHOTOS) {
+      Alert.alert('알림', `사진은 최대 ${MAX_PHOTOS}장까지 첨부할 수 있습니다.`);
+      return;
+    }
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('알림', '사진 접근 권한이 필요합니다.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_PHOTOS - totalPhotos,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const oversized = result.assets.find(
+        (a) => a.fileSize && a.fileSize > MAX_FILE_SIZE,
+      );
+      if (oversized) {
+        Alert.alert('알림', '10MB 이하의 사진만 업로드할 수 있습니다.');
+        return;
+      }
+      setNewImages((prev) => [...prev, ...result.assets].slice(0, MAX_PHOTOS - existingImages.length));
+    }
+  };
+
+  // 기존 이미지 삭제
+  const handleRemoveExistingImage = (url: string) => {
+    setExistingImages((prev) => prev.filter((img) => img !== url));
+  };
+
+  // 새 이미지 삭제
+  const handleRemoveNewImage = (index: number) => {
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleUpdateReview = () => {
     if (!reviewId) return;
+
+    // 새 이미지를 FormData 형식으로 변환
+    const images = newImages.map((asset) => ({
+      uri: asset.uri,
+      type: asset.mimeType || 'image/jpeg',
+      name: asset.fileName || `review_${Date.now()}.jpg`,
+    }));
+
     updateReview(
       {
         reviewId: Number(reviewId),
-        data: { request: { content: reviewText, rating } },
+        data: {
+          request: { content: reviewText, rating },
+          images: images.length > 0 ? (images as any) : undefined,
+        },
       },
       { onSuccess: () => setEditSuccessVisible(true) }
     );
@@ -117,6 +197,57 @@ export default function EditReview() {
               ))}
             </View>
             <Text style={styles.ratingComment}>{getRatingComment(rating)}</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* 사진 업로드 섹션 */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>사진 업로드</Text>
+            <Text style={styles.sectionDescription}>
+              매장과 관련된 사진을 업로드 해주세요.
+            </Text>
+            <View style={styles.photoContainer}>
+              {/* 기존 이미지 */}
+              {existingImages.map((url, index) => (
+                <View key={`existing-${index}`} style={styles.photoItem}>
+                  <Image source={{ uri: url }} style={styles.photoImage} />
+                  <TouchableOpacity
+                    style={styles.removePhotoButton}
+                    onPress={() => handleRemoveExistingImage(url)}
+                  >
+                    <Ionicons name="close-circle" size={rs(20)} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              {/* 새로 추가된 이미지 */}
+              {newImages.map((photo, index) => (
+                <View key={`new-${index}`} style={styles.photoItem}>
+                  <Image source={{ uri: photo.uri }} style={styles.photoImage} />
+                  <TouchableOpacity
+                    style={styles.removePhotoButton}
+                    onPress={() => handleRemoveNewImage(index)}
+                  >
+                    <Ionicons name="close-circle" size={rs(20)} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              {/* 사진 추가 버튼 */}
+              {(existingImages.length + newImages.length) < MAX_PHOTOS && (
+                <TouchableOpacity
+                  style={styles.addPhotoButton}
+                  onPress={handleAddPhoto}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="camera-outline" size={rs(24)} color="#828282" />
+                  <Text style={styles.photoCount}>
+                    {existingImages.length + newImages.length}/{MAX_PHOTOS}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           <View style={styles.divider} />
@@ -209,6 +340,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard',
     marginBottom: rs(5),
   },
+  sectionDescription: {
+    fontSize: rs(12),
+    color: '#828282',
+    fontFamily: 'Pretendard',
+    marginBottom: rs(12),
+  },
   requiredStar: { color: '#34A853' },
   divider: { height: 1, backgroundColor: '#E6E6E6', width: '100%' },
   starContainer: {
@@ -244,6 +381,39 @@ const styles = StyleSheet.create({
     color: 'black',
     fontFamily: 'Pretendard',
     lineHeight: rs(20),
+  },
+  photoContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: rs(12),
+  },
+  addPhotoButton: {
+    width: rs(64),
+    height: rs(64),
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    borderRadius: rs(8),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoItem: {
+    position: 'relative',
+  },
+  photoImage: {
+    width: rs(64),
+    height: rs(64),
+    borderRadius: rs(8),
+  },
+  removePhotoButton: {
+    position: 'absolute',
+    top: rs(-8),
+    right: rs(-8),
+  },
+  photoCount: {
+    fontSize: rs(10),
+    color: '#828282',
+    fontFamily: 'Pretendard',
+    marginTop: rs(4),
   },
   policyContainer: { marginTop: rs(10), marginBottom: rs(20) },
   policyTitle: {

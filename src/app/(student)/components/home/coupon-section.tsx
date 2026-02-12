@@ -24,8 +24,7 @@ export function CouponSection({ coupons }: CouponSectionProps) {
   const router = useRouter();
 
   const handleMorePress = () => {
-    // TODO: 쿠폰함 공개함 탭으로 이동
-    router.push('/coupon?tab=public');
+    router.push('/map');
   };
 
   const handleCouponPress = (storeId: number) => {

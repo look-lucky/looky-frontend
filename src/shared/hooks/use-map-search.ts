@@ -22,6 +22,7 @@ interface StoreSearchParams {
   keyword?: string;
   categories?: string[];
   moods?: string[];
+  sort?: string[];
   page?: number;
   size?: number;
 }
@@ -32,6 +33,7 @@ async function fetchStores(params: StoreSearchParams) {
   if (params.keyword) qs.append('keyword', params.keyword);
   params.categories?.forEach((c) => qs.append('categories', c));
   params.moods?.forEach((m) => qs.append('moods', m));
+  params.sort?.forEach((s) => qs.append('sort', s));
   qs.append('page', String(params.page ?? 0));
   qs.append('size', String(params.size ?? 50));
 
@@ -172,6 +174,12 @@ export function useMapSearch() {
             : Infinity;
         return distA - distB;
       });
+    } else if (selectedSort === 'rating') {
+      result.sort((a, b) => b.rating - a.rating);
+    } else if (selectedSort === 'reviews') {
+      result.sort((a, b) => b.reviewCount - a.reviewCount);
+    } else if (selectedSort === 'benefits') {
+      result.sort((a, b) => Number(b.hasCoupon) - Number(a.hasCoupon));
     }
 
     return result;

@@ -7,9 +7,11 @@ import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/theme/theme";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -115,6 +117,8 @@ export default function SignupTypePage() {
   const [phone, setPhone] = useState("");
   const [phoneCode, setPhoneCode] = useState("");
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const isStudent = userType === "student";
   const primaryColor = userType === "owner" ? Owner.primary : Brand.primary;
@@ -243,10 +247,17 @@ export default function SignupTypePage() {
         <NearDealLogo width={169} height={57} />
       </View>
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === "ios" ? rs(20) : 0}
+      >
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
       >
         {/* 가입 유형 */}
         <View style={styles.fieldGroup}>
@@ -547,6 +558,11 @@ export default function SignupTypePage() {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   maxLength={20}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollViewRef.current?.scrollToEnd({ animated: true });
+                    }, 150);
+                  }}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
@@ -572,6 +588,11 @@ export default function SignupTypePage() {
                   secureTextEntry={!showPasswordConfirm}
                   autoCapitalize="none"
                   maxLength={20}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollViewRef.current?.scrollToEnd({ animated: true });
+                    }, 150);
+                  }}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
@@ -584,6 +605,7 @@ export default function SignupTypePage() {
           </>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* 다음으로 버튼 */}
       <View style={styles.bottomContent}>
