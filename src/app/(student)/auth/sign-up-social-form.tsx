@@ -7,9 +7,9 @@ import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/theme/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
+  AppState,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -74,10 +74,76 @@ export default function SocialSignupFormPage() {
   // 점주 전용
   const [email, setEmail] = useState("");
   const [emailCode, setEmailCode] = useState("");
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [timer, setTimer] = useState(295);
+  const [expiryTime, setExpiryTime] = useState<number | null>(null);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [sendCodeMessage, setSendCodeMessage] = useState("");
+  const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isStudent = userType === "student";
   const primaryColor = userType === "owner" ? Owner.primary : Brand.primary;
+
+  // 타이머 로직 - 실제 만료 시간 기반으로 계산
+  useEffect(() => {
+    if (!isCodeSent || !expiryTime || isEmailVerified) return;
+    const updateTimer = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000));
+      setTimer(remaining);
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [isCodeSent, expiryTime, isEmailVerified]);
+
+  // AppState 변경 감지 - 앱이 다시 활성화될 때 타이머 재계산
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active" && expiryTime && !isEmailVerified) {
+        const now = Date.now();
+        const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000));
+        setTimer(remaining);
+      }
+    });
+    return () => { subscription.remove(); };
+  }, [expiryTime, isEmailVerified]);
+
+  // 재발송 쿨다운 타이머
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
+
+  // 인라인 메시지 30초 후 자동 제거
+  const showSendCodeMessage = useCallback((message: string) => {
+    if (sendCodeMessageTimerRef.current) {
+      clearTimeout(sendCodeMessageTimerRef.current);
+    }
+    setSendCodeMessage(message);
+    sendCodeMessageTimerRef.current = setTimeout(() => {
+      setSendCodeMessage("");
+    }, 30000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (sendCodeMessageTimerRef.current) {
+        clearTimeout(sendCodeMessageTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 타이머 포맷 (MM:SS)
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const isFormValid = () => {
     if (!userType) return false;
@@ -98,20 +164,33 @@ export default function SocialSignupFormPage() {
     if (!email) return;
     try {
       await sendEmailMutation.mutateAsync({ data: { email } });
-      Alert.alert("인증번호 발송", "이메일로 인증번호가 발송되었습니다.");
+      const now = Date.now();
+      const expiry = now + 300000; // 5분
+      setIsCodeSent(true);
+      setExpiryTime(expiry);
+      setTimer(300);
+      setResendCooldown(5);
+      setEmailCode("");
+      showSendCodeMessage("인증번호가 발송되었습니다.");
     } catch (error: any) {
-      Alert.alert("발송 실패", error?.message || "인증번호 발송에 실패했습니다.");
+      showSendCodeMessage(error?.message || "인증번호 발송에 실패했습니다.");
     }
   };
 
   const handleVerifyEmailCode = async () => {
     if (!email || !emailCode) return;
+
+    if (timer <= 0) {
+      showSendCodeMessage("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.");
+      return;
+    }
+
     try {
       await verifyEmailMutation.mutateAsync({ data: { email, code: emailCode } });
       setIsEmailVerified(true);
-      Alert.alert("인증 성공", "이메일 인증이 완료되었습니다.");
+      showSendCodeMessage("이메일 인증이 완료되었습니다.");
     } catch (error: any) {
-      Alert.alert("인증 실패", error?.message || "인증번호가 일치하지 않습니다.");
+      showSendCodeMessage(error?.message || "인증번호가 일치하지 않습니다.");
     }
   };
 
@@ -251,9 +330,9 @@ export default function SocialSignupFormPage() {
 
             {/* 점주 전용: 이메일 인증 */}
             {!isStudent && (
-              <>
-                <View style={styles.inputGroup}>
-                  <View style={styles.inputContainer}>
+              <View style={styles.inputGroup}>
+                <View style={styles.inputRow}>
+                  <View style={[styles.inputContainer, styles.inputFlex]}>
                     <TextInput
                       style={styles.input}
                       placeholder="이메일"
@@ -262,35 +341,72 @@ export default function SocialSignupFormPage() {
                       onChangeText={setEmail}
                       autoCapitalize="none"
                       keyboardType="email-address"
+                      editable={!isEmailVerified}
                     />
                   </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.emailButton,
+                      { backgroundColor: email && !isEmailVerified && resendCooldown <= 0 && !sendEmailMutation.isPending ? Owner.primary : Gray.gray5 },
+                    ]}
+                    onPress={handleRequestEmailCode}
+                    disabled={!email || isEmailVerified || resendCooldown > 0 || sendEmailMutation.isPending}
+                  >
+                    <ThemedText style={styles.smallButtonText}>
+                      {sendEmailMutation.isPending ? "발송 중..." : resendCooldown > 0 ? `재발송 (${resendCooldown}초)` : isCodeSent ? "인증번호 재발송" : "인증번호 받기"}
+                    </ThemedText>
+                  </TouchableOpacity>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <View style={styles.inputContainer}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="이메일 인증번호"
-                      placeholderTextColor={TextColors.placeholder}
-                      value={emailCode}
-                      onChangeText={setEmailCode}
-                      keyboardType="number-pad"
-                    />
+                {/* 인라인 발송 메시지 */}
+                {sendCodeMessage !== "" && (
+                  <ThemedText style={styles.inlineMessage}>
+                    {sendCodeMessage}
+                  </ThemedText>
+                )}
+
+                {/* 인증번호 입력 */}
+                {isCodeSent && !isEmailVerified && (
+                  <View style={styles.inputRow}>
+                    <View style={[styles.inputContainer, styles.inputFlex]}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="인증번호"
+                        placeholderTextColor={TextColors.placeholder}
+                        value={emailCode}
+                        onChangeText={setEmailCode}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        editable={timer > 0}
+                      />
+                      <ThemedText style={[styles.timerText, timer <= 0 && styles.timerExpired]}>
+                        {formatTimer(timer)}
+                      </ThemedText>
+                    </View>
                     <TouchableOpacity
                       style={[
-                        styles.smallButton,
-                        { backgroundColor: email ? Owner.primary : Gray.gray5 },
+                        styles.emailButton,
+                        { backgroundColor: emailCode && timer > 0 ? Owner.primary : Gray.gray5 },
                       ]}
-                      onPress={emailCode ? handleVerifyEmailCode : handleRequestEmailCode}
-                      disabled={!email}
+                      onPress={handleVerifyEmailCode}
+                      disabled={!emailCode || timer <= 0}
                     >
                       <ThemedText style={styles.smallButtonText}>
-                        {emailCode ? "확인" : "인증요청"}
+                        확인
                       </ThemedText>
                     </TouchableOpacity>
                   </View>
-                </View>
-              </>
+                )}
+
+                {/* 인증 완료 메시지 */}
+                {isEmailVerified && (
+                  <View style={styles.successMessage}>
+                    <ThemedText style={styles.ownerSuccessText}>
+                      이메일 인증이 완료되었습니다
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
             )}
           </>
         )}
@@ -372,6 +488,10 @@ const styles = StyleSheet.create({
   inputGroup: {
     gap: rs(6),
   },
+  inputRow: {
+    flexDirection: "row",
+    gap: rs(8),
+  },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -381,16 +501,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(16),
     height: rs(40),
   },
+  inputFlex: {
+    flex: 1,
+  },
   input: {
     flex: 1,
     fontSize: rs(14),
     color: TextColors.primary,
   },
-  smallButton: {
-    paddingHorizontal: rs(8),
+  emailButton: {
+    flexShrink: 0,
+    paddingHorizontal: rs(12),
     borderRadius: rs(8),
-    height: rs(28),
-    minWidth: rs(76),
+    height: rs(40),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -398,6 +521,27 @@ const styles = StyleSheet.create({
     fontSize: rs(12),
     fontWeight: "700",
     color: Gray.white,
+  },
+  timerText: {
+    fontSize: rs(14),
+    color: Owner.primary,
+    fontWeight: "600",
+  },
+  timerExpired: {
+    color: System.error,
+  },
+  inlineMessage: {
+    fontSize: rs(12),
+    color: TextColors.secondary,
+    paddingLeft: rs(4),
+  },
+  successMessage: {
+    paddingVertical: rs(8),
+  },
+  ownerSuccessText: {
+    fontSize: rs(12),
+    color: Owner.primary,
+    fontWeight: "600",
   },
   bottomContent: {
     paddingTop: rs(16),
