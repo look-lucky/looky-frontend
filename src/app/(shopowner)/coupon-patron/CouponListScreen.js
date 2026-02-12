@@ -25,35 +25,47 @@ const { width } = Dimensions.get('window');
 
 const FILTERS = ['전체', '금액 할인', '퍼센트 할인', '서비스 증정'];
 
-// 날짜 포맷 함수
+// 숫자 포맷 함수 (천단위 콤마)
+const formatNumber = (val) => {
+    if (!val && val !== 0) return '';
+    const num = val.toString().replace(/[^0-9]/g, '');
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+// 날짜 포맷 함수 (YYYY.MM.DD 오전/오후 HH:MM)
 const formatDateTime = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return `${date.getFullYear()}년 ${String(date.getMonth() + 1).padStart(2, '0')}월 ${String(date.getDate()).padStart(2, '0')}일 ${date.getHours()}시까지`;
+    const y = date.getFullYear();
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const d = date.getDate().toString().padStart(2, '0');
+    const h = date.getHours();
+    const ampm = h >= 12 ? '오후' : '오전';
+    const h12 = h % 12 || 12;
+    const min = date.getMinutes().toString().padStart(2, '0');
+    return `${y}.${m}.${d} ${ampm} ${h12}:${min}`;
 };
 
 // 쿠폰 타입에 따른 스타일 매핑 함수
 const getCouponStyleInfo = (type) => {
-    // API 타입(예상): 'PERCENT', 'AMOUNT', 'GIFT'
-    // 혹은 소문자 'percent', 'amount', 'gift'
     const lowerType = type?.toLowerCase();
 
-    if (lowerType === 'percent' || lowerType === 'discount') { // 퍼센트
+    if (lowerType === 'percent' || lowerType === 'percentage') { // 퍼센트
         return {
             typeLabel: 'percent',
             bgColor: '#FFDDDE',
             image: require('@/assets/images/shopowner/coupon-percent.png')
         };
-    } else if (lowerType === 'amount') { // 금액
+    } else if (lowerType === 'amount' || lowerType === 'fixed') { // 금액
         return {
             typeLabel: 'amount',
-            bgColor: '#BEFFD1',
+            bgColor: '#EAF6EE', // CouponScreen과 통일
             image: require('@/assets/images/shopowner/coupon-price.png')
         };
     } else { // 증정 (gift)
         return {
             typeLabel: 'gift',
-            bgColor: '#FFEABC',
+            bgColor: '#FFF4D6', // CouponScreen과 통일
             image: require('@/assets/images/shopowner/coupon-present.png')
         };
     }
@@ -101,12 +113,14 @@ export default function CouponListScreen({ navigation, route }) {
                 return {
                     id: coupon.id,
                     name: coupon.title || coupon.name,
-                    description: coupon.description,
                     expiredAt: coupon.issueEndsAt || coupon.expiredAt,
                     type: type,
                     discountValue: coupon.benefitValue,
-                    limitCount: coupon.totalQuantity,
-                    usedCount: coupon.usedCount || 0, // 사용량 추가
+                    minOrderAmount: coupon.minOrderAmount || 0,
+                    totalQuantity: coupon.totalQuantity,
+                    issuedCount: coupon.issuedCount || 0,
+                    usedCount: coupon.usedCount || 0,
+                    validDays: coupon.validDays,
                 };
             });
 
@@ -275,37 +289,55 @@ export default function CouponListScreen({ navigation, route }) {
                                         { backgroundColor: styleInfo.bgColor },
                                         activeTab === 'expired' && { opacity: 0.5 }
                                     ]}>
-                                        <Image source={styleInfo.image} style={{ width: rs(24), height: rs(24) }} resizeMode="contain" />
+                                        <Image source={styleInfo.image} style={styles.cardIconImage} resizeMode="contain" />
                                     </View>
 
                                     {/* 가운데 정보 */}
                                     <View style={styles.cardInfo}>
-                                        <Text style={[styles.cardTitle, activeTab === 'expired' && { color: '#A3A3A3' }]}>
-                                            {item.name}
-                                        </Text>
-                                        <Text style={[styles.cardDesc, activeTab === 'expired' && { color: '#D4D4D4' }]}>
-                                            {item.description || '설명 없음'}
-                                        </Text>
-
-                                        <View style={styles.cardBottomRow}>
-                                            <Text style={[styles.cardDate, activeTab === 'expired' && { color: '#D4D4D4' }]}>
-                                                {formatDateTime(item.expiredAt)}
-                                            </Text>
-                                            <Text style={[styles.cardValue, activeTab === 'expired' && { color: '#A3A3A3' }]}>
-                                                {/* 값 표시 로직 (API 데이터 구조에 따라 수정 필요) */}
-                                                {item.discountValue ? (item.type === 'PERCENT' ? `${item.discountValue}%` : `${item.discountValue}원`) : '서비스 증정'}
+                                        <View style={styles.cardTitleRow}>
+                                            <Text style={[styles.cardBenefitTitle, activeTab === 'expired' && { color: '#A3A3A3' }]}>
+                                                {item.type === 'amount' ? `${formatNumber(item.discountValue)}원 할인` :
+                                                    item.type === 'percent' ? `${item.discountValue}% 할인` :
+                                                        `${item.discountValue || '서비스'} 증정`}
                                             </Text>
                                         </View>
-                                    </View>
 
-                                    {/* 오른쪽 뱃지 (장수) */}
-                                    <View style={[styles.countBadge, activeTab === 'expired' && { backgroundColor: '#E5E7EB' }]}>
-                                        <Text style={[styles.countText, activeTab === 'expired' && { color: '#9CA3AF' }]}>
-                                            {/* 남은 수량 or 전체 수량 */}
-                                            {item.limitCount === -1
-                                                ? `${item.usedCount}장 사용됨`
-                                                : `${item.usedCount}/${item.limitCount}장`}
+                                        <Text style={[styles.cardCouponName, activeTab === 'expired' && { color: '#A3A3A3' }]} numberOfLines={1}>
+                                            {item.name}
                                         </Text>
+
+                                        <View style={styles.cardMetaRow}>
+                                            <Text style={[styles.cardMetaText, activeTab === 'expired' && { color: '#D4D4D4' }]}>최소 주문 {formatNumber(item.minOrderAmount)}원</Text>
+                                            <Text style={[styles.cardMetaText, activeTab === 'expired' && { color: '#D4D4D4' }]}>
+                                                {formatDateTime(item.expiredAt)}까지 {activeTab === 'active' ? '발급 가능' : '발급 종료'}
+                                            </Text>
+                                        </View>
+
+                                        <View style={styles.cardBadgeRow}>
+                                            <View style={[styles.cardBadge, styles.badgeValidity, activeTab === 'expired' && styles.expiredBadge]}>
+                                                <Text style={[styles.cardBadgeText, styles.textValidity, activeTab === 'expired' && styles.expiredBadgeText]}>
+                                                    {item.validDays === 0 ? '발급 종료 시간까지 사용 가능' : `발급일로부터 ${item.validDays}일간 사용 가능`}
+                                                </Text>
+                                            </View>
+
+                                            {item.totalQuantity === null ? (
+                                                <View style={[styles.cardBadge, styles.badgeUnlimited, activeTab === 'expired' && styles.expiredBadge]}>
+                                                    <Text style={[styles.cardBadgeText, styles.textUnlimited, activeTab === 'expired' && styles.expiredBadgeText]}>무제한 발급</Text>
+                                                </View>
+                                            ) : (
+                                                <View style={[styles.cardBadge, styles.badgeIssued, activeTab === 'expired' && styles.expiredBadge]}>
+                                                    <Text style={[styles.cardBadgeText, styles.textIssued, activeTab === 'expired' && styles.expiredBadgeText]}>
+                                                        {item.issuedCount}/{item.limitCount}장 발급
+                                                    </Text>
+                                                </View>
+                                            )}
+
+                                            <View style={[styles.cardBadge, styles.badgeUsed, activeTab === 'expired' && styles.expiredBadge]}>
+                                                <Text style={[styles.cardBadgeText, styles.textUsed, activeTab === 'expired' && styles.expiredBadgeText]}>
+                                                    {item.usedCount}장 사용
+                                                </Text>
+                                            </View>
+                                        </View>
                                     </View>
                                 </View>
                             );
@@ -355,19 +387,33 @@ const styles = StyleSheet.create({
 
     // 리스트
     listContainer: { paddingHorizontal: rs(20), gap: rs(10) },
-    couponCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FBFBFB', borderRadius: rs(15), padding: rs(15), shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2, height: rs(100), },
+    couponCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FBFBFB', borderRadius: rs(15), paddingLeft: rs(15), paddingRight: rs(10), shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2, height: rs(100), },
     // [종료 탭]
     expiredCard: { backgroundColor: '#FAFAFA', opacity: 0.7, },
 
     cardIconBox: { width: rs(65), height: rs(65), borderRadius: rs(12), justifyContent: 'center', alignItems: 'center', marginRight: rs(15), },
-    cardInfo: { flex: 1, height: '100%', justifyContent: 'space-between', paddingVertical: rs(2) },
-    cardTitle: { fontSize: rs(14), fontWeight: '600', color: 'black', fontFamily: 'Pretendard' },
-    cardDesc: { fontSize: rs(12), fontWeight: '400', color: '#828282', fontFamily: 'Pretendard', marginTop: rs(2) },
+    cardIconImage: { width: rs(42), height: rs(42) },
+    cardInfo: { flex: 1, paddingVertical: rs(5), justifyContent: 'center', alignItems: 'flex-start', gap: rs(3) },
+    cardTitleRow: { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'flex-start', gap: rs(3) },
+    cardBenefitTitle: { fontSize: rs(14), fontWeight: '600', color: 'black', fontFamily: 'Pretendard' },
+    cardCouponName: { fontSize: rs(12), fontWeight: '400', color: 'black', fontFamily: 'Pretendard', marginVertical: rs(1) },
+    cardMetaRow: { alignSelf: 'stretch', gap: rs(1) },
+    cardMetaText: { fontSize: rs(10), fontWeight: '400', color: '#757575', fontFamily: 'Pretendard' },
+    cardBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: rs(5) },
+    cardBadge: { paddingHorizontal: rs(6), paddingVertical: rs(2), borderRadius: rs(2), justifyContent: 'center', alignItems: 'center' },
+    cardBadgeText: { fontSize: rs(8), fontWeight: '600', fontFamily: 'Pretendard' },
 
-    cardBottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: rs(10) },
-    cardDate: { fontSize: rs(10), fontWeight: '500', color: '#757575', fontFamily: 'Pretendard' },
-    cardValue: { fontSize: rs(14), fontWeight: '600', color: 'black', fontFamily: 'Pretendard' },
+    badgeUnlimited: { backgroundColor: '#FFE5F1' },
+    textUnlimited: { color: '#FF2F90' },
 
-    countBadge: { position: 'absolute', top: rs(15), right: rs(15), backgroundColor: '#34B262', borderRadius: rs(10), paddingHorizontal: rs(8), paddingVertical: rs(3), },
-    countText: { fontSize: rs(10), fontWeight: '600', color: 'white', fontFamily: 'Pretendard' },
+    badgeIssued: { backgroundColor: '#D9EDFF' },
+    textIssued: { color: '#256EFF' },
+
+    badgeUsed: { backgroundColor: '#CAFFD0' },
+    textUsed: { color: '#009B38' },
+
+    expiredBadge: { backgroundColor: '#EFEFEF' },
+    expiredBadgeText: { color: '#A3A3A3' },
+    badgeValidity: { backgroundColor: '#FFE4E5' },
+    textValidity: { color: '#F15051' },
 });

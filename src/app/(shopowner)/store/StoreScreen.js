@@ -1,13 +1,18 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView,
-  ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View
+  Alert, Dimensions, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text, TextInput, TouchableOpacity, View
 } from 'react-native';
-
+import DraggableFlatList from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // [필수] 네비게이션 훅 임포트
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from 'expo-router';
@@ -93,6 +98,7 @@ export default function StoreScreen() {
   // const updateStoreMutation = useUpdateStore(); 
 
   // (3) 메뉴(상품) 목록 조회
+  const queryClient = useQueryClient();
   const {
     data: itemsDataResponse,
     isLoading: isItemsLoading,
@@ -102,6 +108,7 @@ export default function StoreScreen() {
   const [basicModalVisible, setBasicModalVisible] = useState(false);
   const [hoursModalVisible, setHoursModalVisible] = useState(false);
   const [holidayModalVisible, setHolidayModalVisible] = useState(false); // 휴무일 모달 상태
+  const [isFullScreenBannerVisible, setIsFullScreenBannerVisible] = useState(false); // 배너 전체화면 모달 상태
 
   // Temp Data for Modals
   const [tempSelectedHolidays, setTempSelectedHolidays] = useState([]); // 모달용 임시 휴무일 데이터
@@ -128,7 +135,7 @@ export default function StoreScreen() {
 
   // # State: Store Data
   const [storeInfo, setStoreInfo] = useState({
-    name: '', branch: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImage: null
+    name: '', branch: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImages: []
   });
 
   const initialHours = ['월', '화', '수', '목', '금', '토', '일'].map(day => ({
@@ -401,13 +408,13 @@ export default function StoreScreen() {
           address: myStore.roadAddress || myStore.jibunAddress || '', // roadAddress 우선 사용
           detailAddress: '', // 상세주소는 분리되어 있지 않아 보임, 필요하면 jibunAddress 등 활용
           phone: myStore.phone || '', // phoneNumber -> phone 수정
-          // 로고 제거됨, 배너는 배열의 마지막 이미지 사용 (또는 0번)
-          bannerImage: (myStore.imageUrls && myStore.imageUrls.length > 0)
-            ? myStore.imageUrls[myStore.imageUrls.length - 1]
-            : null
+          // 로고 제거됨, 배너는 배열 전체 사용 (최대 3장)
+          bannerImages: (myStore.imageUrls && Array.isArray(myStore.imageUrls))
+            ? myStore.imageUrls.slice(0, 3)
+            : []
         });
         console.log("📸 [StoreScreen] 매장 이미지 목록:", myStore.imageUrls);
-        console.log("📸 [StoreScreen] 설정된 배너:", (myStore.imageUrls && myStore.imageUrls.length > 0) ? myStore.imageUrls[myStore.imageUrls.length - 1] : "없음");
+        console.log("📸 [StoreScreen] 설정된 배너 목록:", (myStore.imageUrls && Array.isArray(myStore.imageUrls)) ? myStore.imageUrls.slice(0, 3) : "없음");
 
         // 2. 휴무일 초기화 (holidayDates 전용)
         if (myStore.holidayDates && Array.isArray(myStore.holidayDates)) {
@@ -440,23 +447,59 @@ export default function StoreScreen() {
     item.isRecommended || item.representative || item.isRepresentative
   ).length;
 
-  const menuList = menuListArray
-    .map(item => ({
-      id: item.id,
-      name: item.name,
-      price: item.price ? item.price.toString() : '0',
-      desc: item.description || '',
-      category: item.category || '메인메뉴',
-      isRepresentative: item.isRecommended || item.representative || item.isRepresentative || false, // Check all possible keys
-      isSoldOut: item.isSoldOut || item.soldOut || false, // Check all possible keys
-      isHidden: item.isHidden || item.hidden || false,
-      badge: item.badge || null,
-      badge: item.badge || null,
-      image: item.imageUrl || null,
-      image: item.imageUrl || null,
-      categoryId: item.itemCategoryId || item.categoryId || 1, // Ensure Valid ID
-    }))
-    .filter(item => item.categoryId === selectedCategoryId);
+  const menuList = useMemo(() => {
+    const list = menuListArray
+      .map(item => {
+        // [Robust Category Resolution]
+        // 1. Try common ID fields
+        let rid = item.itemCategoryId ?? item.categoryId ?? item.item_category_id ?? item.category_id;
+
+        // 2. Try nested object: item.itemCategory.id or item.category.id
+        if (rid === undefined || rid === null) {
+          if (item.itemCategory && typeof item.itemCategory === 'object') rid = item.itemCategory.id;
+          else if (item.category && typeof item.category === 'object') rid = item.category.id;
+        }
+
+        // 3. Try to find by name from categories array if still no ID
+        if (rid === undefined || rid === null) {
+          const cName = (typeof item.category === 'string') ? item.category :
+            (item.itemCategory && typeof item.itemCategory === 'object' ? item.itemCategory.name :
+              (item.category && typeof item.category === 'object' ? item.category.name : null));
+
+          if (cName) {
+            const matched = categories.find(c => c.name === cName);
+            if (matched) rid = matched.id;
+          }
+        }
+
+        // 4. Final fallback to 1 (usually 'Main/Pasta') only if everything else fails
+        // [IMPORTANT] Defaulting to 1 is likely why items "stay in Pasta" if data is missing
+        const finalCategoryId = (rid !== undefined && rid !== null) ? Number(rid) : 1;
+
+        return {
+          id: item.id,
+          name: item.name,
+          price: item.price ? item.price.toString() : '0',
+          desc: item.description || '',
+          category: (typeof item.category === 'string') ? item.category : '메인메뉴',
+          isRepresentative: item.isRecommended || item.representative || item.isRepresentative || false,
+          isSoldOut: item.isSoldOut || item.soldOut || false,
+          isHidden: item.isHidden || item.hidden || false,
+          badge: item.badge || null,
+          image: item.imageUrl || null,
+          categoryId: finalCategoryId,
+          itemOrder: item.itemOrder ?? 0,
+        };
+      });
+
+    console.log("🥘 [StoreScreen] Total Items from Server:", menuListArray.length);
+    console.log("🥘 [StoreScreen] Filtered Menu List (Total:", list.length, ", SelectedCat:", selectedCategoryId, ")");
+
+    // Filter and SORT by itemOrder
+    return list
+      .filter(item => item.categoryId === selectedCategoryId)
+      .sort((a, b) => (a.itemOrder || 0) - (b.itemOrder || 0));
+  }, [menuListArray, categories, selectedCategoryId]);
 
 
   // =================================================================
@@ -500,7 +543,8 @@ export default function StoreScreen() {
             '회식': 'COMPANY_DINNER'
           };
           return VIBE_KR_TO_EN[v] || v;
-        })
+        }),
+        imageUrls: editBasicData.bannerImages.filter(img => img.startsWith('http')) // 기존 이미지 중 남은 것들 유지
       };
 
       console.log("🚀 [handleBasicSave] Request Payload:", JSON.stringify(requestData, null, 2));
@@ -512,21 +556,22 @@ export default function StoreScreen() {
         name: "request"
       });
 
-      // 4. 이미지 파일이 있다면 formData에 추가 (키: image)
-      if (editBasicData.bannerImage && !editBasicData.bannerImage.startsWith('http')) {
-        const localUri = editBasicData.bannerImage;
-        const filename = localUri.split('/').pop();
-        const ext = filename.split('.').pop().toLowerCase();
-        const type = (ext === 'png') ? 'image/png' : 'image/jpeg';
+      // 4. 이미지 파일이 있다면 formData에 추가 (키: images) - 다중 이미지 처리
+      if (editBasicData.bannerImages && editBasicData.bannerImages.length > 0) {
+        editBasicData.bannerImages.forEach((imgUri) => {
+          if (!imgUri.startsWith('http')) {
+            const localUri = imgUri;
+            const filename = localUri.split('/').pop();
+            const ext = filename.split('.').pop().toLowerCase();
+            const type = (ext === 'png') ? 'image/png' : 'image/jpeg';
 
-        // 키값 'images' (사용자 최종 확인)
-        formData.append('images', { uri: localUri, name: filename, type });
-        console.log("📸 [매장 수정] 배너 이미지 추가됨 (key: images):", filename, type);
+            // 키값 'images' (백엔드 스펙)
+            formData.append('images', { uri: localUri, name: filename, type });
+            console.log("📸 [매장 수정] 배너 이미지 추가됨 (key: images):", filename, type);
+          }
+        });
       }
 
-      console.log("🚀 [매장 정보 수정] Direct Fetch 시작...");
-
-      // 5. 전송
       console.log("🚀 [매장 정보 수정] Direct Fetch 시작...");
 
       // 5. 전송
@@ -557,9 +602,8 @@ export default function StoreScreen() {
           phone: editBasicData.phone,
           categories: editBasicData.categories,
           vibes: editBasicData.vibes,
-          bannerImage: editBasicData.bannerImage // Update banner image if changed
+          bannerImages: editBasicData.bannerImages // Update banner images
         }));
-        refetchStore(); // 데이터 새로고침
         setBasicModalVisible(false);
       } else {
         // 에러 메시지 파싱 시도
@@ -605,17 +649,20 @@ export default function StoreScreen() {
       let requestData = {};
       const mappedBadge = BADGE_MAP[menuForm.badge] || null;
 
+      console.log(`🥘 [Menu Save] Saving menu item. Mode: ${isEditMode ? 'Edit' : 'Create'}, CategoryId: ${menuForm.categoryId}`);
+
       if (isEditMode) {
         // PATCH: Use UpdateItemRequest schema (isSoldOut, isRepresentative)
         requestData = {
           name: menuForm.name,
           price: priceNum,
           description: menuForm.desc,
-          itemCategoryId: menuForm.categoryId ? menuForm.categoryId : 1,
+          itemCategoryId: Number(menuForm.categoryId),
+          categoryId: Number(menuForm.categoryId), // Added for compatibility
           badge: mappedBadge,
-          isHidden: menuForm.isHidden, // Schema: isHidden
-          isSoldOut: menuForm.isSoldOut, // Schema: isSoldOut
-          isRepresentative: menuForm.isRepresentative // Schema: isRepresentative
+          isHidden: menuForm.isHidden,
+          isSoldOut: menuForm.isSoldOut,
+          isRepresentative: menuForm.isRepresentative
         };
       } else {
         // POST: Use CreateItemRequest schema (soldOut, representative)
@@ -623,11 +670,12 @@ export default function StoreScreen() {
           name: menuForm.name,
           price: priceNum,
           description: menuForm.desc,
-          itemCategoryId: menuForm.categoryId ? menuForm.categoryId : 1,
+          itemCategoryId: Number(menuForm.categoryId),
+          categoryId: Number(menuForm.categoryId), // Added for compatibility
           badge: mappedBadge,
-          hidden: menuForm.isHidden, // Schema: hidden
-          soldOut: menuForm.isSoldOut, // Schema: soldOut
-          representative: menuForm.isRepresentative // Schema: representative
+          hidden: menuForm.isHidden,
+          soldOut: menuForm.isSoldOut,
+          representative: menuForm.isRepresentative
         };
       }
 
@@ -647,7 +695,7 @@ export default function StoreScreen() {
         formData.append('image', "");
       }
 
-      console.log(`[Menu Save] ${method} ${url}`, JSON.stringify(requestData));
+      console.log(`🥘 [Menu Save] Request Body:`, JSON.stringify(requestData, null, 2));
 
       const response = await fetch(url, {
         method: method,
@@ -693,7 +741,8 @@ export default function StoreScreen() {
         name: item.name,
         price: parseInt(String(item.price).replace(/,/g, ''), 10),
         description: item.desc,
-        itemCategoryId: item.categoryId || 1, // Use preserved ID
+        itemCategoryId: Number(item.categoryId),
+        categoryId: Number(item.categoryId), // Added for compatibility
         badge: mappedBadge,
         isHidden: item.isHidden,
         isSoldOut: item.isSoldOut,
@@ -701,6 +750,8 @@ export default function StoreScreen() {
         ...(field === 'isSoldOut' && { isSoldOut: value }), // field match logic
         ...(field === 'isRecommended' && { isRepresentative: value }), // field match logic
       };
+
+      console.log(`🥘 [Quick Update] PATCH ${url}`, JSON.stringify(requestData, null, 2));
 
       formData.append('request', {
         string: JSON.stringify(requestData),
@@ -734,6 +785,91 @@ export default function StoreScreen() {
       Alert.alert("오류", "상태 변경에 실패했습니다.");
     }
   };
+
+  // 메뉴 드래그 종료 핸들러
+  const handleMenuDragEnd = async ({ data }) => {
+    try {
+      console.log("🔄 [Menu Drag] Reordering menus locally...");
+
+      // 1. Optimistic Update: Update Query Cache immediately
+      // This prevents the "snap back" effect
+      const queryKey = [`/api/stores/${myStoreId}/items`]; // Matches useGetItems structure from src/api/item.ts
+
+      queryClient.setQueryData(queryKey, (oldData) => {
+        if (!oldData) return oldData;
+
+        // Items are in oldData.data.data or oldData.data
+        const rawData = oldData.data?.data || oldData.data || [];
+        const isArray = Array.isArray(rawData);
+        const currentItems = isArray ? rawData : (rawData.content || []);
+
+        // Find items NOT in current category to keep them as is
+        const otherCategoryItems = currentItems.filter(item => {
+          const catId = item.itemCategoryId ?? item.categoryId ?? item.item_category_id ?? item.category_id;
+          return Number(catId) !== selectedCategoryId;
+        });
+
+        // Map the new sorted data from drag end to the server format
+        const reorderedItems = data.map((item, index) => {
+          const originalItem = currentItems.find(i => i.id === item.id);
+          return {
+            ...originalItem,
+            itemOrder: index
+          };
+        });
+
+        const updatedData = [...otherCategoryItems, ...reorderedItems];
+
+        if (isArray) {
+          return { ...oldData, data: { ...oldData.data, data: updatedData } };
+        } else {
+          return { ...oldData, data: { ...oldData.data, content: updatedData } };
+        }
+      });
+
+      // 2. Prepare updates for API
+      const updates = data.map((item, index) => ({
+        itemId: item.id,
+        itemOrder: index
+      }));
+
+      // 3. Batch update to backend in parallel
+      const tokenData = await getToken();
+      const token = tokenData?.accessToken;
+      const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+
+      await Promise.all(updates.map(update => {
+        const url = `${baseUrl}/api/items/${update.itemId}`;
+        const formData = new FormData();
+        const requestData = { itemOrder: update.itemOrder };
+
+        formData.append('request', {
+          string: JSON.stringify(requestData),
+          type: 'application/json',
+          name: 'request'
+        });
+        formData.append('image', "");
+
+        return fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+          },
+          body: formData,
+        });
+      }));
+
+      console.log("✅ [Menu Drag] Order persisted successfully");
+      // Optional: final refetch to stay 100% in sync
+      refetchItems();
+    } catch (error) {
+      console.error("[Menu Drag Error]", error);
+      Alert.alert("오류", "메뉴 순서 변경에 실패했습니다.");
+      refetchItems(); // Restore from server on error
+    }
+  };
+
 
   // # UI Logic Helpers
   const openBasicEditModal = () => {
@@ -852,7 +988,6 @@ export default function StoreScreen() {
         setOperatingHours(editHoursData);
         setHoursModalVisible(false);
         Alert.alert("성공", "영업시간이 저장되었습니다.");
-        refetchStore();
       } else {
         const errText = await response.text();
         console.error("비정상 응답:", errText);
@@ -870,26 +1005,7 @@ export default function StoreScreen() {
     setEditHoursData(newHours);
   };
 
-  const pickImage = async () => {
-    // 권한 요청
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('권한 필요', '사진을 선택하려면 갤러리 접근 권한이 필요합니다.');
-      return;
-    }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [17, 10],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      const selectedAsset = result.assets[0];
-      setEditBasicData(prev => ({ ...prev, bannerImage: selectedAsset.uri }));
-    }
-  };
 
   const handleMockAction = (msg) => Alert.alert("알림", msg);
 
@@ -962,8 +1078,8 @@ export default function StoreScreen() {
         });
         await manualStoreUpdate(formData);
         Alert.alert("성공", "휴무일 설정이 해제되었습니다.");
+        setSelectedHolidays([]);
         setHolidayModalVisible(false);
-        refetchStore();
         return;
       }
 
@@ -982,8 +1098,8 @@ export default function StoreScreen() {
 
       await manualStoreUpdate(formData);
       Alert.alert("성공", "휴무일 설정이 저장되었습니다.");
+      setSelectedHolidays(sortedDates);
       setHolidayModalVisible(false);
-      refetchStore();
     } catch (error) {
       console.error("휴무일 저장 실패", error);
       Alert.alert("실패", "휴무일 저장 중 오류가 발생했습니다.");
@@ -1003,7 +1119,6 @@ export default function StoreScreen() {
       });
       await manualStoreUpdate(formData);
       // 성공 메세지는 생략하거나 짧게 토스트 처리 (여기선 생략)
-      refetchStore();
     } catch (error) {
       console.error("영업 일시 중지 변경 실패", error);
       setIsPaused(!newValue);
@@ -1094,12 +1209,53 @@ export default function StoreScreen() {
       badge: item.badge,
       isSoldOut: item.isSoldOut,
       isHidden: item.isHidden,
-      isHidden: item.isHidden,
       image: item.image, // Fixed: use item.image instead of item.imageUrl
       categoryId: item.categoryId // Load preserved ID
     });
     setMenuModalVisible(true);
     setIsCategoryDropdownOpen(false);
+  };
+
+  // # Image Picker Logic
+  const pickImage = async () => {
+    // 1. 권한 요청
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 부족', '사진 라이브러리 접근 권한이 필요합니다.');
+      return;
+    }
+
+    // 2. 개수 제한 확인 (최대 3장)
+    if (editBasicData.bannerImages && editBasicData.bannerImages.length >= 3) {
+      Alert.alert('알림', '배너 이미지는 최대 3장까지 등록할 수 있습니다.');
+      return;
+    }
+
+    // 3. 이미지 선택
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1.7, 1], // 배너 비율 유지
+      quality: 0.8, // 용량 최적화 (413 에러 방지)
+      maxWidth: 1024, // 가로 해상도 제한
+    });
+
+    if (!result.canceled) {
+      const asset = result.assets[0];
+
+      // 4. 용량 제한 확인 (10MB)
+      if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
+        Alert.alert('용량 초과', '이미지 파일 크기는 10MB 이하여야 합니다.');
+        return;
+      }
+
+      // 5. 상태 업데이트 (배열에 추가)
+      const newImageUri = asset.uri;
+      setEditBasicData(prev => ({
+        ...prev,
+        bannerImages: [...(prev.bannerImages || []), newImageUri]
+      }));
+    }
   };
 
   const pickMenuImage = async () => {
@@ -1154,10 +1310,9 @@ export default function StoreScreen() {
   }
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-
+        <View style={{ paddingHorizontal: rs(20) }}>
           {/* Top Logo */}
           <Image source={require('@/assets/images/shopowner/logo2.png')} style={styles.logo} resizeMode="contain" />
 
@@ -1172,9 +1327,11 @@ export default function StoreScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
 
-          {/* ==================== 매장 정보 탭 ==================== */}
-          {activeTab === 'info' ? (
+        {/* ==================== 매장 정보 탭 ==================== */}
+        {activeTab === 'info' ? (
+          <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={{ gap: rs(20) }}>
               <View style={styles.infoCard}>
                 <View style={styles.cardHeader}>
@@ -1186,33 +1343,46 @@ export default function StoreScreen() {
                     <Text style={styles.editButtonText}>수정</Text>
                   </TouchableOpacity>
                 </View>
-                <InfoRow icon="storefront" label="가게명" content={<Text style={styles.bodyText}>{`${storeInfo.name} ${storeInfo.branch || ''}`.trim() || "이름 없음"}</Text>} />
+                <InfoRow icon="storefront" label="가게명"
+                  content={
+                    (`${storeInfo.name} ${storeInfo.branch || ''}`.trim())
+                      ? <Text style={styles.bodyText}>{`${storeInfo.name} ${storeInfo.branch || ''}`.trim()}</Text>
+                      : <Text style={styles.placeholderText}>정보 없음</Text>
+                  }
+                />
                 <InfoRow icon="grid" label="가게 종류" content={<View style={styles.tagContainer}>{storeInfo.categories.length > 0 ? storeInfo.categories.map((cat, i) => <Tag key={i} text={cat} />) : <Text style={styles.placeholderText}>정보 없음</Text>}</View>} />
                 <InfoRow icon="sparkles" label="가게 분위기" content={<View style={styles.tagContainer}>{storeInfo.vibes.length > 0 ? storeInfo.vibes.map((v, i) => <Tag key={i} text={v} />) : <Text style={styles.placeholderText}>정보 없음</Text>}</View>} />
                 <InfoRow icon="information-circle" label="가게 소개" content={storeInfo.intro ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{storeInfo.intro}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
-                <InfoRow
-                  icon="image"
-                  label="가게 이미지"
-                  content={
-                    <View style={styles.imageDisplayRow}>
-                      {/* 1. Store Logo (Square) - Placeholder if not available */}
-                      <View style={{ width: rs(90), height: rs(90), backgroundColor: '#ECECECCC', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#AAAAAA' }}>
-                        {/* Assuming myStore.imageUrls[0] might be logo, or just placeholder for now as per user request structure */}
-                        <Ionicons name="image" size={rs(24)} color="#AAAAAA" />
-                        <Text style={{ color: '#AAAAAA', fontSize: rs(10), marginTop: rs(4) }}>가게 이미지</Text>
+                <View style={[styles.rowSection, { flexDirection: 'column', alignItems: 'flex-start' }]}>
+                  <View style={styles.fixedLabel}>
+                    <Ionicons name="image" size={rs(12)} color="#828282" />
+                    <Text style={styles.labelText}>가게 배너 이미지</Text>
+                  </View>
+                  <View style={{ width: '100%', marginTop: rs(10) }}>
+                    {/* Banner Image Slider (1.7:1) */}
+                    {storeInfo.bannerImages && storeInfo.bannerImages.length > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: rs(10), paddingRight: rs(10) }}
+                      >
+                        {storeInfo.bannerImages.map((imgUri, index) => (
+                          <TouchableOpacity key={index} onPress={() => setIsFullScreenBannerVisible(true)} activeOpacity={0.9}>
+                            <Image
+                              source={{ uri: imgUri }}
+                              style={{ width: rs(153), height: rs(90), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }}
+                              resizeMode="cover"
+                            />
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      <View style={{ width: rs(153), height: rs(90), backgroundColor: '#F5F5F5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EEEEEE', borderStyle: 'dashed' }}>
+                        <Text style={{ color: '#AAAAAA', fontSize: rs(11), fontFamily: 'Pretendard' }}>배너를 추가해주세요</Text>
                       </View>
-
-                      {/* 2. Banner Image (1.7:1) */}
-                      {storeInfo.bannerImage ? (
-                        <Image source={{ uri: storeInfo.bannerImage }} style={{ width: rs(153), height: rs(90), borderRadius: rs(8) }} resizeMode="cover" />
-                      ) : (
-                        <View style={{ width: rs(153), height: rs(90), backgroundColor: '#ECECECCC', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#AAAAAA' }}>
-                          <Text style={{ color: '#AAAAAA', fontSize: rs(12) }}>배너 없음</Text>
-                        </View>
-                      )}
-                    </View>
-                  }
-                />
+                    )}
+                  </View>
+                </View>
                 <InfoRow icon="location" label="주소" content={<View style={{ marginTop: rs(2) }}>{storeInfo.address ? (<><Text style={styles.bodyText}>{storeInfo.address}</Text>{storeInfo.detailAddress ? <Text style={[styles.bodyText, { color: '#828282', marginTop: rs(2) }]}>{storeInfo.detailAddress}</Text> : null}</>) : <Text style={[styles.placeholderText, { marginTop: 0 }]}>정보 없음</Text>}</View>} />
                 <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{formatPhoneNumber(storeInfo.phone)}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} style={{ marginBottom: 0 }} />
               </View>
@@ -1316,177 +1486,184 @@ export default function StoreScreen() {
               </View>
               <View style={{ height: rs(20) }} />
             </View>
-          ) : (
-            /* ==================== 메뉴 관리 탭 ==================== */
-            <View style={{ flex: 1 }}>
-              <View style={styles.categoryScrollContainer}>
-                <View style={[styles.categoryTabsContainer, { flex: 1 }]}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: rs(20) }}>
-                    {categories.map((category) => (
-                      <TouchableOpacity
-                        key={category.id}
-                        style={[styles.categoryTab, selectedCategoryId === category.id ? styles.categoryTabSelected : styles.categoryTabUnselected]}
-                        onPress={() => setSelectedCategoryId(category.id)}
-                      >
-                        <Text style={[styles.categoryText, selectedCategoryId === category.id ? styles.categoryTextSelected : styles.categoryTextUnselected]}>{category.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-                <TouchableOpacity style={styles.addCategoryBtn} onPress={() => setCategoryModalVisible(true)}>
-                  <View style={styles.addCategoryIcon}><Ionicons name="add" size={rs(14)} color="#34B262" /></View>
-                  <Text style={styles.addCategoryText}>메뉴 카테고리</Text>
-                </TouchableOpacity>
+          </ScrollView>
+        ) : (
+          /* ==================== 메뉴 관리 탭 ==================== */
+          <View style={{ flex: 1, paddingHorizontal: rs(20) }}>
+            {/* 고정된 카테고리 헤더 */}
+            <View style={styles.categoryScrollContainer}>
+              <View style={[styles.categoryTabsContainer, { flex: 1 }]}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: rs(20) }}>
+                  {categories.map((category) => (
+                    <TouchableOpacity
+                      key={category.id}
+                      style={[styles.categoryTab, selectedCategoryId === category.id ? styles.categoryTabSelected : styles.categoryTabUnselected]}
+                      onPress={() => setSelectedCategoryId(category.id)}
+                    >
+                      <Text style={[styles.categoryText, selectedCategoryId === category.id ? styles.categoryTextSelected : styles.categoryTextUnselected]}>{category.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
+              <TouchableOpacity style={styles.addCategoryBtn} onPress={() => setCategoryModalVisible(true)}>
+                <View style={styles.addCategoryIcon}><Ionicons name="add" size={rs(14)} color="#34B262" /></View>
+                <Text style={styles.addCategoryText}>메뉴 카테고리</Text>
+              </TouchableOpacity>
+            </View>
 
-              {/* 메뉴 리스트 영역 */}
-              {isItemsLoading ? (
+            {/* 메뉴 리스트 영역 */}
+            {isItemsLoading ? (
+              <View style={{ flex: 1 }}>
                 <ActivityIndicator size="small" color="#34B262" style={{ marginVertical: 20 }} />
-              ) : menuList.length > 0 ? (
-                <View style={styles.menuListContainer}>
-                  {menuList.map((item) => (
-                    <View key={item.id} style={styles.menuCard}>
-                      <View style={styles.dragHandle}>
-                        <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
-                        <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
-                        <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
+              </View>
+            ) : (
+              <DraggableFlatList
+                data={menuList}
+                onDragEnd={handleMenuDragEnd}
+                keyExtractor={(item) => item.id.toString()}
+                ListEmptyComponent={
+                  <View style={{ height: rs(200), justifyContent: 'center', alignItems: 'center', gap: rs(10) }}>
+                    <Ionicons name="restaurant-outline" size={rs(40)} color="#ccc" />
+                    <Text style={{ color: '#ccc' }}>등록된 메뉴가 없습니다.</Text>
+                  </View>
+                }
+                contentContainerStyle={styles.menuListContainer}
+                renderItem={({ item, drag, isActive }) => (
+                  <View style={[styles.menuCard, isActive && { opacity: 0.8, elevation: 8 }]}>
+                    <TouchableOpacity onLongPress={drag} activeOpacity={0.8} style={styles.dragHandle}>
+                      <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
+                      <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
+                      <View style={styles.dragDotRow}><View style={styles.dragDot} /><View style={styles.dragDot} /></View>
+                    </TouchableOpacity>
+                    <View style={[styles.menuContent, item.isSoldOut && { opacity: 0.5 }]}>
+                      <View style={styles.menuImageContainer}>
+                        {item.image ? (
+                          <Image source={{ uri: item.image }} style={styles.menuImage} resizeMode="cover" />
+                        ) : (
+                          <View style={styles.menuImagePlaceholder} />
+                        )}
+                        {item.isSoldOut && <View style={styles.soldOutOverlay} />}
+                        {item.isRepresentative && <View style={styles.imageStarBadge}><Ionicons name="star" size={rs(8)} color="white" /></View>}
                       </View>
-                      <View style={[styles.menuContent, item.isSoldOut && { opacity: 0.5 }]}>
-                        <View style={styles.menuImageContainer}>
-                          {item.image ? (
-                            <Image source={{ uri: item.image }} style={styles.menuImage} resizeMode="cover" />
-                          ) : (
-                            <View style={styles.menuImagePlaceholder} />
-                          )}
-                          {item.isSoldOut && <View style={styles.soldOutOverlay} />}
-                          {item.isRepresentative && <View style={styles.imageStarBadge}><Ionicons name="star" size={rs(8)} color="white" /></View>}
+                      <View style={styles.menuInfo}>
+                        <View style={styles.menuTitleRow}>
+                          <Text style={styles.menuName}>{item.name}</Text>
+                          {item.badge && <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{item.badge}</Text></View>}
                         </View>
-                        <View style={styles.menuInfo}>
-                          <View style={styles.menuTitleRow}>
-                            <Text style={styles.menuName}>{item.name}</Text>
-                            {item.badge && <View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{item.badge}</Text></View>}
-                          </View>
-                          <Text style={styles.menuPrice}>{Number(item.price).toLocaleString()}원</Text>
-                          <Text style={styles.menuDesc} numberOfLines={1}>{item.desc}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.menuActions}>
-                        {/* 대표메뉴 토글 */}
-                        <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isRecommended', !item.isRepresentative)}>
-                          <View style={[styles.actionCircle, item.isRepresentative ? { backgroundColor: '#FFFACA' } : { backgroundColor: '#F5F5F5' }]}>
-                            <Ionicons name="star" size={rs(12)} color={item.isRepresentative ? "#EAB308" : "#DADADA"} />
-                          </View>
-                        </TouchableOpacity>
-                        {/* 품절 토글 */}
-                        <View style={styles.soldOutContainer}>
-                          <Text style={styles.soldOutLabel}>품절</Text>
-                          <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isSoldOut', !item.isSoldOut)}>
-                            <View style={[styles.soldOutSwitch, item.isSoldOut ? styles.soldOutOn : styles.soldOutOff]}><View style={styles.soldOutKnob} /></View>
-                          </TouchableOpacity>
-                        </View>
-                        {/* 수정 */}
-                        <TouchableOpacity onPress={() => openEditMenuModal(item)}>
-                          <Ionicons name="pencil" size={rs(16)} color="#828282" />
-                        </TouchableOpacity>
+                        <Text style={styles.menuPrice}>{Number(item.price).toLocaleString()}원</Text>
+                        <Text style={styles.menuDesc} numberOfLines={1}>{item.desc}</Text>
                       </View>
                     </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={{ height: rs(200), justifyContent: 'center', alignItems: 'center', gap: rs(10) }}>
-                  <Ionicons name="restaurant-outline" size={rs(40)} color="#ccc" />
-                  <Text style={{ color: '#ccc' }}>등록된 메뉴가 없습니다.</Text>
-                </View>
-              )}
+                    <View style={styles.menuActions}>
+                      {/* 대표메뉴 토글 */}
+                      <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isRecommended', !item.isRepresentative)}>
+                        <View style={[styles.actionCircle, item.isRepresentative ? { backgroundColor: '#FFFACA' } : { backgroundColor: '#F5F5F5' }]}>
+                          <Ionicons name="star" size={rs(12)} color={item.isRepresentative ? "#EAB308" : "#DADADA"} />
+                        </View>
+                      </TouchableOpacity>
+                      {/* 품절 토글 */}
+                      <View style={styles.soldOutContainer}>
+                        <Text style={styles.soldOutLabel}>품절</Text>
+                        <TouchableOpacity onPress={() => handleQuickUpdate(item, 'isSoldOut', !item.isSoldOut)}>
+                          <View style={[styles.soldOutSwitch, item.isSoldOut ? styles.soldOutOn : styles.soldOutOff]}><View style={styles.soldOutKnob} /></View>
+                        </TouchableOpacity>
+                      </View>
+                      {/* 수정 */}
+                      <TouchableOpacity onPress={() => openEditMenuModal(item)}>
+                        <Ionicons name="pencil" size={rs(16)} color="#828282" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              />
+            )}
 
-              {/* + 메뉴 추가하기 버튼 (Floating) */}
-              <View style={{ height: rs(80) }} />
+            {/* + 메뉴 추가하기 버튼 (Floating) */}
+            <View style={{ height: rs(80) }} />
 
-              {/* 카테고리 관리 모달 (UI Only) */}
-              <Modal transparent={true} visible={categoryModalVisible} animationType="fade" onRequestClose={() => setCategoryModalVisible(false)}>
-                <TouchableOpacity style={styles.catModalOverlay} activeOpacity={1} onPress={() => setCategoryModalVisible(false)}>
-                  <View style={[styles.catModalContent, { width: '80%', maxHeight: rs(400) }]}>
-                    <ScrollView style={{ maxHeight: rs(300) }} nestedScrollEnabled={true}>
-                      {categories.map((cat, idx) => (
-                        <View
-                          key={idx}
+            {/* 카테고리 관리 모달 (UI Only) */}
+            <Modal transparent={true} visible={categoryModalVisible} animationType="fade" onRequestClose={() => setCategoryModalVisible(false)}>
+              <TouchableOpacity style={styles.catModalOverlay} activeOpacity={1} onPress={() => setCategoryModalVisible(false)}>
+                <View style={[styles.catModalContent, { width: '80%', maxHeight: rs(400) }]}>
+                  <ScrollView style={{ maxHeight: rs(300) }} nestedScrollEnabled={true}>
+                    {categories.map((cat, idx) => (
+                      <View
+                        key={idx}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          paddingRight: rs(10),
+                          borderRadius: rs(8),
+                          marginVertical: rs(2),
+                          marginHorizontal: rs(8)
+                        }}
+                      >
+                        <TouchableOpacity
                           style={{
+                            flex: 1,
                             flexDirection: 'row',
                             alignItems: 'center',
-                            justifyContent: 'space-between',
-                            paddingRight: rs(10),
-                            borderRadius: rs(8),
-                            marginVertical: rs(2),
-                            marginHorizontal: rs(8)
+                            paddingHorizontal: rs(12),
+                            paddingVertical: rs(10),
+                            backgroundColor: selectedCategoryId === cat.id ? '#F6A823' : 'transparent',
+                            borderRadius: rs(8)
+                          }}
+                          onPress={() => {
+                            setSelectedCategoryId(cat.id);
+                            setCategoryModalVisible(false);
                           }}
                         >
-                          <TouchableOpacity
-                            style={{
-                              flex: 1,
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              paddingHorizontal: rs(12),
-                              paddingVertical: rs(10),
-                              backgroundColor: selectedCategoryId === cat.id ? '#F6A823' : 'transparent',
-                              borderRadius: rs(8)
-                            }}
-                            onPress={() => {
-                              setSelectedCategoryId(cat.id);
-                              setCategoryModalVisible(false);
-                            }}
-                          >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
-                              {selectedCategoryId === cat.id && <Ionicons name="checkmark" size={rs(14)} color="white" />}
-                              <Text style={[styles.dropdownItemText, selectedCategoryId === cat.id && styles.dropdownItemTextChecked]}>{cat.name}</Text>
-                            </View>
-                          </TouchableOpacity>
-
-                          {/* Delete Button */}
-                          <TouchableOpacity
-                            style={{ padding: rs(10), justifyContent: 'center', alignItems: 'center' }}
-                            onPress={() => handleDeleteCategory(cat)}
-                          >
-                            <Ionicons name="trash-outline" size={rs(16)} color="#828282" />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-
-                      {/* 인라인 카테고리 추가 입력 (모달용) */}
-                      {isAddingCategory ? (
-                        <View style={{ paddingHorizontal: rs(10), paddingVertical: rs(8) }}>
-                          <View style={styles.newCategoryInputBox}>
-                            <TextInput
-                              style={styles.newCategoryInput}
-                              placeholder="새 카테고리 입력"
-                              value={newCategoryName}
-                              onChangeText={setNewCategoryName}
-                              maxLength={20}
-                              autoFocus={true}
-                              onSubmitEditing={handleCreateCategory}
-                            />
-                            <Text style={styles.charCount}>{newCategoryName.length}/20</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
+                            {selectedCategoryId === cat.id && <Ionicons name="checkmark" size={rs(14)} color="white" />}
+                            <Text style={[styles.dropdownItemText, selectedCategoryId === cat.id && styles.dropdownItemTextChecked]}>{cat.name}</Text>
                           </View>
-                        </View>
-                      ) : null}
-                    </ScrollView>
+                        </TouchableOpacity>
 
-                    {/* + 카테고리 추가 버튼 (모달용) */}
-                    {!isAddingCategory && (
-                      <TouchableOpacity
-                        style={[styles.dropdownItem, { justifyContent: 'center' }]}
-                        onPress={() => setIsAddingCategory(true)}
-                      >
-                        <Ionicons name="add" size={rs(14)} color="#828282" />
-                        <Text style={{ color: '#828282', fontSize: rs(11), marginLeft: rs(4) }}>카테고리 추가</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              </Modal>
-            </View >
-          )
-          }
-        </ScrollView >
+                        {/* Delete Button */}
+                        <TouchableOpacity
+                          style={{ padding: rs(10), justifyContent: 'center', alignItems: 'center' }}
+                          onPress={() => handleDeleteCategory(cat)}
+                        >
+                          <Ionicons name="trash-outline" size={rs(16)} color="#828282" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+
+                    {/* 인라인 카테고리 추가 입력 (모달용) */}
+                    {isAddingCategory ? (
+                      <View style={{ paddingHorizontal: rs(10), paddingVertical: rs(8) }}>
+                        <View style={styles.newCategoryInputBox}>
+                          <TextInput
+                            style={styles.newCategoryInput}
+                            placeholder="새 카테고리 입력"
+                            value={newCategoryName}
+                            onChangeText={setNewCategoryName}
+                            maxLength={20}
+                            autoFocus={true}
+                            onSubmitEditing={handleCreateCategory}
+                          />
+                          <Text style={styles.charCount}>{newCategoryName.length}/20</Text>
+                        </View>
+                      </View>
+                    ) : null}
+                  </ScrollView>
+
+                  {/* + 카테고리 추가 버튼 (모달용) */}
+                  {!isAddingCategory && (
+                    <TouchableOpacity
+                      style={[styles.dropdownItem, { justifyContent: 'center' }]}
+                      onPress={() => setIsAddingCategory(true)}
+                    >
+                      <Ionicons name="add" size={rs(14)} color="#828282" />
+                      <Text style={{ color: '#828282', fontSize: rs(11), marginLeft: rs(4) }}>카테고리 추가</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </Modal>
+          </View >
+        )}
 
         {/* =================================================================
           # Modal: Menu Add/Edit (메뉴 추가/수정) - API 연결됨
@@ -1779,27 +1956,47 @@ export default function StoreScreen() {
                 <EditSection icon="grid" label="가게 종류"><View style={styles.selectionGrid}>{ALL_CATEGORIES.map((cat) => (<TouchableOpacity key={cat} style={[styles.selectChip, editBasicData.categories.includes(cat) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(cat, 'categories')}><Text style={[styles.chipText, editBasicData.categories.includes(cat) ? styles.chipTextActive : styles.chipTextInactive]}>{cat}</Text></TouchableOpacity>))}</View></EditSection>
                 <EditSection icon="sparkles" label="가게 분위기"><View style={styles.selectionGrid}>{ALL_VIBES.map((vibe) => (<TouchableOpacity key={vibe} style={[styles.selectChip, editBasicData.vibes.includes(vibe) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(vibe, 'vibes')}><Text style={[styles.chipText, editBasicData.vibes.includes(vibe) ? styles.chipTextActive : styles.chipTextInactive]}>{vibe}</Text></TouchableOpacity>))}</View></EditSection>
                 <EditSection icon="information-circle" label="가게 소개"><View style={styles.inputWrapper}><TextInput style={styles.textInput} placeholder="가게를 소개하는 글을 적어주세요" value={editBasicData.intro} onChangeText={(text) => setEditBasicData({ ...editBasicData, intro: text })} /><Text style={styles.charCount}>{editBasicData.intro.length}/50</Text></View></EditSection>
-                <EditSection icon="image" label="가게 이미지">
-                  <View style={[styles.imageDisplayRow, { justifyContent: 'flex-start' }]}>
-                    {/* Banner Image Upload Box - Right Aligned in Row context (but here left in wrapper)
-                      User requested: "기본 정보 수정 팝업창에서 배너 그리고 사진 박스?를 가게 이미지 오른쪽 정렬로 오게 해줘" 
-                      and "이미지 박스 안에 배너 추가(텍스트 위에 카메라 아이콘 추가해줘)텍스트 적어줘" 
-                  */}
-                    <TouchableOpacity style={styles.uploadBoxWrapper} onPress={pickImage}>
-                      <View style={[styles.uploadBox, { width: rs(153), height: rs(90), alignSelf: 'flex-start' }]}>
-                        {editBasicData.bannerImage ? (
-                          <Image source={{ uri: editBasicData.bannerImage }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
-                        ) : (
-                          <View style={{ alignItems: 'center', justifyContent: 'center', gap: rs(4) }}>
-                            <Ionicons name="camera" size={rs(24)} color="#5c5757ff" />
-                            <Text style={styles.uploadPlaceholder}>배너 추가</Text>
+                <EditSection icon="image" label="가게 이미지(최대 3장)">
+                  <View style={{ gap: rs(10), width: '100%' }}>
+                    {/* 1. 이미지 슬라이더 (1.7:1 비율) */}
+                    {editBasicData.bannerImages && editBasicData.bannerImages.length > 0 && (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: rs(10), paddingRight: rs(10), paddingTop: rs(8) }}
+                      >
+                        {editBasicData.bannerImages.map((imgUri, index) => (
+                          <View key={index} style={{ width: rs(153), height: rs(90) }}>
+                            <Image source={{ uri: imgUri }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
+                            <TouchableOpacity
+                              style={{ position: 'absolute', top: rs(-8), right: rs(-8), backgroundColor: 'white', borderRadius: rs(10) }}
+                              onPress={() => {
+                                const newImages = [...editBasicData.bannerImages];
+                                newImages.splice(index, 1);
+                                setEditBasicData({ ...editBasicData, bannerImages: newImages });
+                              }}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                              <Ionicons name="close-circle" size={rs(20)} color="#FF3E41" />
+                            </TouchableOpacity>
                           </View>
-                        )}
-                      </View>
+                        ))}
+                      </ScrollView>
+                    )}
+
+                    {/* 2. 와이드 추가 버튼 */}
+                    <TouchableOpacity
+                      style={[styles.editBannerAddBtn, editBasicData.bannerImages?.length >= 3 && { opacity: 0.5 }]}
+                      onPress={pickImage}
+                      activeOpacity={0.8}
+                      disabled={editBasicData.bannerImages?.length >= 3}
+                    >
+                      <Ionicons name="camera" size={rs(16)} color="#828282" />
+                      <Text style={styles.editBannerAddText}>배너 추가하기({editBasicData.bannerImages?.length || 0}/3)</Text>
                     </TouchableOpacity>
                   </View>
                 </EditSection>
-                <EditSection icon="location" label="주소"><TouchableOpacity style={[styles.inputWrapper, { marginBottom: rs(8) }]} onPress={() => handleMockAction("주소 검색")}><Text style={[styles.textInput, { color: editBasicData.address ? 'black' : '#ccc' }]}>{editBasicData.address || "건물명, 도로명 또는 지번 검색"}</Text><Ionicons name="search" size={rs(16)} color="#ccc" style={{ marginRight: rs(10) }} /></TouchableOpacity><View style={[styles.inputWrapper, { backgroundColor: 'rgba(218, 218, 218, 0.50)' }]}><TextInput style={styles.textInput} placeholder="상세주소를 입력해주세요." value={editBasicData.detailAddress} onChangeText={(text) => setEditBasicData({ ...editBasicData, detailAddress: text })} /></View></EditSection>
+                <EditSection icon="location" label="주소"><TouchableOpacity style={[styles.inputWrapper, { marginBottom: rs(8) }]} onPress={() => handleMockAction("주소 검색")}><Text style={[styles.textInput, { color: editBasicData.address ? 'black' : '#ccc' }]}>{editBasicData.address || "건물명, 도로명 또는 지번 검색"}</Text><Ionicons name="search" size={rs(16)} color="#4e4949ff" style={{ marginRight: rs(10) }} /></TouchableOpacity><View style={[styles.inputWrapper, { backgroundColor: 'rgba(218, 218, 218, 0.50)' }]}><TextInput style={styles.textInput} placeholder="상세주소를 입력해주세요." value={editBasicData.detailAddress} onChangeText={(text) => setEditBasicData({ ...editBasicData, detailAddress: text })} /></View></EditSection>
                 <EditSection icon="call" label="전화번호">
                   <View style={styles.inputWrapper}>
                     <TextInput
@@ -1965,17 +2162,36 @@ export default function StoreScreen() {
           </KeyboardAvoidingView>
         </Modal>
 
-      </SafeAreaView >
-      {/* Floating Action Button (Outside ScrollView) */}
-      {activeTab === 'management' && (
-        <View style={styles.floatingButtonArea}>
-          <TouchableOpacity style={styles.floatingAddBtn} onPress={openAddMenuModal} activeOpacity={0.8}>
-            <Ionicons name="add" size={rs(20)} color="white" />
-            <Text style={styles.floatingAddBtnText}>메뉴 추가하기</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </>
+        {/* Full Screen Banner Modal with Slider */}
+        <Modal visible={isFullScreenBannerVisible} transparent={true} animationType="fade" onRequestClose={() => setIsFullScreenBannerVisible(false)}>
+          <View style={{ flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }}>
+            <TouchableOpacity style={{ position: 'absolute', top: rs(40), right: rs(20), zIndex: 1 }} onPress={() => setIsFullScreenBannerVisible(false)}>
+              <Ionicons name="close" size={rs(30)} color="white" />
+            </TouchableOpacity>
+
+            {storeInfo.bannerImages && storeInfo.bannerImages.length > 0 ? (
+              <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ width: Dimensions.get('window').width, height: '100%' }}>
+                {storeInfo.bannerImages.map((imgUri, index) => (
+                  <View key={index} style={{ width: Dimensions.get('window').width, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                    <Image source={{ uri: imgUri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+                  </View>
+                ))}
+              </ScrollView>
+            ) : null}
+          </View>
+        </Modal>
+
+        {/* Floating Action Button (Outside ScrollView) */}
+        {activeTab === 'management' && (
+          <View style={styles.floatingButtonArea}>
+            <TouchableOpacity style={styles.floatingAddBtn} onPress={openAddMenuModal} activeOpacity={0.8}>
+              <Ionicons name="add" size={rs(20)} color="white" />
+              <Text style={styles.floatingAddBtnText}>메뉴 추가하기</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -2035,9 +2251,7 @@ const styles = StyleSheet.create({
   modalContainer: { width: rs(335), height: rs(650), backgroundColor: 'white', borderRadius: rs(8), overflow: 'hidden' },
   modalScroll: { padding: rs(20) },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: rs(20) },
-
   menuModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: rs(20), marginBottom: rs(5), paddingBottom: rs(15), paddingHorizontal: rs(20), borderBottomWidth: 1, borderBottomColor: '#eee', },
-
   modalTitle: { fontSize: rs(14), fontWeight: '700', fontFamily: 'Pretendard' },
   saveButton: { width: rs(41), height: rs(23), backgroundColor: '#34B262', borderRadius: rs(12), justifyContent: 'center', alignItems: 'center' },
   saveButtonText: { color: 'white', fontSize: rs(11), fontWeight: '700', fontFamily: 'Pretendard' },
@@ -2120,8 +2334,8 @@ const styles = StyleSheet.create({
   catModalTextWhite: { color: 'white', fontSize: rs(11), fontFamily: 'Inter', fontWeight: '600' },
   catModalTextBlack: { color: 'black', fontSize: rs(11), fontFamily: 'Inter', fontWeight: '400' },
   catModalTextGray: { color: '#828282', fontSize: rs(10), fontFamily: 'Inter', fontWeight: '400' },
-  menuListContainer: { gap: rs(12) },
-  menuCard: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: rs(11), paddingVertical: rs(22), backgroundColor: 'white', borderRadius: rs(12), shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, elevation: 2 },
+  menuListContainer: { paddingBottom: rs(80) },
+  menuCard: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: rs(11), paddingVertical: rs(22), backgroundColor: 'white', borderRadius: rs(12), shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, elevation: 2, marginBottom: rs(12) },
   dragHandle: { width: rs(20), alignItems: 'center', justifyContent: 'center', gap: rs(3), marginRight: rs(10) },
   dragDotRow: { flexDirection: 'row', gap: rs(3) },
   dragDot: { width: rs(3), height: rs(3), borderRadius: rs(1.5), backgroundColor: '#757575' },
@@ -2188,4 +2402,6 @@ const styles = StyleSheet.create({
   dropdownItemTextChecked: { color: 'white', fontWeight: '700' },
   newCategoryInputBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#DADADA', borderRadius: rs(8), paddingHorizontal: rs(10), height: rs(36), backgroundColor: 'white' },
   newCategoryInput: { flex: 1, fontSize: rs(11), color: 'black', padding: 0, fontFamily: 'Pretendard' },
+  editBannerAddBtn: { width: '100%', height: rs(32), backgroundColor: '#F0F0F0', borderRadius: rs(8), flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(6), marginTop: rs(5) },
+  editBannerAddText: { fontSize: rs(11), color: '#828282', fontWeight: '500', fontFamily: 'Pretendard' },
 });

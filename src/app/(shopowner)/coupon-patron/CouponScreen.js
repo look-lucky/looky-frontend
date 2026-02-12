@@ -32,6 +32,19 @@ const formatDate = (dateString) => {
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}까지`;
 };
 
+const formatDateTimeFull = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? '오후' : '오전';
+    hours = hours % 12 || 12;
+    return `${year}.${month}.${day} ${ampm} ${hours}:${minutes}`;
+};
+
 export default function CouponScreen({ navigation, route }) {
     const [activeTab, setActiveTab] = useState('coupon');
 
@@ -54,7 +67,6 @@ export default function CouponScreen({ navigation, route }) {
     const [couponName, setCouponName] = useState('');
     const [benefitValue, setBenefitValue] = useState('');
     const [minOrderAmount, setMinOrderAmount] = useState('');
-    const [description, setDescription] = useState('');
     const [verificationStatus, setVerificationStatus] = useState('idle'); // idle, valid, expired, invalid
     const [isCouponUsed, setIsCouponUsed] = useState(false);
     const [verifiedCouponData, setVerifiedCouponData] = useState(null); // 검증된 쿠폰 정보
@@ -62,13 +74,19 @@ export default function CouponScreen({ navigation, route }) {
     // [새 쿠폰 - 수량 & 기간]
     const [totalQuantity, setTotalQuantity] = useState('');
     const [isUnlimited, setIsUnlimited] = useState(false);
-    const [validityType, setValidityType] = useState('today'); // today, weekend, 7days, 30days, custom
-    const [isValidityDropdownOpen, setIsValidityDropdownOpen] = useState(false);
+    const [validDays, setValidDays] = useState(0); // 0이면 발급 만료 시간
+    const [customValidDaysInput, setCustomValidDaysInput] = useState('');
+    const [isValidDaysDropdownOpen, setIsValidDaysDropdownOpen] = useState(false);
+    const [isCustomValidDaysMode, setIsCustomValidDaysMode] = useState(false);
     const [isPeriodModalVisible, setIsPeriodModalVisible] = useState(false);
     const [customStartDate, setCustomStartDate] = useState(new Date());
     const [customEndDate, setCustomEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
     const [activePeriodTab, setActivePeriodTab] = useState('start'); // start, end
     const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+    const [isIssuePeriodSelected, setIsIssuePeriodSelected] = useState(false);
+    const [isStartDatePicked, setIsStartDatePicked] = useState(false);
+    const [isEndDatePicked, setIsEndDatePicked] = useState(false);
+    const [isExitConfirmVisible, setIsExitConfirmVisible] = useState(false);
 
     // [헬퍼] 숫자 콤마 포맷팅
     const formatNumber = (val) => {
@@ -90,10 +108,32 @@ export default function CouponScreen({ navigation, route }) {
         return `${m}월 ${d}일 ${ampm} ${h}:${min}`;
     };
 
+    // [헬퍼] 전체 날짜 포맷팅 (YYYY.MM.DD 오전/오후 HH:MM)
+    const formatFullDateKorean = (date) => {
+        if (!date) return '';
+        const y = date.getFullYear();
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const d = date.getDate().toString().padStart(2, '0');
+        let h = date.getHours();
+        const ampm = h >= 12 ? '오후' : '오전';
+        const h12 = h % 12 || 12;
+        const min = date.getMinutes().toString().padStart(2, '0');
+        return `${y}.${m}.${d} ${ampm} ${h12}:${min}`;
+    };
+
     // [헬퍼] 기간 문자열 생성
     const formatPeriodString = (start, end) => {
         if (!start || !end) return '';
-        return `${formatDateKorean(start)} ~ ${formatDateKorean(end)}`;
+        return `${formatFullDateKorean(start)} - ${formatFullDateKorean(end)}`;
+    };
+
+    // [헬퍼] 종료 일시 유효성 검사 및 보정
+    const validateEndDate = (start, end) => {
+        if (end <= start) {
+            const newEnd = new Date(start.getTime() + 1 * 60 * 60 * 1000); // 최소 1시간 뒤
+            return newEnd;
+        }
+        return end;
     };
 
     // [헬퍼] 달력 날짜 생성
@@ -135,25 +175,36 @@ export default function CouponScreen({ navigation, route }) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if (selectedDate < today) return; // 지난 날짜 선택 불가
-
         if (activePeriodTab === 'start') {
+            // [제약] 시작 일시: 오늘부터 다음 달 말일까지만 선택 가능
+            const nextMonthLimit = new Date();
+            nextMonthLimit.setMonth(nextMonthLimit.getMonth() + 2);
+            nextMonthLimit.setDate(0); // 다음 달의 마지막 날
+            nextMonthLimit.setHours(23, 59, 59, 999);
+
+            if (selectedDate < today || selectedDate > nextMonthLimit) return;
+
             // 시간 유지
             selectedDate.setHours(customStartDate.getHours(), customStartDate.getMinutes());
             setCustomStartDate(selectedDate);
-            // 만약 종료일이 시작일보다 앞서게 되면 종료일 자동 조정
-            if (selectedDate >= customEndDate) {
-                const nextEnd = new Date(selectedDate);
-                nextEnd.setDate(nextEnd.getDate() + 7);
-                setCustomEndDate(nextEnd);
-            }
+            setIsStartDatePicked(true);
+
+            // 시작일시 변경 시 종료일시 자동 검증/보정 (가드 제거)
+            setCustomEndDate(validateEndDate(selectedDate, customEndDate));
         } else {
+            // [제약] 종료 일시: 시작 일시보다 이전 날짜 선택 불가
+            // 시작일이 아직 안 골라졌다면 오늘 기준으로 비교
+            const compareDate = isStartDatePicked ? new Date(customStartDate) : today;
+            compareDate.setHours(0, 0, 0, 0);
+
+            if (selectedDate < compareDate) return;
+
             selectedDate.setHours(customEndDate.getHours(), customEndDate.getMinutes());
-            // 시작일보다 이전 날짜 선택 불가
-            const startNoTime = new Date(customStartDate);
-            startNoTime.setHours(0, 0, 0, 0);
-            if (selectedDate < startNoTime) return;
-            setCustomEndDate(selectedDate);
+
+            // 시간까지 포함하여 최종 검증
+            const finalStart = isStartDatePicked ? customStartDate : today;
+            setCustomEndDate(validateEndDate(finalStart, selectedDate));
+            setIsEndDatePicked(true);
         }
     };
 
@@ -170,8 +221,8 @@ export default function CouponScreen({ navigation, route }) {
         setCurrentCalendarDate(nextDate);
     };
 
-    const isStep2Valid = couponName.trim() !== '' && benefitValue.trim() !== '' && minOrderAmount.trim() !== '' && description.trim() !== '';
-    const isStep3Valid = isUnlimited || (totalQuantity.trim() !== '' && !isNaN(totalQuantity.replace(/,/g, '')));
+    const isStep2Valid = couponName.trim() !== '' && benefitValue.trim() !== '' && minOrderAmount.trim() !== '';
+    const isStep3Valid = isIssuePeriodSelected && (isUnlimited || (totalQuantity.trim() !== '' && !isNaN(totalQuantity.replace(/,/g, ''))));
 
     useEffect(() => {
         if (route.params?.initialTab) {
@@ -186,12 +237,13 @@ export default function CouponScreen({ navigation, route }) {
             setCreateStep(2);
         } else {
             setSelectedType(type);
-            setValidityType('today');
+            setValidDays(0);
             setTotalQuantity('');
         }
     };
 
     const handlePrevStep = () => {
+        Keyboard.dismiss();
         if (createStep === 4) {
             setCreateStep(3);
         } else if (createStep === 3) {
@@ -201,15 +253,21 @@ export default function CouponScreen({ navigation, route }) {
             setCouponName('');
             setBenefitValue('');
             setMinOrderAmount('');
-            setDescription('');
-            setValidityType('today');
+            setValidDays(0);
             setTotalQuantity('');
+            setIsIssuePeriodSelected(false);
         }
     };
 
     // [핸들러] 쿠폰 발행 (Step 4)
     const handleCreateCoupon = async () => {
         try {
+            // [최종 검증] 종료일이 시작일보다 빨라서는 안됨 (서버 422 방지)
+            if (customEndDate <= customStartDate) {
+                const correctedEnd = validateEndDate(customStartDate, customEndDate);
+                setCustomEndDate(correctedEnd);
+                // 보정된 값으로 신청 진행
+            }
             setIsLoading(true);
 
             // 데이터 매핑
@@ -221,11 +279,11 @@ export default function CouponScreen({ navigation, route }) {
 
             const requestBody = {
                 title: couponName,
-                description: description,
                 benefitType: benefitTypeMap[selectedType],
                 benefitValue: benefitValue,
                 minOrderAmount: Number(minOrderAmount.replace(/,/g, '')),
-                totalQuantity: isUnlimited ? -1 : Number(totalQuantity.replace(/,/g, '')),
+                totalQuantity: isUnlimited ? null : Number(totalQuantity.replace(/,/g, '')),
+                validDays: validDays,
                 limitPerUser: 1, // 기본값
                 issueStartsAt: customStartDate.toISOString(),
                 issueEndsAt: customEndDate.toISOString(),
@@ -243,10 +301,12 @@ export default function CouponScreen({ navigation, route }) {
                 setCouponName('');
                 setBenefitValue('');
                 setMinOrderAmount('');
-                setDescription('');
                 setTotalQuantity('');
                 setIsUnlimited(false);
-                setValidityType('today');
+                setValidDays(0);
+                setCustomStartDate(new Date());
+                setCustomEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+                setIsIssuePeriodSelected(false);
             } else {
                 console.error("쿠폰 발행 실패:", res);
                 alert("쿠폰 발행에 실패했습니다. 다시 시도해주세요.");
@@ -312,11 +372,14 @@ export default function CouponScreen({ navigation, route }) {
                 const mappedCoupon = {
                     id: coupon.id,
                     title: coupon.title || coupon.name,
+                    startsAt: coupon.issueStartsAt,
+                    endsAt: coupon.issueEndsAt || coupon.expiredAt,
                     date: endDateStr ? formatDate(endDateStr) : "기한 없음",
-                    used: coupon.usedCount || 0, // TODO: 실 사용량 필드 확인 필요
-                    total: coupon.totalQuantity || 0,
+                    issued: coupon.issuedCount || 0,
+                    used: coupon.usedCount || 0,
+                    total: coupon.totalQuantity || -1, // -1 means unlimited
+                    validDays: coupon.validDays || 0,
                     type: coupon.benefitType, // 'FIXED_DISCOUNT' | 'PERCENTAGE_DISCOUNT' | 'SERVICE_GIFT'
-                    todayUsed: 0,
                 };
 
                 // 만료일이 지났거나 상태가 EXPIRED면 종료된 쿠폰
@@ -478,28 +541,70 @@ export default function CouponScreen({ navigation, route }) {
                             activeCoupons.map((coupon) => (
                                 <View key={coupon.id} style={styles.couponCard}>
                                     <View style={styles.couponHeader}>
-                                        <View style={styles.couponIconBox}>
-                                            {coupon.type === 'FIXED_DISCOUNT' && <Ionicons name="logo-usd" size={rs(18)} color="#34B262" />}
-                                            {coupon.type === 'PERCENTAGE_DISCOUNT' && <Text style={styles.percentIcon}>%</Text>}
-                                            {coupon.type === 'SERVICE_GIFT' && <Ionicons name="gift" size={rs(18)} color="#34B262" />}
+                                        <View style={[
+                                            styles.couponIconBox,
+                                            coupon.type === 'FIXED_DISCOUNT' && { backgroundColor: '#EAF6EE' },
+                                            coupon.type === 'PERCENTAGE_DISCOUNT' && { backgroundColor: '#EAF6EE' },
+                                            coupon.type === 'SERVICE_GIFT' && { backgroundColor: '#EAF6EE' }
+                                        ]}>
+                                            {coupon.type === 'FIXED_DISCOUNT' && <Ionicons name="logo-usd" size={rs(24)} color="#34B262" />}
+                                            {coupon.type === 'PERCENTAGE_DISCOUNT' && <Text style={[styles.percentIcon, { fontSize: rs(24), color: '#34B262' }]}>%</Text>}
+                                            {coupon.type === 'SERVICE_GIFT' && <Ionicons name="gift" size={rs(24)} color="#34B262" />}
                                         </View>
                                         <View style={styles.couponInfo}>
                                             <Text style={styles.couponTitle}>{coupon.title}</Text>
-                                            <Text style={styles.couponDate}>{coupon.date}</Text>
+                                            <View style={styles.couponMetaRow}>
+                                                <Ionicons name="time-outline" size={rs(9)} color="#828282" />
+                                                <Text style={styles.couponMetaTextDate}>
+                                                    {formatDateTimeFull(coupon.startsAt)} ~ {formatDateTimeFull(coupon.endsAt)}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.couponMetaRow}>
+                                                <Ionicons name="checkbox-outline" size={rs(9)} color="#828282" />
+                                                <Text style={styles.couponMetaTextValidity}>
+                                                    {coupon.validDays === 0 ? '발급 종료 시간까지 사용 가능' : `발급일로부터 ${coupon.validDays}일간 사용 가능`}
+                                                </Text>
+                                            </View>
                                         </View>
-                                        {/* <Text style={styles.todayUsed}>오늘 {coupon.todayUsed}장 사용</Text> */}
                                     </View>
-                                    <View style={styles.progressContainer}>
-                                        <View style={styles.progressLabelRow}>
-                                            <Text style={styles.progressLabel}>사용 수량</Text>
-                                            <Text style={styles.progressValue}>
-                                                {coupon.total === -1
-                                                    ? `${coupon.used}/무제한`
-                                                    : `${coupon.used} / ${coupon.total}장`}
-                                            </Text>
+
+                                    {/* 프로그레스 바 영역 */}
+                                    <View style={styles.dualProgressContainer}>
+                                        {/* 1. 발급 수량 (다운로드 수 / 전체) */}
+                                        <View style={styles.progressItem}>
+                                            <View style={styles.progressLabelRow}>
+                                                <Text style={styles.progressLabel}>발급 수량</Text>
+                                                <Text style={styles.progressValue}>
+                                                    {coupon.total === -1
+                                                        ? `${coupon.issued} / 무제한`
+                                                        : `${coupon.issued} / ${coupon.total}장`}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.progressBarBg}>
+                                                <View style={[
+                                                    styles.progressBarFill,
+                                                    { backgroundColor: '#7CDE9B' }, // 연두색
+                                                    { width: coupon.total === -1 ? '100%' : `${Math.min((coupon.issued / coupon.total) * 100, 100)}%` },
+                                                    coupon.total === -1 && { backgroundColor: '#D9D9D9' } // 무제한일 때 회색 바 (이미지 참고)
+                                                ]} />
+                                            </View>
                                         </View>
-                                        <View style={styles.progressBarBg}>
-                                            <View style={[styles.progressBarFill, { width: coupon.total === -1 ? '15%' : `${Math.min((coupon.used / coupon.total) * 100, 100)}%` }]} />
+
+                                        {/* 2. 사용 수량 (사용완료 / 다운로드 수) */}
+                                        <View style={styles.progressItem}>
+                                            <View style={styles.progressLabelRow}>
+                                                <Text style={styles.progressLabel}>사용 수량</Text>
+                                                <Text style={styles.progressValue}>
+                                                    {coupon.issued === 0 ? '0 / 0장' : `${coupon.used} / ${coupon.issued}장`}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.progressBarBg}>
+                                                <View style={[
+                                                    styles.progressBarFill,
+                                                    { backgroundColor: '#34B262' }, // 진초록
+                                                    { width: coupon.issued === 0 ? '0%' : `${Math.min((coupon.used / coupon.issued) * 100, 100)}%` }
+                                                ]} />
+                                            </View>
                                         </View>
                                     </View>
                                 </View>
@@ -571,10 +676,12 @@ export default function CouponScreen({ navigation, route }) {
                             setCouponName('');
                             setBenefitValue('');
                             setMinOrderAmount('');
-                            setDescription('');
                             setTotalQuantity('');
                             setIsUnlimited(false);
-                            setValidityType('today');
+                            setValidDays(0);
+                            setCustomStartDate(new Date());
+                            setCustomEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+                            setIsIssuePeriodSelected(false);
                             setCreateModalVisible(true);
                         }}
                     >
@@ -591,529 +698,658 @@ export default function CouponScreen({ navigation, route }) {
                 animationType="fade"
                 transparent={true}
                 visible={createModalVisible}
-                onRequestClose={() => setCreateModalVisible(false)}
+                onRequestClose={() => setIsExitConfirmVisible(true)}
             >
-                <TouchableWithoutFeedback onPress={() => setCreateModalVisible(false)}>
-                    <View style={styles.modalOverlay}>
-                        <TouchableWithoutFeedback>
-                            <View style={styles.createModalContainer}>
-                                {/* 닫기 버튼 */}
-                                <TouchableOpacity
-                                    style={styles.createModalCloseBtn}
-                                    onPress={() => setCreateModalVisible(false)}
-                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                >
-                                    <Ionicons name="close" size={rs(24)} color="#BDBDBD" />
-                                </TouchableOpacity>
+                <View style={styles.modalOverlay}>
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <View style={styles.createModalContainer}>
+                            {/* 닫기 버튼 */}
+                            <TouchableOpacity
+                                style={styles.createModalCloseBtn}
+                                onPress={() => setIsExitConfirmVisible(true)}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <Ionicons name="close" size={rs(24)} color="#BDBDBD" />
+                            </TouchableOpacity>
 
-                                {createStep === 1 ? (
-                                    <>
-                                        {/* 타이틀 */}
-                                        <View style={styles.createModalHeader}>
-                                            <View style={styles.createModalIconBox}>
-                                                <Ionicons name="ticket" size={rs(24)} color="#34B262" />
-                                            </View>
-                                            <Text style={styles.createModalTitle}>새 쿠폰 만들기</Text>
+                            {createStep === 1 ? (
+                                <>
+                                    {/* 타이틀 */}
+                                    <View style={styles.createModalHeader}>
+                                        <View style={styles.createModalIconBox}>
+                                            <Ionicons name="ticket" size={rs(24)} color="#34B262" />
                                         </View>
-                                        <Text style={styles.createModalSubtitle}>어떤 종류의 쿠폰을 만들까요?</Text>
+                                        <Text style={styles.createModalTitle}>새 쿠폰 만들기</Text>
+                                    </View>
+                                    <Text style={styles.createModalSubtitle}>어떤 종류의 쿠폰을 만들까요?</Text>
 
-                                        {/* 옵션 리스트 */}
-                                        <View style={styles.createOptionList}>
-                                            {/* 1. 금액 할인 */}
-                                            <TouchableOpacity
-                                                style={[styles.createOptionCard, selectedType === 'FIXED_AMOUNT' && styles.createOptionSelected]}
-                                                onPress={() => handleOptionPress('FIXED_AMOUNT')}
-                                            >
-                                                <View style={[styles.createOptionIconBox, { backgroundColor: selectedType === 'FIXED_AMOUNT' ? '#E4F7EA' : '#F2F2F2' }]}>
-                                                    <Ionicons name="logo-usd" size={rs(20)} color={selectedType === 'FIXED_AMOUNT' ? '#34B262' : '#828282'} />
-                                                </View>
-                                                <View style={styles.createOptionInfo}>
-                                                    <Text style={styles.createOptionTitle}>금액 할인</Text>
-                                                    <Text style={styles.createOptionDesc}>1,000원 할인</Text>
-                                                </View>
-                                                <Ionicons name="chevron-forward" size={rs(20)} color="#BDBDBD" />
-                                            </TouchableOpacity>
-
-                                            {/* 2. 비율 할인 */}
-                                            <TouchableOpacity
-                                                style={[styles.createOptionCard, selectedType === 'PERCENTAGE' && styles.createOptionSelected]}
-                                                onPress={() => handleOptionPress('PERCENTAGE')}
-                                            >
-                                                <View style={[styles.createOptionIconBox, { backgroundColor: selectedType === 'PERCENTAGE' ? '#E4F7EA' : '#F2F2F2' }]}>
-                                                    <Text style={{ fontSize: rs(18), fontWeight: '700', color: selectedType === 'PERCENTAGE' ? '#34B262' : '#828282' }}>%</Text>
-                                                </View>
-                                                <View style={styles.createOptionInfo}>
-                                                    <Text style={styles.createOptionTitle}>비율 할인</Text>
-                                                    <Text style={styles.createOptionDesc}>10% 할인</Text>
-                                                </View>
-                                                <Ionicons name="chevron-forward" size={rs(20)} color="#BDBDBD" />
-                                            </TouchableOpacity>
-
-                                            {/* 3. 서비스 증정 */}
-                                            <TouchableOpacity
-                                                style={[styles.createOptionCard, selectedType === 'GIFT' && styles.createOptionSelected]}
-                                                onPress={() => handleOptionPress('GIFT')}
-                                            >
-                                                <View style={[styles.createOptionIconBox, { backgroundColor: selectedType === 'GIFT' ? '#E4F7EA' : '#F2F2F2' }]}>
-                                                    <Ionicons name="gift" size={rs(22)} color={selectedType === 'GIFT' ? '#34B262' : '#828282'} />
-                                                </View>
-                                                <View style={styles.createOptionInfo}>
-                                                    <Text style={styles.createOptionTitle}>서비스 증정</Text>
-                                                    <Text style={styles.createOptionDesc}>음료수 1캔 무료</Text>
-                                                </View>
-                                                <Ionicons name="chevron-forward" size={rs(20)} color="#BDBDBD" />
-                                            </TouchableOpacity>
-                                        </View>
-
-                                        {/* 페이지네이션 */}
-                                        <View style={styles.createPagination}>
-                                            <View style={[styles.createDot, { backgroundColor: '#34B262' }]} />
-                                            <View style={styles.createDot} />
-                                            <View style={styles.createDot} />
-                                            <View style={styles.createDot} />
-                                        </View>
-                                    </>
-                                ) : createStep === 2 ? (
-                                    <>
-                                        {/* 타이틀 */}
-                                        <View style={styles.createModalHeader}>
-                                            <View style={styles.createModalIconBox}>
-                                                <Ionicons name="ticket" size={rs(24)} color="#34B262" />
-                                            </View>
-                                            <Text style={styles.createModalTitle}>
-                                                {selectedType === 'FIXED_AMOUNT' ? '금액 할인' : (selectedType === 'PERCENTAGE' ? '비율 할인' : '서비스 증정')} 쿠폰 만들기
-                                            </Text>
-                                        </View>
-                                        <Text style={styles.createModalSubtitle}>혜택 상세 정보를 입력해주세요</Text>
-
-                                        <ScrollView
-                                            style={{ width: '100%' }}
-                                            contentContainerStyle={{ alignItems: 'center', paddingBottom: rs(10) }}
-                                            showsVerticalScrollIndicator={false}
+                                    {/* 옵션 리스트 */}
+                                    <View style={styles.createOptionList}>
+                                        {/* 1. 금액 할인 */}
+                                        <TouchableOpacity
+                                            style={[styles.createOptionCard, selectedType === 'FIXED_AMOUNT' && styles.createOptionSelected]}
+                                            onPress={() => handleOptionPress('FIXED_AMOUNT')}
                                         >
-                                            {/* 상세 아이콘 상단바 */}
-                                            <View style={styles.createStep2Header}>
-                                                <View style={[styles.createOptionIconBox, { backgroundColor: '#E4F7EA', marginRight: rs(10) }]}>
-                                                    {selectedType === 'FIXED_AMOUNT' && <Ionicons name="logo-usd" size={rs(20)} color="#34B262" />}
-                                                    {selectedType === 'PERCENTAGE' && <Text style={{ fontSize: rs(18), fontWeight: '700', color: '#34B262' }}>%</Text>}
-                                                    {selectedType === 'GIFT' && <Ionicons name="gift" size={rs(22)} color="#34B262" />}
-                                                </View>
-                                                <View style={styles.createInputWrapper}>
-                                                    <TextInput
-                                                        style={styles.createInput}
-                                                        placeholder="쿠폰 이름을 적어주세요" placeholderTextColor="#BDBDBD"
-                                                        value={couponName}
-                                                        onChangeText={setCouponName}
-                                                        maxLength={20}
-                                                    />
-                                                </View>
+                                            <View style={[styles.createOptionIconBox, { backgroundColor: selectedType === 'FIXED_AMOUNT' ? '#E4F7EA' : '#F2F2F2' }]}>
+                                                <Ionicons name="logo-usd" size={rs(20)} color={selectedType === 'FIXED_AMOUNT' ? '#34B262' : '#828282'} />
                                             </View>
-
-                                            {/* 입력 필드들 */}
-                                            <View style={styles.createFormFieldList}>
-                                                {/* 필드 1: 할인 금액 / 할인율 / 증정 내용 */}
-                                                <View style={styles.createFormField}>
-                                                    <Text style={styles.createFormLabel}>
-                                                        {selectedType === 'FIXED_AMOUNT' ? '할인 금액' : (selectedType === 'PERCENTAGE' ? '할인율' : '증정 내용')}
-                                                    </Text>
-                                                    <View style={styles.createInputBox}>
-                                                        <TextInput
-                                                            style={styles.createFormInput}
-                                                            placeholder={selectedType === 'FIXED_AMOUNT' ? '2,000' : (selectedType === 'PERCENTAGE' ? '10' : 'ex. 콜라 1캔')}
-                                                            placeholderTextColor="#BDBDBD"
-                                                            value={benefitValue}
-                                                            onChangeText={(text) => setBenefitValue(selectedType === 'GIFT' ? text : formatNumber(text))}
-                                                            keyboardType={selectedType === 'GIFT' ? 'default' : 'number-pad'}
-                                                        />
-                                                        <Text style={styles.createInputUnit}>
-                                                            {selectedType === 'FIXED_AMOUNT' ? '원' : (selectedType === 'PERCENTAGE' ? '%' : '')}
-                                                        </Text>
-                                                    </View>
-                                                </View>
-
-                                                {/* 필드 2: 최소 주문 금액 */}
-                                                <View style={styles.createFormField}>
-                                                    <Text style={styles.createFormLabel}>최소 주문 금액</Text>
-                                                    <View style={styles.createInputBox}>
-                                                        <TextInput
-                                                            style={styles.createFormInput}
-                                                            placeholder="10,000"
-                                                            placeholderTextColor="#BDBDBD"
-                                                            value={minOrderAmount}
-                                                            onChangeText={(text) => setMinOrderAmount(formatNumber(text))}
-                                                            keyboardType="number-pad"
-                                                        />
-                                                        <Text style={styles.createInputUnit}>원 이상</Text>
-                                                    </View>
-                                                </View>
-
-                                                {/* 필드 3: 상세설명 */}
-                                                <View style={styles.createFormField}>
-                                                    <Text style={styles.createFormLabel}>상세설명</Text>
-                                                    <View style={[styles.createInputBox, { height: rs(50), position: 'relative' }]}>
-                                                        <TextInput
-                                                            style={[styles.createFormInput, { textAlignVertical: 'top', height: '100%', paddingTop: rs(10), paddingBottom: rs(15) }]}
-                                                            placeholder="쿠폰에 대한 설명을 적어주세요"
-                                                            placeholderTextColor="#BDBDBD"
-                                                            value={description}
-                                                            onChangeText={setDescription}
-                                                            multiline={true}
-                                                            maxLength={30}
-                                                        />
-                                                        <View style={styles.createCharCountRow}>
-                                                            <Text style={styles.createCharCountText}>{description.length}/30</Text>
-                                                        </View>
-                                                    </View>
-                                                </View>
+                                            <View style={styles.createOptionInfo}>
+                                                <Text style={styles.createOptionTitle}>금액 할인</Text>
+                                                <Text style={styles.createOptionDesc}>1,000원 할인</Text>
                                             </View>
-                                        </ScrollView>
+                                            <Ionicons name="chevron-forward" size={rs(20)} color="#BDBDBD" />
+                                        </TouchableOpacity>
 
-                                        {/* 하단 버튼 */}
-                                        <View style={styles.createStep2BtnRow}>
-                                            <TouchableOpacity style={styles.createPrevBtn} onPress={handlePrevStep}>
-                                                <Ionicons name="chevron-back" size={rs(16)} color="#34B262" />
-                                                <Text style={styles.createPrevBtnText}>이전</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={[styles.createNextBtn, !isStep2Valid && { backgroundColor: '#D5D5D5' }]}
-                                                onPress={() => setCreateStep(3)}
-                                                disabled={!isStep2Valid}
-                                            >
-                                                <Text style={styles.createNextBtnText}>다음</Text>
-                                                <Ionicons name="chevron-forward" size={rs(16)} color="white" />
-                                            </TouchableOpacity>
-                                        </View>
-
-                                        {/* 페이지네이션 */}
-                                        <View style={styles.createPagination}>
-                                            <View style={styles.createDot} />
-                                            <View style={[styles.createDot, { backgroundColor: '#34B262' }]} />
-                                            <View style={styles.createDot} />
-                                            <View style={styles.createDot} />
-                                        </View>
-                                    </>
-                                ) : createStep === 3 ? (
-                                    <>
-                                        {/* 타이틀 */}
-                                        <View style={styles.createModalHeader}>
-                                            <View style={styles.createModalIconBox}>
-                                                <Ionicons name="ticket" size={rs(24)} color="#34B262" />
+                                        {/* 2. 비율 할인 */}
+                                        <TouchableOpacity
+                                            style={[styles.createOptionCard, selectedType === 'PERCENTAGE' && styles.createOptionSelected]}
+                                            onPress={() => handleOptionPress('PERCENTAGE')}
+                                        >
+                                            <View style={[styles.createOptionIconBox, { backgroundColor: selectedType === 'PERCENTAGE' ? '#E4F7EA' : '#F2F2F2' }]}>
+                                                <Text style={{ fontSize: rs(18), fontWeight: '700', color: selectedType === 'PERCENTAGE' ? '#34B262' : '#828282' }}>%</Text>
                                             </View>
-                                            <Text style={styles.createModalTitle}>새 쿠폰 만들기</Text>
-                                        </View>
-                                        <Text style={styles.createModalSubtitle}>발행 수량과 기간을 설정해주세요</Text>
-
-                                        <View style={{ width: '100%', gap: rs(20) }}>
-                                            {/* 섹션 1: 발행 수량 */}
-                                            <View style={styles.createFormField}>
-                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Text style={styles.createFormLabel}>선착순 발행 수량</Text>
-                                                    <TouchableOpacity
-                                                        style={{ flexDirection: 'row', alignItems: 'center', gap: rs(4) }}
-                                                        onPress={() => setIsUnlimited(!isUnlimited)}
-                                                    >
-                                                        <Ionicons
-                                                            name={isUnlimited ? "checkbox" : "square-outline"}
-                                                            size={rs(16)}
-                                                            color={isUnlimited ? "#34B262" : "#BDBDBD"}
-                                                        />
-                                                        <Text style={{ fontSize: rs(11), fontWeight: '500', color: 'black', fontFamily: 'Pretendard' }}>수량 제한 없음</Text>
-                                                    </TouchableOpacity>
-                                                </View>
-                                                <View style={[styles.createInputBox, isUnlimited && { backgroundColor: '#F0F0F0' }]}>
-                                                    <TextInput
-                                                        style={[styles.createFormInput, isUnlimited && { color: '#828282' }]}
-                                                        placeholder="50"
-                                                        placeholderTextColor="#BDBDBD"
-                                                        value={isUnlimited ? "" : totalQuantity}
-                                                        onChangeText={(text) => setTotalQuantity(formatNumber(text))}
-                                                        keyboardType="number-pad"
-                                                        editable={!isUnlimited}
-                                                    />
-                                                    <Text style={[styles.createInputUnit, isUnlimited && { color: '#828282' }]}>장</Text>
-                                                </View>
+                                            <View style={styles.createOptionInfo}>
+                                                <Text style={styles.createOptionTitle}>비율 할인</Text>
+                                                <Text style={styles.createOptionDesc}>10% 할인</Text>
                                             </View>
+                                            <Ionicons name="chevron-forward" size={rs(20)} color="#BDBDBD" />
+                                        </TouchableOpacity>
 
-                                            {/* 섹션 2: 유효 기간 */}
-                                            <View style={styles.createFormField}>
-                                                <Text style={styles.createFormLabel}>유효 기간</Text>
-                                                <TouchableOpacity
-                                                    style={styles.createInputBox}
-                                                    onPress={() => setIsValidityDropdownOpen(!isValidityDropdownOpen)}
-                                                >
-                                                    <Text style={{ flex: 1, fontSize: rs(13), fontWeight: '500', color: 'black', fontFamily: 'Pretendard' }} numberOfLines={1}>
-                                                        {validityType === 'custom'
-                                                            ? formatPeriodString(customStartDate, customEndDate)
-                                                            : (validityType === 'today' ? '오늘 하루' :
-                                                                validityType === 'weekend' ? '이번 주말' :
-                                                                    validityType === '7days' ? '7일간' :
-                                                                        validityType === '30days' ? '30일간' : '')}
-                                                    </Text>
-                                                    <Ionicons name={isValidityDropdownOpen ? "chevron-up" : "chevron-down"} size={rs(18)} color="black" />
-                                                </TouchableOpacity>
-
-                                                {isValidityDropdownOpen && (
-                                                    <View style={styles.createValidityDropdown}>
-                                                        {['today', 'weekend', '7days', '30days'].map((type) => {
-                                                            const isSelected = validityType === type;
-                                                            const labels = {
-                                                                today: '오늘 하루',
-                                                                weekend: '이번 주말',
-                                                                '7days': '7일간',
-                                                                '30days': '30일간'
-                                                            };
-                                                            return (
-                                                                <TouchableOpacity
-                                                                    key={type}
-                                                                    style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
-                                                                    onPress={() => setValidityType(type)}
-                                                                >
-                                                                    {isSelected && <Ionicons name="checkmark" size={rs(16)} color="#34B262" style={{ marginRight: rs(4) }} />}
-                                                                    <Text style={[styles.dropdownText, isSelected && { color: '#34B262' }]}>{labels[type]}</Text>
-                                                                </TouchableOpacity>
-                                                            );
-                                                        })}
-                                                        <TouchableOpacity
-                                                            style={[styles.dropdownItem, { justifyContent: 'center' }, validityType === 'custom' && styles.dropdownItemSelected]}
-                                                            onPress={() => { setValidityType('custom'); setIsPeriodModalVisible(true); }}
-                                                        >
-                                                            <Text style={[styles.dropdownText, { color: '#828282' }]}>+ 기간 상세 설정하기</Text>
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                )}
+                                        {/* 3. 서비스 증정 */}
+                                        <TouchableOpacity
+                                            style={[styles.createOptionCard, selectedType === 'GIFT' && styles.createOptionSelected]}
+                                            onPress={() => handleOptionPress('GIFT')}
+                                        >
+                                            <View style={[styles.createOptionIconBox, { backgroundColor: selectedType === 'GIFT' ? '#E4F7EA' : '#F2F2F2' }]}>
+                                                <Ionicons name="gift" size={rs(22)} color={selectedType === 'GIFT' ? '#34B262' : '#828282'} />
                                             </View>
-                                        </View>
-
-                                        {/* 하단 버튼 */}
-                                        <View style={styles.createStep2BtnRow}>
-                                            <TouchableOpacity style={styles.createPrevBtn} onPress={handlePrevStep}>
-                                                <Ionicons name="chevron-back" size={rs(16)} color="#34B262" />
-                                                <Text style={styles.createPrevBtnText}>이전</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={[styles.createNextBtn, !isStep3Valid && { backgroundColor: '#D5D5D5' }]}
-                                                onPress={() => setCreateStep(4)}
-                                                disabled={!isStep3Valid}
-                                            >
-                                                <Text style={styles.createNextBtnText}>다음</Text>
-                                                <Ionicons name="chevron-forward" size={rs(16)} color="white" />
-                                            </TouchableOpacity>
-                                        </View>
-
-                                        {/* 페이지네이션 */}
-                                        <View style={styles.createPagination}>
-                                            <View style={styles.createDot} />
-                                            <View style={styles.createDot} />
-                                            <View style={[styles.createDot, { backgroundColor: '#34B262' }]} />
-                                            <View style={styles.createDot} />
-                                        </View>
-                                    </>
-                                ) : (
-                                    <>
-                                        {/* 타이틀 */}
-                                        <View style={styles.createModalHeader}>
-                                            <View style={styles.createModalIconBox}>
-                                                <Ionicons name="ticket" size={rs(24)} color="#34B262" />
+                                            <View style={styles.createOptionInfo}>
+                                                <Text style={styles.createOptionTitle}>서비스 증정</Text>
+                                                <Text style={styles.createOptionDesc}>음료수 1캔 무료</Text>
                                             </View>
-                                            <Text style={styles.createModalTitle}>새 쿠폰 만들기</Text>
-                                        </View>
-                                        <Text style={styles.createModalSubtitle}>학생들에게 보여질 쿠폰 미리보기</Text>
+                                            <Ionicons name="chevron-forward" size={rs(20)} color="#BDBDBD" />
+                                        </TouchableOpacity>
+                                    </View>
 
-                                        {/* 쿠폰 미리보기 카드 */}
-                                        <View style={styles.previewCouponCard}>
-                                            <View style={[
-                                                styles.previewIconBox,
-                                                selectedType === 'FIXED_AMOUNT' && { backgroundColor: '#EAF6EE' },
-                                                selectedType === 'PERCENTAGE' && { backgroundColor: '#FFDDDE' },
-                                                selectedType === 'GIFT' && { backgroundColor: '#FFF4D6' }
-                                            ]}>
-                                                <Image
-                                                    source={
-                                                        selectedType === 'FIXED_AMOUNT' ? require('@/assets/images/shopowner/coupon-price.png') :
-                                                            selectedType === 'PERCENTAGE' ? require('@/assets/images/shopowner/coupon-percent.png') :
-                                                                require('@/assets/images/shopowner/coupon-present.png')
-                                                    }
-                                                    style={styles.previewImage}
+                                    {/* 페이지네이션 */}
+                                    <View style={styles.createPagination}>
+                                        <View style={[styles.createDot, { backgroundColor: '#34B262' }]} />
+                                        <View style={styles.createDot} />
+                                        <View style={styles.createDot} />
+                                        <View style={styles.createDot} />
+                                    </View>
+                                </>
+                            ) : createStep === 2 ? (
+                                <>
+                                    {/* 타이틀 */}
+                                    <View style={styles.createModalHeader}>
+                                        <View style={styles.createModalIconBox}>
+                                            <Ionicons name="ticket" size={rs(24)} color="#34B262" />
+                                        </View>
+                                        <Text style={styles.createModalTitle}>
+                                            {selectedType === 'FIXED_AMOUNT' ? '금액 할인' : (selectedType === 'PERCENTAGE' ? '비율 할인' : '서비스 증정')} 쿠폰 만들기
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.createModalSubtitle}>혜택 상세 정보를 입력해주세요</Text>
+
+                                    <ScrollView
+                                        style={{ width: '100%' }}
+                                        contentContainerStyle={{ alignItems: 'center', paddingBottom: rs(10) }}
+                                        showsVerticalScrollIndicator={false}
+                                    >
+                                        {/* 상세 아이콘 상단바 */}
+                                        <View style={styles.createStep2Header}>
+                                            <View style={[styles.createOptionIconBox, { backgroundColor: '#E4F7EA', marginRight: rs(10) }]}>
+                                                {selectedType === 'FIXED_AMOUNT' && <Ionicons name="logo-usd" size={rs(20)} color="#34B262" />}
+                                                {selectedType === 'PERCENTAGE' && <Text style={{ fontSize: rs(18), fontWeight: '700', color: '#34B262' }}>%</Text>}
+                                                {selectedType === 'GIFT' && <Ionicons name="gift" size={rs(22)} color="#34B262" />}
+                                            </View>
+                                            <View style={styles.createInputWrapper}>
+                                                <TextInput
+                                                    style={styles.createInput}
+                                                    placeholder="쿠폰 이름을 적어주세요" placeholderTextColor="#BDBDBD"
+                                                    value={couponName}
+                                                    onChangeText={setCouponName}
+                                                    maxLength={20}
                                                 />
                                             </View>
-                                            <View style={styles.previewInfo}>
-                                                <View style={styles.previewTextRow}>
-                                                    <View style={{ flex: 1 }}>
-                                                        <Text style={styles.previewTitle} numberOfLines={1}>{couponName || '쿠폰 이름을 입력해주세요'}</Text>
-                                                        <Text style={styles.previewDesc} numberOfLines={1}>{description || '쿠폰에 대한 설명을 입력해주세요'}</Text>
-                                                    </View>
-                                                    {selectedType === 'FIXED_AMOUNT' && <Text style={styles.previewValue}>{benefitValue || '2,000'}원</Text>}
-                                                </View>
-                                                <View style={styles.previewBottomRow}>
-                                                    <Text style={styles.previewDate}>
-                                                        {customEndDate.getFullYear()}.{String(customEndDate.getMonth() + 1).padStart(2, '0')}.{String(customEndDate.getDate()).padStart(2, '0')}까지 {customEndDate.getHours()}시까지
+                                        </View>
+
+                                        {/* 입력 필드들 */}
+                                        <View style={styles.createFormFieldList}>
+                                            {/* 필드 1: 할인 금액 / 할인율 / 증정 내용 */}
+                                            <View style={styles.createFormField}>
+                                                <Text style={styles.createFormLabel}>
+                                                    {selectedType === 'FIXED_AMOUNT' ? '할인 금액' : (selectedType === 'PERCENTAGE' ? '할인율' : '증정 내용')}
+                                                </Text>
+                                                <View style={styles.createInputBox}>
+                                                    <TextInput
+                                                        style={styles.createFormInput}
+                                                        placeholder={selectedType === 'FIXED_AMOUNT' ? '2,000' : (selectedType === 'PERCENTAGE' ? '10' : 'ex. 콜라 1캔')}
+                                                        placeholderTextColor="#BDBDBD"
+                                                        value={benefitValue}
+                                                        onChangeText={(text) => setBenefitValue(selectedType === 'GIFT' ? text : formatNumber(text))}
+                                                        keyboardType={selectedType === 'GIFT' ? 'default' : 'number-pad'}
+                                                    />
+                                                    <Text style={styles.createInputUnit}>
+                                                        {selectedType === 'FIXED_AMOUNT' ? '원' : (selectedType === 'PERCENTAGE' ? '%' : '')}
                                                     </Text>
-                                                    {selectedType === 'PERCENTAGE' && <Text style={[styles.previewValue, { fontSize: rs(14) }]}>{benefitValue || '10'}%</Text>}
-                                                    {selectedType === 'GIFT' && <Text style={[styles.previewValue, { fontSize: rs(14) }]}>{benefitValue || '서비스'}</Text>}
                                                 </View>
                                             </View>
+
+                                            {/* 필드 2: 최소 주문 금액 */}
+                                            <View style={styles.createFormField}>
+                                                <Text style={styles.createFormLabel}>최소 주문 금액</Text>
+                                                <View style={styles.createInputBox}>
+                                                    <TextInput
+                                                        style={styles.createFormInput}
+                                                        placeholder="10,000"
+                                                        placeholderTextColor="#BDBDBD"
+                                                        value={minOrderAmount}
+                                                        onChangeText={(text) => setMinOrderAmount(formatNumber(text))}
+                                                        keyboardType="number-pad"
+                                                    />
+                                                    <Text style={styles.createInputUnit}>원 이상</Text>
+                                                </View>
+                                            </View>
+
+                                        </View>
+                                    </ScrollView>
+
+                                    {/* 하단 버튼 */}
+                                    <View style={styles.createStep2BtnRow}>
+                                        <TouchableOpacity style={styles.createPrevBtn} onPress={handlePrevStep}>
+                                            <Ionicons name="chevron-back" size={rs(16)} color="#34B262" />
+                                            <Text style={styles.createPrevBtnText}>이전</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.createNextBtn, !isStep2Valid && { backgroundColor: '#D5D5D5' }]}
+                                            onPress={() => setCreateStep(3)}
+                                            disabled={!isStep2Valid}
+                                        >
+                                            <Text style={styles.createNextBtnText}>다음</Text>
+                                            <Ionicons name="chevron-forward" size={rs(16)} color="white" />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {/* 페이지네이션 */}
+                                    <View style={styles.createPagination}>
+                                        <View style={styles.createDot} />
+                                        <View style={[styles.createDot, { backgroundColor: '#34B262' }]} />
+                                        <View style={styles.createDot} />
+                                        <View style={styles.createDot} />
+                                    </View>
+                                </>
+                            ) : createStep === 3 ? (
+                                <>
+                                    {/* 타이틀 */}
+                                    <View style={styles.createModalHeader}>
+                                        <View style={styles.createModalIconBox}>
+                                            <Ionicons name="ticket" size={rs(24)} color="#34B262" />
+                                        </View>
+                                        <Text style={styles.createModalTitle}>새 쿠폰 만들기</Text>
+                                    </View>
+                                    <Text style={styles.createModalSubtitle}>발행 수량과 기간을 설정해주세요</Text>
+
+                                    <View style={{ width: '100%', gap: rs(20) }}>
+                                        {/* 섹션 1: 발행 수량 */}
+                                        <View style={styles.createFormField}>
+                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Text style={styles.createFormLabel}>선착순 발행 수량</Text>
+                                                <TouchableOpacity
+                                                    style={{ flexDirection: 'row', alignItems: 'center', gap: rs(4) }}
+                                                    onPress={() => {
+                                                        setIsUnlimited(!isUnlimited);
+                                                        Keyboard.dismiss();
+                                                    }}
+                                                >
+                                                    <Ionicons
+                                                        name={isUnlimited ? "checkbox" : "square-outline"}
+                                                        size={rs(16)}
+                                                        color={isUnlimited ? "#34B262" : "#BDBDBD"}
+                                                    />
+                                                    <Text style={{ fontSize: rs(11), fontWeight: '500', color: 'black', fontFamily: 'Pretendard' }}>수량 제한 없음</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                            <View style={[styles.createInputBox, isUnlimited && { backgroundColor: '#F0F0F0' }]}>
+                                                <TextInput
+                                                    style={[styles.createFormInput, isUnlimited && { color: '#828282' }]}
+                                                    placeholder="50"
+                                                    placeholderTextColor="#BDBDBD"
+                                                    value={isUnlimited ? "" : totalQuantity}
+                                                    onChangeText={(text) => setTotalQuantity(formatNumber(text))}
+                                                    keyboardType="number-pad"
+                                                    editable={!isUnlimited}
+                                                />
+                                                <Text style={[styles.createInputUnit, isUnlimited && { color: '#828282' }]}>장</Text>
+                                            </View>
                                         </View>
 
-                                        {/* 하단 버튼 */}
-                                        <View style={styles.createStep2BtnRow}>
-                                            <TouchableOpacity style={styles.createPrevBtn} onPress={handlePrevStep}>
-                                                <Ionicons name="chevron-back" size={rs(16)} color="#34B262" />
-                                                <Text style={styles.createPrevBtnText}>이전</Text>
-                                            </TouchableOpacity>
+                                        {/* 섹션 2: 쿠폰 발급 기간 */}
+                                        <View style={styles.createFormField}>
+                                            <Text style={styles.createFormLabel}>쿠폰 발급 기간</Text>
                                             <TouchableOpacity
-                                                style={[styles.createNextBtn, { backgroundColor: '#34B262' }]}
-                                                onPress={handleCreateCoupon}
+                                                style={styles.createInputBox}
+                                                onPress={() => setIsPeriodModalVisible(true)}
                                             >
-                                                <Ionicons name="checkmark" size={rs(16)} color="white" />
-                                                <Text style={styles.createNextBtnText}>발행하기</Text>
+                                                <Text
+                                                    style={{
+                                                        flex: 1,
+                                                        fontSize: isIssuePeriodSelected ? rs(11) : rs(13),
+                                                        fontWeight: '500',
+                                                        color: isIssuePeriodSelected ? 'black' : '#BDBDBD',
+                                                        fontFamily: 'Pretendard'
+                                                    }}
+                                                    numberOfLines={1}
+                                                >
+                                                    {isIssuePeriodSelected ? formatPeriodString(customStartDate, customEndDate) : '기간을 설정해주세요'}
+                                                </Text>
+                                                <Ionicons name="chevron-down" size={rs(18)} color="black" />
                                             </TouchableOpacity>
                                         </View>
 
-                                        {/* 페이지네이션 */}
-                                        <View style={styles.createPagination}>
-                                            <View style={styles.createDot} />
-                                            <View style={styles.createDot} />
-                                            <View style={styles.createDot} />
-                                            <View style={[styles.createDot, { backgroundColor: '#34B262' }]} />
-                                        </View>
-                                    </>
-                                )}
-
-                            </View>
-                        </TouchableWithoutFeedback>
-
-                        {/* =======================================================
-                              [내부 모달] 쿠폰 유효 기간 설정 (상세)
-                          ======================================================= */}
-                        <Modal
-                            animationType="slide"
-                            transparent={true}
-                            visible={isPeriodModalVisible}
-                            onRequestClose={() => setIsPeriodModalVisible(false)}
-                        >
-                            <View style={styles.modalOverlay}>
-                                <View style={styles.periodModalContainer}>
-                                    {/* 탭 헤더: 시작 / 종료 */}
-                                    <View style={styles.periodTabRow}>
-                                        <TouchableOpacity
-                                            style={[styles.periodTabBtn, activePeriodTab === 'start' && styles.periodTabBtnActive]}
-                                            onPress={() => setActivePeriodTab('start')}
-                                        >
-                                            <Text style={[styles.periodTabText, activePeriodTab === 'start' && styles.periodTabTextActive]}>시작</Text>
-                                            <Text style={[styles.periodTabDetail, activePeriodTab === 'start' && styles.periodTabDetailActive]} numberOfLines={1}>
-                                                {formatDateKorean(customStartDate)}
-                                            </Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[styles.periodTabBtn, activePeriodTab === 'end' && styles.periodTabBtnActive]}
-                                            onPress={() => setActivePeriodTab('end')}
-                                        >
-                                            <Text style={[styles.periodTabText, activePeriodTab === 'end' && styles.periodTabTextActive]}>종료</Text>
-                                            <Text style={[styles.periodTabDetail, activePeriodTab === 'end' && styles.periodTabDetailActive]} numberOfLines={1}>
-                                                {formatDateKorean(customEndDate)}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    {/* 캘린더 영역 */}
-                                    <View style={styles.calendarContainer}>
-                                        <View style={styles.calendarHeader}>
-                                            <TouchableOpacity onPress={() => handleMonthChange(-1)}>
-                                                <Ionicons name="chevron-back" size={rs(18)} color="#828282" />
+                                        {/* 섹션 3: 쿠폰 만료 일시 */}
+                                        <View style={styles.createFormField}>
+                                            <Text style={styles.createFormLabel}>쿠폰 만료 일시(다운받은 시점부터)</Text>
+                                            <TouchableOpacity
+                                                style={styles.createInputBox}
+                                                onPress={() => setIsValidDaysDropdownOpen(!isValidDaysDropdownOpen)}
+                                            >
+                                                <Text style={{ flex: 1, fontSize: rs(13), fontWeight: '500', color: 'black', fontFamily: 'Pretendard' }} numberOfLines={1}>
+                                                    {validDays === 0 ? '발급 종료 시간' :
+                                                        validDays === 1 ? '24시간' :
+                                                            `${validDays}일간`}
+                                                </Text>
+                                                <Ionicons name={isValidDaysDropdownOpen ? "chevron-up" : "chevron-down"} size={rs(18)} color="black" />
                                             </TouchableOpacity>
-                                            <Text style={styles.calendarMonthText}>
-                                                {currentCalendarDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
-                                            </Text>
-                                            <TouchableOpacity onPress={() => handleMonthChange(1)}>
-                                                <Ionicons name="chevron-forward" size={rs(18)} color="#828282" />
-                                            </TouchableOpacity>
-                                        </View>
 
-                                        <View style={styles.calendarGrid}>
-                                            {/* 요일 */}
-                                            <View style={styles.calendarDayRow}>
-                                                {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
-                                                    <Text key={d} style={[styles.calendarDayText, i === 0 && { color: '#FF6B6B' }, i === 6 && { color: '#4A90E2' }]}>{d}</Text>
-                                                ))}
-                                            </View>
-                                            {/* 날짜 데이터 */}
-                                            <View style={styles.calendarDateGrid}>
-                                                {getCalendarDays(currentCalendarDate).map((item, idx) => {
-                                                    const isSelected = (activePeriodTab === 'start' && item.date.toDateString() === customStartDate.toDateString()) ||
-                                                        (activePeriodTab === 'end' && item.date.toDateString() === customEndDate.toDateString());
-                                                    const isPast = item.date < new Date().setHours(0, 0, 0, 0);
-                                                    const isSat = item.date.getDay() === 6;
-                                                    const isSun = item.date.getDay() === 0;
-
-                                                    return (
+                                            {isValidDaysDropdownOpen && (
+                                                <View style={[styles.createValidityDropdown, { top: rs(60) }]}>
+                                                    {[0, 1, 3, 7, 30].map((days) => {
+                                                        const isSelected = validDays === days && !isCustomValidDaysMode;
+                                                        const labels = {
+                                                            0: '발급 종료 시간',
+                                                            1: '24시간',
+                                                            3: '3일간',
+                                                            7: '7일간',
+                                                            30: '30일간'
+                                                        };
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={days}
+                                                                style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
+                                                                onPress={() => {
+                                                                    setValidDays(days);
+                                                                    setIsCustomValidDaysMode(false);
+                                                                    setIsValidDaysDropdownOpen(false);
+                                                                }}
+                                                            >
+                                                                {isSelected && <Ionicons name="checkmark" size={rs(16)} color="#34B262" style={{ marginRight: rs(4) }} />}
+                                                                <Text style={[styles.dropdownText, isSelected && { color: '#34B262' }]}>{labels[days]}</Text>
+                                                            </TouchableOpacity>
+                                                        );
+                                                    })}
+                                                    {!isCustomValidDaysMode ? (
                                                         <TouchableOpacity
-                                                            key={idx}
-                                                            style={[styles.calendarDateCell, isSelected && styles.calendarDateCellSelected]}
-                                                            onPress={() => handleDatePress(item)}
+                                                            style={[styles.dropdownItem, { justifyContent: 'center' }]}
+                                                            onPress={() => setIsCustomValidDaysMode(true)}
                                                         >
-                                                            <Text style={[
-                                                                styles.calendarDateText,
-                                                                item.month !== 'curr' && styles.calendarDateTextDisabled,
-                                                                isSelected && styles.calendarDateTextSelected,
-                                                                isSun && item.month === 'curr' && { color: '#FF6B6B' },
-                                                                isSat && item.month === 'curr' && { color: '#4A90E2' },
-                                                                isPast && item.month === 'curr' && { color: '#DEDEDE' }
-                                                            ]}>{item.day}</Text>
+                                                            <Text style={[styles.dropdownText, { color: '#828282' }]}>+ 만료 일시 생성</Text>
                                                         </TouchableOpacity>
-                                                    );
-                                                })}
-                                            </View>
+                                                    ) : (
+                                                        <View style={{ paddingHorizontal: rs(10), paddingBottom: rs(10) }}>
+                                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
+                                                                <View style={[styles.createInputBox, { flex: 1, height: rs(36) }]}>
+                                                                    <TextInput
+                                                                        style={styles.createFormInput}
+                                                                        placeholder="발급 만료 일자를 적어주세요"
+                                                                        placeholderTextColor="#BDBDBD"
+                                                                        value={customValidDaysInput}
+                                                                        onChangeText={(text) => setCustomValidDaysInput(text.replace(/[^0-9]/g, ''))}
+                                                                        keyboardType="number-pad"
+                                                                    />
+                                                                </View>
+                                                                <TouchableOpacity
+                                                                    style={{ backgroundColor: '#34B262', paddingHorizontal: rs(12), paddingVertical: rs(8), borderRadius: rs(8) }}
+                                                                    onPress={() => {
+                                                                        if (customValidDaysInput) {
+                                                                            setValidDays(Number(customValidDaysInput));
+                                                                            setCustomValidDaysInput('');
+                                                                            setIsCustomValidDaysMode(false);
+                                                                            setIsValidDaysDropdownOpen(false);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <Text style={{ color: 'white', fontWeight: 'bold' }}>추가</Text>
+                                                                </TouchableOpacity>
+                                                            </View>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            )}
                                         </View>
-                                    </View>
-
-                                    {/* 시간 선택기 (UI 유지 및 동작 추가) */}
-                                    <View style={styles.timePickerRow}>
-                                        <TouchableOpacity onPress={() => {
-                                            const newDate = new Date(activePeriodTab === 'start' ? customStartDate : customEndDate);
-                                            newDate.setHours((newDate.getHours() + 12) % 24);
-                                            activePeriodTab === 'start' ? setCustomStartDate(newDate) : setCustomEndDate(newDate);
-                                        }}>
-                                            <Text style={styles.timePickerOption}>{(activePeriodTab === 'start' ? customStartDate : customEndDate).getHours() >= 12 ? '오후' : '오전'}</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => {
-                                            const newDate = new Date(activePeriodTab === 'start' ? customStartDate : customEndDate);
-                                            newDate.setHours((newDate.getHours() + 1) % 12 + (newDate.getHours() >= 12 ? 12 : 0));
-                                            activePeriodTab === 'start' ? setCustomStartDate(newDate) : setCustomEndDate(newDate);
-                                        }}>
-                                            <Text style={styles.timePickerValue}>{(activePeriodTab === 'start' ? customStartDate : customEndDate).getHours() % 12 || 12}</Text>
-                                        </TouchableOpacity>
-                                        <Text style={styles.timePickerSeparator}>:</Text>
-                                        <TouchableOpacity onPress={() => {
-                                            const newDate = new Date(activePeriodTab === 'start' ? customStartDate : customEndDate);
-                                            newDate.setMinutes((newDate.getMinutes() + 10) % 60);
-                                            activePeriodTab === 'start' ? setCustomStartDate(newDate) : setCustomEndDate(newDate);
-                                        }}>
-                                            <Text style={styles.timePickerValue}>{(activePeriodTab === 'start' ? customStartDate : customEndDate).getMinutes().toString().padStart(2, '0')}</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity><Ionicons name="chevron-down" size={rs(16)} color="#34B262" /></TouchableOpacity>
                                     </View>
 
                                     {/* 하단 버튼 */}
-                                    <View style={styles.periodModalBtnRow}>
-                                        <TouchableOpacity style={styles.periodCancelBtn} onPress={() => setIsPeriodModalVisible(false)}>
-                                            <Text style={styles.periodCancelText}>취소</Text>
+                                    <View style={styles.createStep2BtnRow}>
+                                        <TouchableOpacity style={styles.createPrevBtn} onPress={handlePrevStep}>
+                                            <Ionicons name="chevron-back" size={rs(16)} color="#34B262" />
+                                            <Text style={styles.createPrevBtnText}>이전</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity style={styles.periodConfirmBtn} onPress={() => setIsPeriodModalVisible(false)}>
-                                            <Text style={styles.periodConfirmText}>확인</Text>
+                                        <TouchableOpacity
+                                            style={[styles.createNextBtn, !isStep3Valid && { backgroundColor: '#D5D5D5' }]}
+                                            onPress={() => {
+                                                Keyboard.dismiss();
+                                                setCreateStep(4);
+                                            }}
+                                            disabled={!isStep3Valid}
+                                        >
+                                            <Text style={styles.createNextBtnText}>다음</Text>
+                                            <Ionicons name="chevron-forward" size={rs(16)} color="white" />
                                         </TouchableOpacity>
                                     </View>
+
+                                    {/* 페이지네이션 */}
+                                    <View style={styles.createPagination}>
+                                        <View style={styles.createDot} />
+                                        <View style={styles.createDot} />
+                                        <View style={[styles.createDot, { backgroundColor: '#34B262' }]} />
+                                        <View style={styles.createDot} />
+                                    </View>
+                                </>
+                            ) : (
+                                <>
+                                    {/* 타이틀 */}
+                                    <View style={styles.createModalHeader}>
+                                        <View style={styles.createModalIconBox}>
+                                            <Ionicons name="ticket" size={rs(24)} color="#34B262" />
+                                        </View>
+                                        <Text style={styles.createModalTitle}>새 쿠폰 만들기</Text>
+                                    </View>
+                                    <Text style={styles.createModalSubtitle}>학생들에게 보여질 쿠폰 미리보기</Text>
+
+                                    {/* 쿠폰 미리보기 카드 */}
+                                    <View style={styles.previewCouponCard}>
+                                        <View style={[
+                                            styles.previewIconBox,
+                                            selectedType === 'FIXED_AMOUNT' && { backgroundColor: '#EAF6EE' },
+                                            selectedType === 'PERCENTAGE' && { backgroundColor: '#FFDDDE' },
+                                            selectedType === 'GIFT' && { backgroundColor: '#FFF4D6' }
+                                        ]}>
+                                            <Image
+                                                source={
+                                                    selectedType === 'FIXED_AMOUNT' ? require('@/assets/images/shopowner/coupon-price.png') :
+                                                        selectedType === 'PERCENTAGE' ? require('@/assets/images/shopowner/coupon-percent.png') :
+                                                            require('@/assets/images/shopowner/coupon-present.png')
+                                                }
+                                                style={styles.previewImage}
+                                            />
+                                        </View>
+                                        <View style={styles.previewInfo}>
+                                            <View style={styles.previewTitleRow}>
+                                                <Text style={styles.previewBenefitTitle}>
+                                                    {selectedType === 'FIXED_AMOUNT' ? `${formatNumber(benefitValue) || '2,000'}원 할인` :
+                                                        selectedType === 'PERCENTAGE' ? `${benefitValue || '10'}% 할인` :
+                                                            `${benefitValue || '서비스'} 증정`}
+                                                </Text>
+                                            </View>
+                                            <Text style={styles.previewCouponName} numberOfLines={1}>{couponName || '쿠폰 이름을 입력해주세요'}</Text>
+
+                                            <View style={styles.previewMetaRow}>
+                                                <Text style={styles.previewMetaText}>최소 주문 {formatNumber(minOrderAmount) || '0'}원</Text>
+                                                <Text style={styles.previewMetaText}>
+                                                    {isIssuePeriodSelected
+                                                        ? `${formatFullDateKorean(customEndDate)}까지 발급 가능`
+                                                        : '발급 기간을 설정해주세요'}
+                                                </Text>
+                                            </View>
+
+                                            {!isUnlimited && totalQuantity !== '' && (
+                                                <View style={styles.createBadgeRow}>
+                                                    <View style={styles.previewBadge}>
+                                                        <Text style={styles.previewBadgeText}>{formatNumber(totalQuantity)}장 남음</Text>
+                                                    </View>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+
+                                    {/* 하단 버튼 */}
+                                    <View style={styles.createStep2BtnRow}>
+                                        <TouchableOpacity style={styles.createPrevBtn} onPress={handlePrevStep}>
+                                            <Ionicons name="chevron-back" size={rs(16)} color="#34B262" />
+                                            <Text style={styles.createPrevBtnText}>이전</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.createNextBtn, { backgroundColor: '#34B262' }]}
+                                            onPress={handleCreateCoupon}
+                                        >
+                                            <Ionicons name="checkmark" size={rs(16)} color="white" />
+                                            <Text style={styles.createNextBtnText}>발행하기</Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {/* 페이지네이션 */}
+                                    <View style={styles.createPagination}>
+                                        <View style={styles.createDot} />
+                                        <View style={styles.createDot} />
+                                        <View style={styles.createDot} />
+                                        <View style={[styles.createDot, { backgroundColor: '#34B262' }]} />
+                                    </View>
+                                </>
+                            )}
+
+                        </View>
+                    </TouchableWithoutFeedback>
+
+                    {/* =======================================================
+                          [내부 오버레이] 쿠폰 유효 기간 설정 (상격) - 커스텀 View 방식
+                      ======================================================= */}
+                    {isPeriodModalVisible && (
+                        <View style={[StyleSheet.absoluteFill, styles.modalOverlay, { zIndex: 100 }]}>
+                            <View style={styles.periodModalContainer}>
+                                {/* 탭 헤더: 시작 / 종료 */}
+                                <View style={styles.periodTabRow}>
+                                    <TouchableOpacity
+                                        style={[styles.periodTabBtn, activePeriodTab === 'start' && styles.periodTabBtnActive]}
+                                        onPress={() => setActivePeriodTab('start')}
+                                    >
+                                        <Text style={[styles.periodTabText, activePeriodTab === 'start' && styles.periodTabTextActive]}>시작</Text>
+                                        <Text style={[
+                                            styles.periodTabDetail,
+                                            activePeriodTab === 'start' && styles.periodTabDetailActive,
+                                            !isStartDatePicked && { color: '#BDBDBD', fontSize: rs(10) }
+                                        ]} numberOfLines={1}>
+                                            {isStartDatePicked ? formatDateKorean(customStartDate) : '일시를 선택해 주세요'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.periodTabBtn, activePeriodTab === 'end' && styles.periodTabBtnActive]}
+                                        onPress={() => setActivePeriodTab('end')}
+                                    >
+                                        <Text style={[styles.periodTabText, activePeriodTab === 'end' && styles.periodTabTextActive]}>종료</Text>
+                                        <Text style={[
+                                            styles.periodTabDetail,
+                                            activePeriodTab === 'end' && styles.periodTabDetailActive,
+                                            !isEndDatePicked && { color: '#BDBDBD', fontSize: rs(10) }
+                                        ]} numberOfLines={1}>
+                                            {isEndDatePicked ? formatDateKorean(customEndDate) : '일시를 선택해 주세요'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* 캘린더 영역 */}
+                                <View style={styles.calendarContainer}>
+                                    <View style={styles.calendarHeader}>
+                                        <TouchableOpacity onPress={() => handleMonthChange(-1)}>
+                                            <Ionicons name="chevron-back" size={rs(18)} color="#828282" />
+                                        </TouchableOpacity>
+                                        <Text style={styles.calendarMonthText}>
+                                            {currentCalendarDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                                        </Text>
+                                        <TouchableOpacity onPress={() => handleMonthChange(1)}>
+                                            <Ionicons name="chevron-forward" size={rs(18)} color="#828282" />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    <View style={styles.calendarGrid}>
+                                        {/* 요일 */}
+                                        <View style={styles.calendarDayRow}>
+                                            {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
+                                                <Text key={d} style={[styles.calendarDayText, i === 0 && { color: '#FF6B6B' }, i === 6 && { color: '#4A90E2' }]}>{d}</Text>
+                                            ))}
+                                        </View>
+                                        {/* 날짜 데이터 */}
+                                        <View style={styles.calendarDateGrid}>
+                                            {getCalendarDays(currentCalendarDate).map((item, idx) => {
+                                                const isSelected = (activePeriodTab === 'start' && isStartDatePicked && item.date.toDateString() === customStartDate.toDateString()) ||
+                                                    (activePeriodTab === 'end' && isEndDatePicked && item.date.toDateString() === customEndDate.toDateString());
+
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
+
+                                                let isDisabled = false;
+                                                if (activePeriodTab === 'start') {
+                                                    const nextMonthLimit = new Date();
+                                                    nextMonthLimit.setMonth(nextMonthLimit.getMonth() + 2);
+                                                    nextMonthLimit.setDate(0);
+                                                    nextMonthLimit.setHours(23, 59, 59, 999);
+                                                    isDisabled = item.date < today || item.date > nextMonthLimit;
+                                                } else {
+                                                    const compareDate = isStartDatePicked ? new Date(customStartDate) : today;
+                                                    compareDate.setHours(0, 0, 0, 0);
+                                                    isDisabled = item.date < compareDate;
+                                                }
+
+                                                const isSat = item.date.getDay() === 6;
+                                                const isSun = item.date.getDay() === 0;
+
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={idx}
+                                                        style={[styles.calendarDateCell, isSelected && styles.calendarDateCellSelected]}
+                                                        onPress={() => handleDatePress(item)}
+                                                    >
+                                                        <Text style={[
+                                                            styles.calendarDateText,
+                                                            (item.month !== 'curr' || isDisabled) && styles.calendarDateTextDisabled,
+                                                            isSelected && styles.calendarDateTextSelected,
+                                                            isSun && item.month === 'curr' && !isDisabled && { color: '#FF6B6B' },
+                                                            isSat && item.month === 'curr' && !isDisabled && { color: '#4A90E2' },
+                                                            isDisabled && item.month === 'curr' && { color: '#DEDEDE' }
+                                                        ]}>{item.day}</Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {/* 시간 선택기 */}
+                                <View style={styles.timePickerRow}>
+                                    <TouchableOpacity onPress={() => {
+                                        const newDate = new Date(activePeriodTab === 'start' ? customStartDate : customEndDate);
+                                        newDate.setHours((newDate.getHours() + 12) % 24);
+                                        if (activePeriodTab === 'start') {
+                                            setCustomStartDate(newDate);
+                                            setIsStartDatePicked(true);
+                                            setCustomEndDate(validateEndDate(newDate, customEndDate));
+                                        } else {
+                                            const finalStart = isStartDatePicked ? customStartDate : new Date();
+                                            setCustomEndDate(validateEndDate(finalStart, newDate));
+                                            setIsEndDatePicked(true);
+                                        }
+                                    }}>
+                                        <Text style={styles.timePickerOption}>{(activePeriodTab === 'start' ? customStartDate : customEndDate).getHours() >= 12 ? '오후' : '오전'}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => {
+                                        const newDate = new Date(activePeriodTab === 'start' ? customStartDate : customEndDate);
+                                        newDate.setHours((newDate.getHours() + 1) % 12 + (newDate.getHours() >= 12 ? 12 : 0));
+                                        if (activePeriodTab === 'start') {
+                                            setCustomStartDate(newDate);
+                                            setIsStartDatePicked(true);
+                                            setCustomEndDate(validateEndDate(newDate, customEndDate));
+                                        } else {
+                                            const finalStart = isStartDatePicked ? customStartDate : new Date();
+                                            setCustomEndDate(validateEndDate(finalStart, newDate));
+                                            setIsEndDatePicked(true);
+                                        }
+                                    }}>
+                                        <Text style={styles.timePickerValue}>{(activePeriodTab === 'start' ? customStartDate : customEndDate).getHours() % 12 || 12}</Text>
+                                    </TouchableOpacity>
+                                    <Text style={styles.timePickerSeparator}>:</Text>
+                                    <TouchableOpacity onPress={() => {
+                                        const newDate = new Date(activePeriodTab === 'start' ? customStartDate : customEndDate);
+                                        newDate.setMinutes((newDate.getMinutes() + 10) % 60);
+                                        if (activePeriodTab === 'start') {
+                                            setCustomStartDate(newDate);
+                                            setIsStartDatePicked(true);
+                                            setCustomEndDate(validateEndDate(newDate, customEndDate));
+                                        } else {
+                                            const finalStart = isStartDatePicked ? customStartDate : new Date();
+                                            setCustomEndDate(validateEndDate(finalStart, newDate));
+                                            setIsEndDatePicked(true);
+                                        }
+                                    }}>
+                                        <Text style={styles.timePickerValue}>{(activePeriodTab === 'start' ? customStartDate : customEndDate).getMinutes().toString().padStart(2, '0')}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity><Ionicons name="chevron-down" size={rs(16)} color="#34B262" /></TouchableOpacity>
+                                </View>
+
+                                {/* 하단 버튼 */}
+                                <View style={styles.periodModalBtnRow}>
+                                    <TouchableOpacity style={styles.periodCancelBtn} onPress={() => {
+                                        setIsPeriodModalVisible(false);
+                                        Keyboard.dismiss();
+                                    }}>
+                                        <Text style={styles.periodCancelText}>취소</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.periodConfirmBtn} onPress={() => {
+                                        setIsIssuePeriodSelected(true);
+                                        setIsPeriodModalVisible(false);
+                                        Keyboard.dismiss();
+                                    }}>
+                                        <Text style={styles.periodConfirmText}>확인</Text>
+                                    </TouchableOpacity>
                                 </View>
                             </View>
-                        </Modal>
-                    </View>
-                </TouchableWithoutFeedback >
-            </Modal >
+                        </View>
+                    )}
+
+                    {/* [내부 오버레이] 닫기 재확인 - 커스텀 View 방식 */}
+                    {isExitConfirmVisible && (
+                        <View style={[StyleSheet.absoluteFill, styles.modalOverlay, { zIndex: 110 }]}>
+                            <View style={styles.confirmModalContainer}>
+                                <Text style={styles.confirmModalTitle}>쿠폰 작성을 취소하시겠습니까?</Text>
+                                <Text style={styles.confirmModalSubtitle}>지금 닫으시면 작성 중인 내용이 사라집니다.</Text>
+                                <View style={styles.confirmModalBtnRow}>
+                                    <TouchableOpacity
+                                        style={styles.confirmCancelBtn}
+                                        onPress={() => setIsExitConfirmVisible(false)}
+                                    >
+                                        <Text style={styles.confirmCancelBtnText}>취소</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.confirmExitBtn}
+                                        onPress={() => {
+                                            setIsExitConfirmVisible(false);
+                                            setCreateModalVisible(false);
+                                        }}
+                                    >
+                                        <Text style={styles.confirmExitBtnText}>닫기</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+                </View>
+            </Modal>
 
 
             {/* =======================================================
           [모달] 쿠폰 사용완료 처리 
       ======================================================= */}
-            < Modal
+            <Modal
                 animationType="fade"
                 transparent={true}
                 visible={usageModalVisible}
@@ -1185,7 +1421,6 @@ export default function CouponScreen({ navigation, route }) {
                                                 {/* 티켓 상단 (내용) */}
                                                 <View style={styles.ticketTop}>
                                                     <Text style={styles.ticketTitle}>{verifiedCouponData?.name || '쿠폰'}</Text>
-                                                    <Text style={styles.ticketDesc}>{verifiedCouponData?.description || '혜택을 확인해주세요'}</Text>
 
                                                     <View style={styles.ticketInfoRow}>
                                                         <Text style={styles.ticketLabel}>사용처</Text>
@@ -1274,20 +1509,42 @@ const styles = StyleSheet.create({
     moreBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(2) },
     moreBtnTextGreen: { fontSize: rs(10), fontWeight: '600', color: '#34B262', fontFamily: 'Pretendard' },
     moreBtnTextGray: { fontSize: rs(10), fontWeight: '600', color: '#828282', fontFamily: 'Pretendard' },
-    couponCard: { backgroundColor: 'white', borderRadius: rs(12), padding: rs(16), marginBottom: rs(12), elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05 },
-    couponHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: rs(15) },
-    couponIconBox: { width: rs(36), height: rs(36), backgroundColor: '#EAF6EE', borderRadius: rs(12), justifyContent: 'center', alignItems: 'center', marginRight: rs(10) },
+    couponCard: {
+        backgroundColor: 'white',
+        borderRadius: rs(12),
+        paddingHorizontal: rs(16),
+        paddingVertical: rs(11),
+        marginBottom: rs(12),
+        elevation: 2,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4
+    },
+    couponHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: rs(10) },
+    couponIconBox: {
+        width: rs(45),
+        height: rs(45),
+        backgroundColor: '#EAF6EE',
+        borderRadius: rs(12),
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: rs(12)
+    },
     percentIcon: { fontSize: rs(16), fontWeight: '700', color: '#34B262', fontFamily: 'Pretendard' },
-    couponInfo: { flex: 1 },
+    couponInfo: { flex: 1, gap: 0 },
     couponTitle: { fontSize: rs(13), fontWeight: '500', color: 'black', fontFamily: 'Pretendard', marginBottom: rs(2) },
-    couponDate: { fontSize: rs(10), color: '#828282', fontFamily: 'Pretendard' },
-    todayUsed: { fontSize: rs(10), fontWeight: '600', color: '#34B262', fontFamily: 'Pretendard' },
-    progressContainer: {},
-    progressLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: rs(6) },
-    progressLabel: { fontSize: rs(10), color: '#828282', fontFamily: 'Pretendard' },
+    couponMetaRow: { flexDirection: 'row', alignItems: 'center', gap: rs(2) },
+    couponMetaTextDate: { fontSize: rs(9), color: '#828282', fontWeight: '400', fontFamily: 'Pretendard' },
+    couponMetaTextValidity: { fontSize: rs(9), color: '#828282', fontWeight: '400', fontFamily: 'Pretendard' },
+
+    dualProgressContainer: { gap: rs(8) },
+    progressItem: { width: '100%', gap: rs(4) },
+    progressLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    progressLabel: { fontSize: rs(10), color: '#828282', fontWeight: '500', fontFamily: 'Pretendard' },
     progressValue: { fontSize: rs(10), fontWeight: '600', color: 'black', fontFamily: 'Pretendard' },
     progressBarBg: { height: rs(6), backgroundColor: '#F0F0F0', borderRadius: rs(3), overflow: 'hidden' },
-    progressBarFill: { height: '100%', backgroundColor: '#34B262', borderRadius: rs(3) },
+    progressBarFill: { height: '100%', borderRadius: rs(3) },
     expiredCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white', padding: rs(12), borderRadius: rs(10), marginBottom: rs(8), elevation: 1 },
     expiredTitle: { fontSize: rs(12), color: '#828282', fontFamily: 'Pretendard' },
     expiredValue: { fontSize: rs(10), color: '#828282', fontFamily: 'Pretendard' },
@@ -1321,7 +1578,6 @@ const styles = StyleSheet.create({
     ticketContainer: { width: '100%', backgroundColor: '#F2F2F2', borderRadius: rs(0), borderWidth: 1, borderColor: 'transparent', marginBottom: rs(15), overflow: 'hidden', position: 'relative', },
     ticketTop: { paddingVertical: rs(15), paddingHorizontal: rs(20), alignItems: 'center', },
     ticketTitle: { fontSize: rs(18), fontWeight: '700', color: '#34B262', fontFamily: 'Pretendard', marginBottom: rs(4), },
-    ticketDesc: { fontSize: rs(12), fontWeight: '500', color: 'black', fontFamily: 'Pretendard', marginBottom: rs(15), },
     ticketInfoRow: { width: '100%', flexDirection: 'row', marginBottom: rs(4), },
     ticketLabel: { width: rs(50), fontSize: rs(10), fontWeight: '600', color: '#444444', fontFamily: 'Pretendard', },
     ticketValue: { fontSize: rs(10), fontWeight: '500', color: '#828282', fontFamily: 'Pretendard', },
@@ -1340,13 +1596,69 @@ const styles = StyleSheet.create({
     stampText: { fontSize: rs(16), fontWeight: '700', color: '#34B262', textAlign: 'center', fontFamily: 'Pretendard', lineHeight: rs(18), },
 
     // [새 쿠폰 모달]
-    createModalContainer: { width: rs(331), backgroundColor: 'white', borderRadius: rs(10), paddingTop: rs(17), paddingBottom: rs(20), paddingHorizontal: rs(22), alignItems: 'center' },
-    createModalCloseBtn: { position: 'absolute', top: rs(17), right: rs(20), zIndex: 1 },
+    createModalContainer: { width: rs(350), backgroundColor: 'white', borderRadius: rs(20), padding: rs(24), position: 'relative' },
+    createModalCloseBtn: { position: 'absolute', top: rs(20), right: rs(20), zIndex: 10 },
+
+    // 닫기 재확인 모달 스타일
+    confirmModalContainer: {
+        width: rs(300),
+        backgroundColor: 'white',
+        borderRadius: rs(16),
+        padding: rs(24),
+        alignItems: 'center',
+    },
+    confirmModalTitle: {
+        fontSize: rs(16),
+        fontWeight: '700',
+        color: 'black',
+        fontFamily: 'Pretendard',
+        marginBottom: rs(8),
+    },
+    confirmModalSubtitle: {
+        fontSize: rs(13),
+        color: '#828282',
+        fontFamily: 'Pretendard',
+        marginBottom: rs(24),
+        textAlign: 'center',
+    },
+    confirmModalBtnRow: {
+        flexDirection: 'row',
+        gap: rs(12),
+        width: '100%',
+    },
+    confirmCancelBtn: {
+        flex: 1,
+        height: rs(44),
+        backgroundColor: '#F2F2F2',
+        borderRadius: rs(8),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    confirmCancelBtnText: {
+        fontSize: rs(14),
+        fontWeight: '600',
+        color: '#828282',
+        fontFamily: 'Pretendard',
+    },
+    confirmExitBtn: {
+        flex: 1,
+        height: rs(44),
+        backgroundColor: '#34B262',
+        borderRadius: rs(8),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    confirmExitBtnText: {
+        fontSize: rs(14),
+        fontWeight: '600',
+        color: 'white',
+        fontFamily: 'Pretendard',
+    },
     createModalHeader: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: rs(10) },
     createModalIconBox: { width: rs(23), height: rs(23), justifyContent: 'center', alignItems: 'center', marginRight: rs(7), overflow: 'hidden' },
     createModalIconTicket: { width: rs(18), height: rs(15), backgroundColor: '#34B262', borderRadius: rs(2) },
     createModalTitle: { fontSize: rs(16), fontWeight: '600', color: 'black', fontFamily: 'Pretendard' },
-    createModalSubtitle: { alignSelf: 'flex-start', fontSize: rs(11), color: '#668776', fontWeight: '500', marginBottom: rs(20), fontFamily: 'Pretendard' },
+    createModalSubtitle: { alignSelf: 'flex-start', fontSize: rs(11), color: '#668776', fontWeight: '500', marginBottom: rs(25), fontFamily: 'Pretendard' },
 
     createOptionList: { width: '100%', gap: rs(8) },
     createOptionCard: { width: '100%', height: rs(68), flexDirection: 'row', alignItems: 'center', paddingHorizontal: rs(15), borderRadius: rs(10), borderWidth: rs(2), borderColor: '#DADADA', backgroundColor: 'white' },
@@ -1358,7 +1670,7 @@ const styles = StyleSheet.create({
     createOptionTitle: { fontSize: rs(16), fontWeight: '600', color: 'black', marginBottom: rs(2), fontFamily: 'Pretendard' },
     createOptionDesc: { fontSize: rs(11), fontWeight: '500', color: '#668776', fontFamily: 'Pretendard' },
 
-    createPagination: { flexDirection: 'row', gap: rs(3), marginTop: rs(17) },
+    createPagination: { flexDirection: 'row', gap: rs(3), marginTop: rs(17), alignSelf: 'center' },
     createDot: { width: rs(6), height: rs(6), borderRadius: rs(3), backgroundColor: '#D9D9D9' },
 
     // [새 쿠폰 - Step 2 상세]
@@ -1420,15 +1732,17 @@ const styles = StyleSheet.create({
     periodConfirmText: { fontSize: rs(13), fontWeight: '700', color: 'white', fontFamily: 'Pretendard' },
 
     // [Step 4 - 미리보기 상세]
-    previewCouponCard: { width: rs(295), height: rs(100), backgroundColor: '#FBFBFB', borderRadius: rs(15), paddingHorizontal: rs(10), paddingLeft: rs(15), flexDirection: 'row', alignItems: 'center', gap: rs(12), elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 3, marginBottom: rs(20), zIndex: 1 },
+    previewCouponCard: { width: rs(295), height: rs(100), backgroundColor: '#FBFBFB', borderRadius: rs(15), paddingLeft: rs(15), paddingRight: rs(10), flexDirection: 'row', alignItems: 'center', gap: rs(15), elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 3, marginBottom: rs(10), zIndex: 1 },
     previewIconBox: { width: rs(65), height: rs(65), borderRadius: rs(12), justifyContent: 'center', alignItems: 'center' },
-    previewImage: { width: rs(45), height: rs(45), resizeMode: 'contain' },
-    previewInfo: { flex: 1, height: rs(74), justifyContent: 'center' },
-    previewTextRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: rs(10) },
-    previewTitle: { fontSize: rs(14), fontWeight: '500', color: 'black', fontFamily: 'Pretendard' },
-    previewDesc: { fontSize: rs(12), fontWeight: '400', color: '#828282', fontFamily: 'Pretendard', marginTop: rs(1) },
-    previewValue: { fontSize: rs(15), fontWeight: '700', color: 'black', fontFamily: 'Pretendard' },
-    previewBottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-    previewDate: { fontSize: rs(10), fontWeight: '500', color: '#757575', fontFamily: 'Pretendard' },
+    previewImage: { width: rs(42), height: rs(42), resizeMode: 'contain' },
+    previewInfo: { flex: 1, paddingVertical: rs(5), justifyContent: 'center', alignItems: 'flex-start', gap: rs(3) },
+    previewTitleRow: { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'flex-start', gap: rs(3) },
+    previewBenefitTitle: { fontSize: rs(14), fontWeight: '600', color: 'black', fontFamily: 'Pretendard' },
+    previewCouponName: { fontSize: rs(12), fontWeight: '400', color: 'black', fontFamily: 'Pretendard', marginVertical: rs(2) },
+    previewMetaRow: { alignSelf: 'stretch', gap: rs(1) },
+    previewMetaText: { fontSize: rs(10), fontWeight: '400', color: '#757575', fontFamily: 'Pretendard' },
+    createBadgeRow: { flexDirection: 'row', alignItems: 'center' },
+    previewBadge: { paddingHorizontal: rs(3), paddingVertical: rs(1), backgroundColor: '#FFE4E5', borderRadius: rs(2), justifyContent: 'center', alignItems: 'center' },
+    previewBadgeText: { fontSize: rs(8), fontWeight: '400', color: '#F15051', fontFamily: 'Pretendard' },
     previewViewBtn: { backgroundColor: '#34B262', borderRadius: rs(15), paddingHorizontal: rs(12), paddingVertical: rs(4), color: 'white', fontSize: rs(12), fontWeight: '600', overflow: 'hidden' },
 });
