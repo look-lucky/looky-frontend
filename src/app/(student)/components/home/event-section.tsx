@@ -129,17 +129,17 @@ export function EventSection({ events }: EventSectionProps) {
           <View style={styles.cardTopRow}>
             <View style={styles.cardTopLeft}>
               <View style={[styles.ddayBadge, { backgroundColor: ddayStyle.badge }]}>
-                <ThemedText type="defaultSemiBold" lightColor="#FFFFFF">{ddayText}</ThemedText>
+                <ThemedText type="captionSemiBold" lightColor="#FFFFFF">{ddayText}</ThemedText>
               </View>
-              <ThemedText type="defaultSemiBold" style={styles.eventTitle} numberOfLines={2}>
+              <ThemedText type="captionSemiBold" style={styles.eventTitle} numberOfLines={2}>
                 {item.title}
               </ThemedText>
             </View>
             <Image source={icon} style={styles.eventIcon} resizeMode="contain" />
           </View>
-          <ThemedText type="caption" style={styles.eventDescription} numberOfLines={1}>
+          <ThemedText type="small" style={styles.eventDescription} numberOfLines={1}>
             참여하고{' '}
-            <ThemedText type="caption" style={[styles.eventHighlight, { color: ddayStyle.highlight }]}>
+            <ThemedText type="small" style={[styles.eventHighlight, { color: ddayStyle.highlight }]}>
               {item.description}
             </ThemedText>
           </ThemedText>
@@ -234,6 +234,7 @@ const styles = StyleSheet.create({
   ddayBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: rs(8),
+    paddingVertical: rs(2),
     borderRadius: rs(12),
   },
   ddayText: {
@@ -244,6 +245,7 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontWeight: '600',
     color: Gray.black,
+    height: rs(32),
   },
   eventDescription: {
     marginTop: rs(4),
@@ -257,7 +259,7 @@ const styles = StyleSheet.create({
     height: rs(48),
   },
   cardBottom: {
-    height: rs(40),
+    height: rs(24),
     backgroundColor: Gray.white,
     justifyContent: 'center',
     paddingHorizontal: rs(12),

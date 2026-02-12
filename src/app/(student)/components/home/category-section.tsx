@@ -66,8 +66,8 @@ export function CategorySection() {
               ) : (
                 <ThemedText style={styles.iconText}>···</ThemedText>
               )}
+              <ThemedText style={styles.label}>{category.label}</ThemedText>
             </View>
-            <ThemedText style={styles.label}>{category.label}</ThemedText>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -80,22 +80,22 @@ const styles = StyleSheet.create({
     marginVertical: rs(8),
   },
   scrollContent: {
-    gap: rs(12),
+    gap: rs(10),
     paddingHorizontal: rs(4),
   },
   categoryItem: {
     alignItems: 'center',
-    gap: rs(8),
   },
   iconCircle: {
     width: rs(64),
-    height: rs(64),
+    height: rs(76),
     borderRadius: rs(20),
     backgroundColor: Gray.white,
     justifyContent: 'center',
     alignItems: 'center',
     borderColor: Gray.gray4,
     borderWidth: 2,
+    gap: rs(4),
   },
   iconText: {
     fontSize: rs(20),
