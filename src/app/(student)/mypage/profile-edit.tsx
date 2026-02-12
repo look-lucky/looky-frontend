@@ -107,7 +107,7 @@ export default function ProfileEditScreen() {
   // 초기 데이터 로드
   useEffect(() => {
     if (studentInfo) {
-      setNickname(studentInfo.nickname ?? "");
+      setNickname(studentInfo.username ?? "");
       setSelectedCollegeId(studentInfo.collegeId ?? null);
       setSelectedDepartmentId(studentInfo.departmentId ?? null);
       setIsClubMember(studentInfo.isClubMember ?? null);
