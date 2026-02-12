@@ -393,47 +393,40 @@ export default function BenefitsTab() {
               쿠폰 코드를 사장님께 보여드리고 바로 사용해 보세요!
             </ThemedText>
 
-            <View style={[styles.couponDetailCard, couponCode && styles.couponDetailCardActive]}>
-              {!couponCode ? (
-                <>
-                  <ThemedText style={styles.couponDetailTitle}>
-                    {selectedCoupon?.title}
-                  </ThemedText>
-                  <ThemedText style={styles.couponDetailDesc}>
-                    {selectedCoupon?.description}
-                  </ThemedText>
-                  <View style={styles.couponDetailDivider} />
-                  <View style={styles.couponDetailRow}>
-                    <ThemedText style={styles.couponDetailLabel}>사용처</ThemedText>
-                    <ThemedText style={styles.couponDetailValue}>
-                      {selectedCoupon?.storeName}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.couponDetailRow}>
-                    <ThemedText style={styles.couponDetailLabel}>혜택</ThemedText>
-                    <ThemedText style={styles.couponDetailValue}>
-                      {formatBenefit(selectedCoupon?.benefitType, selectedCoupon?.benefitValue)}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.couponDetailRow}>
-                    <ThemedText style={styles.couponDetailLabel}>만료기한</ThemedText>
-                    <ThemedText style={styles.couponDetailValue}>
-                      {formatExpiryDateTime(selectedCoupon?.expiresAt)}
-                    </ThemedText>
-                  </View>
-                </>
-              ) : (
-                <View style={styles.codeContainer}>
-                  {couponCode.split("").map((digit, i) => (
-                    <View key={i} style={styles.codeDigitBox}>
-                      <ThemedText style={styles.codeDigit}>{digit}</ThemedText>
-                    </View>
-                  ))}
-                </View>
-              )}
+            <View style={styles.couponDetailCard}>
+              <ThemedText style={styles.couponDetailTitle}>
+                {selectedCoupon?.title}
+              </ThemedText>
+              <View style={styles.couponDetailDivider} />
+              <View style={styles.couponDetailRow}>
+                <ThemedText style={styles.couponDetailLabel}>사용처</ThemedText>
+                <ThemedText style={styles.couponDetailValue}>
+                  {selectedCoupon?.storeName}
+                </ThemedText>
+              </View>
+              <View style={styles.couponDetailRow}>
+                <ThemedText style={styles.couponDetailLabel}>혜택</ThemedText>
+                <ThemedText style={styles.couponDetailValue}>
+                  {formatBenefit(selectedCoupon?.benefitType, selectedCoupon?.benefitValue)}
+                </ThemedText>
+              </View>
+              <View style={styles.couponDetailRow}>
+                <ThemedText style={styles.couponDetailLabel}>만료기한</ThemedText>
+                <ThemedText style={styles.couponDetailValue}>
+                  {formatExpiryDateTime(selectedCoupon?.expiresAt)}
+                </ThemedText>
+              </View>
             </View>
 
-            {!couponCode && (
+            {couponCode ? (
+              <View style={styles.codeContainer}>
+                {couponCode.split("").map((digit, i) => (
+                  <View key={i} style={styles.codeDigitBox}>
+                    <ThemedText style={styles.codeDigit}>{digit}</ThemedText>
+                  </View>
+                ))}
+              </View>
+            ) : (
               <AppButton
                 label="사용하기"
                 onPress={handleUseCoupon}
@@ -693,7 +686,7 @@ const styles = StyleSheet.create({
     backgroundColor: Gray.white,
     borderRadius: rs(16),
     padding: rs(24),
-    gap: rs(16),
+    gap: rs(8),
   },
   modalCloseButton: {
     position: "absolute",
@@ -723,10 +716,7 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     borderRadius: rs(12),
     padding: rs(16),
-    gap: rs(8),
-  },
-  couponDetailCardActive: {
-    borderStyle: "solid",
+    gap: rs(4),
   },
   couponDetailTitle: {
     fontFamily: Fonts.bold,
@@ -734,16 +724,10 @@ const styles = StyleSheet.create({
     color: Primary["500"],
     textAlign: "center",
   },
-  couponDetailDesc: {
-    fontFamily: Fonts.regular,
-    fontSize: rs(12),
-    color: TextColor.secondary,
-    textAlign: "center",
-  },
   couponDetailDivider: {
     height: 1,
     backgroundColor: Gray.gray3,
-    marginVertical: rs(4),
+    marginVertical: rs(2),
   },
   couponDetailRow: {
     flexDirection: "row",
@@ -763,21 +747,23 @@ const styles = StyleSheet.create({
   },
   codeContainer: {
     flexDirection: "row",
-    justifyContent: "space-evenly",
+    justifyContent: "center",
     alignItems: "center",
-    paddingVertical: rs(16),
+    gap: rs(12),
   },
   codeDigitBox: {
+    width: rs(48),
+    height: rs(48),
     alignItems: "center",
     justifyContent: "center",
-    borderBottomWidth: 2,
-    borderBottomColor: TextColor.primary,
-    paddingHorizontal: rs(8),
-    paddingBottom: rs(4),
+    borderWidth: 1,
+    borderColor: Gray.gray3,
+    borderRadius: rs(8),
   },
   codeDigit: {
     fontFamily: Fonts.bold,
-    fontSize: rs(40),
+    fontSize: rs(24),
+    lineHeight: rs(32),
     color: TextColor.primary,
   },
   useButton: {
