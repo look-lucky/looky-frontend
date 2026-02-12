@@ -1,6 +1,6 @@
 import { useGetMyCoupons, useGetTodayCoupons } from '@/src/api/coupon';
-import { useGetStudentInfo } from '@/src/api/my-page';
 import { customFetch } from '@/src/api/mutator';
+import { useGetStudentInfo } from '@/src/api/my-page';
 import { useGetHotStores } from '@/src/api/store';
 import { CategorySection } from '@/src/app/(student)/components/home/category-section';
 import { CouponSection } from '@/src/app/(student)/components/home/coupon-section';
@@ -131,6 +131,6 @@ const styles = StyleSheet.create({
     marginTop: rs(16),
   },
   bottomSpacer: {
-    height: rs(100),
+    height: rs(140),
   },
 });

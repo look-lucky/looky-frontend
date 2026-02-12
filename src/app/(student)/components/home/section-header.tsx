@@ -1,10 +1,11 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Text as TextColor } from '@/src/shared/theme/theme';
+import type { ReactNode } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface SectionHeaderProps {
-  icon: string;
+  icon: ReactNode;
   title: string;
   subtitle?: string;
   onMorePress?: () => void;
@@ -20,7 +21,11 @@ export function SectionHeader({
     <View style={styles.container}>
       <View style={styles.titleContainer}>
         <View style={styles.mainTitle}>
-          <ThemedText style={styles.icon}>{icon}</ThemedText>
+          {typeof icon === 'string' ? (
+            <ThemedText style={styles.icon}>{icon}</ThemedText>
+          ) : (
+            icon
+          )}
           <ThemedText style={styles.title}>{title}</ThemedText>
         </View>
         {subtitle && (

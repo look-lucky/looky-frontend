@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import {
   FlatList,
   Image,
+  type ImageSourcePropType,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -13,10 +14,13 @@ import {
 } from 'react-native';
 import { SectionHeader } from './section-header';
 
+type EventType = 'FOOD_EVENT' | 'POPUP_STORE' | 'SCHOOL_EVENT' | 'PROMOTION' | 'COMMUNITY';
+
 interface EventItem {
   id: number;
   title: string;
   description: string;
+  eventTypes: EventType[];
   startDateTime: string;
   endDateTime: string;
   status: 'UPCOMING' | 'LIVE' | 'ENDED';
@@ -27,22 +31,31 @@ interface EventSectionProps {
   events: EventItem[];
 }
 
-// 이벤트 상태별 스타일
-const EVENT_STYLES = {
-  LIVE: {
+// 이벤트 타입별 아이콘 매핑
+const EVENT_TYPE_ICONS: Record<EventType, ImageSourcePropType> = {
+  FOOD_EVENT: require('@/assets/images/icons/home/event-burger.png'),
+  SCHOOL_EVENT: require('@/assets/images/icons/home/event-alarm.png'),
+  POPUP_STORE: require('@/assets/images/icons/home/event-alarm.png'),
+  PROMOTION: require('@/assets/images/icons/home/event-alarm.png'),
+  COMMUNITY: require('@/assets/images/icons/home/event-alarm.png'),
+};
+
+// D-day 값 기준 스타일 (D-DAY=파란, D-1=분홍, D-N=노란)
+const DDAY_STYLES = {
+  TODAY: {
     background: '#EFF9FE',
     badge: '#61ADE3',
     highlight: '#2086BA',
   },
-  UPCOMING: {
+  ONE: {
     background: '#FEF1F0',
     badge: '#FA726B',
     highlight: '#FA5F54',
   },
-  ENDED: {
-    background: Gray.gray2,
-    badge: Gray.gray5,
-    highlight: Gray.gray6,
+  FUTURE: {
+    background: '#FFF8EC',
+    badge: '#F5A623',
+    highlight: '#D4890B',
   },
 };
 
@@ -52,27 +65,31 @@ export function EventSection({ events }: EventSectionProps) {
   const flatListRef = useRef<FlatList>(null);
 
   const handleMorePress = () => {
-    // TODO: 이벤트 목록 페이지 구현 후 연결
     router.push('/map?category=EVENT' as any);
   };
 
   const handleEventPress = (_eventId: number) => {
-    // TODO: 이벤트 상세 페이지 구현 후 연결
     router.push(`/map?category=EVENT` as any);
   };
 
-  const getDDayText = (event: EventItem) => {
-    if (event.status === 'LIVE') {
-      return 'D-DAY';
-    }
-
+  const getDDayInfo = (event: EventItem) => {
     const start = new Date(event.startDateTime);
-    const now = new Date();
-    const diffTime = start.getTime() - now.getTime();
+    const today = new Date();
+    const diffTime = start.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays <= 0) return 'D-DAY';
-    return `D-${diffDays}`;
+    if (event.status === 'LIVE' || diffDays <= 0) {
+      return { text: 'D-DAY', style: DDAY_STYLES.TODAY };
+    }
+    if (diffDays === 1) {
+      return { text: 'D-1', style: DDAY_STYLES.ONE };
+    }
+    return { text: `D-${diffDays}`, style: DDAY_STYLES.FUTURE };
+  };
+
+  const getEventIcon = (event: EventItem): ImageSourcePropType => {
+    const primaryType = event.eventTypes?.[0];
+    return EVENT_TYPE_ICONS[primaryType] ?? EVENT_TYPE_ICONS.SCHOOL_EVENT;
   };
 
   const onViewableItemsChanged = useRef(
@@ -87,13 +104,19 @@ export function EventSection({ events }: EventSectionProps) {
     itemVisiblePercentThreshold: 50,
   }).current;
 
-  if (events.length === 0) {
+  // 종료일이 지난 이벤트는 제외
+  const now = new Date();
+  const activeEvents = events
+    .filter((event) => new Date(event.endDateTime) > now)
+    .sort((a, b) => new Date(a.endDateTime).getTime() - new Date(b.endDateTime).getTime());
+
+  if (activeEvents.length === 0) {
     return null;
   }
 
   const renderEventCard = ({ item }: { item: EventItem }) => {
-    const ddayText = getDDayText(item);
-    const style = EVENT_STYLES[item.status] || EVENT_STYLES.UPCOMING;
+    const { text: ddayText, style: ddayStyle } = getDDayInfo(item);
+    const icon = getEventIcon(item);
 
     return (
       <TouchableOpacity
@@ -102,26 +125,24 @@ export function EventSection({ events }: EventSectionProps) {
         activeOpacity={0.8}
       >
         {/* 상단 컬러 영역 */}
-        <View style={[styles.cardTop, { backgroundColor: style.background }]}>
-          <View style={[styles.ddayBadge, { backgroundColor: style.badge }]}>
-            <ThemedText style={styles.ddayText}>{ddayText}</ThemedText>
+        <View style={[styles.cardTop, { backgroundColor: ddayStyle.background }]}>
+          <View style={styles.cardTopRow}>
+            <View style={styles.cardTopLeft}>
+              <View style={[styles.ddayBadge, { backgroundColor: ddayStyle.badge }]}>
+                <ThemedText type="defaultSemiBold" lightColor="#FFFFFF">{ddayText}</ThemedText>
+              </View>
+              <ThemedText type="defaultSemiBold" style={styles.eventTitle} numberOfLines={2}>
+                {item.title}
+              </ThemedText>
+            </View>
+            <Image source={icon} style={styles.eventIcon} resizeMode="contain" />
           </View>
-          <ThemedText style={styles.eventTitle} numberOfLines={2}>
-            {item.title}
-          </ThemedText>
-          <ThemedText style={styles.eventDescription} numberOfLines={1}>
+          <ThemedText type="caption" style={styles.eventDescription} numberOfLines={1}>
             참여하고{' '}
-            <ThemedText style={[styles.eventHighlight, { color: style.highlight }]}>
+            <ThemedText type="caption" style={[styles.eventHighlight, { color: ddayStyle.highlight }]}>
               {item.description}
             </ThemedText>
           </ThemedText>
-          {item.imageUrls.length > 0 && (
-            <Image
-              source={{ uri: item.imageUrls[0] }}
-              style={styles.eventImage}
-              resizeMode="contain"
-            />
-          )}
         </View>
         {/* 하단 흰색 영역 */}
         <View style={styles.cardBottom}>
@@ -142,7 +163,7 @@ export function EventSection({ events }: EventSectionProps) {
       />
       <FlatList
         ref={flatListRef}
-        data={events.slice(0, 10)}
+        data={activeEvents.slice(0, 10)}
         renderItem={renderEventCard}
         keyExtractor={(item) => item.id.toString()}
         horizontal
@@ -152,7 +173,7 @@ export function EventSection({ events }: EventSectionProps) {
         viewabilityConfig={viewabilityConfig}
       />
       <View style={styles.indicatorContainer}>
-        {events.slice(0, 3).map((_, index) => (
+        {activeEvents.slice(0, 3).map((_, index) => (
           <View
             key={index}
             style={[
@@ -193,21 +214,26 @@ const styles = StyleSheet.create({
     gap: rs(12),
   },
   card: {
-    width: rs(172),
+    width: rs(168),
     borderRadius: rs(8),
     overflow: 'hidden',
   },
   cardTop: {
-    height: rs(100),
     padding: rs(12),
-    position: 'relative',
+    gap: rs(4),
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  cardTopLeft: {
+    flex: 1,
+    gap: rs(4),
   },
   ddayBadge: {
-    position: 'absolute',
-    top: rs(12),
-    left: rs(12),
+    alignSelf: 'flex-start',
     paddingHorizontal: rs(8),
-    paddingVertical: rs(4),
     borderRadius: rs(12),
   },
   ddayText: {
@@ -216,27 +242,19 @@ const styles = StyleSheet.create({
     color: Gray.white,
   },
   eventTitle: {
-    marginTop: rs(24),
-    fontSize: rs(12),
     fontWeight: '600',
     color: Gray.black,
-    lineHeight: rs(16),
   },
   eventDescription: {
     marginTop: rs(4),
-    fontSize: rs(10),
-    fontWeight: '400',
     color: Gray.black,
   },
   eventHighlight: {
     fontWeight: '700',
   },
-  eventImage: {
-    position: 'absolute',
-    right: rs(8),
-    bottom: rs(8),
-    width: rs(60),
-    height: rs(50),
+  eventIcon: {
+    width: rs(48),
+    height: rs(48),
   },
   cardBottom: {
     height: rs(40),
