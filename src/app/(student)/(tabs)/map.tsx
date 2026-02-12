@@ -21,10 +21,11 @@ import {
 import { useTabBar } from '@/src/shared/contexts/tab-bar-context';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { useMapSearch } from '@/src/shared/hooks/use-map-search';
-import type { Event, EventType } from '@/src/shared/types/event';
+import type { EventType } from '@/src/shared/types/event';
 import type { Store } from '@/src/shared/types/store';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Owner, Text } from '@/src/shared/theme/theme';
+import ConfettiIcon from '@/assets/images/icons/map/confetti.svg';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -400,6 +401,9 @@ export default function MapTab() {
               style={styles.filterCheck}
             />
           )}
+          {category.id === 'EVENT' && (
+            <ConfettiIcon width={16} height={16} />
+          )}
           <ThemedText
             style={[
               styles.filterText,
@@ -631,6 +635,7 @@ export default function MapTab() {
         backgroundStyle={styles.bottomSheetBackground}
         handleIndicatorStyle={styles.bottomSheetHandle}
         enablePanDownToClose={false}
+        style={styles.bottomSheetContainer}
       >
         <View style={styles.bottomSheetContent}>
           {/* 바텀시트 헤더 */}
@@ -778,7 +783,8 @@ const styles = StyleSheet.create({
   // 검색바
   searchContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   searchBox: {
     flexDirection: 'row',
@@ -806,7 +812,8 @@ const styles = StyleSheet.create({
   },
   filterContent: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 0,
+    paddingBottom: 12,
     gap: 8,
   },
   filterButton: {
@@ -816,13 +823,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: Gray.white,
-    borderWidth: 1,
-    borderColor: Owner.primary,
     gap: 8,
   },
   filterButtonActive: {
     backgroundColor: Gray.black,
-    borderColor: Owner.primary,
   },
   filterCheck: {
     marginRight: 4,
@@ -856,10 +860,15 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   // 바텀시트
+  bottomSheetContainer: {
+    backgroundColor: 'transparent',
+  },
   bottomSheetBackground: {
     backgroundColor: Gray.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   bottomSheetContent: {
     flex: 1,
