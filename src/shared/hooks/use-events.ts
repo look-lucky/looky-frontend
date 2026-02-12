@@ -216,16 +216,6 @@ export function useEvents({
     [filteredEvents],
   );
 
-  // 디버깅 로그
-  console.log('[useEvents] API Response:', rawData?.data?.data?.content?.length ?? 0, 'events');
-  console.log('[useEvents] Transformed events:', events.length);
-  console.log('[useEvents] Visible events:', visibleEvents.length);
-  console.log('[useEvents] Filtered events:', filteredEvents.length);
-  console.log('[useEvents] Event markers:', eventMarkers.length);
-  if (eventMarkers.length > 0) {
-    console.log('[useEvents] First event marker:', eventMarkers[0]);
-  }
-
   return {
     events: filteredEvents,
     eventMarkers,
