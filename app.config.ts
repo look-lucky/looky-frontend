@@ -1,12 +1,18 @@
 import { ConfigContext, ExpoConfig } from "expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const IS_DEV = process.env.APP_VARIANT === "development";
-  const bundleId = IS_DEV ? "kr.looky.looky.dev" : "kr.looky.looky";
+  const variant = process.env.APP_VARIANT;
+  const IS_DEV = variant === "development";
+  const IS_PREVIEW = variant === "preview";
+  const bundleId = IS_DEV
+    ? "kr.looky.looky.dev"
+    : IS_PREVIEW
+      ? "kr.looky.looky.preview"
+      : "kr.looky.looky";
 
   return {
     ...config,
-    name: IS_DEV ? "Looky (Dev)" : "Looky",
+    name: IS_DEV ? "Looky (Dev)" : IS_PREVIEW ? "Looky (Preview)" : "Looky",
     slug: "rn-app",
     owner: "looky123",
     version: "1.0.0",
