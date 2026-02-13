@@ -25,10 +25,9 @@ export const CATEGORY_TO_API: Record<string, string | null> = {
 // 정렬 옵션
 export const SORT_OPTIONS = [
   { id: 'distance', label: '거리순' },
-  { id: 'recommend', label: '추천순' },
+  { id: 'popular', label: '인기순' },
   { id: 'rating', label: '별점순' },
   { id: 'reviews', label: '리뷰 많은순' },
-  { id: 'benefits', label: '혜택 많은순' },
 ];
 
 // 거리 필터 옵션

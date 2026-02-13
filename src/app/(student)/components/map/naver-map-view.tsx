@@ -102,6 +102,7 @@ interface NaverMapProps {
   onMarkerClick?: (markerId: string) => void;
   onEventMarkerClick?: (markerId: string) => void;
   onMapReady?: () => void;
+  onCameraChanged?: (params: { lat: number; lng: number; zoom: number; reason: string }) => void;
   style?: object;
   isShowZoomControls?: boolean;
 }
@@ -117,6 +118,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
       onMarkerClick,
       onEventMarkerClick,
       onMapReady,
+      onCameraChanged,
       style,
       isShowZoomControls = false,
     },
@@ -154,6 +156,14 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           }}
           isShowZoomControls={isShowZoomControls}
           onInitialized={onMapReady}
+          onCameraChanged={(params) => {
+            onCameraChanged?.({
+              lat: params.latitude,
+              lng: params.longitude,
+              zoom: params.zoom,
+              reason: params.reason,
+            });
+          }}
           onTapMap={(event) => {
             onMapClick?.(event.latitude, event.longitude);
           }}

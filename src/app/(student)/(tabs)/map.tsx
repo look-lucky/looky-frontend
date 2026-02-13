@@ -34,7 +34,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   FlatList,
+  Image,
   Keyboard,
   Linking,
   ScrollView,
@@ -76,6 +78,9 @@ export default function MapTab() {
     refetchStores,
     myLocation,
     locationPermissionDenied,
+    viewportSearch,
+    handleViewportSearch,
+    handleViewportReset,
     handleSearchFocus,
     handleSearch,
     handleCategorySelect,
@@ -114,6 +119,7 @@ export default function MapTab() {
     selectedDistance,
     selectedSort,
     selectedEventTypes: selectedEvents as EventType[],
+    viewportSearch,
   });
 
   // 즐겨찾기 훅
@@ -196,6 +202,13 @@ export default function MapTab() {
   // 카테고리가 'EVENT'인지 확인 (이벤트만 보기 모드)
   const isEventOnlyMode = selectedCategory === 'EVENT';
 
+  // 이 지역에서 검색 버튼 / 토스트
+  const [showSearchHereButton, setShowSearchHereButton] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const latestCameraRef = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
+  const cameraDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // 모달 state
   const [showSortModal, setShowSortModal] = useState(false);
   const [showDistanceModal, setShowDistanceModal] = useState(false);
@@ -274,9 +287,20 @@ export default function MapTab() {
       // 바텀시트가 확장된 상태면 접기
       if (currentIndexRef.current > SNAP_INDEX.COLLAPSED) {
         bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
+        return true;
       }
+      return false;
     }
+    return true;
   }, [handleBack, currentIndexRef]);
+
+  // 안드로이드 하드웨어 뒤로가기 처리
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+      return () => subscription.remove();
+    }, [handleBackPress]),
+  );
 
   // 지도 클릭
   const onMapClick = useCallback(() => {
@@ -398,13 +422,40 @@ export default function MapTab() {
       );
       return;
     }
+    handleViewportReset();
+    setShowSearchHereButton(false);
     setSelectedDistance(String(distanceId));
   };
 
-  const onFilterApply = () => {
-    handleFilterApply();
+  const onFilterApply = (storeTypes: string[], moods: string[], events: string[]) => {
+    handleFilterApply(storeTypes, moods, events);
     setShowFilterModal(false);
   };
+
+  // 카메라 변경 (사용자 제스처일 때만 버튼 노출, 300ms 디바운스)
+  const handleCameraChanged = useCallback(
+    ({ lat, lng, zoom, reason }: { lat: number; lng: number; zoom: number; reason: string }) => {
+      latestCameraRef.current = { lat, lng, zoom };
+      if (reason !== 'Gesture') return; // 사용자 제스처일 때만
+      if (cameraDebounceRef.current) clearTimeout(cameraDebounceRef.current);
+      cameraDebounceRef.current = setTimeout(() => {
+        setShowSearchHereButton(true);
+      }, 300);
+    },
+    [],
+  );
+
+  // "이 지역에서 검색" 버튼 클릭
+  const handleSearchHerePress = useCallback(() => {
+    const camera = latestCameraRef.current;
+    if (!camera) return;
+    handleViewportSearch({ lat: camera.lat, lng: camera.lng }, camera.zoom);
+    setShowSearchHereButton(false);
+    // 토스트 표시
+    setShowToast(true);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setShowToast(false), 2000);
+  }, [handleViewportSearch]);
 
   // ────────────────────────────────────────────
   // 공통: 검색바 + 카테고리 탭
@@ -576,10 +627,15 @@ export default function MapTab() {
                 />
               ) : (
                 <View style={styles.centerContent}>
-                  <View style={styles.emptyStateCard}>
-                    <ThemedText style={styles.emptyStateTitle}>
-                      아직 찾으시는 데이터이 안 보여요...
-                    </ThemedText>
+                  <Image
+                    source={require('@/assets/images/icons/map/search-none.png')}
+                    style={styles.emptyStateImage}
+                    resizeMode="contain"
+                  />
+                  <ThemedText style={styles.emptyStateTitle}>
+                    어라? 찾으시는 매장이 안 보여요.
+                  </ThemedText>
+                  <View style={styles.emptyStateBullets}>
                     <ThemedText style={styles.emptyStateText}>
                       {'\u2022'} 검색어의 철자가 정확한지 확인해 보세요.
                     </ThemedText>
@@ -617,9 +673,6 @@ export default function MapTab() {
           selectedMoods={selectedMoods}
           selectedEvents={selectedEvents}
           onTabChange={setActiveFilterTab}
-          onStoreTypeToggle={handleStoreTypeToggle}
-          onMoodToggle={handleMoodToggle}
-          onEventToggle={handleEventToggle}
           onReset={handleFilterReset}
           onClose={() => setShowFilterModal(false)}
           onApply={onFilterApply}
@@ -644,6 +697,7 @@ export default function MapTab() {
           onMapClick={onMapClick}
           onMarkerClick={onMarkerClick}
           onEventMarkerClick={onEventMarkerClick}
+          onCameraChanged={handleCameraChanged}
           onMapReady={() => {}}
           style={styles.map}
           isShowZoomControls={false}
@@ -656,38 +710,46 @@ export default function MapTab() {
         {renderCategoryTabs()}
       </SafeAreaView>
 
+      {/* "이 지역에서 검색" 버튼 */}
+      {showSearchHereButton && (
+        <View style={styles.searchHereContainer} pointerEvents="box-none">
+          <TouchableOpacity style={styles.searchHereButton} onPress={handleSearchHerePress}>
+            <Ionicons name="refresh" size={14} color={Owner.primary} />
+            <ThemedText style={styles.searchHereText}>이 지역에서 검색</ThemedText>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 토스트 */}
+      {showToast && (
+        <View style={styles.searchHereContainer} pointerEvents="none">
+          <View style={styles.toastBox}>
+            <ThemedText style={styles.toastText}>현재 위치의 모든 가게를 불러왔어요.</ThemedText>
+          </View>
+        </View>
+      )}
+
       {/* 지도 컨트롤 버튼 */}
-      <View style={styles.mapControls}>
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={() => {
-            refetchStores();
-            refetchEvents();
-          }}
-        >
-          <Ionicons name="refresh" size={20} color={Owner.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={() => bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF)}
-        >
-          <Ionicons name="list" size={20} color={Owner.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={() => {
-            if (myLocation && naverMapRef.current) {
-              naverMapRef.current.animateCameraTo({
-                latitude: myLocation.lat,
-                longitude: myLocation.lng,
-                duration: 500,
-              });
-            }
-          }}
-        >
-          <Ionicons name="locate" size={20} color={Owner.primary} />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={[styles.controlButton, styles.controlButtonLeft]}
+        onPress={() => {
+          if (myLocation && naverMapRef.current) {
+            naverMapRef.current.animateCameraTo({
+              latitude: myLocation.lat,
+              longitude: myLocation.lng,
+              duration: 500,
+            });
+          }
+        }}
+      >
+        <Ionicons name="locate" size={20} color={Owner.primary} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.controlButton, styles.controlButtonRight]}
+        onPress={() => bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF)}
+      >
+        <Ionicons name="list" size={20} color={Owner.primary} />
+      </TouchableOpacity>
 
       {/* 바텀시트 */}
       <BottomSheet
@@ -778,12 +840,25 @@ export default function MapTab() {
                 {/* 빈 상태 */}
                 {storesWithFavorite.length === 0 && events.length === 0 && (
                   <View style={styles.emptyState}>
+                    <Image
+                      source={require('@/assets/images/icons/map/search-none.png')}
+                      style={styles.emptyStateImage}
+                      resizeMode="contain"
+                    />
                     <ThemedText style={styles.emptyStateTitle}>
-                      아직 찾으시는 데이터가 안 보여요...
+                      어라? 찾으시는 매장이 안 보여요.
                     </ThemedText>
-                    <ThemedText style={styles.emptyStateText}>
-                      {'\u2022'} 다른 검색어로 시도해보세요
-                    </ThemedText>
+                    <View style={styles.emptyStateBullets}>
+                      <ThemedText style={styles.emptyStateText}>
+                        {'\u2022'} 검색어의 철자가 정확한지 확인해 보세요.
+                      </ThemedText>
+                      <ThemedText style={styles.emptyStateText}>
+                        {'\u2022'} 다른 키워드로 검색해 보시겠어요?
+                      </ThemedText>
+                      <ThemedText style={styles.emptyStateText}>
+                        {'\u2022'} 필터 조건을 변경하면 더 많은 결과를 찾을 수 있어요!
+                      </ThemedText>
+                    </View>
                   </View>
                 )}
               </>
@@ -902,17 +977,12 @@ const styles = StyleSheet.create({
     color: Gray.white,
   },
   // 지도 컨트롤
-  mapControls: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
-    transform: [{ translateY: -60 }],
-    gap: 12,
-  },
   controlButton: {
+    position: 'absolute',
+    bottom: 236,
     width: rs(44),
     height: rs(44),
-    borderRadius: 20,
+    borderRadius: 22,
     backgroundColor: Gray.white,
     justifyContent: 'center',
     alignItems: 'center',
@@ -921,6 +991,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  controlButtonLeft: {
+    left: 16,
+  },
+  controlButtonRight: {
+    right: 16,
+  },
+  // 이 지역에서 검색 버튼
+  searchHereContainer: {
+    position: 'absolute',
+    bottom: 236,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  searchHereButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: Gray.white,
+    shadowColor: Gray.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  searchHereText: {
+    fontSize: rs(14),
+    fontWeight: '600',
+    color: Owner.primary,
+  },
+  // 토스트
+  toastBox: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
+  toastText: {
+    fontSize: rs(13),
+    color: Gray.white,
   },
   // 바텀시트
   bottomSheetContainer: {
@@ -1016,14 +1130,18 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyStateTitle: {
-    fontSize: 16,
+    fontSize: rs(16),
     fontWeight: '600',
-    color: Text.secondary,
+    color: Text.primary,
     marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyStateBullets: {
+    alignSelf: 'center',
   },
   emptyStateText: {
-    fontSize: 14,
-    color: Text.tertiary,
+    fontSize: rs(14),
+    color: Text.secondary,
     marginBottom: 4,
   },
   // ── 리스트 뷰 전용 ──
@@ -1047,11 +1165,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
   },
-  emptyStateCard: {
-    backgroundColor: '#f0f4ff',
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    alignItems: 'center',
+  emptyStateImage: {
+    width: rs(160),
+    height: rs(160),
+    marginBottom: 20,
   },
 });
