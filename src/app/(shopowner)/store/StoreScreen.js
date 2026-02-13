@@ -14,6 +14,7 @@ import {
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // [필수] 네비게이션 훅 임포트
+import PostcodeModal from '@/src/shared/common/PostcodeModal';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from 'expo-router';
 
@@ -109,6 +110,7 @@ export default function StoreScreen() {
   const [hoursModalVisible, setHoursModalVisible] = useState(false);
   const [holidayModalVisible, setHolidayModalVisible] = useState(false); // 휴무일 모달 상태
   const [isFullScreenBannerVisible, setIsFullScreenBannerVisible] = useState(false); // 배너 전체화면 모달 상태
+  const [postcodeVisible, setPostcodeVisible] = useState(false); // 주소 검색 모달 상태
 
   // Temp Data for Modals
   const [tempSelectedHolidays, setTempSelectedHolidays] = useState([]); // 모달용 임시 휴무일 데이터
@@ -469,6 +471,13 @@ export default function StoreScreen() {
     initStore();
   }, [storeDataResponse]);
 
+  // [Fix] 기본 모달이 닫힐 때 주소 검색 모달도 함께 닫히도록 처리 (화면 멈춤 방지)
+  useEffect(() => {
+    if (!basicModalVisible) {
+      setPostcodeVisible(false);
+    }
+  }, [basicModalVisible]);
+
   // Force Refetch when menuCategories changes or simple refetch
   // This helps UI refresh
   useEffect(() => {
@@ -590,8 +599,8 @@ export default function StoreScreen() {
 
       console.log("🚀 [handleBasicSave] Request Payload:", JSON.stringify(requestData, null, 2));
 
-      // [핵심] JSON 포장 (표준 전송 방식)
-      formData.append("request", JSON.stringify(requestData));
+      // [핵심] JSON 포장 (표준 전송 방식 - Blob 사용하여 Content-Type 지정)
+      formData.append("request", new Blob([JSON.stringify(requestData)], { type: 'application/json' }));
 
       // 4. 이미지 파일이 있다면 formData에 추가 (키: images) - 다중 이미지 처리
       if (editBasicData.bannerImages && editBasicData.bannerImages.length > 0) {
@@ -2080,7 +2089,31 @@ export default function StoreScreen() {
                     </TouchableOpacity>
                   </View>
                 </EditSection>
-                <EditSection icon="location" label="주소"><TouchableOpacity style={[styles.inputWrapper, { marginBottom: rs(8) }]} onPress={() => handleMockAction("주소 검색")}><Text style={[styles.textInput, { color: editBasicData.address ? 'black' : '#ccc' }]}>{editBasicData.address || "건물명, 도로명 또는 지번 검색"}</Text><Ionicons name="search" size={rs(16)} color="#4e4949ff" style={{ marginRight: rs(10) }} /></TouchableOpacity><View style={[styles.inputWrapper, { backgroundColor: 'rgba(218, 218, 218, 0.50)' }]}><TextInput style={styles.textInput} placeholder="상세주소를 입력해주세요." value={editBasicData.detailAddress} onChangeText={(text) => setEditBasicData({ ...editBasicData, detailAddress: text })} /></View></EditSection>
+
+                <EditSection icon="location" label="주소">
+                  <TouchableOpacity
+                    style={[styles.inputWrapper, { marginBottom: rs(8), height: rs(40), backgroundColor: '#FCFCFC' }]}
+                    onPress={() => {
+                      console.log("📍 [Address Search] Triggered");
+                      setPostcodeVisible(true);
+                    }}
+                    activeOpacity={0.6}
+                  >
+                    <Text style={[styles.textInput, { color: editBasicData.address ? 'black' : '#ccc', fontSize: rs(12) }]}>
+                      {editBasicData.address || "건물명, 도로명 또는 지번 검색"}
+                    </Text>
+                    <Ionicons name="search" size={rs(18)} color="#34B262" style={{ marginRight: rs(10) }} />
+                  </TouchableOpacity>
+                  <View style={[styles.inputWrapper, { backgroundColor: 'rgba(218, 218, 218, 0.50)' }]}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="상세주소를 입력해주세요."
+                      value={editBasicData.detailAddress}
+                      onChangeText={(text) => setEditBasicData({ ...editBasicData, detailAddress: text })}
+                    />
+                  </View>
+                </EditSection>
+
                 <EditSection icon="call" label="전화번호">
                   <View style={styles.inputWrapper}>
                     <TextInput
@@ -2096,6 +2129,38 @@ export default function StoreScreen() {
                 </EditSection>
               </ScrollView>
             </View>
+
+            {/* 주소 검색 모달을 메인 팝업 내부로 이동 (Android 스태킹 이슈 해결) */}
+            <PostcodeModal
+              visible={postcodeVisible}
+              onClose={() => setPostcodeVisible(false)}
+              onSelected={(data) => {
+                console.log("📍 [Address Search] Received data:", data);
+
+                // 도로명 주소 조합 로직 (RN에서 처리하여 안정성 확보)
+                let fullRoadAddr = data.roadAddress || data.address;
+                let extraRoadAddr = '';
+
+                if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
+                  extraRoadAddr += data.bname;
+                }
+                if (data.buildingName !== '' && data.apartment === 'Y') {
+                  extraRoadAddr += (extraRoadAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                }
+                if (extraRoadAddr !== '') {
+                  fullRoadAddr += ' (' + extraRoadAddr + ')';
+                }
+
+                console.log("📍 [Address Search] Result:", fullRoadAddr);
+
+                setEditBasicData(prev => ({ ...prev, address: fullRoadAddr }));
+
+                // 모달 닫기
+                setTimeout(() => {
+                  setPostcodeVisible(false);
+                }, 300);
+              }}
+            />
           </KeyboardAvoidingView>
         </Modal >
 
