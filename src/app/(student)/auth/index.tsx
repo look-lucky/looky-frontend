@@ -66,7 +66,9 @@ export default function SignInPage() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <ArrowLeft onPress={() => router.back()} />
+        {router.canGoBack() && (
+          <ArrowLeft onPress={() => router.back()} />
+        )}
       </View>
 
       <View style={styles.topContent}>

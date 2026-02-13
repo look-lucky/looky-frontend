@@ -219,7 +219,7 @@ export default function SocialSignupFormPage() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <ArrowLeft onPress={() => router.back()} />
+        <ArrowLeft onPress={() => router.canGoBack() ? router.back() : router.replace("/auth")} />
       </View>
 
       <View style={styles.topContent}>
