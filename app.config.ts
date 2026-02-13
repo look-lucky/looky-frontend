@@ -1,25 +1,29 @@
 import { ConfigContext, ExpoConfig } from "expo/config";
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
-  ...config,
-  name: "Looky",
-  slug: "rn-app",
-  owner: "looky123",
-  version: "1.0.0",
-  orientation: "portrait",
-  icon: "./assets/images/logo/android-looky.png",
-  scheme: "rnapp",
-  userInterfaceStyle: "light",
-  newArchEnabled: true,
-  ios: {
-    supportsTablet: true,
-    bundleIdentifier: "kr.looky.looky",
-  },
-  android: {
-    package: "kr.looky.looky",
+export default ({ config }: ConfigContext): ExpoConfig => {
+  const IS_DEV = process.env.APP_VARIANT === "development";
+  const bundleId = IS_DEV ? "kr.looky.looky.dev" : "kr.looky.looky";
+
+  return {
+    ...config,
+    name: IS_DEV ? "Looky (Dev)" : "Looky",
+    slug: "rn-app",
+    owner: "looky123",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/logo/ios-looky.png",
+    scheme: "rnapp",
+    userInterfaceStyle: "light",
+    newArchEnabled: true,
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: bundleId,
+    },
+    android: {
+      package: bundleId,
     adaptiveIcon: {
       backgroundColor: "#FEF5E5",
-      foregroundImage: "./assets/images/logo/android-looky.png",
+      foregroundImage: "./assets/images/logo/ios-looky.png",
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
@@ -93,4 +97,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       projectId: "554fbeb0-4c38-4f44-86c2-6591b905ee36",
     },
   },
-});
+  };
+};
