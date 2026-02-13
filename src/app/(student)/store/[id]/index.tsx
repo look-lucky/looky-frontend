@@ -1,5 +1,5 @@
 import { useDownloadCoupon, useGetCouponsByStore, useGetMyCoupons } from '@/src/api/coupon';
-import { useCountFavorites } from '@/src/api/favorite';
+import { useAddFavorite, useCountFavorites, useGetMyFavorites, useRemoveFavorite } from '@/src/api/favorite';
 import type {
   CouponResponse,
   ItemResponse,
@@ -67,6 +67,7 @@ export default function StoreDetailScreen() {
   const { collegeId: userCollegeId } = useAuth();
   const [activeTab, setActiveTab] = useState('news');
   const [isLiked, setIsLiked] = useState(false);
+  const [isLikeInitialized, setIsLikeInitialized] = useState(false);
   const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(userCollegeId);
   const [hasInitializedUniversity, setHasInitializedUniversity] = useState(false);
 
@@ -104,6 +105,13 @@ export default function StoreDetailScreen() {
   const { data: favCountRes } = useCountFavorites(storeId);
   const favoriteCount = (favCountRes as any)?.data?.data as number | undefined;
 
+  // 내 즐겨찾기 목록 (현재 가게 찜 여부 확인용)
+  const { data: myFavoritesRes } = useGetMyFavorites({ page: 0, size: 100 } as any);
+  const myFavoriteStoreIds = useMemo(() => {
+    const list = (myFavoritesRes as any)?.data?.data?.content ?? [];
+    return (list as any[]).map((f: any) => f.storeId as number);
+  }, [myFavoritesRes]);
+
   // 쿠폰 목록
   const { data: couponsRes } = useGetCouponsByStore(storeId);
   const rawCoupons = (couponsRes as any)?.data?.data;
@@ -113,6 +121,40 @@ export default function StoreDetailScreen() {
   const { data: myCouponsRes } = useGetMyCoupons();
   const rawMyCoupons = (myCouponsRes as any)?.data?.data;
   const myCoupons = (Array.isArray(rawMyCoupons) ? rawMyCoupons : []) as any[];
+
+  // 즐겨찾기 초기 상태 동기화
+  React.useEffect(() => {
+    if (!isLikeInitialized && myFavoritesRes !== undefined) {
+      setIsLiked(myFavoriteStoreIds.includes(storeId));
+      setIsLikeInitialized(true);
+    }
+  }, [myFavoritesRes, myFavoriteStoreIds, storeId, isLikeInitialized]);
+
+  // 즐겨찾기 추가/취소 mutation
+  const addFavoriteMutation = useAddFavorite({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/favorites/count`] });
+        queryClient.invalidateQueries({ queryKey: ['/api/favorites'] });
+      },
+      onError: () => {
+        setIsLiked(false);
+        Alert.alert('오류', '즐겨찾기 추가에 실패했습니다.');
+      },
+    },
+  });
+  const removeFavoriteMutation = useRemoveFavorite({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/favorites/count`] });
+        queryClient.invalidateQueries({ queryKey: ['/api/favorites'] });
+      },
+      onError: () => {
+        setIsLiked(true);
+        Alert.alert('오류', '즐겨찾기 취소에 실패했습니다.');
+      },
+    },
+  });
 
   // 쿠폰 발급 mutation
   const issueCouponMutation = useDownloadCoupon({
@@ -315,7 +357,15 @@ export default function StoreDetailScreen() {
     return () => subscription.remove();
   }, []);
   
-  const handleLike = () => setIsLiked(!isLiked);
+  const handleLike = () => {
+    if (isLiked) {
+      setIsLiked(false);
+      removeFavoriteMutation.mutate({ storeId });
+    } else {
+      setIsLiked(true);
+      addFavoriteMutation.mutate({ storeId });
+    }
+  };
   const handleCouponPress = () => {
     setIsCouponModalVisible(true);
   };

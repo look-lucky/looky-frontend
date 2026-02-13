@@ -64,7 +64,7 @@ export function useMapSearch() {
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [selectedSort, setSelectedSort] = useState('distance');
-  const [selectedDistance, setSelectedDistance] = useState('0');
+  const [selectedDistance, setSelectedDistance] = useState('1');
 
   // 선택된 가게
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
@@ -74,6 +74,7 @@ export function useMapSearch() {
     lat: number;
     lng: number;
   } | null>(null);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
 
   // 지도 중심
   const [mapCenter, setMapCenter] = useState({ lat: 35.8448, lng: 127.1294 });
@@ -91,6 +92,8 @@ export function useMapSearch() {
           lat: location.coords.latitude,
           lng: location.coords.longitude,
         });
+      } else {
+        setLocationPermissionDenied(true);
       }
     })();
   }, []);
@@ -301,6 +304,7 @@ export function useMapSearch() {
     selectedMoods,
     selectedEvents,
     myLocation,
+    locationPermissionDenied,
     mapCenter,
     setMapCenter,
     currentIndexRef,

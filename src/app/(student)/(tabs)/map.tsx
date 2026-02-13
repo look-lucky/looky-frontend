@@ -29,12 +29,14 @@ import { Gray, Owner, Text } from '@/src/shared/theme/theme';
 import ConfettiIcon from '@/assets/images/icons/map/confetti.svg';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Keyboard,
+  Linking,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -48,7 +50,8 @@ export default function MapTab() {
   const router = useRouter();
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
-  const { category } = useLocalSearchParams<{ category?: string }>();
+  const { category, eventId: eventIdParam } = useLocalSearchParams<{ category?: string; eventId?: string }>();
+  const initialEventHandled = useRef(false);
 
   const {
     keyword,
@@ -72,6 +75,7 @@ export default function MapTab() {
     isLoading,
     refetchStores,
     myLocation,
+    locationPermissionDenied,
     handleSearchFocus,
     handleSearch,
     handleCategorySelect,
@@ -171,6 +175,24 @@ export default function MapTab() {
     return events.find((e) => e.id === selectedEventId) ?? null;
   }, [selectedEventId, events]);
 
+  // eventIdParam이 바뀔 때마다 처리 플래그 리셋 (같은 이벤트 재진입 or 다른 이벤트 진입 모두 대응)
+  useEffect(() => {
+    initialEventHandled.current = false;
+  }, [eventIdParam]);
+
+  // 홈에서 이벤트 카드 눌러서 진입 시 해당 이벤트 선택 + 지도 중심 이동 + 바텀시트 열기
+  useEffect(() => {
+    if (!eventIdParam || initialEventHandled.current || events.length === 0) return;
+    const event = events.find((e) => e.id === eventIdParam);
+    if (event) {
+      initialEventHandled.current = true;
+      handleMapClick(); // 가게 선택 해제
+      setSelectedEventId(eventIdParam);
+      setMapCenter({ lat: event.lat, lng: event.lng });
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+    }
+  }, [eventIdParam, events, handleMapClick, setMapCenter]);
+
   // 카테고리가 'EVENT'인지 확인 (이벤트만 보기 모드)
   const isEventOnlyMode = selectedCategory === 'EVENT';
 
@@ -183,11 +205,31 @@ export default function MapTab() {
   // 바텀시트 ref
   const bottomSheetRef = useRef<BottomSheet>(null);
 
+  const navigation = useNavigation();
+
+  // 지도 탭을 이미 보고 있는 상태에서 탭 아이콘 재클릭 시 현재 위치로 리셋
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress' as any, () => {
+      if (navigation.isFocused() && myLocation && naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: myLocation.lat,
+          longitude: myLocation.lng,
+          duration: 500,
+        });
+      }
+    });
+    return unsubscribe;
+  }, [navigation, myLocation]);
+
+  // 지도 탭 포커스 상태 (NaverMap 크래시 방지용 - 탭 이탈 시 clean unmount)
+  const [isTabFocused, setIsTabFocused] = useState(true);
+
   // 탭 포커스/블러 시 탭바 제어
   // - 다른 탭으로 이동(blur) → 탭바 강제 복구
   // - 다시 돌아올 때(focus) → 현재 상태에 맞게 탭바 적용
   useFocusEffect(
     useCallback(() => {
+      setIsTabFocused(true);
       if (viewMode === 'list') {
         setTabBarVisible(false);
       } else {
@@ -195,6 +237,7 @@ export default function MapTab() {
       }
 
       return () => {
+        setIsTabFocused(false);
         setTabBarVisible(true);
       };
     }, [viewMode, setTabBarVisible, currentIndexRef]),
@@ -344,6 +387,17 @@ export default function MapTab() {
   };
 
   const handleDistanceSelect = (distanceId: string | number) => {
+    if (locationPermissionDenied) {
+      Alert.alert(
+        '위치 권한 필요',
+        '거리 필터를 사용하려면 위치 권한이 필요해요.\n설정에서 위치 권한을 허용해주세요.',
+        [
+          { text: '취소', style: 'cancel' },
+          { text: '설정으로 이동', onPress: () => Linking.openSettings() },
+        ],
+      );
+      return;
+    }
     setSelectedDistance(String(distanceId));
   };
 
@@ -579,20 +633,22 @@ export default function MapTab() {
   // ────────────────────────────────────────────
   return (
     <ThemedView style={styles.container}>
-      {/* 지도 */}
-      <NaverMap
-        ref={naverMapRef}
-        center={mapCenter}
-        markers={isEventOnlyMode ? [] : markers}
-        eventMarkers={eventMarkers}
-        myLocation={myLocation}
-        onMapClick={onMapClick}
-        onMarkerClick={onMarkerClick}
-        onEventMarkerClick={onEventMarkerClick}
-        onMapReady={() => {}}
-        style={styles.map}
-        isShowZoomControls={false}
-      />
+      {/* 지도 - 탭 이탈 시 clean unmount하여 RNCNaverMapView IndexOutOfBoundsException 방지 */}
+      {isTabFocused && (
+        <NaverMap
+          ref={naverMapRef}
+          center={mapCenter}
+          markers={isEventOnlyMode ? [] : markers}
+          eventMarkers={eventMarkers}
+          myLocation={myLocation}
+          onMapClick={onMapClick}
+          onMarkerClick={onMarkerClick}
+          onEventMarkerClick={onEventMarkerClick}
+          onMapReady={() => {}}
+          style={styles.map}
+          isShowZoomControls={false}
+        />
+      )}
 
       {/* 오버레이 UI */}
       <SafeAreaView style={styles.overlay} edges={['top']} pointerEvents="box-none">

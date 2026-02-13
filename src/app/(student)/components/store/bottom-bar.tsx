@@ -25,9 +25,9 @@ export function BottomFixedBar({
     <View style={[styles.container, { paddingBottom: insets.bottom || rs(16) }]}>
       <TouchableOpacity style={styles.likeButton} onPress={onLikePress}>
         <Ionicons
-          name={isLiked ? 'heart' : 'heart-outline'}
+          name={isLiked ? 'bookmark' : 'bookmark-outline'}
           size={rs(24)}
-          color={isLiked ? '#ff4d4d' : '#1d1b20'}
+          color={isLiked ? '#40CE2B' : '#1d1b20'}
         />
         <ThemedText style={styles.likeCount}>{likeCount}</ThemedText>
       </TouchableOpacity>
