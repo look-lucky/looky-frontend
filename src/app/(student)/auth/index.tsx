@@ -1,13 +1,21 @@
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
-import { useRouter } from "expo-router";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
+import { ThemedText } from "@/src/shared/common/themed-text";
 import { rs } from "@/src/shared/theme/scale";
-
+import { Brand, Gray, Text } from "@/src/shared/theme/theme";
 import { SignupIcons } from "@/assets/images/icons/signup";
 import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useSocialLogin } from "@/src/shared/lib/auth/use-social-login";
+import { useRouter } from "expo-router";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+// 소셜 로그인 브랜드 공식 색상 (플랫폼 가이드라인 준수)
+const SocialColors = {
+  kakao: "#FEE500",
+  google: "#F2F2F2",
+  appleBackground: Gray.white,
+  appleBorder: "#DCDCDC",
+} as const;
 
 export default function SignInPage() {
   const router = useRouter();
@@ -17,13 +25,11 @@ export default function SignInPage() {
     const result = await loginWithGoogle();
     if (result.success) {
       if (result.needsSignup && result.userId != null) {
-        // 신규 회원 - 추가 정보 입력 페이지로 이동
         router.push({
           pathname: "/auth/sign-up-social-form",
           params: { userId: result.userId, provider: "google" },
         });
       } else {
-        // 기존 회원 - 메인으로 이동
         router.replace("/(student)/(tabs)");
       }
     } else if (result.error !== "cancelled") {
@@ -72,38 +78,46 @@ export default function SignInPage() {
       </View>
 
       <View style={styles.topContent}>
-        {/* Subtitle */}
-        <Text style={styles.subtitle}>우리대학 제휴혜택이 궁금할 땐?</Text>
-
-        {/* Logo */}
+        <ThemedText
+          lightColor={Text.primary}
+          style={styles.subtitle}
+        >
+          우리대학 제휴혜택이 궁금할 땐?
+        </ThemedText>
         <LookyLogo width={169} height={57} />
       </View>
 
       <View style={styles.bottomContent}>
-        {/* University Email Button */}
+        {/* 루키 시작하기 버튼 */}
         <Pressable
           style={styles.universityButton}
           onPress={() => router.push("/auth/sign-in")}
         >
           <SignupIcons.clover width={20} height={20} />
-          <Text style={styles.universityButtonText}>루키 시작하기</Text>
+          <ThemedText lightColor={Gray.white} style={styles.universityButtonText}>
+            루키 시작하기
+          </ThemedText>
         </Pressable>
 
-        {/* Divider */}
+        {/* 구분선 */}
         <View style={styles.dividerContainer}>
           <View style={styles.divider} />
-          <Text style={styles.dividerText}>또는</Text>
+          <ThemedText lightColor={Text.placeholder} style={styles.dividerText}>
+            또는
+          </ThemedText>
           <View style={styles.divider} />
         </View>
 
-        {/* Social Buttons */}
+        {/* 소셜 로그인 버튼 */}
         <Pressable
           style={[styles.socialButton, styles.kakaoButton, loadingProvider === "kakao" && styles.disabledButton]}
           onPress={handleKakaoLogin}
           disabled={isLoading}
         >
           <SignupIcons.kakao width={20} height={20} />
-          <Text style={styles.socialButtonText}>카카오로 시작하기</Text>
+          <ThemedText lightColor={Gray.black} style={styles.socialButtonText}>
+            카카오로 시작하기
+          </ThemedText>
         </Pressable>
 
         <Pressable
@@ -112,7 +126,9 @@ export default function SignInPage() {
           disabled={isLoading}
         >
           <SignupIcons.google width={20} height={20} />
-          <Text style={styles.socialButtonText}>Google로 시작하기</Text>
+          <ThemedText lightColor={Gray.black} style={styles.socialButtonText}>
+            Google로 시작하기
+          </ThemedText>
         </Pressable>
 
         <Pressable
@@ -121,15 +137,23 @@ export default function SignInPage() {
           disabled={isLoading}
         >
           <SignupIcons.apple width={20} height={20} />
-          <Text style={styles.socialButtonText}>Apple로 시작하기</Text>
+          <ThemedText lightColor={Gray.black} style={styles.socialButtonText}>
+            Apple로 시작하기
+          </ThemedText>
         </Pressable>
 
-        {/* Terms Text */}
-        <Text style={styles.termsText}>
-          가입 시 당사의 <Text style={styles.termsLink}>서비스 이용 약관</Text>{" "}
-          및 <Text style={styles.termsLink}>개인정보 처리방침</Text>에 동의하는
-          것으로 간주됩니다.
-        </Text>
+        {/* 약관 텍스트 */}
+        <ThemedText lightColor={Text.placeholder} style={styles.termsText}>
+          가입 시 당사의{" "}
+          <ThemedText lightColor={Text.primary} style={styles.termsLink}>
+            서비스 이용 약관
+          </ThemedText>
+          {" "}및{" "}
+          <ThemedText lightColor={Text.primary} style={styles.termsLink}>
+            개인정보 처리방침
+          </ThemedText>
+          에 동의하는 것으로 간주됩니다.
+        </ThemedText>
       </View>
     </SafeAreaView>
   );
@@ -138,7 +162,7 @@ export default function SignInPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: Gray.white,
     paddingHorizontal: rs(24),
   },
   header: {
@@ -147,15 +171,12 @@ const styles = StyleSheet.create({
   topContent: {
     alignItems: "flex-start",
     justifyContent: "center",
-    transform: [{ translateY: rs(60) }], // 중앙에서 약간 위로 이동
+    transform: [{ translateY: rs(60) }],
   },
   subtitle: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#000000",
-    fontFamily: "Pretendard",
   },
-  logo: {},
   bottomContent: {
     flex: 1,
     justifyContent: "flex-end",
@@ -163,39 +184,32 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   universityButton: {
-    backgroundColor: "#40ce2b",
+    backgroundColor: Brand.primary,
     borderRadius: 8,
     height: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginBottom: 8,
   },
   universityButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#ffffff",
-    fontFamily: "Pretendard",
   },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginVertical: 8,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: "#e6e6e6",
+    backgroundColor: Gray.gray4,
   },
   dividerText: {
     fontSize: 14,
-    color: "#828282",
-    fontFamily: "Inter",
   },
   socialButton: {
-    backgroundColor: "#eeeeee",
     borderRadius: 8,
     height: 40,
     flexDirection: "row",
@@ -206,35 +220,27 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#000000",
-    fontFamily: "Pretendard",
-  },
-  buttonIcon: {
-    width: 20,
-    height: 20,
   },
   termsText: {
     fontSize: 10,
-    color: "#828282",
     textAlign: "center",
     lineHeight: 18,
-    fontFamily: "Pretendard",
     marginTop: 8,
   },
   termsLink: {
-    color: "#000000",
+    fontSize: 10,
     fontWeight: "600",
   },
   kakaoButton: {
-    backgroundColor: "#FEE500",
+    backgroundColor: SocialColors.kakao,
   },
   googleButton: {
-    backgroundColor: "#F2F2F2",
+    backgroundColor: SocialColors.google,
   },
   appleButton: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: SocialColors.appleBackground,
     borderWidth: 1,
-    borderColor: "#DCDCDC",
+    borderColor: SocialColors.appleBorder,
   },
   disabledButton: {
     opacity: 0.5,

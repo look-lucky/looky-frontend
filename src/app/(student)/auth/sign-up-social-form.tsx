@@ -3,6 +3,7 @@ import { useSend, useVerify } from "@/src/api/auth";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { ThemedText } from "@/src/shared/common/themed-text";
+import { useAuth } from "@/src/shared/lib/auth";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/theme/theme";
@@ -57,12 +58,13 @@ export default function SocialSignupFormPage() {
     userId: string;
     provider: string;
   }>();
+  const { handleLogout, userType } = useAuth();
   const setSignupFields = useSignupStore((state) => state.setSignupFields);
 
   const sendEmailMutation = useSend();
   const verifyEmailMutation = useVerify();
 
-  const [userType, setUserType] = useState<UserType>(null);
+  const [selectedUserType, setSelectedUserType] = useState<UserType>(null);
   const [gender, setGender] = useState<Gender>("male");
   const [birthYear, setBirthYear] = useState("");
   const [birthMonth, setBirthMonth] = useState("");
@@ -82,8 +84,8 @@ export default function SocialSignupFormPage() {
   const [sendCodeMessage, setSendCodeMessage] = useState("");
   const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isStudent = userType === "student";
-  const primaryColor = userType === "owner" ? Owner.primary : Brand.primary;
+  const isStudent = selectedUserType === "student";
+  const primaryColor = selectedUserType === "owner" ? Owner.primary : Brand.primary;
 
   // 타이머 로직 - 실제 만료 시간 기반으로 계산
   useEffect(() => {
@@ -146,7 +148,7 @@ export default function SocialSignupFormPage() {
   };
 
   const isFormValid = () => {
-    if (!userType) return false;
+    if (!selectedUserType) return false;
 
     const commonValid =
       birthYear.length === 4 &&
@@ -195,10 +197,10 @@ export default function SocialSignupFormPage() {
   };
 
   const handleNext = () => {
-    if (!isFormValid() || !userType) return;
+    if (!isFormValid() || !selectedUserType) return;
 
     setSignupFields({
-      userType,
+      userType: selectedUserType,
       gender,
       birthYear,
       birthMonth,
@@ -209,7 +211,7 @@ export default function SocialSignupFormPage() {
       socialProvider: provider ?? "",
     });
 
-    if (userType === "owner") {
+    if (selectedUserType === "owner") {
       router.push("/auth/sign-up-owner");
     } else {
       router.push("/auth/sign-up-verify");
@@ -219,7 +221,16 @@ export default function SocialSignupFormPage() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <ArrowLeft onPress={() => router.canGoBack() ? router.back() : router.replace("/auth")} />
+        <ArrowLeft onPress={async () => {
+          if (userType === "ROLE_GUEST") {
+            await handleLogout();
+          }
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace("/auth");
+          }
+        }} />
       </View>
 
       <View style={styles.topContent}>
@@ -239,21 +250,21 @@ export default function SocialSignupFormPage() {
           </ThemedText>
           <View style={styles.radioGroup}>
             <RadioButton
-              selected={userType === "student"}
+              selected={selectedUserType === "student"}
               label="대학생"
-              onPress={() => setUserType("student")}
+              onPress={() => setSelectedUserType("student")}
               activeColor={Brand.primary}
             />
             <RadioButton
-              selected={userType === "owner"}
+              selected={selectedUserType === "owner"}
               label="점주"
-              onPress={() => setUserType("owner")}
+              onPress={() => setSelectedUserType("owner")}
               activeColor={Owner.primary}
             />
           </View>
         </View>
 
-        {userType && (
+        {selectedUserType && (
           <>
             {/* 성별 */}
             <View style={styles.fieldGroup}>

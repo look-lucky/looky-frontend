@@ -7,7 +7,7 @@ import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
 import { useSignupOwner, useCompleteSocialSignup } from "@/src/api/auth";
 import { useAuth } from "@/src/shared/lib/auth";
 import type { UserType } from "@/src/shared/lib/auth/token";
-import { getMyStores } from "@/src/api/store";
+import { getMyStoreClaims } from "@/src/api/store-claim";
 import { useCreateStoreClaims, useVerifyBizRegNo } from "@/src/api/store-claim";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -236,16 +236,16 @@ export default function SignupOwnerPage() {
       console.log("✅ 회원가입 성공:", signupResponse);
       const userId = signupResponse.data.data; // userId
 
-      // 2️⃣ 내 가게 목록 조회
-      const myStoresResponse = await getMyStores();
-      console.log("✅ 가게 목록 조회 성공:", myStoresResponse);
+      // 2️⃣ 내 상점 소유 요청 목록 조회
+      const myStoreClaimsResponse = await getMyStoreClaims();
+      console.log("✅ 상점 소유 요청 조회 성공:", myStoreClaimsResponse);
 
-      const stores = myStoresResponse.data.data;
-      if (!stores || stores.length === 0) {
+      const claims = (myStoreClaimsResponse.data as any).data;
+      if (!claims || claims.length === 0) {
         throw new Error("가게 정보를 찾을 수 없습니다.");
       }
 
-      const storeId = stores[0].id;
+      const storeId = claims[0].storeId;
 
       // 3️⃣ 상점 소유 요청 (사업자등록증 업로드)
       if (businessImageUri) {
