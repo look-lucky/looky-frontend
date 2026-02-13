@@ -1148,6 +1148,117 @@ export function useGetMyStores<TData = Awaited<ReturnType<typeof getMyStores>>, 
 
 
 /**
+ * 지도를 위한 상점 전체 목록을 조회합니다.
+ * @summary [학생] 지도용 상점 전체 조회
+ */
+export type getStoreMapResponse200 = {
+  data: Blob
+  status: 200
+}
+    
+export type getStoreMapResponseSuccess = (getStoreMapResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getStoreMapResponse = (getStoreMapResponseSuccess)
+
+export const getGetStoreMapUrl = () => {
+
+
+  
+
+  return `/api/stores/map`
+}
+
+export const getStoreMap = async ( options?: RequestInit): Promise<getStoreMapResponse> => {
+  
+  return customFetch<getStoreMapResponse>(getGetStoreMapUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetStoreMapQueryKey = () => {
+    return [
+    `/api/stores/map`
+    ] as const;
+    }
+
+    
+export const getGetStoreMapQueryOptions = <TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreMapQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreMap>>> = ({ signal }) => getStoreMap({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetStoreMapQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreMap>>>
+export type GetStoreMapQueryError = unknown
+
+
+export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreMap>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreMap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreMap>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreMap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [학생] 지도용 상점 전체 조회
+ */
+
+export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStoreMapQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
  * 학생의 소속 대학에서 이번 주 찜이 가장 많이 늘어난 상점 Top 10을 조회합니다.
  * @summary [학생] 이번 주 핫한 가게 조회
  */

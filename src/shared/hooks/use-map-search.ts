@@ -1,48 +1,16 @@
-import type {
-  GetStoresCategoriesItem,
-  GetStoresMoodsItem,
-  CommonResponsePageResponseStoreResponse,
-  StoreResponse,
-} from '@/src/api/generated.schemas';
-import { customFetch } from '@/src/api/mutator';
+import { useGetStoreMap } from '@/src/api/store';
 import { CATEGORY_TO_API } from '@/src/shared/constants/map';
 import type { Store } from '@/src/shared/types/store';
 import {
   getDistanceKm,
-  transformStoreResponses,
+  transformStoreMapResponses,
 } from '@/src/shared/utils/store-transform';
-import { useQuery } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-// -------------------------------------------------------------------
-// API 직접 호출 (Orval의 pageable 직렬화 문제 우회)
-// -------------------------------------------------------------------
-interface StoreSearchParams {
-  keyword?: string;
-  categories?: string[];
-  moods?: string[];
-  page?: number;
-  size?: number;
-}
-
-async function fetchStores(params: StoreSearchParams) {
-  const qs = new URLSearchParams();
-
-  if (params.keyword) qs.append('keyword', params.keyword);
-  params.categories?.forEach((c) => qs.append('categories', c));
-  params.moods?.forEach((m) => qs.append('moods', m));
-  qs.append('page', String(params.page ?? 0));
-  qs.append('size', String(params.size ?? 50));
-
-  const queryString = qs.toString();
-  const url = queryString ? `/api/stores?${queryString}` : '/api/stores';
-
-  return customFetch<{
-    data: CommonResponsePageResponseStoreResponse;
-    status: number;
-    headers: Headers;
-  }>(url, { method: 'GET' });
+// zoom 레벨 → 화면에 보이는 반경(km) 근사값 (위도 36° 기준, 화면 반폭 ~400dp)
+function getViewportRadiusKm(zoom: number): number {
+  return 45000 / Math.pow(2, zoom);
 }
 
 // -------------------------------------------------------------------
@@ -65,6 +33,12 @@ export function useMapSearch() {
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [selectedSort, setSelectedSort] = useState('distance');
   const [selectedDistance, setSelectedDistance] = useState('1');
+
+  // 뷰포트 검색 상태 (null = 거리 필터 모드, non-null = 뷰포트 모드)
+  const [viewportSearch, setViewportSearch] = useState<{
+    center: { lat: number; lng: number };
+    zoom: number;
+  } | null>(null);
 
   // 선택된 가게
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
@@ -98,68 +72,93 @@ export function useMapSearch() {
     })();
   }, []);
 
-  // ------ API 파라미터 조합 ------
-  const apiCategories = useMemo((): string[] => {
-    // 카테고리 탭에서 선택된 것
-    const tabCategory = CATEGORY_TO_API[selectedCategory];
-    // 필터 모달에서 선택된 것
-    const filterCategories = [...selectedStoreTypes];
-
-    if (tabCategory && !filterCategories.includes(tabCategory)) {
-      filterCategories.push(tabCategory);
-    }
-
-    return filterCategories;
-  }, [selectedCategory, selectedStoreTypes]);
-
-  const queryParams = useMemo(
-    (): StoreSearchParams => ({
-      keyword: submittedKeyword || undefined,
-      categories: apiCategories.length > 0 ? apiCategories : undefined,
-      moods: selectedMoods.length > 0 ? selectedMoods : undefined,
-      page: 0,
-      size: 50,
-    }),
-    [submittedKeyword, apiCategories, selectedMoods],
-  );
-
-  // ------ API 호출 ------
-  // list 모드에서 검색어 없이 전체 데이터를 fetch하지 않도록 차단
+  // ------ API 호출 (/api/stores/map) ------
   const {
     data: rawData,
     isLoading,
     isError,
     refetch,
-  } = useQuery({
-    queryKey: ['stores', queryParams],
-    queryFn: () => fetchStores(queryParams),
-    staleTime: 3 * 60 * 1000,
-    enabled: viewMode !== 'list' || !!submittedKeyword,
+  } = useGetStoreMap({
+    query: {
+      staleTime: 3 * 60 * 1000,
+    },
   });
 
   // ------ 데이터 변환 ------
-  const storeResponses: StoreResponse[] = useMemo(() => {
-    return rawData?.data?.data?.content ?? [];
-  }, [rawData]);
+  const allStores: Store[] = useMemo(() => {
+    const raw = rawData?.data?.data ?? [];
+    return transformStoreMapResponses(raw, myLocation);
+  }, [rawData, myLocation]);
+
+  // 카테고리 + 키워드 + 무드 클라이언트 필터
+  const apiCategories = useMemo((): string[] => {
+    const tabCategory = CATEGORY_TO_API[selectedCategory];
+    const filterCategories = [...selectedStoreTypes];
+    if (tabCategory && !filterCategories.includes(tabCategory)) {
+      filterCategories.push(tabCategory);
+    }
+    return filterCategories;
+  }, [selectedCategory, selectedStoreTypes]);
 
   const stores: Store[] = useMemo(() => {
-    return transformStoreResponses(storeResponses, myLocation);
-  }, [storeResponses, myLocation]);
+    let result = allStores;
+
+    // 카테고리 필터
+    if (apiCategories.length > 0) {
+      result = result.filter((store) => {
+        if (!store.category) return false;
+        return apiCategories.some((cat) => store.category?.includes(
+          cat === 'RESTAURANT' ? '식당'
+          : cat === 'BAR' ? '주점'
+          : cat === 'CAFE' ? '카페'
+          : cat === 'ENTERTAINMENT' ? '놀거리'
+          : cat === 'BEAUTY_HEALTH' ? '뷰티/건강'
+          : cat
+        ));
+      });
+    }
+
+    // 키워드 필터 (리스트 뷰 검색)
+    if (submittedKeyword) {
+      const kw = submittedKeyword.toLowerCase();
+      result = result.filter((store) =>
+        store.name.toLowerCase().includes(kw)
+      );
+    }
+
+    return result;
+  }, [allStores, apiCategories, submittedKeyword]);
 
   // 거리 필터 + 정렬 적용 (클라이언트)
   const filteredStores: Store[] = useMemo(() => {
     let result = [...stores];
 
-    // 거리 필터
-    const maxKm = parseInt(selectedDistance);
-    if (maxKm > 0 && myLocation) {
+    if (viewportSearch) {
+      // 뷰포트 모드: 지도 중심 기준 반경 필터
+      const radius = getViewportRadiusKm(viewportSearch.zoom);
       result = result.filter((store) => {
         if (!store.lat || !store.lng) return false;
         return (
-          getDistanceKm(myLocation.lat, myLocation.lng, store.lat, store.lng) <=
-          maxKm
+          getDistanceKm(
+            viewportSearch.center.lat,
+            viewportSearch.center.lng,
+            store.lat,
+            store.lng,
+          ) <= radius
         );
       });
+    } else {
+      // 거리 필터 모드: 내 위치 기준
+      const maxKm = parseInt(selectedDistance);
+      if (maxKm > 0 && myLocation) {
+        result = result.filter((store) => {
+          if (!store.lat || !store.lng) return false;
+          return (
+            getDistanceKm(myLocation.lat, myLocation.lng, store.lat, store.lng) <=
+            maxKm
+          );
+        });
+      }
     }
 
     // 정렬
@@ -179,12 +178,12 @@ export function useMapSearch() {
       result.sort((a, b) => b.rating - a.rating);
     } else if (selectedSort === 'reviews') {
       result.sort((a, b) => b.reviewCount - a.reviewCount);
-    } else if (selectedSort === 'benefits') {
-      result.sort((a, b) => Number(b.hasCoupon) - Number(a.hasCoupon));
+    } else if (selectedSort === 'popular') {
+      result.sort((a, b) => (b.favoriteCount ?? 0) - (a.favoriteCount ?? 0));
     }
 
     return result;
-  }, [stores, myLocation, selectedDistance, selectedSort]);
+  }, [stores, myLocation, selectedDistance, selectedSort, viewportSearch]);
 
   // 마커 생성
   const markers = useMemo(
@@ -226,12 +225,12 @@ export function useMapSearch() {
       setSelectedStoreId(storeId);
       setViewMode('map');
       // 선택된 가게 위치로 지도 중심 이동
-      const store = stores.find((s) => s.id === storeId);
+      const store = allStores.find((s) => s.id === storeId);
       if (store && store.lat && store.lng) {
         setMapCenter({ lat: store.lat, lng: store.lng });
       }
     },
-    [stores],
+    [allStores],
   );
 
   const handleMarkerClick = useCallback(
@@ -255,18 +254,39 @@ export function useMapSearch() {
       setSubmittedKeyword('');
       return true; // handled
     }
+    // 검색 결과로 지도를 보다가 뒤로가기 → 검색 리스트로 복귀
+    if (viewMode === 'map' && submittedKeyword) {
+      setViewMode('list');
+      setSelectedStoreId(null);
+      return true; // handled
+    }
     return false; // not handled (바텀시트 접기 등은 map.tsx에서 처리)
-  }, [viewMode]);
+  }, [viewMode, submittedKeyword]);
 
-  const handleFilterApply = useCallback(() => {
-    // selectedStoreTypes, selectedMoods가 변경되면
-    // queryParams가 자동으로 바뀌고 → useQuery 자동 refetch
-  }, []);
+  const handleFilterApply = useCallback(
+    (storeTypes: string[], moods: string[], events: string[]) => {
+      setSelectedStoreTypes(storeTypes);
+      setSelectedMoods(moods);
+      setSelectedEvents(events);
+    },
+    [],
+  );
 
   const handleFilterReset = useCallback(() => {
     setSelectedStoreTypes([]);
     setSelectedMoods([]);
     setSelectedEvents([]);
+  }, []);
+
+  const handleViewportSearch = useCallback(
+    (center: { lat: number; lng: number }, zoom: number) => {
+      setViewportSearch({ center, zoom });
+    },
+    [],
+  );
+
+  const handleViewportReset = useCallback(() => {
+    setViewportSearch(null);
   }, []);
 
   const handleStoreTypeToggle = useCallback((id: string) => {
@@ -305,6 +325,7 @@ export function useMapSearch() {
     selectedEvents,
     myLocation,
     locationPermissionDenied,
+    viewportSearch,
     mapCenter,
     setMapCenter,
     currentIndexRef,
@@ -328,6 +349,8 @@ export function useMapSearch() {
     handleBack,
     handleFilterApply,
     handleFilterReset,
+    handleViewportSearch,
+    handleViewportReset,
     handleStoreTypeToggle,
     handleMoodToggle,
     handleEventToggle,

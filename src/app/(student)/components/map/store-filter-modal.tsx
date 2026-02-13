@@ -8,7 +8,7 @@ import {
 } from '@/src/shared/constants/map';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Text } from '@/src/shared/theme/theme';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -27,12 +27,9 @@ interface StoreFilterModalProps {
   selectedMoods: string[];
   selectedEvents: string[];
   onTabChange: (tab: FilterTab) => void;
-  onStoreTypeToggle: (id: string) => void;
-  onMoodToggle: (id: string) => void;
-  onEventToggle: (id: string) => void;
   onReset: () => void;
   onClose: () => void;
-  onApply: () => void;
+  onApply: (storeTypes: string[], moods: string[], events: string[]) => void;
 }
 
 export function StoreFilterModal({
@@ -42,14 +39,53 @@ export function StoreFilterModal({
   selectedMoods,
   selectedEvents,
   onTabChange,
-  onStoreTypeToggle,
-  onMoodToggle,
-  onEventToggle,
   onReset,
   onClose,
   onApply,
 }: StoreFilterModalProps) {
   const insets = useSafeAreaInsets();
+
+  const [draftStoreTypes, setDraftStoreTypes] = useState<string[]>(selectedStoreTypes);
+  const [draftMoods, setDraftMoods] = useState<string[]>(selectedMoods);
+  const [draftEvents, setDraftEvents] = useState<string[]>(selectedEvents);
+
+  // 모달이 열릴 때 현재 적용된 값으로 draft 초기화
+  useEffect(() => {
+    if (visible) {
+      setDraftStoreTypes(selectedStoreTypes);
+      setDraftMoods(selectedMoods);
+      setDraftEvents(selectedEvents);
+    }
+  }, [visible]);
+
+  const handleStoreTypeToggle = (id: string) => {
+    setDraftStoreTypes((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  const handleMoodToggle = (id: string) => {
+    setDraftMoods((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  const handleEventToggle = (id: string) => {
+    setDraftEvents((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  const handleReset = () => {
+    setDraftStoreTypes([]);
+    setDraftMoods([]);
+    setDraftEvents([]);
+    onReset();
+  };
+
+  const handleApply = () => {
+    onApply(draftStoreTypes, draftMoods, draftEvents);
+  };
 
   return (
     <Modal
@@ -89,7 +125,7 @@ export function StoreFilterModal({
                 </ThemedText>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={onReset}>
+            <TouchableOpacity onPress={handleReset}>
               <ThemedText style={styles.resetText}>초기화</ThemedText>
             </TouchableOpacity>
           </View>
@@ -108,14 +144,14 @@ export function StoreFilterModal({
                       key={option.id}
                       style={[
                         styles.chip,
-                        selectedStoreTypes.includes(option.id) && styles.chipSelected,
+                        draftStoreTypes.includes(option.id) && styles.chipSelected,
                       ]}
-                      onPress={() => onStoreTypeToggle(option.id)}
+                      onPress={() => handleStoreTypeToggle(option.id)}
                     >
                       <ThemedText
                         style={[
                           styles.chipText,
-                          selectedStoreTypes.includes(option.id) && styles.chipTextSelected,
+                          draftStoreTypes.includes(option.id) && styles.chipTextSelected,
                         ]}
                       >
                         {option.label}
@@ -134,14 +170,14 @@ export function StoreFilterModal({
                       key={option.id}
                       style={[
                         styles.chip,
-                        selectedMoods.includes(option.id) && styles.chipSelected,
+                        draftMoods.includes(option.id) && styles.chipSelected,
                       ]}
-                      onPress={() => onMoodToggle(option.id)}
+                      onPress={() => handleMoodToggle(option.id)}
                     >
                       <ThemedText
                         style={[
                           styles.chipText,
-                          selectedMoods.includes(option.id) && styles.chipTextSelected,
+                          draftMoods.includes(option.id) && styles.chipTextSelected,
                         ]}
                       >
                         {option.label}
@@ -162,14 +198,14 @@ export function StoreFilterModal({
                       key={option.id}
                       style={[
                         styles.chip,
-                        selectedEvents.includes(option.id) && styles.chipSelected,
+                        draftEvents.includes(option.id) && styles.chipSelected,
                       ]}
-                      onPress={() => onEventToggle(option.id)}
+                      onPress={() => handleEventToggle(option.id)}
                     >
                       <ThemedText
                         style={[
                           styles.chipText,
-                          selectedEvents.includes(option.id) && styles.chipTextSelected,
+                          draftEvents.includes(option.id) && styles.chipTextSelected,
                         ]}
                       >
                         {option.label}
@@ -190,7 +226,7 @@ export function StoreFilterModal({
               label="적용하기"
               backgroundColor={Brand.primary}
               style={styles.applyButton}
-              onPress={onApply}
+              onPress={handleApply}
             />
           </View>
         </Pressable>

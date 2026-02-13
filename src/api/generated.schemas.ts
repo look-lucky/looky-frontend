@@ -556,7 +556,9 @@ export interface CreateEventRequest {
   /** 이벤트 시작일시 */
   startDateTime: string;
   /** 이벤트 종료일시 */
-  endDateTime: string;
+  endDateTime?: string;
+  /** 장소 */
+  place: string;
   /** 대학교 ID */
   universityId: number;
 }
@@ -791,6 +793,7 @@ export interface UpdateEventRequest {
   title?: JsonNullableString;
   description?: JsonNullableString;
   eventTypes?: JsonNullableListEventType;
+  place?: JsonNullableString;
   latitude?: JsonNullableDouble;
   longitude?: JsonNullableDouble;
   startDateTime?: JsonNullableLocalDateTime;
@@ -1101,6 +1104,38 @@ export interface CommonResponseListStoreResponse {
   data?: StoreResponse[];
 }
 
+export type StoreMapResponseStoreCategoriesItem = typeof StoreMapResponseStoreCategoriesItem[keyof typeof StoreMapResponseStoreCategoriesItem];
+
+
+export const StoreMapResponseStoreCategoriesItem = {
+  BAR: 'BAR',
+  CAFE: 'CAFE',
+  RESTAURANT: 'RESTAURANT',
+  ENTERTAINMENT: 'ENTERTAINMENT',
+  BEAUTY_HEALTH: 'BEAUTY_HEALTH',
+  ETC: 'ETC',
+} as const;
+
+export interface StoreMapResponse {
+  id?: number;
+  name?: string;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
+  averageRating?: number;
+  reviewCount?: number;
+  storeCategories?: StoreMapResponseStoreCategoriesItem[];
+  operatingHours?: string;
+  isPartnership?: boolean;
+  hasCoupon?: boolean;
+  favoriteCount?: number;
+}
+
+export interface CommonResponseListStoreMapResponse {
+  isSuccess?: boolean;
+  data?: StoreMapResponse[];
+}
+
 export interface HotStoreResponse {
   storeId?: number;
   name?: string;
@@ -1355,6 +1390,7 @@ export interface EventResponse {
   longitude?: number;
   startDateTime?: string;
   endDateTime?: string;
+  place?: string;
   status?: EventResponseStatus;
   imageUrls?: string[];
   createdAt?: string;

@@ -22,6 +22,7 @@ interface EventResponse {
   endDateTime: string;
   status: 'UPCOMING' | 'LIVE' | 'ENDED';
   imageUrls: string[];
+  place?: string;
   createdAt: string;
 }
 
@@ -100,6 +101,7 @@ function transformEventResponse(
     endDateTime,
     status: getEventStatus({ startDateTime, endDateTime } as Event),
     imageUrls: response.imageUrls ?? [],
+    place: response.place,
     distance,
     createdAt: new Date(response.createdAt),
   };
@@ -113,14 +115,21 @@ interface UseEventsOptions {
   selectedDistance?: string; // km 단위 (0 = 무제한)
   selectedSort?: string;
   selectedEventTypes?: EventType[]; // 선택된 이벤트 타입 필터
+  viewportSearch?: { center: { lat: number; lng: number }; zoom: number } | null;
   enabled?: boolean;
+}
+
+// zoom 레벨 → 화면에 보이는 반경(km) 근사값
+function getViewportRadiusKm(zoom: number): number {
+  return 45000 / Math.pow(2, zoom);
 }
 
 export function useEvents({
   myLocation,
-  selectedDistance = '0',
+  selectedDistance = '1',
   selectedSort = 'distance',
   selectedEventTypes = [],
+  viewportSearch = null,
   enabled = true,
 }: UseEventsOptions) {
   // API 호출 (UPCOMING, LIVE 상태만)
@@ -161,16 +170,31 @@ export function useEvents({
       );
     }
 
-    // 거리 필터
-    const maxKm = parseInt(selectedDistance);
-    if (maxKm > 0 && myLocation) {
+    // 거리 필터 (뷰포트 모드 vs 거리 필터 모드)
+    if (viewportSearch) {
+      const radius = getViewportRadiusKm(viewportSearch.zoom);
       result = result.filter((event) => {
         if (!event.lat || !event.lng) return false;
         return (
-          getDistanceKm(myLocation.lat, myLocation.lng, event.lat, event.lng) <=
-          maxKm
+          getDistanceKm(
+            viewportSearch.center.lat,
+            viewportSearch.center.lng,
+            event.lat,
+            event.lng,
+          ) <= radius
         );
       });
+    } else {
+      const maxKm = parseInt(selectedDistance);
+      if (maxKm > 0 && myLocation) {
+        result = result.filter((event) => {
+          if (!event.lat || !event.lng) return false;
+          return (
+            getDistanceKm(myLocation.lat, myLocation.lng, event.lat, event.lng) <=
+            maxKm
+          );
+        });
+      }
     }
 
     // 정렬
@@ -197,7 +221,7 @@ export function useEvents({
     result.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
 
     return result;
-  }, [visibleEvents, myLocation, selectedDistance, selectedSort, selectedEventTypes]);
+  }, [visibleEvents, myLocation, selectedDistance, selectedSort, selectedEventTypes, viewportSearch]);
 
   // 이벤트 마커 생성
   const eventMarkers = useMemo(

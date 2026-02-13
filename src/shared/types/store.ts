@@ -18,6 +18,7 @@ export interface Store {
   hasCoupon: boolean;
   category?: string; // 카테고리 (예: "식당, 주점")
   isFavorite?: boolean; // 즐겨찾기 여부
+  favoriteCount?: number; // 찜 수
 }
 
 // ============================================

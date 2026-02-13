@@ -31,6 +31,7 @@ interface EventResponse {
   longitude: number;
   startDateTime: string;
   endDateTime: string;
+  place?: string;
   status: 'UPCOMING' | 'LIVE' | 'ENDED';
   imageUrls: string[];
   createdAt: string;
@@ -62,6 +63,7 @@ function transformEventResponse(response: EventResponse): Event {
     lng: response.longitude,
     startDateTime,
     endDateTime,
+    place: response.place,
     status: getEventStatus({ startDateTime, endDateTime } as Event),
     imageUrls: response.imageUrls ?? [],
     createdAt: new Date(response.createdAt),
@@ -180,7 +182,7 @@ export default function EventDetailScreen() {
             <View style={styles.infoRow}>
               <LocationIcon width={rs(18)} height={rs(18)} />
               <ThemedText style={styles.infoValue} numberOfLines={2}>
-                {event.description.split('\n')[0] || '위치 정보 없음'}
+                {event.place || '위치 정보 없음'}
               </ThemedText>
             </View>
             <View style={styles.infoRow}>

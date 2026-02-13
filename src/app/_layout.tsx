@@ -1,6 +1,6 @@
+import { NetworkErrorProvider } from "@/src/shared/contexts/network-error-context";
 import { TabBarProvider } from "@/src/shared/contexts/tab-bar-context";
 import { AuthProvider } from "@/src/shared/lib/auth";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -15,8 +15,6 @@ import { useAuth } from "../shared/lib/auth";
 import ShopOwnerApp from "@/src/app/(shopowner)/ShopOwnerNavigator";
 
 SplashScreen.preventAutoHideAsync();
-
-const queryClient = new QueryClient();
 
 
 // 👇 새로운 컴포넌트: userType 체크
@@ -61,11 +59,11 @@ function AppContent() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
+      <NetworkErrorProvider>
         <AuthProvider>
           <AppContent />
         </AuthProvider>
-      </QueryClientProvider>
+      </NetworkErrorProvider>
     </GestureHandlerRootView>
   );
 }
