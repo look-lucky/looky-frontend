@@ -21,6 +21,7 @@ export interface Event {
   lng: number;
   startDateTime: Date;
   endDateTime: Date;
+  place?: string;
   status: EventStatus;
   imageUrls: string[];
   distance?: string;

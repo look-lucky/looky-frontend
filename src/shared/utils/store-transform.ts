@@ -1,4 +1,6 @@
 import type {
+  StoreMapResponse,
+  StoreMapResponseStoreCategoriesItem,
   StoreResponse,
   StoreResponseStoreCategoriesItem,
 } from '@/src/api/generated.schemas';
@@ -7,7 +9,7 @@ import type { Store } from '@/src/shared/types/store';
 /**
  * 카테고리 코드를 한글로 변환
  */
-const CATEGORY_LABELS: Record<StoreResponseStoreCategoriesItem, string> = {
+const CATEGORY_LABELS: Record<StoreResponseStoreCategoriesItem | StoreMapResponseStoreCategoriesItem, string> = {
   BAR: '주점',
   CAFE: '카페',
   RESTAURANT: '식당',
@@ -202,4 +204,50 @@ export function transformStoreResponses(
   myLocation?: { lat: number; lng: number } | null,
 ): Store[] {
   return responses.map((r) => transformStoreResponse(r, myLocation));
+}
+
+/**
+ * StoreMapResponse (API) → Store (UI) 변환
+ */
+export function transformStoreMapResponse(
+  response: StoreMapResponse,
+  myLocation?: { lat: number; lng: number } | null,
+): Store {
+  const lat = response.latitude ?? 0;
+  const lng = response.longitude ?? 0;
+
+  let distance = '';
+  if (myLocation && lat && lng) {
+    const km = getDistanceKm(myLocation.lat, myLocation.lng, lat, lng);
+    distance = formatDistance(km);
+  }
+
+  return {
+    id: String(response.id ?? 0),
+    name: response.name ?? '',
+    image: response.imageUrl ?? '',
+    rating: response.averageRating ?? 0,
+    reviewCount: response.reviewCount ?? 0,
+    distance,
+    openStatus: '',
+    openHours: response.operatingHours ?? '',
+    benefits: [],
+    lat,
+    lng,
+    isPartner: response.isPartnership ?? false,
+    hasCoupon: response.hasCoupon ?? false,
+    category: formatStoreCategories(response.storeCategories as StoreResponseStoreCategoriesItem[]),
+    isFavorite: false,
+    favoriteCount: response.favoriteCount ?? 0,
+  };
+}
+
+/**
+ * StoreMapResponse[] → Store[] 배열 변환
+ */
+export function transformStoreMapResponses(
+  responses: StoreMapResponse[],
+  myLocation?: { lat: number; lng: number } | null,
+): Store[] {
+  return responses.map((r) => transformStoreMapResponse(r, myLocation));
 }
