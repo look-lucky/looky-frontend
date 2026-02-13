@@ -322,7 +322,7 @@ export default function SignupOwnerPage() {
         {/* 가게 이름 (터치 시 검색 화면 이동) */}
         <TouchableOpacity
           style={styles.inputContainer}
-          onPress={() => router.push("/auth/store-search")}
+          onPress={() => router.push("/auth/store-select")}
           activeOpacity={0.7}
         >
           <ThemedText
