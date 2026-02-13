@@ -110,6 +110,7 @@ export default function StudentVerificationPage() {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [sendCodeMessage, setSendCodeMessage] = useState("");
+  const [isErrorMessage, setIsErrorMessage] = useState(false);
   const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 동아리 가입 여부
@@ -209,11 +210,12 @@ export default function StudentVerificationPage() {
   }, [resendCooldown]);
 
   // 인라인 메시지 30초 후 자동 제거
-  const showSendCodeMessage = useCallback((message: string) => {
+  const showSendCodeMessage = useCallback((message: string, isError = false) => {
     if (sendCodeMessageTimerRef.current) {
       clearTimeout(sendCodeMessageTimerRef.current);
     }
     setSendCodeMessage(message);
+    setIsErrorMessage(isError);
     sendCodeMessageTimerRef.current = setTimeout(() => {
       setSendCodeMessage("");
     }, 30000);
@@ -252,7 +254,7 @@ export default function StudentVerificationPage() {
       showSendCodeMessage("인증번호가 발송되었습니다.");
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
-      showSendCodeMessage(error?.message || "대학 이메일을 입력해주세요.");
+      showSendCodeMessage(error?.message || "대학 이메일을 입력해주세요.", true);
     }
   };
 
@@ -262,7 +264,7 @@ export default function StudentVerificationPage() {
 
     // 타이머 만료 체크
     if (timer <= 0) {
-      showSendCodeMessage("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.");
+      showSendCodeMessage("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.", true);
       return;
     }
 
@@ -277,7 +279,7 @@ export default function StudentVerificationPage() {
       showSendCodeMessage("이메일 인증이 완료되었습니다.");
     } catch (error: any) {
       console.error("이메일 인증 실패:", error);
-      showSendCodeMessage(error?.message || "인증번호가 일치하지 않습니다.");
+      showSendCodeMessage(error?.message || "인증번호가 일치하지 않습니다.", true);
     }
   };
 
@@ -418,7 +420,7 @@ export default function StudentVerificationPage() {
             Alert.alert(
               "회원가입 실패",
               errorMessage || "이미 존재하는 아이디입니다. 다른 아이디로 다시 시도해주세요.",
-              [{ text: "확인", onPress: () => router.back() }]
+              [{ text: "확인", onPress: () => router.canGoBack() ? router.back() : router.replace("/auth") }]
             );
           } else {
             Alert.alert(
@@ -435,7 +437,7 @@ export default function StudentVerificationPage() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       {/* Header */}
       <View style={styles.header}>
-        <ArrowLeft onPress={() => router.back()} />
+        <ArrowLeft onPress={() => router.canGoBack() ? router.back() : router.replace("/auth")} />
       </View>
 
       {/* Title Section */}
@@ -510,7 +512,7 @@ export default function StudentVerificationPage() {
 
           {/* 인라인 발송 메시지 */}
           {sendCodeMessage !== "" && (
-            <ThemedText style={styles.inlineMessage}>
+            <ThemedText style={[styles.inlineMessage, isErrorMessage && styles.inlineMessageError]}>
               {sendCodeMessage}
             </ThemedText>
           )}
@@ -787,6 +789,9 @@ const styles = StyleSheet.create({
     fontSize: rs(12),
     color: TextColors.secondary,
     paddingLeft: rs(4),
+  },
+  inlineMessageError: {
+    color: System.error,
   },
   successMessage: {
     paddingVertical: rs(8),

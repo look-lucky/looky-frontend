@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import NearDealLogo from '@/assets/images/logo/neardeal-logo.svg';
+import LookyLogo from '@/assets/images/logo/looky-logo.svg';
 
 export default function HomePage() {
   const router = useRouter();
@@ -73,7 +73,7 @@ export default function HomePage() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <NearDealLogo width={rs(92)} height={rs(28)} />
+          <LookyLogo width={rs(92)} height={rs(28)} />
         </View>
 
         {/* Welcome Banner */}

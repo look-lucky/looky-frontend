@@ -76,7 +76,7 @@ export default function StoreSearchPage() {
         storeAddress: store.roadAddress ?? "",
       });
     }
-    router.back();
+    router.canGoBack() ? router.back() : router.replace("/auth");
   }, [selectedId, results, setSignupFields, router]);
 
   const renderItem = useCallback(
@@ -109,7 +109,7 @@ export default function StoreSearchPage() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <ArrowLeft onPress={() => router.back()} />
+        <ArrowLeft onPress={() => router.canGoBack() ? router.back() : router.replace("/auth")} />
       </View>
 
       {/* 타이틀 */}

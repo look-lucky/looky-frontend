@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { rs } from "@/src/shared/theme/scale";
 
 import { SignupIcons } from "@/assets/images/icons/signup";
-import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
+import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useSocialLogin } from "@/src/shared/lib/auth/use-social-login";
 
 export default function SignInPage() {
@@ -66,7 +66,9 @@ export default function SignInPage() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <ArrowLeft onPress={() => router.back()} />
+        {router.canGoBack() && (
+          <ArrowLeft onPress={() => router.back()} />
+        )}
       </View>
 
       <View style={styles.topContent}>
@@ -74,7 +76,7 @@ export default function SignInPage() {
         <Text style={styles.subtitle}>우리대학 제휴혜택이 궁금할 땐?</Text>
 
         {/* Logo */}
-        <NearDealLogo width={169} height={57} />
+        <LookyLogo width={169} height={57} />
       </View>
 
       <View style={styles.bottomContent}>

@@ -1,4 +1,4 @@
-import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
+import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useLogin } from "@/src/api/auth";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useAuth } from "@/src/shared/lib/auth";
@@ -122,13 +122,13 @@ export default function LoginPage() {
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         {/* Header with back button */}
         <View style={styles.header}>
-          <ArrowLeft onPress={() => router.back()} />
+          <ArrowLeft onPress={() => router.canGoBack() ? router.back() : router.replace("/auth")} />
         </View>
 
         {/* Top content with subtitle and logo */}
         <View style={styles.topContent}>
           <Text style={styles.subtitle}>우리대학 제휴혜택이 궁금할 땐?</Text>
-          <NearDealLogo width={rs(169)} height={rs(57)} />
+          <LookyLogo width={rs(169)} height={rs(57)} />
         </View>
 
         {/* Center content with input fields */}

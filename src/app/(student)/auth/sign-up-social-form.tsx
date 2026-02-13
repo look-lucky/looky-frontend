@@ -1,4 +1,4 @@
-import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
+import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useSend, useVerify } from "@/src/api/auth";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
@@ -219,12 +219,12 @@ export default function SocialSignupFormPage() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <ArrowLeft onPress={() => router.back()} />
+        <ArrowLeft onPress={() => router.canGoBack() ? router.back() : router.replace("/auth")} />
       </View>
 
       <View style={styles.topContent}>
         <ThemedText style={styles.subtitle}>우리대학 제휴혜택이 궁금할 땐?</ThemedText>
-        <NearDealLogo width={169} height={57} />
+        <LookyLogo width={169} height={57} />
       </View>
 
       <ScrollView

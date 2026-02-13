@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
+import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, System } from "@/src/shared/theme/theme";
@@ -81,7 +81,7 @@ export default function LandingPage() {
         <ThemedText style={styles.subTitle}>
           우리대학 제휴혜택이 궁금할 땐?
         </ThemedText>
-        <NearDealLogo width={216} height={73} />
+        <LookyLogo width={216} height={73} />
       </View>
 
       <View style={styles.statusBar}>

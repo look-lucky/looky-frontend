@@ -1,4 +1,4 @@
-import NearDealLogo from "@/assets/images/logo/neardeal-logo.svg";
+import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -91,12 +91,12 @@ export default function SigninEmailPage() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <ArrowLeft onPress={() => router.back()} />
+        <ArrowLeft onPress={() => router.canGoBack() ? router.back() : router.replace("/auth")} />
       </View>
 
       <View style={styles.content}>
         {/* Logo */}
-        <NearDealLogo width={169} height={57} />
+        <LookyLogo width={169} height={57} />
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>

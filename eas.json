@@ -8,12 +8,14 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
+        "APP_VARIANT": "development",
         "EXPO_PUBLIC_API_BASE_URL": "https://api.looky.kr"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
+        "APP_VARIANT": "preview",
         "EXPO_PUBLIC_API_BASE_URL": "https://api.looky.kr"
       }
     },
