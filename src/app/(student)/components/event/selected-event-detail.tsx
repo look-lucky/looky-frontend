@@ -1,39 +1,27 @@
+import ClockIcon from '@/assets/images/icons/event/clock.svg';
+import LocationIcon from '@/assets/images/icons/event/location.svg';
+import ConfettiGrayIcon from '@/assets/images/icons/map/confetti-gray.svg';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Owner, Text } from '@/src/shared/theme/theme';
 import type { Event } from '@/src/shared/types/event';
 import { EVENT_TYPE_LABELS, getDDay } from '@/src/shared/types/event';
 import { Ionicons } from '@expo/vector-icons';
-import LocationIcon from '@/assets/images/icons/event/location.svg';
-import ClockIcon from '@/assets/images/icons/event/clock.svg';
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface SelectedEventDetailProps {
   event: Event;
-  onNavigate?: () => void;
-  onShare?: () => void;
   onViewDetail?: () => void;
 }
 
 export function SelectedEventDetail({
   event,
-  onNavigate,
-  onShare,
   onViewDetail,
 }: SelectedEventDetailProps) {
   const dDay = getDDay(event);
   const isLive = event.status === 'live';
   const isEnded = event.status === 'ended';
-
-  // 날짜 포맷
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('ko-KR', {
-      month: 'long',
-      day: 'numeric',
-      weekday: 'short',
-    });
-  };
 
   // 시간 포맷
   const formatTime = (date: Date) => {
@@ -77,7 +65,10 @@ export function SelectedEventDetail({
               isEnded && styles.dDayBadgeEnded,
             ]}
           >
-            <ThemedText style={[styles.dDayText, isLive && styles.dDayTextLive]}>
+            <ThemedText
+              type="captionSemiBold"
+              lightColor={isLive ? Gray.white : Text.primary}
+            >
               {isEnded ? '종료' : dDay ?? '진행중'}
             </ThemedText>
           </View>
@@ -85,29 +76,30 @@ export function SelectedEventDetail({
 
         <View style={styles.info}>
           {/* 제목 */}
-          <ThemedText style={styles.title} numberOfLines={2}>
+          <ThemedText type="subtitle" lightColor={Text.primary} numberOfLines={2}>
             {event.title}
           </ThemedText>
 
-          {/* 위치(거리) */}
-          {event.distance && (
-            <View style={styles.detail}>
-              <LocationIcon width={rs(16)} height={rs(16)} />
-              <ThemedText style={styles.distanceText}>
-                {event.distance}
-              </ThemedText>
-            </View>
-          )}
-
-          {/* 이벤트 타입 태그 */}
-          <View style={styles.typeContainer}>
-            {event.eventTypes.slice(0, 2).map((type) => (
-              <View key={type} style={styles.typeTag}>
-                <ThemedText style={styles.typeText}>
-                  {EVENT_TYPE_LABELS[type]}
+          {/* 위치 + 이벤트 타입 태그 (같은 줄) */}
+          <View style={styles.locationRow}>
+            {event.place && (
+              <View style={styles.detail}>
+                <LocationIcon width={rs(16)} height={rs(16)} />
+                <ThemedText type="default" lightColor={Text.secondary} numberOfLines={1} style={styles.placeText}>
+                  {event.place}
                 </ThemedText>
               </View>
-            ))}
+            )}
+            <View style={styles.typeContainer}>
+              {event.eventTypes.slice(0, 2).map((type) => (
+                <View key={type} style={styles.typeTag}>
+                  <ConfettiGrayIcon width={rs(12)} height={rs(12)} />
+                  <ThemedText type="default" lightColor={Text.tertiary}>
+                    {EVENT_TYPE_LABELS[type]}
+                  </ThemedText>
+                </View>
+              ))}
+            </View>
           </View>
 
           {/* 시간 (진행 중이면 앞에 표시) */}
@@ -116,33 +108,18 @@ export function SelectedEventDetail({
             {isLive && (
               <>
                 <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
-                <ThemedText style={[styles.statusText, { color: statusInfo.color }]}>
+                <ThemedText type="defaultSemiBold" lightColor={statusInfo.color}>
                   {statusInfo.text}
                 </ThemedText>
               </>
             )}
-            <ThemedText style={styles.detailText}>
+            <ThemedText type="default" lightColor={Text.secondary}>
               {formatTime(event.startDateTime)} - {formatTime(event.endDateTime)}
             </ThemedText>
           </View>
         </View>
       </TouchableOpacity>
 
-      {/* 액션 버튼 */}
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.actionButton} onPress={onNavigate}>
-          <Ionicons name="navigate-outline" size={20} color={Owner.primary} />
-          <ThemedText style={styles.actionButtonText}>길찾기</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={onShare}>
-          <Ionicons name="share-outline" size={20} color={Owner.primary} />
-          <ThemedText style={styles.actionButtonText}>공유</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={onViewDetail}>
-          <Ionicons name="document-text-outline" size={20} color={Owner.primary} />
-          <ThemedText style={styles.actionButtonText}>상세보기</ThemedText>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -173,7 +150,7 @@ const styles = StyleSheet.create({
     backgroundColor: Gray.white,
     paddingHorizontal: rs(10),
     paddingVertical: rs(3),
-    borderRadius: rs(4),
+    borderRadius: rs(12),
     borderWidth: 1,
     borderColor: Gray.gray3,
   },
@@ -185,80 +162,36 @@ const styles = StyleSheet.create({
     backgroundColor: Gray.gray4,
     borderColor: Gray.gray4,
   },
-  dDayText: {
-    fontSize: rs(13),
-    fontWeight: '700',
-    color: Text.primary,
-  },
-  dDayTextLive: {
-    color: Gray.white,
-  },
   // 정보
   info: {
     gap: rs(10),
   },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(8),
+    flexWrap: 'wrap',
+  },
+  placeText: {
+    flexShrink: 1,
+  },
   typeContainer: {
     flexDirection: 'row',
-    gap: rs(8),
+    gap: rs(6),
   },
   typeTag: {
-    backgroundColor: Owner.primary + '15',
-    paddingHorizontal: rs(10),
-    paddingVertical: rs(4),
-    borderRadius: rs(4),
-  },
-  typeText: {
-    fontSize: rs(12),
-    color: Owner.primary,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: rs(20),
-    fontWeight: '700',
-    color: Text.primary,
-    lineHeight: rs(28),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(4),
   },
   detail: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(8),
   },
-  detailText: {
-    fontSize: rs(14),
-    color: Text.secondary,
-  },
-  distanceText: {
-    fontSize: rs(14),
-    color: Owner.primary,
-    fontWeight: '500',
-  },
   statusDot: {
     width: rs(8),
     height: rs(8),
     borderRadius: rs(4),
-  },
-  statusText: {
-    fontSize: rs(14),
-    fontWeight: '600',
-  },
-  // 액션 버튼
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: rs(8),
-    paddingTop: rs(16),
-    borderTopWidth: 1,
-    borderTopColor: Gray.gray3,
-  },
-  actionButton: {
-    alignItems: 'center',
-    gap: rs(4),
-    paddingVertical: rs(8),
-    paddingHorizontal: rs(20),
-  },
-  actionButtonText: {
-    fontSize: rs(13),
-    color: Owner.primary,
-    fontWeight: '500',
   },
 });
