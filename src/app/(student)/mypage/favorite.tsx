@@ -23,7 +23,6 @@ export default function Favorite() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterType, setFilterType] = useState<'recent' | 'rating'>('recent');
 
   const { data: favoritesRes, refetch } = useGetMyFavorites({
     pageable: { page: 0, size: 100 },
@@ -38,19 +37,7 @@ export default function Favorite() {
     return raw?.content ?? [];
   }, [favoritesRes]);
 
-  const sortedStores = useMemo(() => {
-    if (filterType === 'rating') {
-      return [...stores];
-    }
-    return stores;
-  }, [stores, filterType]);
-
   const toggleFilter = () => setIsFilterOpen(!isFilterOpen);
-
-  const selectFilter = (type: 'recent' | 'rating') => {
-    setFilterType(type);
-    setIsFilterOpen(false);
-  };
 
   const handleRemoveFavorite = (store: FavoriteStoreResponse) => {
     if (!store.storeId) return;
@@ -81,8 +68,13 @@ export default function Favorite() {
         >
           <View style={{ height: rs(40) }} />
 
-          {sortedStores.map((store) => (
-            <View key={store.storeId} style={styles.storeCard}>
+          {stores.map((store) => (
+            <TouchableOpacity
+              key={store.storeId}
+              style={styles.storeCard}
+              onPress={() => router.push({ pathname: '/store/[id]', params: { id: String(store.storeId) } })}
+              activeOpacity={0.7}
+            >
               <View style={styles.cardLeft}>
                 <Image
                   source={{ uri: store.imageUrl || undefined }}
@@ -99,11 +91,14 @@ export default function Favorite() {
               </View>
               <TouchableOpacity
                 style={styles.bookmarkBtn}
-                onPress={() => handleRemoveFavorite(store)}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleRemoveFavorite(store);
+                }}
               >
                 <Ionicons name="bookmark" size={rs(20)} color="#40CE2B" />
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           ))}
 
           <View style={{ height: rs(50) }} />
