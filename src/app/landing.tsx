@@ -12,7 +12,7 @@ import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, System } from "@/src/shared/theme/theme";
 
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://api.looky.kr";
 
 type HealthStatus = "checking" | "connected" | "failed";
 
