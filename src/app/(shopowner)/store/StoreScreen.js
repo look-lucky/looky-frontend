@@ -139,7 +139,7 @@ export default function StoreScreen() {
   });
 
   const initialHours = ['월', '화', '수', '목', '금', '토', '일'].map(day => ({
-    day, open: '10:00', close: '22:00', breakStart: '15:00', breakEnd: '17:00', isClosed: false
+    day, open: null, close: null, breakStart: null, breakEnd: null, isClosed: false
   }));
   const [operatingHours, setOperatingHours] = useState(initialHours);
   const [hasBreakTime, setHasBreakTime] = useState(false);
@@ -398,8 +398,6 @@ export default function StoreScreen() {
               const dayData = hoursObj[key];
 
               if (dayData && Array.isArray(dayData) && dayData.length > 0 && dayData[0] && dayData[0][0]) {
-                // [주의] 백엔드 데이터에 브레이크 타임이 없다면 기본값을 유지하거나 별도 파싱 로직 필요
-                // 현재는 기존 open/close만 덮어씌우고 breakStart/breakEnd는 기본값 유지
                 return {
                   ...item,
                   open: dayData[0][0],
@@ -454,6 +452,17 @@ export default function StoreScreen() {
 
         // 3. 영업 일시 중지 초기화
         setIsPaused(myStore.isSuspended || false);
+      } else {
+        // [추가] 매장이 없는 경우 상태 초기화
+        setMyStoreId(null);
+        setStoreInfo({
+          name: '', branch: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImages: []
+        });
+        setOperatingHours(initialHours);
+        setSelectedHolidays([]);
+        setHasBreakTime(false);
+        setIsPaused(false);
+        console.log("🏪 [StoreScreen] No store matched or found. State reset.");
       }
     };
 
@@ -573,17 +582,16 @@ export default function StoreScreen() {
           };
           return VIBE_KR_TO_EN[v] || v;
         }),
-        imageUrls: editBasicData.bannerImages.filter(img => img.startsWith('http')) // 기존 이미지 중 남은 것들 유지
+        images: editBasicData.bannerImages
+          .map((img, index) => ({ uri: img, index }))
+          .filter(item => item.uri.startsWith('http'))
+          .map(item => ({ url: item.uri, orderIndex: item.index }))
       };
 
       console.log("🚀 [handleBasicSave] Request Payload:", JSON.stringify(requestData, null, 2));
 
-      // [핵심] JSON 포장 (application/json 타입 명시)
-      formData.append("request", {
-        string: JSON.stringify(requestData),
-        type: "application/json",
-        name: "request"
-      });
+      // [핵심] JSON 포장 (표준 전송 방식)
+      formData.append("request", JSON.stringify(requestData));
 
       // 4. 이미지 파일이 있다면 formData에 추가 (키: images) - 다중 이미지 처리
       if (editBasicData.bannerImages && editBasicData.bannerImages.length > 0) {
@@ -1411,22 +1419,26 @@ export default function StoreScreen() {
                       {item.isClosed ? (
                         <View style={styles.closedBadge}><Text style={styles.timeText}>휴무</Text></View>
                       ) : (
-                        <View style={{ flexDirection: 'column', gap: rs(4) }}>
-                          <View style={styles.timeDisplayContainer}>
-                            <Text style={styles.timeText}>{item.open}</Text>
-                            <Text style={styles.hyphen}>-</Text>
-                            <Text style={styles.timeText}>{item.close}</Text>
-                          </View>
-                          {(item.breakStart && item.breakEnd) ? (
+                        item.open && item.close ? (
+                          <View style={{ flexDirection: 'column', gap: rs(4) }}>
                             <View style={styles.timeDisplayContainer}>
-                              <Text style={styles.breakTimeText}>{item.breakStart}</Text>
-                              <Text style={styles.hyphenOrange}>-</Text>
-                              <Text style={styles.breakTimeText}>{item.breakEnd}</Text>
+                              <Text style={styles.timeText}>{item.open}</Text>
+                              <Text style={styles.hyphen}>-</Text>
+                              <Text style={styles.timeText}>{item.close}</Text>
                             </View>
-                          ) : (
-                            <Text style={{ fontSize: rs(11), color: '#828282', fontFamily: 'Pretendard', fontWeight: '500' }}>브레이크타임 없음</Text>
-                          )}
-                        </View>
+                            {(item.breakStart && item.breakEnd) ? (
+                              <View style={styles.timeDisplayContainer}>
+                                <Text style={styles.breakTimeText}>{item.breakStart}</Text>
+                                <Text style={styles.hyphenOrange}>-</Text>
+                                <Text style={styles.breakTimeText}>{item.breakEnd}</Text>
+                              </View>
+                            ) : (
+                              <Text style={{ fontSize: rs(11), color: '#828282', fontFamily: 'Pretendard', fontWeight: '500' }}>브레이크타임 없음</Text>
+                            )}
+                          </View>
+                        ) : (
+                          <Text style={styles.placeholderText}>정보 없음</Text>
+                        )
                       )}
                     </View>
                   ))}
@@ -2204,8 +2216,7 @@ export default function StoreScreen() {
                           <TouchableOpacity
                             style={[
                               styles.timeInputBox,
-                              (!hasBreakTime || item.isClosed || (!item.breakStart && !item.breakEnd)) && { backgroundColor: '#F5F5F5' },
-                              hasBreakTime && !item.isClosed && (item.breakStart || item.breakEnd) && { borderColor: '#FF7F00' }
+                              (!hasBreakTime || item.isClosed || (!item.breakStart && !item.breakEnd)) && { backgroundColor: '#F5F5F5' }
                             ]}
                             onPress={() => hasBreakTime && !item.isClosed && (item.breakStart || item.breakEnd) && openTimePicker(index, 'breakStart')}
                             activeOpacity={0.7}
@@ -2219,8 +2230,7 @@ export default function StoreScreen() {
                           <TouchableOpacity
                             style={[
                               styles.timeInputBox,
-                              (!hasBreakTime || item.isClosed || (!item.breakStart && !item.breakEnd)) && { backgroundColor: '#F5F5F5' },
-                              hasBreakTime && !item.isClosed && (item.breakStart || item.breakEnd) && { borderColor: '#FF7F00' }
+                              (!hasBreakTime || item.isClosed || (!item.breakStart && !item.breakEnd)) && { backgroundColor: '#F5F5F5' }
                             ]}
                             onPress={() => hasBreakTime && !item.isClosed && (item.breakStart || item.breakEnd) && openTimePicker(index, 'breakEnd')}
                             activeOpacity={0.7}

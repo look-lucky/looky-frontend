@@ -8,13 +8,17 @@ import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platfo
 
 // [API] 내 가게 조회 & 상점 통계 조회 임포트
 import { verifyCoupon } from '@/src/api/coupon';
-import { getMyStores, getStoreStats } from '@/src/api/store';
+import { getItems } from '@/src/api/item';
+import { getMyStores, getStore, getStoreStats } from '@/src/api/store';
+import { ErrorPopup } from '@/src/shared/common/error-popup';
 
 export default function HomeScreen({ navigation }) {
   // [상태 관리]
   const [modalVisible, setModalVisible] = useState(false); // 등급 안내 모달
   const [isLoading, setIsLoading] = useState(true);        // 로딩 상태
   const [refreshing, setRefreshing] = useState(false);     // 당겨서 새로고침
+  const [isErrorPopupVisible, setIsErrorPopupVisible] = useState(false); // 에러 팝업 상태 (전체화면)
+  const [isPopupRefreshing, setIsPopupRefreshing] = useState(false);    // 에러 팝업 내 새로고침 상태
 
   // [가게 선택 모달]
   const [isStoreModalVisible, setIsStoreModalVisible] = useState(false);
@@ -32,6 +36,8 @@ export default function HomeScreen({ navigation }) {
     storeId: null,
     storeName: "등록된 가게 없음",
     ownerName: "사장님",
+    isStoreInfoComplete: false, // 매장 정보 등록 완료 여부
+    menuCount: 0,                // 등록된 메뉴 개수
     stats: {
       regulars: 0,
       issuedCoupons: 0,
@@ -76,15 +82,37 @@ export default function HomeScreen({ navigation }) {
       console.log(`[API] 통계 조회 시작: storeId=${storeId}`);
       const statsResponse = await getStoreStats(storeId);
 
+      // [추가] 5. 상점 상세 정보 조회 (등록 상태 확인용)
+      const storeDetailResponse = await getStore(storeId);
+      const storeDetail = storeDetailResponse?.data?.data || {};
+
+      // 매장 정보가 모두 입력되었는지 확인 (소개, 전화번호, 주소, 이미지 중 하나라도 있어야 함 - 여기서는 최소한의 조건으로 체크)
+      const isStoreInfoComplete = !!(
+        storeDetail.introduction &&
+        storeDetail.phone &&
+        storeDetail.roadAddress &&
+        (storeDetail.imageUrls && storeDetail.imageUrls.length > 0)
+      );
+
+      // [추가] 6. 메뉴 목록 조회 (등록 상태 확인용)
+      const itemsResponse = await getItems(storeId);
+      const itemsData = itemsResponse?.data?.data || itemsResponse?.data || [];
+      const itemsList = Array.isArray(itemsData) ? itemsData : (itemsData.content || []);
+      const menuCount = itemsList.length;
+
       // 통계 데이터 언랩핑
       const statsData = statsResponse?.data?.data || {};
 
       console.log("📊 [통계 데이터 수신]:", statsData);
+      console.log("🏪 [매장 상세 확인]:", isStoreInfoComplete ? "완료" : "미완료");
+      console.log("🥘 [메뉴 개수 확인]:", menuCount);
 
       setHomeData({
         storeId: storeId,
         storeName: currentStore.name,
         ownerName: currentStore.ownerName || "사장님",
+        isStoreInfoComplete,
+        menuCount,
         stats: {
           regulars: statsData.totalRegulars || 0,
           issuedCoupons: statsData.totalIssuedCoupons || 0,
@@ -92,9 +120,13 @@ export default function HomeScreen({ navigation }) {
           usedCoupons: statsData.totalUsedCoupons || 0,
         }
       });
+      setIsErrorPopupVisible(false); // 데이터 로딩 성공 시 에러 팝업 닫기
+      setIsPopupRefreshing(false);   // 팝업 내 로딩 상태 해제
 
     } catch (error) {
       console.error("홈 데이터 로딩 실패:", error);
+      setIsErrorPopupVisible(true); // 에러 발생 시 팝업 띄우기
+      setIsPopupRefreshing(false);  // 에러 발생 시 (재시도 실패 시) 로딩 상태 해제
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -128,11 +160,21 @@ export default function HomeScreen({ navigation }) {
     }, [])
   );
 
+  // [로직] 에러 팝업 새로고침
+  const handleErrorRefresh = () => {
+    setIsPopupRefreshing(true); // 팝업 버튼 내 로딩 표시 시작
+    fetchData();                // 데이터 다시 불러오기
+  };
+
   // 날짜 포맷 헬퍼
   const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}까지`;
+  };
+
+  // [헬퍼] 숫자 콤마 포맷팅
+  const formatNumber = (val) => {
+    if (!val && val !== 0) return '0';
+    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
   // [로직] 쿠폰 번호 검증 (API 연결)
@@ -225,7 +267,11 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.levelHeader}>
               <View style={styles.levelIconContainer}>
                 <Image
-                  source={require("@/assets/images/shopowner/3clover.png")}
+                  source={
+                    (homeData.isStoreInfoComplete && homeData.menuCount > 0)
+                      ? require("@/assets/images/shopowner/3clover.png")
+                      : require("@/assets/images/shopowner/2clover.png")
+                  }
                   style={styles.levelImage}
                   resizeMode="contain"
                 />
@@ -233,7 +279,9 @@ export default function HomeScreen({ navigation }) {
 
               <View style={styles.levelInfo}>
                 <Text style={styles.levelLabel}>현재 등급</Text>
-                <Text style={styles.levelValue}>세잎클로버</Text>
+                <Text style={styles.levelValue}>
+                  {(homeData.isStoreInfoComplete && homeData.menuCount > 0) ? "세잎클로버" : "새싹"}
+                </Text>
               </View>
 
               <TouchableOpacity
@@ -251,9 +299,21 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.progressContainer}>
               <View style={styles.progressTextRow}>
                 <Ionicons name="sparkles" size={rs(12)} color="#A5F3C3" style={{ marginRight: 4 }} />
-                <Text style={styles.progressLabel}>훌륭해요! 행운이 가득한 매장이군요</Text>
+                <Text style={styles.progressLabel}>
+                  {(homeData.isStoreInfoComplete && homeData.menuCount > 0)
+                    ? "훌륭해요! 행운이 가득한 매장이군요"
+                    : "루키의 파트너 매장이 되셨군요!"}
+                </Text>
               </View>
-              <Text style={[styles.progressLabel2, { marginTop: rs(2) }]}>학생들에게 행운을 나눠주세요!</Text>
+              <Text style={[styles.progressLabel2, { marginTop: rs(2) }]}>
+                {(homeData.isStoreInfoComplete && homeData.menuCount > 0)
+                  ? "학생들에게 행운을 나눠주세요!"
+                  : (!homeData.isStoreInfoComplete && homeData.menuCount === 0)
+                    ? "다음 등급을 위해 매장과 메뉴 정보를 업데이트 해주세요!"
+                    : (homeData.menuCount === 0)
+                      ? "다음 등급을 위해 메뉴 정보도 업데이트 해주세요!"
+                      : "다음 등급을 위해 매장 정보도 업데이트 해주세요!"}
+              </Text>
             </View>
           </LinearGradient>
         </View>
@@ -281,7 +341,7 @@ export default function HomeScreen({ navigation }) {
               </View>
               <View style={styles.statInfoBox}>
                 <Text style={statStyles.statTitle}>단골 손님</Text>
-                <Text style={styles.statNumber}>{homeData.stats.regulars}</Text>
+                <Text style={styles.statNumber}>{formatNumber(homeData.stats.regulars)}</Text>
                 <Text style={styles.statSubText}>명이 찜했어요</Text>
               </View>
             </TouchableOpacity>
@@ -297,7 +357,7 @@ export default function HomeScreen({ navigation }) {
               </View>
               <View style={styles.statInfoBox}>
                 <Text style={statStyles.statTitle}>발행한 쿠폰</Text>
-                <Text style={styles.statNumber}>{homeData.stats.issuedCoupons}</Text>
+                <Text style={styles.statNumber}>{formatNumber(homeData.stats.issuedCoupons)}</Text>
                 <Text style={styles.statSubText}>장을 발행했어요</Text>
               </View>
             </TouchableOpacity>
@@ -316,7 +376,7 @@ export default function HomeScreen({ navigation }) {
               </View>
               <View style={styles.statInfoBox}>
                 <Text style={statStyles.statTitle}>총 리뷰</Text>
-                <Text style={styles.statNumber}>{homeData.stats.newReviews}</Text>
+                <Text style={styles.statNumber}>{formatNumber(homeData.stats.newReviews)}</Text>
                 <Text style={styles.statSubText}>명이 남겼어요</Text>
               </View>
             </TouchableOpacity>
@@ -332,7 +392,7 @@ export default function HomeScreen({ navigation }) {
               </View>
               <View style={styles.statInfoBox}>
                 <Text style={statStyles.statTitle}>사용된 쿠폰</Text>
-                <Text style={styles.statNumber}>{homeData.stats.usedCoupons}</Text>
+                <Text style={styles.statNumber}>{formatNumber(homeData.stats.usedCoupons)}</Text>
                 <Text style={styles.statSubText}>장 사용되었어요</Text>
               </View>
             </TouchableOpacity>
@@ -391,7 +451,7 @@ export default function HomeScreen({ navigation }) {
                 />
                 <View style={styles.gradeTextBox}>
                   <Text style={styles.gradeItemTitle}>씨앗</Text>
-                  <Text style={styles.gradeItemDesc}>아직 니어딜에 정식 등록되지 않은 상태예요.</Text>
+                  <Text style={styles.gradeItemDesc}>{"아직 루키에 정식 등록되지 않은 상태예요.\n(입점 신청 필요)"}</Text>
                 </View>
               </View>
               <View style={styles.gradeItemBox}>
@@ -402,7 +462,7 @@ export default function HomeScreen({ navigation }) {
                 />
                 <View style={styles.gradeTextBox}>
                   <Text style={styles.gradeItemTitle}>새싹</Text>
-                  <Text style={styles.gradeItemDesc}>니어딜의 파트너가 되셨군요! 환영합니다.</Text>
+                  <Text style={styles.gradeItemDesc}>{"루키의 파트너가 되셨군요!\n환영합니다."}</Text>
                 </View>
               </View>
               <View style={styles.gradeItemBox}>
@@ -413,7 +473,7 @@ export default function HomeScreen({ navigation }) {
                 />
                 <View style={styles.gradeTextBox}>
                   <Text style={styles.gradeItemTitle}>세잎</Text>
-                  <Text style={styles.gradeItemDesc}>가게 정보를 모두 등록하여 손님 맞을 준비 완료!</Text>
+                  <Text style={styles.gradeItemDesc}>{"가게 정보를 모두 등록하여 손님 맞을 준비 완료!\n학생들에게 행운을 나눠주세요!"}</Text>
                 </View>
               </View>
             </View>
@@ -598,6 +658,15 @@ export default function HomeScreen({ navigation }) {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {/* --- [모달] 에러 발생 팝업 --- */}
+      <ErrorPopup
+        visible={isErrorPopupVisible}
+        isRefreshing={isPopupRefreshing}
+        type="NETWORK"
+        onRefresh={handleErrorRefresh}
+        onClose={() => setIsErrorPopupVisible(false)}
+      />
     </SafeAreaView>
   );
 }

@@ -89,6 +89,7 @@ export async function clearToken(): Promise<void> {
     USER_TYPE_KEY,
     COLLEGE_ID_KEY,
     USERNAME_KEY,
+    "SELECTED_STORE_ID",
   ]);
 }
 

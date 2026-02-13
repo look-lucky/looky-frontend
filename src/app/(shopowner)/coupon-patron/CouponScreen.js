@@ -169,6 +169,7 @@ export default function CouponScreen({ navigation, route }) {
 
     // [핸들러] 날짜 클릭
     const handleDatePress = (dayObj) => {
+        Keyboard.dismiss();
         if (dayObj.month !== 'curr') return;
 
         const selectedDate = new Date(dayObj.date);
@@ -706,7 +707,10 @@ export default function CouponScreen({ navigation, route }) {
                             {/* 닫기 버튼 */}
                             <TouchableOpacity
                                 style={styles.createModalCloseBtn}
-                                onPress={() => setIsExitConfirmVisible(true)}
+                                onPress={() => {
+                                    Keyboard.dismiss();
+                                    setIsExitConfirmVisible(true);
+                                }}
                                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             >
                                 <Ionicons name="close" size={rs(24)} color="#BDBDBD" />
@@ -930,7 +934,10 @@ export default function CouponScreen({ navigation, route }) {
                                             <Text style={styles.createFormLabel}>쿠폰 발급 기간</Text>
                                             <TouchableOpacity
                                                 style={styles.createInputBox}
-                                                onPress={() => setIsPeriodModalVisible(true)}
+                                                onPress={() => {
+                                                    Keyboard.dismiss();
+                                                    setIsPeriodModalVisible(true);
+                                                }}
                                             >
                                                 <Text
                                                     style={{
@@ -953,7 +960,10 @@ export default function CouponScreen({ navigation, route }) {
                                             <Text style={styles.createFormLabel}>쿠폰 만료 일시(다운받은 시점부터)</Text>
                                             <TouchableOpacity
                                                 style={styles.createInputBox}
-                                                onPress={() => setIsValidDaysDropdownOpen(!isValidDaysDropdownOpen)}
+                                                onPress={() => {
+                                                    Keyboard.dismiss();
+                                                    setIsValidDaysDropdownOpen(!isValidDaysDropdownOpen);
+                                                }}
                                             >
                                                 <Text style={{ flex: 1, fontSize: rs(13), fontWeight: '500', color: 'black', fontFamily: 'Pretendard' }} numberOfLines={1}>
                                                     {validDays === 0 ? '발급 종료 시간' :
@@ -1332,6 +1342,7 @@ export default function CouponScreen({ navigation, route }) {
                                     <TouchableOpacity
                                         style={styles.confirmExitBtn}
                                         onPress={() => {
+                                            Keyboard.dismiss();
                                             setIsExitConfirmVisible(false);
                                             setCreateModalVisible(false);
                                         }}
