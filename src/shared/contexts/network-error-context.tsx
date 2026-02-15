@@ -1,5 +1,5 @@
 import { ErrorPopup } from '@/src/shared/common/error-popup';
-import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 
 interface NetworkErrorContextValue {
@@ -21,6 +21,9 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
   if (!queryClientRef.current) {
     queryClientRef.current = new QueryClient({
       queryCache: new QueryCache({
+        onError: () => setVisible(true),
+      }),
+      mutationCache: new MutationCache({
         onError: () => setVisible(true),
       }),
     });
