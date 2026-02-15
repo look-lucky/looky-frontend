@@ -343,7 +343,7 @@ export function useCountFavorites<TData = Awaited<ReturnType<typeof countFavorit
 
 
 /**
- * 내가 등록한 단골 상점 목록을 페이징하여 조회합니다.
+ * 내가 등록한 단골 상점 목록을 페이징하여 조회합니다.<br>정렬 기능: 찜한최신순(sort=createdAt,desc), 별점높은순(sort=store.averageRating,desc)
  * @summary [학생] 내 단골 상점 목록 조회
  */
 export type getMyFavoritesResponse200 = {
