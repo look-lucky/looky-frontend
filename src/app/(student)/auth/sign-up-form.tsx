@@ -252,6 +252,7 @@ export default function SignupTypePage() {
       isBirthValid() &&
       username.length >= 4 &&
       isUsernameChecked &&
+      usernameAvailable === true &&
       isPasswordValid(password) &&
       password === passwordConfirm;
 

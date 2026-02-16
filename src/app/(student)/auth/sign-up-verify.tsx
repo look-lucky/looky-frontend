@@ -254,7 +254,9 @@ export default function StudentVerificationPage() {
       showSendCodeMessage("인증번호가 발송되었습니다.");
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
-      showSendCodeMessage(error?.message || "대학 이메일을 입력해주세요.", true);
+      const serverMessage = error?.data?.data?.message ?? error?.data?.message;
+      const fallback = serverMessage || "대학 이메일을 입력해주세요.";
+      showSendCodeMessage(fallback, true);
     }
   };
 
@@ -279,7 +281,8 @@ export default function StudentVerificationPage() {
       showSendCodeMessage("이메일 인증이 완료되었습니다.");
     } catch (error: any) {
       console.error("이메일 인증 실패:", error);
-      showSendCodeMessage(error?.message || "인증번호가 일치하지 않습니다.", true);
+      const serverMessage = error?.data?.data?.message ?? error?.data?.message;
+      showSendCodeMessage(serverMessage || "인증번호가 일치하지 않습니다.", true);
     }
   };
 
@@ -477,7 +480,7 @@ export default function StudentVerificationPage() {
         </View>
 
         {/* 대학 이메일 인증 섹션 */}
-        <View style={styles.section}>
+        {selectedUniversityId !== null && <View style={styles.section}>
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
             대학 이메일 인증
           </ThemedText>
@@ -558,7 +561,7 @@ export default function StudentVerificationPage() {
               </ThemedText>
             </View>
           )}
-        </View>
+        </View>}
 
         {/* 단과대학 선택 섹션 - 이메일 인증 완료 후 표시 */}
         {isEmailVerified && (
