@@ -19,7 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import type { UserType } from "@/src/shared/lib/auth/token";
-import { saveCredentials } from "@/src/shared/lib/auth/token";
+import { saveCredentials, saveUsername } from "@/src/shared/lib/auth/token";
 
 // JWT payload 디코딩 함수
 function decodeJwtPayload(token: string): { role?: string } | null {
@@ -62,12 +62,24 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const handleLogin = () => {
-    if (!username || !password) {
-      Alert.alert("알림", "아이디와 비밀번호를 입력해주세요.");
-      return;
+    let hasError = false;
+    if (!username) {
+      setUsernameError("아이디를 입력해주세요.");
+      hasError = true;
+    } else {
+      setUsernameError("");
     }
+    if (!password) {
+      setPasswordError("비밀번호를 입력해주세요.");
+      hasError = true;
+    } else {
+      setPasswordError("");
+    }
+    if (hasError) return;
 
     loginMutation.mutate(
       { data: { username, password } },
@@ -87,6 +99,7 @@ export default function LoginPage() {
             const role = (jwtPayload?.role as UserType) ?? "ROLE_STUDENT";
             console.log("[Login] Role from JWT:", role);
 
+            await saveUsername(username);
             await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
             await saveCredentials(username, password);
             console.log("[Login] handleAuthSuccess completed - token should be stored");
@@ -97,8 +110,15 @@ export default function LoginPage() {
             Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인해주세요.");
           }
         },
-        onError: () => {
-          Alert.alert("오류", "로그인 중 문제가 발생했습니다.");
+        onError: (error: any) => {
+          const status = error?.status;
+          if (status === 404) {
+            Alert.alert("로그인 실패", "존재하지 않는 계정입니다.");
+          } else if (status === 401 || status === 400) {
+            Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인해주세요.");
+          } else {
+            Alert.alert("오류", "로그인 중 문제가 발생했습니다.");
+          }
         },
       }
     );
@@ -113,8 +133,7 @@ export default function LoginPage() {
   };
 
   const handleFindPassword = () => {
-    // TODO: 비밀번호 찾기 페이지 구현 필요
-    router.push("/auth/find-id");
+    router.push("/auth/find-password");
   };
 
   return (
@@ -135,34 +154,46 @@ export default function LoginPage() {
         <View style={styles.centerContent}>
           <View style={styles.inputWrapper}>
             {/* Username input */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="아이디"
-                placeholderTextColor="#828282"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-              />
+            <View>
+              <View style={[styles.inputContainer, !!usernameError && styles.inputContainerError]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="아이디"
+                  placeholderTextColor="#828282"
+                  value={username}
+                  onChangeText={(text) => {
+                    setUsername(text);
+                    if (usernameError) setUsernameError("");
+                  }}
+                  autoCapitalize="none"
+                />
+              </View>
+              {!!usernameError && <Text style={styles.errorText}>{usernameError}</Text>}
             </View>
 
             {/* Password input with eye icon */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="비밀번호"
-                placeholderTextColor="#828282"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
-              >
-                <EyeOffIcon color="#d5d5d5" />
-              </TouchableOpacity>
+            <View>
+              <View style={[styles.inputContainer, !!passwordError && styles.inputContainerError]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="비밀번호"
+                  placeholderTextColor="#828282"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) setPasswordError("");
+                  }}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIcon}
+                >
+                  <EyeOffIcon color="#d5d5d5" />
+                </TouchableOpacity>
+              </View>
+              {!!passwordError && <Text style={styles.errorText}>{passwordError}</Text>}
             </View>
           </View>
 
@@ -187,10 +218,10 @@ export default function LoginPage() {
           <TouchableOpacity
             style={[
               styles.loginButton,
-              loginMutation.isPending && styles.loginButtonDisabled,
+              (!username || loginMutation.isPending) && styles.loginButtonDisabled,
             ]}
             onPress={handleLogin}
-            disabled={loginMutation.isPending}
+            disabled={!username || loginMutation.isPending}
           >
             <Text style={styles.loginButtonText}>
               {loginMutation.isPending ? "로그인 중..." : "로그인"}
@@ -289,5 +320,14 @@ const styles = StyleSheet.create({
   },
   loginButtonDisabled: {
     opacity: 0.6,
+  },
+  inputContainerError: {
+    borderColor: "#f04444",
+  },
+  errorText: {
+    marginTop: rs(4),
+    fontSize: rs(12),
+    color: "#f04444",
+    fontFamily: "Pretendard",
   },
 });

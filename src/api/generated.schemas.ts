@@ -547,6 +547,8 @@ export interface CreateEventRequest {
   title: string;
   /** 이벤트 설명 */
   description?: string;
+  /** 이벤트 부제목 */
+  subtitle?: string;
   /** 이벤트 타입 목록 */
   eventTypes: CreateEventRequestEventTypesItem[];
   /** 위도 */
@@ -792,6 +794,7 @@ export interface JsonNullableListEventType {
 export interface UpdateEventRequest {
   title?: JsonNullableString;
   description?: JsonNullableString;
+  subtitle?: JsonNullableString;
   eventTypes?: JsonNullableListEventType;
   place?: JsonNullableString;
   latitude?: JsonNullableDouble;
@@ -1343,6 +1346,8 @@ export interface FavoriteStoreResponse {
   jibunAddress?: string;
   storeCategories?: FavoriteStoreResponseStoreCategoriesItem[];
   imageUrl?: string;
+  averageRating?: number;
+  createdAt?: string;
 }
 
 export interface PageResponseFavoriteStoreResponse {
@@ -1385,6 +1390,7 @@ export interface EventResponse {
   id?: number;
   title?: string;
   description?: string;
+  subtitle?: string;
   eventTypes?: EventResponseEventTypesItem[];
   latitude?: number;
   longitude?: number;
@@ -1750,6 +1756,13 @@ longitude: number;
  * 반경(km)
  */
 radius: number;
+};
+
+export type GetStoreMapParams = {
+/**
+ * 대학(상권) ID 필터
+ */
+universityId?: number;
 };
 
 export type SearchUnclaimedStoresParams = {

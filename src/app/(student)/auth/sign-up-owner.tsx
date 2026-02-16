@@ -4,7 +4,7 @@ import { ThemedText } from "@/src/shared/common/themed-text";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
-import { useSignupOwner, useCompleteSocialSignup } from "@/src/api/auth";
+import { useSignupOwner, useCompleteSocialSignup, login } from "@/src/api/auth";
 import { useAuth } from "@/src/shared/lib/auth";
 import type { UserType } from "@/src/shared/lib/auth/token";
 import { getMyStoreClaims } from "@/src/api/store-claim";
@@ -234,9 +234,15 @@ export default function SignupOwnerPage() {
       });
 
       console.log("✅ 회원가입 성공:", signupResponse);
-      const userId = signupResponse.data.data; // userId
+      const userId = (signupResponse.data as any).data; // userId
 
-      // 2️⃣ 내 상점 소유 요청 목록 조회
+      // 2️⃣ 로그인하여 토큰 발급
+      const loginResponse = await login({ username, password });
+      const loginData = (loginResponse.data as any).data;
+      await handleAuthSuccess(loginData.accessToken, loginData.expiresIn ?? 3600, "ROLE_OWNER");
+      console.log("✅ 자동 로그인 성공");
+
+      // 3️⃣ 내 상점 소유 요청 목록 조회
       const myStoreClaimsResponse = await getMyStoreClaims();
       console.log("✅ 상점 소유 요청 조회 성공:", myStoreClaimsResponse);
 
@@ -247,7 +253,7 @@ export default function SignupOwnerPage() {
 
       const storeId = claims[0].storeId;
 
-      // 3️⃣ 상점 소유 요청 (사업자등록증 업로드)
+      // 4️⃣ 상점 소유 요청 (사업자등록증 업로드)
       if (businessImageUri) {
         // 이미지를 base64로 변환
         const base64Image = await FileSystem.readAsStringAsync(
@@ -273,7 +279,7 @@ export default function SignupOwnerPage() {
         console.log("✅ 사업자등록증 업로드 성공");
       }
 
-      // 4️⃣ Store 초기화 및 승인 대기 화면으로 이동
+      // 5️⃣ Store 초기화 및 승인 대기 화면으로 이동
       setSignupFields({
         storeName,
         storePhone,

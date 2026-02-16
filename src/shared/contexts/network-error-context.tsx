@@ -1,5 +1,5 @@
 import { ErrorPopup } from '@/src/shared/common/error-popup';
-import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 
 interface NetworkErrorContextValue {
@@ -19,9 +19,18 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
   // queryClient를 여기서 생성해 onError에서 팝업을 트리거
   const queryClientRef = useRef<QueryClient | null>(null);
   if (!queryClientRef.current) {
+    const isNetworkError = (error: unknown) => {
+      if (error instanceof TypeError) return true;
+      if (typeof error === 'object' && error !== null && 'status' in error) return false;
+      return false;
+    };
+
     queryClientRef.current = new QueryClient({
       queryCache: new QueryCache({
-        onError: () => setVisible(true),
+        onError: (error) => { if (isNetworkError(error)) setVisible(true); },
+      }),
+      mutationCache: new MutationCache({
+        onError: (error) => { if (isNetworkError(error)) setVisible(true); },
       }),
     });
   }

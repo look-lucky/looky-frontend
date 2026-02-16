@@ -10,9 +10,10 @@ import { Brand, Fonts, Gray, Text as TextColors } from "@/src/shared/theme/theme
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -96,6 +97,35 @@ export default function ProfileEditScreen() {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
   const [isClubMember, setIsClubMember] = useState<boolean | null>(null);
 
+  // 닉네임 토스트
+  const [nicknameToast, setNicknameToast] = useState("");
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showNicknameToast = (message: string) => {
+    setNicknameToast(message);
+    Animated.timing(toastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
+        setNicknameToast("")
+      );
+    }, 2000);
+  };
+
+  // 닉네임 입력 핸들러 (한글/영어만 허용, 최대 10자)
+  const NICKNAME_REGEX = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]*$/;
+
+  const handleNicknameChange = (text: string) => {
+    if (!NICKNAME_REGEX.test(text)) {
+      showNicknameToast("특수문자는 사용할 수 없습니다");
+      const filtered = text.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]/g, "");
+      setNickname(filtered.slice(0, 10));
+      return;
+    }
+    setNickname(text.slice(0, 10));
+  };
+
   // 모달 상태
   const [collegeModalVisible, setCollegeModalVisible] = useState(false);
   const [departmentModalVisible, setDepartmentModalVisible] = useState(false);
@@ -155,6 +185,10 @@ export default function ProfileEditScreen() {
 
   // 저장
   const handleSave = () => {
+    if (nickname.trim().length < 2) {
+      showNicknameToast("닉네임은 2자 이상 입력해주세요");
+      return;
+    }
     if (!selectedCollegeId || !selectedDepartmentId || isClubMember === null) {
       Alert.alert("알림", "모든 항목을 입력해주세요.");
       return;
@@ -218,9 +252,10 @@ export default function ProfileEditScreen() {
             <TextInput
               style={styles.input}
               value={nickname}
-              onChangeText={setNickname}
+              onChangeText={handleNicknameChange}
               placeholder="닉네임을 입력해주세요"
               placeholderTextColor={TextColors.placeholder}
+              maxLength={10}
             />
           </View>
         </View>
@@ -333,6 +368,15 @@ export default function ProfileEditScreen() {
         onClose={() => setDepartmentModalVisible(false)}
         title="학과"
       />
+
+      {/* 닉네임 토스트 */}
+      {nicknameToast !== "" && (
+        <Animated.View style={[styles.toastContainer, { opacity: toastOpacity }]} pointerEvents="none">
+          <View style={styles.toastBox}>
+            <ThemedText style={styles.toastText}>{nicknameToast}</ThemedText>
+          </View>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -449,5 +493,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(24),
     paddingBottom: rs(40),
     paddingTop: rs(16),
+  },
+  toastContainer: {
+    position: "absolute",
+    bottom: rs(120),
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  toastBox: {
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(10),
+    borderRadius: rs(20),
+    backgroundColor: "rgba(0,0,0,0.7)",
+  },
+  toastText: {
+    fontSize: rs(13),
+    color: Gray.white,
   },
 });

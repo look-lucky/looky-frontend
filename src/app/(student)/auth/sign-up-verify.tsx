@@ -254,7 +254,9 @@ export default function StudentVerificationPage() {
       showSendCodeMessage("인증번호가 발송되었습니다.");
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
-      showSendCodeMessage(error?.message || "대학 이메일을 입력해주세요.", true);
+      const serverMessage = error?.data?.data?.message ?? error?.data?.message;
+      const fallback = serverMessage || "대학 이메일을 입력해주세요.";
+      showSendCodeMessage(fallback, true);
     }
   };
 
@@ -279,7 +281,8 @@ export default function StudentVerificationPage() {
       showSendCodeMessage("이메일 인증이 완료되었습니다.");
     } catch (error: any) {
       console.error("이메일 인증 실패:", error);
-      showSendCodeMessage(error?.message || "인증번호가 일치하지 않습니다.", true);
+      const serverMessage = error?.data?.data?.message ?? error?.data?.message;
+      showSendCodeMessage(serverMessage || "인증번호가 일치하지 않습니다.", true);
     }
   };
 
@@ -477,7 +480,7 @@ export default function StudentVerificationPage() {
         </View>
 
         {/* 대학 이메일 인증 섹션 */}
-        <View style={styles.section}>
+        {selectedUniversityId !== null && <View style={styles.section}>
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
             대학 이메일 인증
           </ThemedText>
@@ -558,69 +561,74 @@ export default function StudentVerificationPage() {
               </ThemedText>
             </View>
           )}
-        </View>
+        </View>}
 
-        {/* 단과대학 선택 섹션 */}
-        <View style={styles.section}>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            단과대학 선택
-          </ThemedText>
-          <TouchableOpacity
-            style={styles.selectField}
-            onPress={() => setCollegeModalVisible(true)}
-          >
-            <ThemedText
-              style={[
-                styles.selectFieldText,
-                !selectedCollegeId && styles.selectFieldPlaceholder,
-              ]}
-            >
-              {selectedCollegeName || "단과대학을 선택해주세요"}
+        {/* 단과대학 선택 섹션 - 이메일 인증 완료 후 표시 */}
+        {isEmailVerified && (
+          <View style={styles.section}>
+            <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+              단과대학 선택
             </ThemedText>
-            <ChevronDownIcon />
-          </TouchableOpacity>
-        </View>
-
-        {/* 학과 선택 섹션 */}
-        <View style={styles.section}>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            학과 선택
-          </ThemedText>
-          <TouchableOpacity
-            style={styles.selectField}
-            onPress={() => setDepartmentModalVisible(true)}
-            disabled={!selectedCollegeId}
-          >
-            <ThemedText
-              style={[
-                styles.selectFieldText,
-                !selectedDepartmentId && styles.selectFieldPlaceholder,
-              ]}
+            <TouchableOpacity
+              style={styles.selectField}
+              onPress={() => setCollegeModalVisible(true)}
             >
-              {selectedDepartmentName || "학과를 선택해주세요"}
-            </ThemedText>
-            <ChevronDownIcon />
-          </TouchableOpacity>
-        </View>
-
-        {/* 동아리 가입 여부 */}
-        <View style={styles.section}>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            동아리 가입 여부
-          </ThemedText>
-          <View style={styles.radioGroup}>
-            <RadioButton
-              selected={isClubMember === true}
-              label="예"
-              onPress={() => setIsClubMember(true)}
-            />
-            <RadioButton
-              selected={isClubMember === false}
-              label="아니오"
-              onPress={() => setIsClubMember(false)}
-            />
+              <ThemedText
+                style={[
+                  styles.selectFieldText,
+                  !selectedCollegeId && styles.selectFieldPlaceholder,
+                ]}
+              >
+                {selectedCollegeName || "단과대학을 선택해주세요"}
+              </ThemedText>
+              <ChevronDownIcon />
+            </TouchableOpacity>
           </View>
-        </View>
+        )}
+
+        {/* 학과 선택 섹션 - 단과대학 선택 후 표시 */}
+        {isEmailVerified && selectedCollegeId !== null && (
+          <View style={styles.section}>
+            <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+              학과 선택
+            </ThemedText>
+            <TouchableOpacity
+              style={styles.selectField}
+              onPress={() => setDepartmentModalVisible(true)}
+            >
+              <ThemedText
+                style={[
+                  styles.selectFieldText,
+                  !selectedDepartmentId && styles.selectFieldPlaceholder,
+                ]}
+              >
+                {selectedDepartmentName || "학과를 선택해주세요"}
+              </ThemedText>
+              <ChevronDownIcon />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* 동아리 가입 여부 - 학과 선택 후 표시 */}
+        {isEmailVerified && selectedCollegeId !== null && selectedDepartmentId !== null && (
+          <View style={styles.section}>
+            <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+              동아리 가입 여부
+            </ThemedText>
+            <View style={styles.radioGroup}>
+              <RadioButton
+                selected={isClubMember === true}
+                label="예"
+                onPress={() => setIsClubMember(true)}
+              />
+              <RadioButton
+                selected={isClubMember === false}
+                label="아니오"
+                onPress={() => setIsClubMember(false)}
+              />
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* 하단 버튼 */}

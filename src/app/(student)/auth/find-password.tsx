@@ -1,4 +1,5 @@
 import LookyLogo from "@/assets/images/logo/looky-logo.svg";
+import { useSendCodeForFindPassword, useVerifyCodeForFindPassword } from "@/src/api/auth";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -12,15 +13,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function SigninEmailPage() {
+export default function FindPasswordPage() {
   const router = useRouter();
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
-  const [timeLeft, setTimeLeft] = useState(295); // 4:55 in seconds
-  const [expiryTime, setExpiryTime] = useState<number | null>(null); // 만료 시간 (timestamp)
+  const [timeLeft, setTimeLeft] = useState(300);
+  const [expiryTime, setExpiryTime] = useState<number | null>(null);
   const [showVerification, setShowVerification] = useState(false);
 
-  // 타이머 로직 - 실제 만료 시간 기반으로 계산
+  const sendCodeMutation = useSendCodeForFindPassword();
+  const verifyCodeMutation = useVerifyCodeForFindPassword();
+
   useEffect(() => {
     if (!showVerification || !expiryTime) return;
 
@@ -30,16 +35,11 @@ export default function SigninEmailPage() {
       setTimeLeft(remaining);
     };
 
-    // 즉시 한 번 업데이트
     updateTimer();
-
-    // 매초 업데이트
     const interval = setInterval(updateTimer, 1000);
-
     return () => clearInterval(interval);
   }, [showVerification, expiryTime]);
 
-  // AppState 변경 감지 - 앱이 다시 활성화될 때 타이머 재계산
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (nextAppState === "active" && expiryTime && showVerification) {
@@ -48,10 +48,7 @@ export default function SigninEmailPage() {
         setTimeLeft(remaining);
       }
     });
-
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, [expiryTime, showVerification]);
 
   const formatTime = (seconds: number) => {
@@ -60,32 +57,35 @@ export default function SigninEmailPage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleGetVerificationCode = () => {
-    if (email) {
+  const handleGetVerificationCode = async () => {
+    if (!username || !email) return;
+    setEmailError("");
+    try {
+      await sendCodeMutation.mutateAsync({ data: { username, email } });
       const now = Date.now();
-      const expiry = now + 300000; // 5분 (300초 = 300,000ms)
+      const expiry = now + 300000;
       setShowVerification(true);
       setExpiryTime(expiry);
       setTimeLeft(300);
-      setVerificationCode(""); // 재발송 시 인증번호 초기화
+      setVerificationCode("");
+    } catch {
+      setShowVerification(false);
+      setEmailError("가입되지 않은 이메일입니다");
     }
   };
 
-  const handleVerifyCode = () => {
+  const handleVerifyCode = async () => {
     if (!verificationCode) return;
-
-    // 타이머 만료 체크
     if (timeLeft <= 0) {
       alert("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.");
       return;
     }
-
-    // 여기에 실제 인증 로직 추가
-    console.log("인증번호 확인:", verificationCode);
-  };
-
-  const handleFindPassword = () => {
-    router.replace("/auth/find-password");
+    try {
+      await verifyCodeMutation.mutateAsync({ data: { email, code: verificationCode } });
+      // TODO: 새 비밀번호 설정 화면으로 이동
+    } catch {
+      alert("인증번호가 올바르지 않습니다.");
+    }
   };
 
   return (
@@ -95,48 +95,60 @@ export default function SigninEmailPage() {
       </View>
 
       <View style={styles.content}>
-        {/* Logo */}
         <LookyLogo width={169} height={57} />
 
-        {/* Tabs */}
         <View style={styles.tabsContainer}>
-          <TouchableOpacity>
-            <Text style={[styles.tabText, styles.tabActive]}>아이디찾기</Text>
+          <TouchableOpacity onPress={() => router.replace("/auth/find-id")}>
+            <Text style={styles.tabText}>아이디찾기</Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity onPress={handleFindPassword}>
-            <Text style={styles.tabText}>비밀번호 찾기</Text>
+          <TouchableOpacity>
+            <Text style={[styles.tabText, styles.tabActive]}>비밀번호 찾기</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Email Input */}
         <View style={styles.inputWrapper}>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="가입하신 ID 이메일을 입력해주세요"
+              placeholder="아이디를 입력해주세요"
+              placeholderTextColor="#828282"
+              value={username}
+              onChangeText={(v) => { setUsername(v); setEmailError(""); }}
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="가입하신 이메일을 입력해주세요"
               placeholderTextColor="#828282"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(v) => { setEmail(v); setEmailError(""); }}
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
             <TouchableOpacity
               style={[
                 styles.smallButton,
-                { backgroundColor: email ? "#40ce2b" : "#d5d5d5" },
+                { backgroundColor: username && email && !sendCodeMutation.isPending ? "#40ce2b" : "#d5d5d5" },
               ]}
               onPress={handleGetVerificationCode}
-              disabled={!email}
+              disabled={!username || !email || sendCodeMutation.isPending}
             >
-              <Text style={styles.smallButtonText}>인증번호 받기</Text>
+              <Text style={styles.smallButtonText}>
+                {sendCodeMutation.isPending ? "발송 중..." : "인증번호 받기"}
+              </Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.errorText}>
-            {" "}
-            ID 찾기를 위한 대학 이메일을 입력해주세요
+            {emailError ? ` ${emailError}` : " 비밀번호 찾기를 위한 가입 이메일을 입력해주세요"}
           </Text>
         </View>
 
-        {/* Verification Code Input */}
         {showVerification && (
           <View style={styles.inputWrapper}>
             <View style={styles.inputContainer}>
@@ -153,7 +165,7 @@ export default function SigninEmailPage() {
               <TouchableOpacity
                 style={[
                   styles.smallButton,
-                  { backgroundColor: verificationCode && timeLeft > 0 ? "#40ce2b" : "#d5d5d5" }
+                  { backgroundColor: verificationCode && timeLeft > 0 ? "#40ce2b" : "#d5d5d5" },
                 ]}
                 onPress={handleVerifyCode}
                 disabled={!verificationCode || timeLeft <= 0}
@@ -175,9 +187,11 @@ export default function SigninEmailPage() {
         )}
       </View>
 
-      {/* Find ID Button */}
-      <TouchableOpacity style={styles.mainButton}>
-        <Text style={styles.mainButtonText}>아이디 찾기</Text>
+      <TouchableOpacity
+        style={[styles.mainButton, { backgroundColor: username && email ? "#40ce2b" : "#d5d5d5" }]}
+        disabled={!username || !email}
+      >
+        <Text style={styles.mainButtonText}>비밀번호 찾기</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -197,12 +211,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingHorizontal: 24,
-  },
-  logo: {
-    width: 169,
-    height: 57,
-    marginTop: 40,
-    marginBottom: 60,
   },
   tabsContainer: {
     flexDirection: "row",
@@ -276,7 +284,6 @@ const styles = StyleSheet.create({
     fontFamily: "Pretendard",
   },
   mainButton: {
-    backgroundColor: "#40ce2b",
     marginHorizontal: 24,
     marginBottom: 40,
     paddingVertical: 12,

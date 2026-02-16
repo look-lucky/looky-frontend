@@ -19,6 +19,7 @@ import { CouponModal } from '@/src/app/(student)/components/store/coupon-modal';
 import { StoreHeader } from '@/src/app/(student)/components/store/header';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
+import { useDeleteReview } from '@/src/api/review';
 import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
 import { useQueryClient } from '@tanstack/react-query';
@@ -54,18 +55,19 @@ const formatDate = (dateStr?: string) => {
 };
 
 export default function StoreDetailScreen() {
-  const { id, name, image, rating, reviewCount } = useLocalSearchParams<{
+  const { id, name, image, rating, reviewCount, tab } = useLocalSearchParams<{
     id: string;
     name?: string;
     image?: string;
     rating?: string;
     reviewCount?: string;
+    tab?: string;
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const { collegeId: userCollegeId } = useAuth();
-  const [activeTab, setActiveTab] = useState('news');
+  const { collegeId: userCollegeId, username: currentUsername } = useAuth();
+  const [activeTab, setActiveTab] = useState(tab ?? 'news');
   const [isLiked, setIsLiked] = useState(false);
   const [isLikeInitialized, setIsLikeInitialized] = useState(false);
   const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(userCollegeId);
@@ -288,22 +290,23 @@ export default function StoreDetailScreen() {
   }, [apiItems]);
 
   // 리뷰: API ReviewResponse → 컴포넌트 ReviewItem 타입
+  // ownerReply(= isOwnerReply)는 루트 리뷰에 "사장님 답글 달림" bool로 옴 (별도 reply 객체 아님)
   const storeReviews = useMemo(() =>
     allReviews.map((r) => ({
       id: String(r.reviewId),
       userId: '',
       nickname: r.username ?? '',
-      profileImage: '', // API에 프로필 이미지 없음
+      profileImage: '',
       rating: r.rating ?? 0,
       date: formatDate(r.createdAt),
       content: r.content ?? '',
       images: r.imageUrls ?? [],
       likeCount: r.likeCount ?? 0,
-      commentCount: 0, // ReviewResponse에 commentCount 없음
-      isOwner: false,   // ReviewResponse에 isOwner 없음
+      commentCount: 0,
+      isOwner: !!(currentUsername && r.username === currentUsername),
+      hasReply: r.ownerReply ?? false,
     })),
-    [allReviews],
-  );
+  [allReviews, currentUsername]);
 
   // 매장 정보: API StoreResponse → InfoSection props
   const storeInfo = useMemo(() => ({
@@ -373,8 +376,37 @@ export default function StoreDetailScreen() {
     issueCouponMutation.mutate({ couponId: Number(couponId) });
   };
   const handleWriteReview = () => router.push(`/store/${id}/review/write`);
-  const handleEditReview = (reviewId: string) =>
-    router.push(`/store/${id}/review/write?reviewId=${reviewId}`);
+  const handleEditReview = (reviewId: string) => {
+    const review = allReviews.find((r) => String(r.reviewId) === reviewId);
+    if (!review) return;
+    const imageUrlsParam = review.imageUrls && review.imageUrls.length > 0
+      ? encodeURIComponent(JSON.stringify(review.imageUrls))
+      : '';
+    router.push(
+      `/mypage/edit-review?reviewId=${review.reviewId}&storeName=${encodeURIComponent(review.storeName ?? storeName)}&rating=${review.rating}&content=${encodeURIComponent(review.content ?? '')}&imageUrls=${imageUrlsParam}`
+    );
+  };
+  const { mutate: deleteReviewMutate } = useDeleteReview();
+  const handleDeleteReview = (reviewId: string) => {
+    Alert.alert('리뷰 삭제', '리뷰를 삭제하시겠어요?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: () =>
+          deleteReviewMutate(
+            { reviewId: Number(reviewId) },
+            {
+              onSuccess: () => {
+                setReviewPage(0);
+                queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
+                queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews/stats`] });
+              },
+            },
+          ),
+      },
+    ]);
+  };
   const handleLoadMoreReviews = () => {
     if (!isReviewsFetching && hasMoreReviews) {
       setReviewPage((prev) => prev + 1);
@@ -464,6 +496,7 @@ export default function StoreDetailScreen() {
               reviews={storeReviews}
               onWriteReview={handleWriteReview}
               onEditReview={handleEditReview}
+              onDeleteReview={handleDeleteReview}
               storeInfo={storeInfo}
               scrollViewRef={scrollViewRef}
               scrollOffsetY={scrollOffsetY}

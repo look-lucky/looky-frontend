@@ -1,7 +1,4 @@
-import type {
-  PageResponseReviewResponse,
-  ReviewResponse,
-} from '@/src/api/generated.schemas';
+import type { PageResponseReviewResponse } from '@/src/api/generated.schemas';
 import { useDeleteReview, useGetMyReviews } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { rs } from '@/src/shared/theme/scale';
@@ -36,47 +33,33 @@ export default function MyReview() {
     return raw?.content ?? [];
   }, [myReviewsRes]);
 
-  // 학생이 직접 쓴 리뷰만 (ownerReply가 아닌 것)
-  const reviews = useMemo(
-    () => allReviews.filter((r) => !r.ownerReply),
-    [allReviews]
-  );
-
-  // reviewId 기준으로 사장님 답글 찾기
-  const findReply = (reviewId?: number): ReviewResponse | undefined =>
-    allReviews.find((r) => r.ownerReply && r.parentReviewId === reviewId);
-  const [isReplyOpen, setIsReplyOpen] = useState<Record<number, boolean>>({});
+  // ownerReply(= isOwnerReply)는 루트 리뷰에 "사장님 답글 달림" bool로 옴 (별도 reply 객체 아님)
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const [deletePopupVisible, setDeletePopupVisible] = useState(false);
-  const [editErrorPopupVisible, setEditErrorPopupVisible] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null);
 
   const { mutate: deleteReview } = useDeleteReview();
-
-  const toggleReply = (id: number) =>
-    setIsReplyOpen((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const toggleMenu = (id: number) =>
     setActiveMenuId((prev) => (prev === id ? null : id));
 
   const closeMenu = () => setActiveMenuId(null);
 
+  const handleCardPress = (storeId?: number) => {
+    if (!storeId) return;
+    router.push(`/store/${storeId}?tab=review`);
+  };
+
   const handleEditPress = (id: number) => {
     closeMenu();
-    const review = reviews.find((r) => r.reviewId === id);
+    const review = allReviews.find((r) => r.reviewId === id);
     if (!review) return;
-    const reply = findReply(review.reviewId);
-    if (reply) {
-      setEditErrorPopupVisible(true);
-    } else {
-      const imageUrlsParam = review.imageUrls && review.imageUrls.length > 0
-        ? encodeURIComponent(JSON.stringify(review.imageUrls))
-        : '';
-
-      router.push(
-        `/mypage/edit-review?reviewId=${review.reviewId}&storeName=${encodeURIComponent(review.storeName ?? '')}&rating=${review.rating}&content=${encodeURIComponent(review.content ?? '')}&imageUrls=${imageUrlsParam}`
-      );
-    }
+    const imageUrlsParam = review.imageUrls && review.imageUrls.length > 0
+      ? encodeURIComponent(JSON.stringify(review.imageUrls))
+      : '';
+    router.push(
+      `/mypage/edit-review?reviewId=${review.reviewId}&storeName=${encodeURIComponent(review.storeName ?? '')}&rating=${review.rating}&content=${encodeURIComponent(review.content ?? '')}&imageUrls=${imageUrlsParam}`
+    );
   };
 
   const handleDeletePress = (id: number) => {
@@ -123,7 +106,7 @@ export default function MyReview() {
           <Text style={styles.summaryText}>
             <Text style={{ fontWeight: '600' }}>니어딜</Text>님은 지금까지{' '}
             <Text style={{ fontWeight: '700', color: '#34B262' }}>
-              {reviews.length}번
+              {allReviews.length}번
             </Text>
             의 소중한 기록을{'\n'}남겨주셨어요! ✍🏻
           </Text>
@@ -133,8 +116,8 @@ export default function MyReview() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {reviews.map((review) => {
-            const reply = findReply(review.reviewId);
+          {allReviews.map((review) => {
+            const hasReply = review.ownerReply ?? false;
             const dateStr = review.createdAt
               ? new Date(review.createdAt).toLocaleDateString('ko-KR', {
                   year: 'numeric',
@@ -143,7 +126,12 @@ export default function MyReview() {
                 })
               : '';
             return (
-              <View key={review.reviewId} style={styles.reviewCard}>
+              <TouchableOpacity
+                key={review.reviewId}
+                activeOpacity={0.8}
+                onPress={() => handleCardPress(review.storeId)}
+                style={styles.reviewCard}
+              >
                 <View style={styles.reviewHeader}>
                   <View>
                     <Text style={styles.storeName}>{review.storeName}</Text>
@@ -158,12 +146,14 @@ export default function MyReview() {
                     </TouchableOpacity>
                     {activeMenuId === review.reviewId && (
                       <View style={styles.menuPopup}>
-                        <TouchableOpacity
-                          style={styles.menuItem}
-                          onPress={() => handleEditPress(review.reviewId!)}
-                        >
-                          <Text style={styles.menuText}>수정</Text>
-                        </TouchableOpacity>
+                        {!hasReply && (
+                          <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => handleEditPress(review.reviewId!)}
+                          >
+                            <Text style={styles.menuText}>수정</Text>
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                           style={styles.menuItem}
                           onPress={() => handleDeletePress(review.reviewId!)}
@@ -201,14 +191,11 @@ export default function MyReview() {
 
                 <Text style={styles.reviewContent}>{review.content}</Text>
 
-                {reply && (
+                {hasReply && (
                   <>
                     <View style={styles.divider} />
                     <View style={styles.replySection}>
-                      <TouchableOpacity
-                        style={styles.replyHeader}
-                        onPress={() => toggleReply(review.reviewId!)}
-                      >
+                      <View style={styles.replyHeader}>
                         <View
                           style={{ flexDirection: 'row', alignItems: 'center', gap: rs(5) }}
                         >
@@ -219,30 +206,11 @@ export default function MyReview() {
                           />
                           <Text style={styles.replyTitle}>사장님 답글</Text>
                         </View>
-                        <Ionicons
-                          name={isReplyOpen[review.reviewId!] ? 'chevron-up' : 'chevron-down'}
-                          size={rs(16)}
-                          color="#828282"
-                        />
-                      </TouchableOpacity>
-                      {isReplyOpen[review.reviewId!] && (
-                        <View style={styles.replyContentBox}>
-                          {reply.createdAt ? (
-                            <Text style={styles.replyDate}>
-                              {new Date(reply.createdAt).toLocaleDateString('ko-KR', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                              })}
-                            </Text>
-                          ) : null}
-                          <Text style={styles.replyText}>{reply.content}</Text>
-                        </View>
-                      )}
+                      </View>
                     </View>
                   </>
                 )}
-              </View>
+              </TouchableOpacity>
             );
           })}
           <View style={{ height: rs(50) }} />
@@ -278,29 +246,6 @@ export default function MyReview() {
           </View>
         </Modal>
 
-        <Modal
-          transparent
-          visible={editErrorPopupVisible}
-          animationType="fade"
-          onRequestClose={() => setEditErrorPopupVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.popupContainer}>
-              <View style={styles.popupTextContainer}>
-                <Text style={styles.popupTitle}>리뷰를 수정할 수 없어요</Text>
-                <Text style={styles.popupSubtitle}>
-                  사장님이 답글을 남겨주셔서 수정이 불가합니다.
-                </Text>
-              </View>
-              <AppButton
-                label="확인"
-                backgroundColor={Brand.primaryDarken}
-                style={styles.popupBtnFull}
-                onPress={() => setEditErrorPopupVisible(false)}
-              />
-            </View>
-          </View>
-        </Modal>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -402,24 +347,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#444444',
     fontFamily: 'Pretendard',
-  },
-  replyContentBox: {
-    marginTop: rs(10),
-    backgroundColor: '#F5F5F5',
-    borderRadius: rs(12),
-    padding: rs(15),
-  },
-  replyDate: {
-    fontSize: rs(12),
-    color: '#828282',
-    marginBottom: rs(5),
-    fontFamily: 'Pretendard',
-  },
-  replyText: {
-    fontSize: rs(14),
-    color: 'black',
-    fontFamily: 'Pretendard',
-    lineHeight: rs(20),
   },
   menuPopup: {
     position: 'absolute',
