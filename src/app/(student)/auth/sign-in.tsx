@@ -133,8 +133,7 @@ export default function LoginPage() {
   };
 
   const handleFindPassword = () => {
-    // TODO: 비밀번호 찾기 페이지 구현 필요
-    router.push("/auth/find-id");
+    router.push("/auth/find-password");
   };
 
   return (
