@@ -22,7 +22,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
 type UserType = "student" | "owner" | null;
-type Gender = "male" | "female";
+type Gender = "male" | "female" | null;
 
 // ============================================
 // Icon Components
@@ -95,7 +95,8 @@ export default function SignupTypePage() {
 
   // 공통 상태
   const [userType, setUserType] = useState<UserType>(null);
-  const [gender, setGender] = useState<Gender>("male");
+  const [gender, setGender] = useState<Gender>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [birthYear, setBirthYear] = useState("");
   const [birthMonth, setBirthMonth] = useState("");
   const [birthDay, setBirthDay] = useState("");
@@ -106,9 +107,12 @@ export default function SignupTypePage() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [birthTouched, setBirthTouched] = useState(false);
 
   // 학생 전용 상태
   const [nickname, setNickname] = useState("");
+  const [nicknameTouched, setNicknameTouched] = useState(false);
 
   // 점주 전용 상태
   const [email, setEmail] = useState("");
@@ -118,6 +122,7 @@ export default function SignupTypePage() {
   const [expiryTime, setExpiryTime] = useState<number | null>(null);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [verifyFailCount, setVerifyFailCount] = useState(0);
   const [sendCodeMessage, setSendCodeMessage] = useState("");
   const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [phone, setPhone] = useState("");
@@ -131,6 +136,53 @@ export default function SignupTypePage() {
 
   const isPasswordValid = (pw: string) =>
     /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]).{8,20}$/.test(pw);
+
+  const isPasswordLengthValid = (pw: string) => pw.length >= 8 && pw.length <= 20;
+
+  const isNicknameValid = (nick: string) => /^[가-힣a-zA-Z]{2,10}$/.test(nick);
+
+  const isBirthValid = () => {
+    if (birthYear.length !== 4 || !birthMonth || !birthDay) return false;
+    const year = parseInt(birthYear, 10);
+    const month = parseInt(birthMonth, 10);
+    const day = parseInt(birthDay, 10);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return false;
+    const birthDate = new Date(year, month - 1, day);
+    if (
+      birthDate.getFullYear() !== year ||
+      birthDate.getMonth() !== month - 1 ||
+      birthDate.getDate() !== day
+    ) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (birthDate > today) return false;
+    const age14Date = new Date(today.getFullYear() - 14, today.getMonth(), today.getDate());
+    if (birthDate > age14Date) return false;
+    return true;
+  };
+
+  const getBirthError = (): string | null => {
+    if (!birthTouched && !hasSubmitted) return null;
+    if (!birthYear || !birthMonth || !birthDay || birthYear.length !== 4) {
+      return '생년월일을 입력해주세요';
+    }
+    const year = parseInt(birthYear, 10);
+    const month = parseInt(birthMonth, 10);
+    const day = parseInt(birthDay, 10);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return '생년월일을 입력해주세요';
+    const birthDate = new Date(year, month - 1, day);
+    if (
+      birthDate.getFullYear() !== year ||
+      birthDate.getMonth() !== month - 1 ||
+      birthDate.getDate() !== day
+    ) return '존재하지 않는 날짜입니다';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (birthDate > today) return '미래 날짜는 입력할 수 없습니다';
+    const age14Date = new Date(today.getFullYear() - 14, today.getMonth(), today.getDate());
+    if (birthDate > age14Date) return '만 14세 이상만 가입 가능합니다';
+    return null;
+  };
 
   // 타이머 로직 - 실제 만료 시간 기반으로 계산
   useEffect(() => {
@@ -197,16 +249,15 @@ export default function SignupTypePage() {
     if (!userType) return false;
 
     const commonValid =
-      birthYear.length === 4 &&
-      birthMonth.length >= 1 &&
-      birthDay.length >= 1 &&
+      isBirthValid() &&
       username.length >= 4 &&
       isUsernameChecked &&
+      usernameAvailable === true &&
       isPasswordValid(password) &&
       password === passwordConfirm;
 
     if (isStudent) {
-      return commonValid && nickname.length >= 2 && nickname.length <= 10;
+      return commonValid && isNicknameValid(nickname);
     } else {
       // 점주: 이메일 인증 필수
       return commonValid && isEmailVerified;
@@ -255,10 +306,11 @@ export default function SignupTypePage() {
       setTimer(300);
       setResendCooldown(5);
       setEmailCode("");
+      setVerifyFailCount(0);
       showSendCodeMessage("인증번호가 발송되었습니다.");
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
-      showSendCodeMessage(error?.message || "인증번호 발송에 실패했습니다.");
+      showSendCodeMessage(error?.data?.message || error?.message || "인증번호 발송에 실패했습니다.");
     }
   };
 
@@ -267,6 +319,11 @@ export default function SignupTypePage() {
 
     if (timer <= 0) {
       showSendCodeMessage("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.");
+      return;
+    }
+
+    if (verifyFailCount >= 5) {
+      showSendCodeMessage("입력 횟수를 초과했습니다. 재발송해주세요.");
       return;
     }
 
@@ -281,16 +338,23 @@ export default function SignupTypePage() {
       showSendCodeMessage("이메일 인증이 완료되었습니다.");
     } catch (error: any) {
       console.error("이메일 인증 실패:", error);
-      showSendCodeMessage(error?.message || "인증번호가 일치하지 않습니다.");
+      const newCount = verifyFailCount + 1;
+      setVerifyFailCount(newCount);
+      if (newCount >= 5) {
+        showSendCodeMessage("입력 횟수를 초과했습니다. 재발송해주세요.");
+      } else {
+        showSendCodeMessage(error?.data?.message || error?.message || "인증번호가 일치하지 않습니다.");
+      }
     }
   };
 
   const handleNext = () => {
-    if (isFormValid() && userType) {
+    setHasSubmitted(true);
+    if (isFormValid() && gender !== null && userType) {
       // Store에 데이터 저장
       setSignupFields({
         userType,
-        gender,
+        gender: gender!,
         birthYear,
         birthMonth,
         birthDay,
@@ -330,7 +394,7 @@ export default function SignupTypePage() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior="padding"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? rs(20) : 0}
       >
       <ScrollView
@@ -383,6 +447,11 @@ export default function SignupTypePage() {
                   activeColor={primaryColor}
                 />
               </View>
+              {hasSubmitted && gender === null && (
+                <ThemedText style={styles.errorText}>
+                  성별을 선택해주세요
+                </ThemedText>
+              )}
             </View>
 
             {/* 생년월일 */}
@@ -397,6 +466,7 @@ export default function SignupTypePage() {
                   placeholderTextColor={TextColors.placeholder}
                   value={birthYear}
                   onChangeText={setBirthYear}
+                  onBlur={() => setBirthTouched(true)}
                   keyboardType="number-pad"
                   maxLength={4}
                 />
@@ -411,6 +481,12 @@ export default function SignupTypePage() {
                       setBirthMonth(text);
                     } else {
                       setBirthMonth(String(Math.min(num, 12)));
+                    }
+                  }}
+                  onBlur={() => {
+                    setBirthTouched(true);
+                    if (birthMonth.length === 1) {
+                      setBirthMonth(birthMonth.padStart(2, "0"));
                     }
                   }}
                   keyboardType="number-pad"
@@ -429,10 +505,19 @@ export default function SignupTypePage() {
                       setBirthDay(String(Math.min(num, 31)));
                     }
                   }}
+                  onBlur={() => {
+                    setBirthTouched(true);
+                    if (birthDay.length === 1) {
+                      setBirthDay(birthDay.padStart(2, "0"));
+                    }
+                  }}
                   keyboardType="number-pad"
                   maxLength={2}
                 />
               </View>
+              {getBirthError() !== null && (
+                <ThemedText style={styles.errorText}>{getBirthError()}</ThemedText>
+              )}
             </View>
 
             {/* ============================================ */}
@@ -442,7 +527,10 @@ export default function SignupTypePage() {
               <>
                 {/* 닉네임 */}
                 <View style={styles.inputGroup}>
-                  <View style={styles.inputContainer}>
+                  <View style={[
+                    styles.inputContainer,
+                    (nicknameTouched || hasSubmitted) && !isNicknameValid(nickname) && styles.inputError,
+                  ]}>
                     <TextInput
                       style={styles.input}
                       placeholder="닉네임 (한글, 영문 2~10자 이내)"
@@ -450,8 +538,15 @@ export default function SignupTypePage() {
                       value={nickname}
                       onChangeText={setNickname}
                       maxLength={10}
+                      onBlur={() => setNicknameTouched(true)}
                     />
                   </View>
+                  {hasSubmitted && nickname.length === 0 && (
+                    <ThemedText style={styles.errorText}>닉네임을 입력해주세요</ThemedText>
+                  )}
+                  {(nicknameTouched || hasSubmitted) && nickname.length > 0 && !isNicknameValid(nickname) && (
+                    <ThemedText style={styles.errorText}>닉네임은 한글, 영문을 포함한 2~10자 이내로 입력해주세요</ThemedText>
+                  )}
                 </View>
 
                 {/* 아이디 */}
@@ -467,7 +562,8 @@ export default function SignupTypePage() {
                       placeholderTextColor={TextColors.placeholder}
                       value={username}
                       onChangeText={(text) => {
-                        setUsername(text);
+                        const filtered = text.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+                        setUsername(filtered);
                         setIsUsernameChecked(false);
                         setUsernameAvailable(null);
                       }}
@@ -524,7 +620,8 @@ export default function SignupTypePage() {
                       placeholderTextColor={TextColors.placeholder}
                       value={username}
                       onChangeText={(text) => {
-                        setUsername(text);
+                        const filtered = text.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+                        setUsername(filtered);
                         setIsUsernameChecked(false);
                         setUsernameAvailable(null);
                       }}
@@ -618,10 +715,10 @@ export default function SignupTypePage() {
                       <TouchableOpacity
                         style={[
                           styles.emailButton,
-                          { backgroundColor: emailCode && timer > 0 ? Owner.primary : Gray.gray5 },
+                          { backgroundColor: emailCode && timer > 0 && verifyFailCount < 5 ? Owner.primary : Gray.gray5 },
                         ]}
                         onPress={handleVerifyEmailCode}
-                        disabled={!emailCode || timer <= 0}
+                        disabled={!emailCode || timer <= 0 || verifyFailCount >= 5}
                       >
                         <ThemedText style={styles.smallButtonText}>
                           확인
@@ -687,7 +784,7 @@ export default function SignupTypePage() {
               <View style={[
                 styles.inputContainer,
                 password.length > 0 && isPasswordValid(password) && styles.inputSuccess,
-                password.length > 0 && !isPasswordValid(password) && styles.inputError,
+                (passwordTouched || hasSubmitted) && password.length > 0 && !isPasswordValid(password) && styles.inputError,
               ]}>
                 <TextInput
                   style={styles.input}
@@ -698,11 +795,13 @@ export default function SignupTypePage() {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   maxLength={20}
+                  clearTextOnFocus={false}
                   onFocus={() => {
                     setTimeout(() => {
                       scrollViewRef.current?.scrollToEnd({ animated: true });
                     }, 150);
                   }}
+                  onBlur={() => setPasswordTouched(true)}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
@@ -711,12 +810,14 @@ export default function SignupTypePage() {
                   <EyeOffIcon color={Gray.gray5} />
                 </TouchableOpacity>
               </View>
-              {password.length > 0 && !isPasswordValid(password) && (
+              {(passwordTouched || hasSubmitted) && password.length > 0 && !isPasswordValid(password) && (
                 <ThemedText style={styles.errorText}>
-                  비밀번호는 영어, 숫자, 특수문자를 포함한 8자~20자 이내로 입력해주세요
+                  {isPasswordLengthValid(password)
+                    ? "영문, 숫자, 특수문자를 포함해주세요"
+                    : "비밀번호는 영어, 숫자, 특수문자를 포함한 8자~20자 이내로 입력해주세요"}
                 </ThemedText>
               )}
-              {password.length === 0 && (
+              {!(passwordTouched || hasSubmitted) && !isPasswordValid(password) && (
                 <ThemedText style={styles.hintText}>
                   영어, 숫자, 특수문자를 포함한 8~20자 이내로 입력해주세요
                 </ThemedText>
@@ -766,7 +867,6 @@ export default function SignupTypePage() {
           </>
         )}
       </ScrollView>
-      </KeyboardAvoidingView>
 
       {/* 다음으로 버튼 */}
       <View style={styles.bottomContent}>
@@ -777,6 +877,7 @@ export default function SignupTypePage() {
           disabled={!isFormValid()}
         />
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

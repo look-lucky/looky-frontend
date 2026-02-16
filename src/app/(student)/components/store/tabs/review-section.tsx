@@ -8,9 +8,9 @@ import React, { useCallback, useState } from 'react';
 import {
     ActivityIndicator,
     Image,
-    Modal,
     StyleSheet,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from 'react-native';
 
@@ -141,15 +141,20 @@ function ReviewItemCard({
   onDelete,
   onReport,
   isLast,
+  menuOpen,
+  onMenuToggle,
+  onMenuClose,
 }: {
   review: ReviewItem;
   onEdit?: () => void;
   onDelete?: () => void;
   onReport?: () => void;
   isLast?: boolean;
+  menuOpen: boolean;
+  onMenuToggle: () => void;
+  onMenuClose: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [menuVisible, setMenuVisible] = useState(false);
 
   return (
     <View style={[styles.reviewCard, !isLast && styles.reviewCardWithDivider]}>
@@ -168,12 +173,53 @@ function ReviewItemCard({
           <ThemedText style={styles.nickname}>{review.nickname}</ThemedText>
         </View>
 
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setMenuVisible(true)}
-        >
-          <ThemedText style={styles.menuDots}>⋯</ThemedText>
-        </TouchableOpacity>
+        <View style={styles.menuWrapper}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={onMenuToggle}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <ThemedText style={styles.menuDots}>⋯</ThemedText>
+          </TouchableOpacity>
+          {menuOpen && (
+            <View style={styles.menuPopup}>
+              {review.isOwner ? (
+                <>
+                  {!review.hasReply && (
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => {
+                        onMenuClose();
+                        onEdit?.();
+                      }}
+                    >
+                      <ThemedText style={styles.menuItemText}>수정</ThemedText>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      onMenuClose();
+                      onDelete?.();
+                    }}
+                  >
+                    <ThemedText style={styles.menuItemText}>삭제</ThemedText>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    onMenuClose();
+                    onReport?.();
+                  }}
+                >
+                  <ThemedText style={styles.menuItemText}>신고</ThemedText>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
       </View>
 
       <View style={styles.reviewMeta}>
@@ -217,58 +263,6 @@ function ReviewItemCard({
           <ThemedText style={styles.actionCount}>{review.commentCount}</ThemedText>
         </View>
       </View>
-
-      {/* Bottom Sheet Menu */}
-      <Modal
-        visible={menuVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.bottomSheetOverlay}
-          activeOpacity={1}
-          onPress={() => setMenuVisible(false)}
-        >
-          <View style={styles.bottomSheet}>
-            <View style={styles.bottomSheetHandle} />
-            {review.isOwner ? (
-              <>
-                <TouchableOpacity
-                  style={styles.bottomSheetItem}
-                  onPress={() => {
-                    setMenuVisible(false);
-                    onEdit?.();
-                  }}
-                >
-                  <ThemedText style={styles.bottomSheetItemText}>수정</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.bottomSheetItem}
-                  onPress={() => {
-                    setMenuVisible(false);
-                    onDelete?.();
-                  }}
-                >
-                  <ThemedText style={[styles.bottomSheetItemText, styles.deleteText]}>
-                    삭제
-                  </ThemedText>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity
-                style={styles.bottomSheetItem}
-                onPress={() => {
-                  setMenuVisible(false);
-                  onReport?.();
-                }}
-              >
-                <ThemedText style={styles.bottomSheetItemText}>신고</ThemedText>
-              </TouchableOpacity>
-            )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 }
@@ -310,6 +304,7 @@ export function ReviewSection({
   isLoadingMore,
 }: ReviewSectionProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('recent');
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const sortedReviews = [...reviews].sort((a, b) => {
     if (activeFilter === 'best') {
@@ -326,33 +321,40 @@ export function ReviewSection({
   }, [hasMore, isLoadingMore, onLoadMore]);
 
   return (
-    <View style={styles.container}>
-      <ReviewRatingBlock rating={rating} />
+    <TouchableWithoutFeedback onPress={() => setActiveMenuId(null)}>
+      <View style={styles.container}>
+        <ReviewRatingBlock rating={rating} />
 
-      <ReviewFilter
-        activeFilter={activeFilter}
-        onFilterChange={setActiveFilter}
-        onWriteReview={onWriteReview}
-      />
+        <ReviewFilter
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          onWriteReview={onWriteReview}
+        />
 
-      <View style={styles.reviewList}>
-        {sortedReviews.map((review, index) => (
-          <ReviewItemCard
-            key={review.id}
-            review={review}
-            isLast={index === sortedReviews.length - 1 && !hasMore}
-            onEdit={() => onEditReview?.(review.id)}
-            onDelete={() => onDeleteReview?.(review.id)}
-            onReport={() => onReportReview?.(review.id)}
-          />
-        ))}
+        <View style={styles.reviewList}>
+          {sortedReviews.map((review, index) => (
+            <ReviewItemCard
+              key={review.id}
+              review={review}
+              isLast={index === sortedReviews.length - 1 && !hasMore}
+              onEdit={() => onEditReview?.(review.id)}
+              onDelete={() => onDeleteReview?.(review.id)}
+              onReport={() => onReportReview?.(review.id)}
+              menuOpen={activeMenuId === review.id}
+              onMenuToggle={() =>
+                setActiveMenuId((prev) => (prev === review.id ? null : review.id))
+              }
+              onMenuClose={() => setActiveMenuId(null)}
+            />
+          ))}
 
-        {/* 무한 스크롤 트리거 */}
-        {hasMore && (
-          <LoadMoreTrigger onTrigger={handleLoadMore} isLoading={isLoadingMore} />
-        )}
+          {/* 무한 스크롤 트리거 */}
+          {hasMore && (
+            <LoadMoreTrigger onTrigger={handleLoadMore} isLoading={isLoadingMore} />
+          )}
+        </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -508,12 +510,41 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1d1b20',
   },
+  menuWrapper: {
+    position: 'relative',
+    zIndex: 10,
+  },
   menuButton: {
     padding: rs(4),
   },
   menuDots: {
     fontSize: rs(20),
     color: '#999',
+  },
+  menuPopup: {
+    position: 'absolute',
+    top: rs(24),
+    right: 0,
+    width: rs(78),
+    backgroundColor: '#fff',
+    borderRadius: rs(5),
+    paddingVertical: rs(4),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 100,
+  },
+  menuItem: {
+    paddingVertical: rs(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuItemText: {
+    fontSize: rs(12),
+    fontWeight: '400',
+    color: '#545454',
   },
   reviewMeta: {
     flexDirection: 'row',
@@ -572,37 +603,4 @@ const styles = StyleSheet.create({
     color: '#999',
   },
 
-  // Bottom Sheet
-  bottomSheetOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  bottomSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: rs(16),
-    borderTopRightRadius: rs(16),
-    paddingBottom: rs(34),
-    paddingTop: rs(12),
-  },
-  bottomSheetHandle: {
-    width: rs(40),
-    height: rs(4),
-    backgroundColor: '#E0E0E0',
-    borderRadius: rs(2),
-    alignSelf: 'center',
-    marginBottom: rs(16),
-  },
-  bottomSheetItem: {
-    paddingVertical: rs(16),
-    paddingHorizontal: rs(20),
-  },
-  bottomSheetItemText: {
-    fontSize: rs(16),
-    color: '#1d1b20',
-    textAlign: 'center',
-  },
-  deleteText: {
-    color: '#FF4444',
-  },
 });

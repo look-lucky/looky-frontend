@@ -23,6 +23,7 @@ export default function Favorite() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterType, setFilterType] = useState<'recent' | 'rating'>('recent');
 
   const { data: favoritesRes, refetch } = useGetMyFavorites({
     pageable: { page: 0, size: 100 },
@@ -37,7 +38,25 @@ export default function Favorite() {
     return raw?.content ?? [];
   }, [favoritesRes]);
 
+  const sortedStores = useMemo(() => {
+    const list = [...stores];
+    if (filterType === 'rating') {
+      list.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
+    } else {
+      list.sort((a, b) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    }
+    return list;
+  }, [stores, filterType]);
+
   const toggleFilter = () => setIsFilterOpen(!isFilterOpen);
+
+  const selectFilter = (type: 'recent' | 'rating') => {
+    setFilterType(type);
+    setIsFilterOpen(false);
+  };
 
   const handleRemoveFavorite = (store: FavoriteStoreResponse) => {
     if (!store.storeId) return;
@@ -68,7 +87,13 @@ export default function Favorite() {
         >
           <View style={{ height: rs(40) }} />
 
-          {stores.map((store) => (
+          {sortedStores.length === 0 && (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>찜한 매장이 없습니다</Text>
+            </View>
+          )}
+
+          {sortedStores.map((store) => (
             <TouchableOpacity
               key={store.storeId}
               style={styles.storeCard}
@@ -254,4 +279,16 @@ const styles = StyleSheet.create({
   filterOptionText: { fontSize: rs(13), fontFamily: 'Inter', fontWeight: '400' },
   textSelected: { color: '#34B262', fontWeight: '600' },
   textUnselected: { color: 'black' },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: rs(80),
+  },
+  emptyText: {
+    fontSize: rs(14),
+    fontWeight: '400',
+    color: '#828282',
+    fontFamily: 'Pretendard',
+  },
 });

@@ -23,6 +23,7 @@ export const Primary = {
 // 점주용 색상
 export const Owner = {
   primary: "#34B262",
+  primaryLight: "#2FB786",
   textBg: "#F4F7F4",
   iconBg: "#EAF6EE",
   background: "#E0EDE4",

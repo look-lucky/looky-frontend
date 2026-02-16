@@ -288,7 +288,7 @@ export default function EditReview() {
           <View style={{ height: rs(80) }} />
         </ScrollView>
 
-        <View style={styles.bottomBtnContainer}>
+        <View style={[styles.bottomBtnContainer, { bottom: Math.max(insets.bottom, rs(20)) }]}>
           <TouchableOpacity style={styles.submitBtn} onPress={handleUpdateReview}>
             <Text style={styles.submitBtnText}>리뷰 수정하기</Text>
           </TouchableOpacity>

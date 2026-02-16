@@ -27,6 +27,7 @@ import type {
 import type {
   CreateStoreBody,
   GetNearbyStoresParams,
+  GetStoreMapParams,
   GetStoresParams,
   StoreReportRequest,
   UpdateStoreBody
@@ -1163,17 +1164,24 @@ export type getStoreMapResponseSuccess = (getStoreMapResponse200) & {
 
 export type getStoreMapResponse = (getStoreMapResponseSuccess)
 
-export const getGetStoreMapUrl = () => {
+export const getGetStoreMapUrl = (params?: GetStoreMapParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
-  
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/stores/map`
+  return stringifiedParams.length > 0 ? `/api/stores/map?${stringifiedParams}` : `/api/stores/map`
 }
 
-export const getStoreMap = async ( options?: RequestInit): Promise<getStoreMapResponse> => {
+export const getStoreMap = async (params?: GetStoreMapParams, options?: RequestInit): Promise<getStoreMapResponse> => {
   
-  return customFetch<getStoreMapResponse>(getGetStoreMapUrl(),
+  return customFetch<getStoreMapResponse>(getGetStoreMapUrl(params),
   {      
     ...options,
     method: 'GET'
@@ -1186,23 +1194,23 @@ export const getStoreMap = async ( options?: RequestInit): Promise<getStoreMapRe
 
 
 
-export const getGetStoreMapQueryKey = () => {
+export const getGetStoreMapQueryKey = (params?: GetStoreMapParams,) => {
     return [
-    `/api/stores/map`
+    `/api/stores/map`, ...(params ? [params] : [])
     ] as const;
     }
 
     
-export const getGetStoreMapQueryOptions = <TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetStoreMapQueryOptions = <TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(params?: GetStoreMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetStoreMapQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreMapQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreMap>>> = ({ signal }) => getStoreMap({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreMap>>> = ({ signal }) => getStoreMap(params, { signal, ...requestOptions });
 
       
 
@@ -1216,7 +1224,7 @@ export type GetStoreMapQueryError = unknown
 
 
 export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
+ params: undefined |  GetStoreMapParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getStoreMap>>,
           TError,
@@ -1226,7 +1234,7 @@ export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, 
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
+ params?: GetStoreMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getStoreMap>>,
           TError,
@@ -1236,7 +1244,7 @@ export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, 
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ params?: GetStoreMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -1244,11 +1252,11 @@ export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, 
  */
 
 export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ params?: GetStoreMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetStoreMapQueryOptions(options)
+  const queryOptions = getGetStoreMapQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

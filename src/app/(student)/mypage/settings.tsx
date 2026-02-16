@@ -1,10 +1,12 @@
+import { ArrowLeft } from '@/src/shared/common/arrow-left';
+import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
+import { Fonts, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
     ScrollView,
     StyleSheet,
-    Text,
     TouchableOpacity,
     View
 } from 'react-native';
@@ -14,58 +16,38 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const handlePress = (menuName: string) => {
-    switch (menuName) {
-      case '내 정보 수정':
-        router.push('/mypage/edit-profile');
-        break;
-      case '이용약관':
-        router.push('/mypage/terms');
-        break;
-      case '버전정보':
-        router.push('/mypage/version');
-        break;
-      default:
-        break;
-    }
-  };
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="arrow-back" size={rs(24)} color="#1B1D1F" />
-        </TouchableOpacity>
+        <ArrowLeft onPress={() => router.back()} />
+        <ThemedText style={styles.pageTitle}>설정</ThemedText>
+        <View style={styles.headerRight} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.pageTitle}>설정</Text>
-        </View>
-
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>계정</Text>
+          <ThemedText style={styles.sectionTitle}>계정</ThemedText>
         </View>
 
-        <TouchableOpacity style={styles.menuItem} onPress={() => handlePress('내 정보 수정')}>
-          <Text style={styles.menuText}>내 정보 수정</Text>
-          <Ionicons name="chevron-forward" size={rs(16)} color="black" />
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/mypage/profile-edit' as any)}>
+          <ThemedText style={styles.menuText}>프로필 수정</ThemedText>
+          <Ionicons name="chevron-forward" size={rs(16)} color={Gray.gray6} />
         </TouchableOpacity>
 
         <View style={styles.divider} />
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>기타</Text>
+          <ThemedText style={styles.sectionTitle}>기타</ThemedText>
         </View>
 
-        <TouchableOpacity style={styles.menuItem} onPress={() => handlePress('이용약관')}>
-          <Text style={styles.menuText}>이용약관</Text>
-          <Ionicons name="chevron-forward" size={rs(16)} color="black" />
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/mypage/terms' as any)}>
+          <ThemedText style={styles.menuText}>이용약관</ThemedText>
+          <Ionicons name="chevron-forward" size={rs(16)} color={Gray.gray6} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} onPress={() => handlePress('버전정보')}>
-          <Text style={styles.menuText}>버전정보</Text>
-          <Ionicons name="chevron-forward" size={rs(16)} color="black" />
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/mypage/version' as any)}>
+          <ThemedText style={styles.menuText}>버전정보</ThemedText>
+          <Ionicons name="chevron-forward" size={rs(16)} color={Gray.gray6} />
         </TouchableOpacity>
 
         <View style={styles.divider} />
@@ -75,21 +57,33 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
-  header: { paddingHorizontal: rs(20), paddingVertical: rs(10), justifyContent: 'center', alignItems: 'flex-start' },
+  container: { flex: 1, backgroundColor: Gray.white },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(12),
+    gap: rs(12),
+  },
+  headerRight: { width: rs(24) },
   content: { paddingBottom: rs(50) },
-  titleContainer: { paddingHorizontal: rs(20), marginVertical: rs(10), marginBottom: rs(20) },
-  pageTitle: { fontSize: rs(20), fontWeight: '600', color: 'black', fontFamily: 'Pretendard' },
-  sectionHeader: { paddingHorizontal: rs(20), paddingVertical: rs(5), marginTop: rs(10), marginBottom: rs(5) },
-  sectionTitle: { fontSize: rs(14), fontWeight: '400', color: '#444444', fontFamily: 'Pretendard' },
+  pageTitle: {
+    flex: 1,
+    fontSize: rs(18),
+    fontWeight: '700',
+    color: TextColor.primary,
+    fontFamily: Fonts.bold,
+  },
+  sectionHeader: { paddingHorizontal: rs(20), paddingVertical: rs(8), marginTop: rs(8) },
+  sectionTitle: { fontSize: rs(12), fontWeight: '400', color: TextColor.tertiary, fontFamily: Fonts.regular },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: rs(20),
-    paddingVertical: rs(15),
-    backgroundColor: '#FAFAFA',
+    paddingVertical: rs(16),
+    backgroundColor: Gray.white,
   },
-  menuText: { fontSize: rs(14), fontWeight: '400', color: 'black', fontFamily: 'Pretendard' },
-  divider: { height: 1, backgroundColor: '#E6E6E6', width: '100%', marginVertical: rs(5) },
+  menuText: { fontSize: rs(14), fontWeight: '400', color: TextColor.primary, fontFamily: Fonts.regular },
+  divider: { height: 1, backgroundColor: Gray.gray2, width: '100%' },
 });

@@ -6,6 +6,7 @@ import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";
 import { Fonts, Gray, Owner, Primary, System, Text as TextColor } from "@/src/shared/theme/theme";
+import BannerCapIcon from "@/assets/images/icons/mypage/banner-cap.svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
@@ -129,21 +130,40 @@ export default function MyPageTab() {
       {/* 프로필 카드 */}
       <View style={styles.fixedProfileContainer}>
         <LinearGradient
-          colors={[Owner.primary, "#2FB786"]}
+          colors={[Owner.primary, Owner.primaryLight]}
           style={styles.profileGradientBox}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
         >
           <View style={styles.profileContentRow}>
             <View style={styles.profileIconBox}>
-              <Ionicons name="person" size={rs(24)} color={Primary[400]} />
+              <BannerCapIcon width={rs(28)} height={rs(28)} />
             </View>
             <View style={styles.profileTextColumn}>
               <ThemedText style={styles.profileName}>
-                {(studentInfo as any)?.data?.data?.username ?? "알 수 없음"}
+                {(studentInfo as any)?.data?.data?.nickname ?? "알 수 없음"}
               </ThemedText>
-              <ThemedText style={styles.profileGreeting}>
-                {(studentInfo as any)?.data?.data?.universityName ?? "대학교 정보 없음"} {(studentInfo as any)?.data?.data?.collegeName ?? ""} {(studentInfo as any)?.data?.data?.departmentName ?? ""}
+              <ThemedText type="caption" style={styles.profileUniversity}>
+                {(studentInfo as any)?.data?.data?.universityName ?? "대학교 정보 없음"}
+              </ThemedText>
+              {(() => {
+                const collegeName = (studentInfo as any)?.data?.data?.collegeName;
+                const departmentName = (studentInfo as any)?.data?.data?.departmentName;
+                if (collegeName || departmentName) {
+                  return (
+                    <ThemedText type="caption" style={styles.profileSubText}>
+                      {[collegeName, departmentName].filter(Boolean).join(" ")}
+                    </ThemedText>
+                  );
+                }
+                return (
+                  <ThemedText type="caption" style={styles.profileSubText}>
+                    단과대학, 학과를 설정해주세요!
+                  </ThemedText>
+                );
+              })()}
+              <ThemedText type="caption" style={styles.profileSubText}>
+                오늘 하루도 행운이 가득하길 바라요!
               </ThemedText>
             </View>
             <TouchableOpacity style={styles.editButton} onPress={() => router.push('/mypage/profile-edit' as any)}>
@@ -244,17 +264,17 @@ const styles = StyleSheet.create({
     paddingBottom: rs(20),
     backgroundColor: Gray.white,
     zIndex: 1,
-    shadowColor: "#000",
+    shadowColor: Gray.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     elevation: 2,
   },
   profileGradientBox: {
-    height: rs(100),
+    height: rs(140),
     borderRadius: rs(12),
     justifyContent: "center",
     paddingHorizontal: rs(20),
-    shadowColor: "#000",
+    shadowColor: Gray.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -263,6 +283,7 @@ const styles = StyleSheet.create({
   profileContentRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: rs(16),
   },
   profileIconBox: {
     width: rs(44),
@@ -271,7 +292,7 @@ const styles = StyleSheet.create({
     borderRadius: rs(12),
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: Gray.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
@@ -279,20 +300,20 @@ const styles = StyleSheet.create({
   },
   profileTextColumn: {
     flex: 1,
-    marginLeft: rs(16),
+    gap: rs(4),
   },
   profileName: {
     fontSize: rs(18),
     fontWeight: "700",
     color: Gray.white,
     fontFamily: Fonts.bold,
-    marginBottom: rs(4),
   },
-  profileGreeting: {
-    fontSize: rs(12),
-    fontWeight: "500",
-    color: "rgba(255, 255, 255, 0.90)",
+  profileUniversity: {
+    color: Gray.white,
     fontFamily: Fonts.medium,
+  },
+  profileSubText: {
+    color: Gray.white,
   },
   editButton: {
     paddingHorizontal: rs(12),
