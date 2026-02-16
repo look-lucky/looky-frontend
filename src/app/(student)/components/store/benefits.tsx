@@ -1,6 +1,16 @@
+import DownloadIcon from '@/assets/images/icons/store/download.svg';
+import GiftIcon from '@/assets/images/icons/coupon/gift.svg';
+import HotPriceIcon from '@/assets/images/icons/coupon/hot-price.svg';
+import PriceTagDollarIcon from '@/assets/images/icons/coupon/price-tag-dollar.svg';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray, System } from '@/src/shared/theme/theme';
+import {
+  Brand,
+  Coupon as CouponColor,
+  Fonts,
+  Gray,
+  Text as TextColor,
+} from '@/src/shared/theme/theme';
 import type { Coupon } from '@/src/shared/types/store';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -15,6 +25,18 @@ interface StoreBenefitsProps {
   onIssueCoupon?: (couponId: string) => void;
   isIssuing?: boolean;
 }
+
+const BENEFIT_ICON_BG: Record<string, string> = {
+  PERCENTAGE_DISCOUNT: CouponColor.red,
+  FIXED_DISCOUNT: CouponColor.green,
+  SERVICE_GIFT: CouponColor.yellow,
+};
+
+const COUPON_ICONS: Record<string, any> = {
+  PERCENTAGE_DISCOUNT: HotPriceIcon,
+  FIXED_DISCOUNT: PriceTagDollarIcon,
+  SERVICE_GIFT: GiftIcon,
+};
 
 // ============================================
 // BenefitBanner
@@ -53,38 +75,64 @@ function CouponSection({
     <View style={styles.couponContainer}>
       {coupons.map((coupon) => {
         const isIssued = issuedCouponIds.includes(Number(coupon.id));
+        const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ''];
         return (
-          <View key={coupon.id} style={styles.couponCard}>
-            <View style={styles.couponLeft}>
-              <View style={styles.discountBadge}>
-                <ThemedText style={styles.percentIcon}>%</ThemedText>
+          <View key={coupon.id} style={[styles.couponCard, isIssued && styles.couponCardIssued]}>
+            {/* Left: Icon + Info */}
+            <View style={styles.couponMain}>
+              <View
+                style={[
+                  styles.couponIconContainer,
+                  { backgroundColor: BENEFIT_ICON_BG[coupon.benefitType ?? ''] ?? CouponColor.yellow },
+                ]}
+              >
+                {CouponIcon ? (
+                  <CouponIcon width={rs(40)} height={rs(40)} />
+                ) : (
+                  <View style={styles.couponIconPlaceholder} />
+                )}
               </View>
-            </View>
-            <View style={styles.couponContent}>
-              <View style={styles.couponHeader}>
-                <ThemedText type="defaultSemiBold">{coupon.title}</ThemedText>
-                <ThemedText type='defaultSemiBold' lightColor={System.hotSoldOut}>{coupon.discount}</ThemedText>
-              </View>
-              <ThemedText style={styles.couponDescription}>{coupon.description}</ThemedText>
-              <View style={styles.couponFooter}>
-                <ThemedText style={styles.couponExpiry}>{coupon.expiryDate}</ThemedText>
-                {isIssued ? (
-                  <View style={styles.issuedBadge}>
-                    <ThemedText type="default" lightColor={Gray.gray500}>
-                      발급완료
+              <View style={styles.couponTextContainer}>
+                <ThemedText style={styles.couponDiscount}>
+                  {coupon.discount}
+                </ThemedText>
+                <ThemedText style={styles.couponTitle} numberOfLines={1}>
+                  {coupon.title}
+                </ThemedText>
+                {coupon.description !== '' && (
+                  <ThemedText style={styles.couponMinOrder}>
+                    {coupon.description}
+                  </ThemedText>
+                )}
+                <ThemedText style={styles.couponExpiry}>
+                  {coupon.expiryDate}
+                </ThemedText>
+                {coupon.remainingCount != null && (
+                  <View style={styles.remainingBadge}>
+                    <ThemedText style={styles.remainingText}>
+                      {coupon.remainingCount}장 남음
                     </ThemedText>
                   </View>
-                ) : (
-                  <TouchableOpacity
-                    style={[styles.couponButton, isIssuing && styles.couponButtonDisabled]}
-                    onPress={() => onIssueCoupon?.(coupon.id)}
-                    disabled={isIssuing || !onIssueCoupon}
-                  >
-                    <ThemedText type="default" lightColor={Gray.white}>쿠폰 받기</ThemedText>
-                  </TouchableOpacity>
                 )}
               </View>
             </View>
+
+            {/* Dashed Divider */}
+            <View style={styles.dashedDivider} />
+
+            {/* Right: Download Icon */}
+            <TouchableOpacity
+              style={styles.downloadArea}
+              onPress={() => onIssueCoupon?.(coupon.id)}
+              disabled={isIssued || isIssuing || !onIssueCoupon}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              {isIssued ? (
+                <ThemedText style={styles.issuedText}>발급완료</ThemedText>
+              ) : (
+                <DownloadIcon width={rs(16)} height={rs(16)} />
+              )}
+            </TouchableOpacity>
           </View>
         );
       })}
@@ -127,14 +175,15 @@ const styles = StyleSheet.create({
 
   // BenefitBanner
   bannerContainer: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 16,
+    backgroundColor: Gray.gray2,
+    borderRadius: rs(16),
     paddingHorizontal: rs(16),
     paddingVertical: rs(12),
   },
   bannerText: {
+    fontFamily: Fonts.regular,
     fontSize: rs(12),
-    color: '#000000',
+    color: TextColor.primary,
     lineHeight: rs(18),
   },
 
@@ -144,75 +193,94 @@ const styles = StyleSheet.create({
   },
   couponCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    alignItems: 'center',
+    backgroundColor: Gray.white,
+    borderRadius: rs(16),
+    paddingVertical: rs(16),
+    paddingLeft: rs(12),
+    paddingRight: rs(16),
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    padding: rs(12),
+    borderColor: Gray.gray3,
+  },
+  couponCardIssued: {
+    opacity: 0.4,
+  },
+  couponMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: rs(12),
   },
-  couponLeft: {
+  couponIconContainer: {
+    borderRadius: rs(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: rs(12),
+  },
+  couponIconPlaceholder: {
     width: rs(40),
     height: rs(40),
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: rs(8),
   },
-  discountBadge: {
-    width: rs(40),
-    height: rs(40),
-    borderRadius: 16,
-    backgroundColor: '#fff3e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  percentIcon: {
-    fontSize: rs(16),
-    fontWeight: '700',
-    color: '#ff9800',
-  },
-  couponContent: {
+  couponTextContainer: {
     flex: 1,
     gap: rs(2),
   },
-  couponHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  couponDiscount: {
+    fontFamily: Fonts.bold,
+    fontSize: rs(14),
+    lineHeight: rs(20),
+    color: TextColor.primary,
   },
   couponTitle: {
-    fontSize: rs(16),
-    fontWeight: '600',
-    color: '#1d1b20',
+    fontFamily: Fonts.medium,
+    fontSize: rs(13),
+    lineHeight: rs(18),
+    color: TextColor.primary,
   },
-  couponDescription: {
-    fontSize: rs(12),
-    color: '#666',
-  },
-  couponFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: rs(4),
+  couponMinOrder: {
+    fontFamily: Fonts.regular,
+    fontSize: rs(11),
+    lineHeight: rs(16),
+    color: TextColor.secondary,
   },
   couponExpiry: {
+    fontFamily: Fonts.regular,
+    fontSize: rs(11),
+    lineHeight: rs(16),
+    color: TextColor.secondary,
+  },
+  remainingBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E8F5E9',
+    borderRadius: rs(4),
+    paddingHorizontal: rs(6),
+    paddingVertical: rs(2),
+    marginTop: rs(2),
+  },
+  remainingText: {
+    fontFamily: Fonts.medium,
     fontSize: rs(10),
-    color: '#999',
+    lineHeight: rs(12),
+    color: Brand.primary,
   },
-  couponButton: {
-    backgroundColor: '#34b262',
-    borderRadius: 16,
-    paddingHorizontal: rs(12),
-    paddingVertical: rs(8),
+  dashedDivider: {
+    width: 0,
+    height: rs(60),
+    borderLeftWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: Gray.gray5,
+    marginHorizontal: rs(12),
   },
-  couponButtonDisabled: {
-    backgroundColor: '#ccc',
-    opacity: 0.6,
+  downloadArea: {
+    width: rs(32),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  issuedBadge: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 16,
-    paddingHorizontal: rs(12),
-    paddingVertical: rs(8),
+  issuedText: {
+    fontFamily: Fonts.medium,
+    fontSize: rs(10),
+    color: TextColor.tertiary,
   },
 });

@@ -250,10 +250,12 @@ export default function StoreDetailScreen() {
       .map((c) => ({
         id: String(c.id),
         title: c.title ?? '',
-        description: '',
+        description: c.minOrderAmount ? `최소 주문 ${Number(c.minOrderAmount).toLocaleString()}원` : '',
         discount: c.benefitValue ?? '',
-        expiryDate: c.issueEndsAt ? `${formatDate(c.issueEndsAt)}까지` : '',
-        isDownloaded: c.isDownloaded ?? false,
+        expiryDate: c.issueEndsAt ? `${formatDate(c.issueEndsAt)}까지 발급 가능` : '',
+        remainingCount: c.totalQuantity != null && c.downloadCount != null
+          ? Math.max(0, c.totalQuantity - c.downloadCount) : undefined,
+        benefitType: c.benefitType as any,
       }));
   }, [apiCoupons]);
 
@@ -518,6 +520,7 @@ export default function StoreDetailScreen() {
       <CouponModal
         visible={isCouponModalVisible}
         onClose={() => setIsCouponModalVisible(false)}
+        storeName={storeName}
         coupons={filteredCoupons}
         issuedCouponIds={issuedCouponIds}
         onIssueCoupon={handleIssueCoupon}
