@@ -21,7 +21,10 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
   if (!queryClientRef.current) {
     const isNetworkError = (error: unknown) => {
       if (error instanceof TypeError) return true;
-      if (typeof error === 'object' && error !== null && 'status' in error) return false;
+      if (typeof error === 'object' && error !== null && 'status' in error) {
+        const status = (error as { status: number }).status;
+        return status >= 500;
+      }
       return false;
     };
 
