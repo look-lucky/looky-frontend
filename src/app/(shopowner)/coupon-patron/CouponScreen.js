@@ -24,17 +24,28 @@ import {
 import { createCoupon, getCouponsByStore, verifyCoupon } from '@/src/api/coupon';
 import { countFavorites } from '@/src/api/favorite';
 import { getMyStores } from '@/src/api/store';
+import { ErrorPopup } from '@/src/shared/common/error-popup';
+
+// 서버에서 오는 날짜 문자열을 보정하는 헬퍼 (T 구분자 추가 및 UTC 명시)
+const normalizeDateStr = (ds) => {
+    if (!ds || typeof ds !== 'string') return ds;
+    let s = ds.replace(' ', 'T');
+    if (!s.includes('Z') && !s.includes('+') && s.length >= 10) {
+        s += 'Z';
+    }
+    return s;
+};
 
 // 날짜 포맷 헬퍼
 const formatDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
+    const date = new Date(normalizeDateStr(dateString));
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}까지`;
 };
 
 const formatDateTimeFull = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
+    const date = new Date(normalizeDateStr(dateString));
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -50,6 +61,7 @@ export default function CouponScreen({ navigation, route }) {
 
     // [데이터 상태]
     const [storeId, setStoreId] = useState(null);
+    const [storeName, setStoreName] = useState(''); // 가게 이름
     const [isLoading, setIsLoading] = useState(true);
 
     const [activeCoupons, setActiveCoupons] = useState([]);   // 진행 중 쿠폰
@@ -87,6 +99,10 @@ export default function CouponScreen({ navigation, route }) {
     const [isStartDatePicked, setIsStartDatePicked] = useState(false);
     const [isEndDatePicked, setIsEndDatePicked] = useState(false);
     const [isExitConfirmVisible, setIsExitConfirmVisible] = useState(false);
+
+    // 에러 팝업 상태
+    const [isErrorPopupVisible, setIsErrorPopupVisible] = useState(false);
+    const [isRefreshingState, setIsRefreshingState] = useState(false);
 
     // [헬퍼] 숫자 콤마 포맷팅
     const formatNumber = (val) => {
@@ -222,8 +238,25 @@ export default function CouponScreen({ navigation, route }) {
         setCurrentCalendarDate(nextDate);
     };
 
-    const isStep2Valid = couponName.trim() !== '' && benefitValue.trim() !== '' && minOrderAmount.trim() !== '';
-    const isStep3Valid = isIssuePeriodSelected && (isUnlimited || (totalQuantity.trim() !== '' && !isNaN(totalQuantity.replace(/,/g, ''))));
+    const benefitValueNum = Number(benefitValue.replace(/,/g, '')) || 0;
+    const minOrderAmountNum = Number(minOrderAmount.replace(/,/g, '')) || 0;
+
+    const isMinAmountError = selectedType === 'FIXED_AMOUNT' &&
+        minOrderAmount.trim() !== '' &&
+        minOrderAmountNum <= benefitValueNum;
+
+    const isPercentError = selectedType === 'PERCENTAGE' &&
+        benefitValue.trim() !== '' &&
+        (benefitValueNum < 1 || benefitValueNum > 100);
+
+    const isStep2Valid = couponName.trim() !== '' &&
+        benefitValue.trim() !== '' &&
+        !isMinAmountError &&
+        !isPercentError;
+    const totalQuantityNum = Number(totalQuantity.replace(/,/g, '')) || 0;
+    const isQuantityError = !isUnlimited && totalQuantity.trim() !== '' && totalQuantityNum <= 0;
+
+    const isStep3Valid = isIssuePeriodSelected && (isUnlimited || (totalQuantity.trim() !== '' && !isNaN(totalQuantity.replace(/,/g, '')) && totalQuantityNum > 0));
 
     useEffect(() => {
         if (route.params?.initialTab) {
@@ -310,11 +343,12 @@ export default function CouponScreen({ navigation, route }) {
                 setIsIssuePeriodSelected(false);
             } else {
                 console.error("쿠폰 발행 실패:", res);
-                alert("쿠폰 발행에 실패했습니다. 다시 시도해주세요.");
+                setIsErrorPopupVisible(true);
             }
         } catch (error) {
             console.error("쿠폰 발행 에러:", error);
-            alert("서버 통신 중 오류가 발생했습니다.");
+            setCreateModalVisible(false); // Close current modal to show error popup
+            setIsErrorPopupVisible(true);
         } finally {
             setIsLoading(false);
         }
@@ -336,7 +370,16 @@ export default function CouponScreen({ navigation, route }) {
                 const myStores = storeRes.data?.data || [];
                 if (myStores && myStores.length > 0) {
                     currentStoreId = myStores[0].id.toString();
+                    setStoreName(myStores[0].name || '');
                     await AsyncStorage.setItem('SELECTED_STORE_ID', currentStoreId);
+                }
+            } else {
+                // 저장된 ID가 있을 때도 이름을 가져와야 함 (목록에서 찾기)
+                const storeRes = await getMyStores();
+                const myStores = storeRes.data?.data || [];
+                const currentStore = myStores.find(s => s.id.toString() === currentStoreId);
+                if (currentStore) {
+                    setStoreName(currentStore.name || '');
                 }
             }
 
@@ -367,7 +410,8 @@ export default function CouponScreen({ navigation, route }) {
 
             allCoupons.forEach(coupon => {
                 const endDateStr = coupon.issueEndsAt || coupon.expiredAt;
-                const expireDate = endDateStr ? new Date(endDateStr) : new Date(8640000000000000);
+                const normalizedEndDate = normalizeDateStr(endDateStr);
+                const expireDate = normalizedEndDate ? new Date(normalizedEndDate) : new Date(8640000000000000);
 
                 // UI에 맞게 데이터 가공
                 const mappedCoupon = {
@@ -396,8 +440,22 @@ export default function CouponScreen({ navigation, route }) {
 
         } catch (error) {
             console.error("쿠폰 데이터 로딩 실패:", error);
+            setIsErrorPopupVisible(true);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // 에러 팝업 내 새로고침 로직
+    const handleErrorRefresh = async () => {
+        setIsRefreshingState(true);
+        try {
+            await fetchData();
+            setIsErrorPopupVisible(false);
+        } catch (err) {
+            console.error("재시도 실패:", err);
+        } finally {
+            setIsRefreshingState(false);
         }
     };
 
@@ -421,7 +479,7 @@ export default function CouponScreen({ navigation, route }) {
 
             // 성공 시 (200 OK)
             setVerificationStatus('valid');
-            setVerifiedCouponData(response.data); // 검증된 쿠폰 상세 정보 저장
+            setVerifiedCouponData(response.data?.data || response.data); // 검증된 쿠폰 상세 정보 저장
 
         } catch (error) {
             console.error("쿠폰 검증 실패:", error);
@@ -437,18 +495,13 @@ export default function CouponScreen({ navigation, route }) {
         }
     };
 
-    // [로직] 사용 완료 처리 (UI 인터랙션)
     const handleUseCoupon = () => {
         setIsCouponUsed(true);
 
         // 실제로 verifyCoupon 시점에 이미 사용처리가 되었을 수 있음
         // (API 명세: "코드를 입력하여 사용 처리합니다")
-        //  UI로 '도장'을 찍어주고 잠시 후 닫기
-
-        setTimeout(() => {
-            closeModal();
-            fetchData(); // 데이터(사용 수량 등) 갱신
-        }, 1500);
+        // UI로 '도장'을 찍어주고 데이터 갱신
+        fetchData();
     };
 
     // [로직] 모달 닫기 및 초기화
@@ -539,7 +592,7 @@ export default function CouponScreen({ navigation, route }) {
                                 <Text style={{ color: '#828282', fontSize: rs(12) }}>진행 중인 쿠폰이 없습니다.</Text>
                             </View>
                         ) : (
-                            activeCoupons.map((coupon) => (
+                            activeCoupons.slice(0, 3).map((coupon) => (
                                 <View key={coupon.id} style={styles.couponCard}>
                                     <View style={styles.couponHeader}>
                                         <View style={[
@@ -629,10 +682,10 @@ export default function CouponScreen({ navigation, route }) {
                                 <Text style={{ color: '#BDBDBD', fontSize: rs(12) }}>종료된 쿠폰이 없습니다.</Text>
                             </View>
                         ) : (
-                            expiredCoupons.map((coupon) => (
+                            expiredCoupons.slice(0, 3).map((coupon) => (
                                 <View key={coupon.id} style={styles.expiredCard}>
                                     <Text style={styles.expiredTitle}>{coupon.title}</Text>
-                                    <Text style={styles.expiredValue}>{coupon.used} / {coupon.total}장 사용</Text>
+                                    <Text style={styles.expiredValue}>{coupon.used} / {coupon.total === -1 ? '무제한' : `${coupon.total}장`} 사용</Text>
                                 </View>
                             ))
                         )}
@@ -839,6 +892,9 @@ export default function CouponScreen({ navigation, route }) {
                                                         {selectedType === 'FIXED_AMOUNT' ? '원' : (selectedType === 'PERCENTAGE' ? '%' : '')}
                                                     </Text>
                                                 </View>
+                                                {isPercentError && (
+                                                    <Text style={[styles.errorText, { marginTop: rs(4) }]}>할인율은 1%에서 100% 사이여야 합니다</Text>
+                                                )}
                                             </View>
 
                                             {/* 필드 2: 최소 주문 금액 */}
@@ -855,6 +911,9 @@ export default function CouponScreen({ navigation, route }) {
                                                     />
                                                     <Text style={styles.createInputUnit}>원 이상</Text>
                                                 </View>
+                                                {isMinAmountError && (
+                                                    <Text style={[styles.errorText, { marginTop: rs(4) }]}>최소 주문금액은 할인 금액보다 커야 합니다</Text>
+                                                )}
                                             </View>
 
                                         </View>
@@ -927,6 +986,9 @@ export default function CouponScreen({ navigation, route }) {
                                                 />
                                                 <Text style={[styles.createInputUnit, isUnlimited && { color: '#828282' }]}>장</Text>
                                             </View>
+                                            {isQuantityError && (
+                                                <Text style={[styles.errorText, { marginTop: rs(4) }]}>1개 이상 입력해주세요</Text>
+                                            )}
                                         </View>
 
                                         {/* 섹션 2: 쿠폰 발급 기간 */}
@@ -1372,7 +1434,7 @@ export default function CouponScreen({ navigation, route }) {
                             <KeyboardAvoidingView
                                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                             >
-                                <View style={[styles.usageModalContainer, verificationStatus === 'valid' && { height: rs(400) }]}>
+                                <View style={styles.usageModalContainer}>
                                     {/* 닫기 버튼 */}
                                     <TouchableOpacity
                                         style={styles.modalCloseBtn}
@@ -1431,19 +1493,23 @@ export default function CouponScreen({ navigation, route }) {
                                             <View style={[styles.ticketContainer, isCouponUsed && { opacity: 0.5 }]}>
                                                 {/* 티켓 상단 (내용) */}
                                                 <View style={styles.ticketTop}>
-                                                    <Text style={styles.ticketTitle}>{verifiedCouponData?.name || '쿠폰'}</Text>
+                                                    <Text style={styles.ticketTitle}>{verifiedCouponData?.couponTitle || '쿠폰'}</Text>
 
                                                     <View style={styles.ticketInfoRow}>
                                                         <Text style={styles.ticketLabel}>사용처</Text>
-                                                        <Text style={styles.ticketValue}>{verifiedCouponData?.shopName}</Text>
+                                                        <Text style={styles.ticketValue}>{storeName}</Text>
                                                     </View>
                                                     <View style={styles.ticketInfoRow}>
                                                         <Text style={styles.ticketLabel}>혜택</Text>
-                                                        <Text style={styles.ticketValue}>{verifiedCouponData?.benefitValue}</Text>
+                                                        <Text style={styles.ticketValue}>
+                                                            {verifiedCouponData?.benefitType === 'FIXED_DISCOUNT' ? `${formatNumber(verifiedCouponData?.benefitValue)}원 할인` :
+                                                                verifiedCouponData?.benefitType === 'PERCENTAGE_DISCOUNT' ? `${verifiedCouponData?.benefitValue}% 할인` :
+                                                                    verifiedCouponData?.benefitValue || '서비스 증정'}
+                                                        </Text>
                                                     </View>
                                                     <View style={styles.ticketInfoRow}>
                                                         <Text style={styles.ticketLabel}>만료기한</Text>
-                                                        <Text style={styles.ticketValue}>~{formatDate(verifiedCouponData?.expiredAt)}까지</Text>
+                                                        <Text style={styles.ticketValue}>~{formatDate(verifiedCouponData?.expiresAt)}까지</Text>
                                                     </View>
                                                 </View>
 
@@ -1489,9 +1555,16 @@ export default function CouponScreen({ navigation, route }) {
                         </TouchableWithoutFeedback>
                     </View>
                 </TouchableWithoutFeedback>
-            </Modal >
+            </Modal>
 
-        </SafeAreaView >
+            <ErrorPopup
+                visible={isErrorPopupVisible}
+                type="NETWORK"
+                isRefreshing={isRefreshingState}
+                onRefresh={handleErrorRefresh}
+                onClose={() => setIsErrorPopupVisible(false)}
+            />
+        </SafeAreaView>
     );
 }
 
@@ -1602,9 +1675,9 @@ const styles = StyleSheet.create({
     ticketNumber: { fontSize: rs(24), fontWeight: '700', color: '#1B1D1F', fontFamily: 'Pretendard', letterSpacing: rs(8) },
     finalUseBtn: { width: '100%', height: rs(40), backgroundColor: '#34B262', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', },
     finalUseBtnText: { fontSize: rs(14), fontWeight: '700', color: 'white', fontFamily: 'Pretendard', },
-    stampContainer: { position: 'absolute', top: 0, bottom: 0, left: 100, right: 0, justifyContent: 'center', alignItems: 'center', zIndex: 10, },
-    stampCircle: { width: rs(64), height: rs(64), borderRadius: rs(32), borderWidth: 2, borderColor: '#34B262', justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', transform: [{ rotate: '-20deg' }], marginLeft: rs(100), marginTop: rs(20), },
-    stampText: { fontSize: rs(16), fontWeight: '700', color: '#34B262', textAlign: 'center', fontFamily: 'Pretendard', lineHeight: rs(18), },
+    stampContainer: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, justifyContent: 'center', alignItems: 'flex-end', paddingRight: rs(10), zIndex: 10, pointerEvents: 'none' },
+    stampCircle: { width: rs(80), height: rs(80), borderRadius: rs(40), borderWidth: 2.5, borderColor: '#34B262', justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', transform: [{ rotate: '-20deg' }], marginTop: rs(-20) },
+    stampText: { fontSize: rs(18), fontWeight: '700', color: '#34B262', textAlign: 'center', fontFamily: 'Pretendard', lineHeight: rs(20), },
 
     // [새 쿠폰 모달]
     createModalContainer: { width: rs(350), backgroundColor: 'white', borderRadius: rs(20), padding: rs(24), position: 'relative' },
@@ -1756,4 +1829,4 @@ const styles = StyleSheet.create({
     previewBadge: { paddingHorizontal: rs(3), paddingVertical: rs(1), backgroundColor: '#FFE4E5', borderRadius: rs(2), justifyContent: 'center', alignItems: 'center' },
     previewBadgeText: { fontSize: rs(8), fontWeight: '400', color: '#F15051', fontFamily: 'Pretendard' },
     previewViewBtn: { backgroundColor: '#34B262', borderRadius: rs(15), paddingHorizontal: rs(12), paddingVertical: rs(4), color: 'white', fontSize: rs(12), fontWeight: '600', overflow: 'hidden' },
-});
+})

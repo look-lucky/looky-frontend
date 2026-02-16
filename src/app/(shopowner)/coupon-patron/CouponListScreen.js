@@ -20,6 +20,7 @@ import {
 // [API] 함수 임포트
 import { expireCoupon, getCouponsByStore } from '@/src/api/coupon';
 import { getMyStores } from '@/src/api/store';
+import { ErrorPopup } from '@/src/shared/common/error-popup';
 
 const { width } = Dimensions.get('window');
 
@@ -32,10 +33,20 @@ const formatNumber = (val) => {
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
+// 서버에서 오는 날짜 문자열을 보정하는 헬퍼 (T 구분자 추가 및 UTC 명시)
+const normalizeDateStr = (ds) => {
+    if (!ds || typeof ds !== 'string') return ds;
+    let s = ds.replace(' ', 'T');
+    if (!s.includes('Z') && !s.includes('+') && s.length >= 10) {
+        s += 'Z';
+    }
+    return s;
+};
+
 // 날짜 포맷 함수 (YYYY.MM.DD 오전/오후 HH:MM)
 const formatDateTime = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
+    const date = new Date(normalizeDateStr(dateString));
     const y = date.getFullYear();
     const m = (date.getMonth() + 1).toString().padStart(2, '0');
     const d = date.getDate().toString().padStart(2, '0');
@@ -86,6 +97,10 @@ export default function CouponListScreen({ navigation, route }) {
     const [selectedCouponId, setSelectedCouponId] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // 에러 팝업 상태
+    const [isErrorPopupVisible, setIsErrorPopupVisible] = useState(false);
+    const [isRefreshingState, setIsRefreshingState] = useState(false);
+
     // [API] 데이터 로딩
     const fetchData = async () => {
         try {
@@ -135,8 +150,22 @@ export default function CouponListScreen({ navigation, route }) {
 
         } catch (error) {
             console.error("쿠폰 리스트 로딩 실패:", error);
+            setIsErrorPopupVisible(true);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // 에러 팝업 내 새로고침 로직
+    const handleErrorRefresh = async () => {
+        setIsRefreshingState(true);
+        try {
+            await fetchData();
+            setIsErrorPopupVisible(false);
+        } catch (err) {
+            console.error("재시도 실패:", err);
+        } finally {
+            setIsRefreshingState(false);
         }
     };
 
@@ -166,7 +195,8 @@ export default function CouponListScreen({ navigation, route }) {
             }
         } catch (error) {
             console.error("쿠폰 종료 오류:", error);
-            alert("오류가 발생했습니다 다시 시도해주세요.");
+            setConfirmModalVisible(false); // Close current modal to show error popup
+            setIsErrorPopupVisible(true);
         } finally {
             setIsSubmitting(false);
         }
@@ -178,7 +208,7 @@ export default function CouponListScreen({ navigation, route }) {
 
         // 1차 필터: 탭 (진행중 vs 종료)
         let filtered = allCoupons.filter(coupon => {
-            const expireDate = new Date(coupon.expiredAt);
+            const expireDate = new Date(normalizeDateStr(coupon.expiredAt));
             const isTerminated = coupon.status === 'EXPIRED' || expireDate < now;
             if (activeTab === 'active') {
                 return !isTerminated;
@@ -381,7 +411,7 @@ export default function CouponListScreen({ navigation, route }) {
                                                 </Text>
                                             </View>
 
-                                            {item.totalQuantity === null ? (
+                                            {(item.totalQuantity === null || item.totalQuantity === -1) ? (
                                                 <View style={[styles.cardBadge, styles.badgeUnlimited, activeTab === 'expired' && styles.expiredBadge]}>
                                                     <Text style={[styles.cardBadgeText, styles.textUnlimited, activeTab === 'expired' && styles.expiredBadgeText]}>무제한 발급</Text>
                                                 </View>
@@ -437,6 +467,14 @@ export default function CouponListScreen({ navigation, route }) {
                     </View>
                 </View>
             )}
+
+            <ErrorPopup
+                visible={isErrorPopupVisible}
+                type="NETWORK"
+                isRefreshing={isRefreshingState}
+                onRefresh={handleErrorRefresh}
+                onClose={() => setIsErrorPopupVisible(false)}
+            />
         </SafeAreaView>
     );
 }
