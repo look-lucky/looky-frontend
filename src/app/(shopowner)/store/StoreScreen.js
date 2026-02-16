@@ -271,9 +271,20 @@ export default function StoreScreen() {
 
   // Handle Create Category
   const handleCreateCategory = () => {
-    if (!newCategoryName.trim()) return;
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) {
+      Alert.alert("알림", "카테고리 명을 입력해주세요.");
+      return;
+    }
+
+    const isDuplicate = categories.some(cat => cat.name === trimmedName);
+    if (isDuplicate) {
+      Alert.alert("알림", "이미 존재하는 카테고리입니다.");
+      return;
+    }
+
     createCategoryMutation.mutate(
-      { storeId: myStoreId, data: { name: newCategoryName.trim() } },
+      { storeId: myStoreId, data: { name: trimmedName } },
       {
         onSuccess: () => {
           refetchCategories();
@@ -283,7 +294,8 @@ export default function StoreScreen() {
         },
         onError: (err) => {
           console.error(err);
-          Alert.alert("실패", "카테고리 추가에 실패했습니다.");
+          setCategoryModalVisible(false); // Close modal to show error popup
+          setIsErrorPopupVisible(true);
         }
       }
     );
@@ -291,12 +303,21 @@ export default function StoreScreen() {
 
   // Handle Update Category (Rename)
   const handleUpdateCategory = (categoryId) => {
-    if (!editingCategoryName.trim()) {
-      setEditingCategoryId(null);
+    const trimmedName = editingCategoryName.trim();
+    if (!trimmedName) {
+      Alert.alert("알림", "카테고리 명을 입력해주세요.");
+      // setEditingCategoryId(null); // Keep in edit mode to allow correction
       return;
     }
+
+    const isDuplicate = categories.some(cat => cat.id !== categoryId && cat.name === trimmedName);
+    if (isDuplicate) {
+      Alert.alert("알림", "이미 존재하는 카테고리입니다.");
+      return;
+    }
+
     updateCategoryMutation.mutate(
-      { storeId: myStoreId, categoryId: categoryId, data: { name: editingCategoryName.trim() } },
+      { storeId: myStoreId, categoryId: categoryId, data: { name: trimmedName } },
       {
         onSuccess: () => {
           refetchCategories();
@@ -305,7 +326,8 @@ export default function StoreScreen() {
         },
         onError: (err) => {
           console.error(err);
-          Alert.alert("실패", "카테고리 수정에 실패했습니다.");
+          setCategoryModalVisible(false); // Close modal to show error popup
+          setIsErrorPopupVisible(true);
         }
       }
     );
@@ -351,7 +373,8 @@ export default function StoreScreen() {
         },
         onError: (err) => {
           console.error(err);
-          Alert.alert("실패", "카테고리 삭제에 실패했습니다.");
+          setCategoryModalVisible(false); // Close modal to show error popup
+          setIsErrorPopupVisible(true);
         }
       }
     );
@@ -412,7 +435,7 @@ export default function StoreScreen() {
     'BEAUTY_HEALTH': '뷰티•헬스',
     'ETC': 'ETC'
   };
-  const ALL_VIBES = ['1인 혼밥', '회식', '모임', '야식', '데이트'];
+  const ALL_VIBES = ['1인 혼밥', '회식•모임', '야식', '데이트'];
   const BADGE_TYPES = ['BEST', 'NEW', 'HOT', '비건'];
   const BADGE_MAP = {
     'BEST': 'BEST',
@@ -460,13 +483,12 @@ export default function StoreScreen() {
 
         // 1. 분위기 (Enum -> 한글 변환)
         const MOOD_MAP = {
-          'GROUP_GATHERING': '모임',
+          'GROUP_GATHERING': '회식•모임',
           'ROMANTIC': '데이트',
-          'QUIET': '조용한',
-          'LIVELY': '활기찬',
+          // 'QUIET': '조용한',
+          // 'LIVELY': '활기찬',
           'SOLO_DINING': '1인 혼밥',
           'LATE_NIGHT': '야식',
-          'COMPANY_DINNER': '회식',
           // 필요에 따라 추가
         };
         const mappedMoods = myStore.storeMoods ? myStore.storeMoods.map(m => MOOD_MAP[m] || m) : [];
@@ -637,10 +659,64 @@ export default function StoreScreen() {
   // 3. 액션 핸들러 (API 호출)
   // =================================================================
 
-  // [수정됨] 기본 정보 저장 (Direct Fetch + FormData 사용)
+  // 기본 정보 저장 (Direct Fetch + FormData 사용)
   const handleBasicSave = async () => {
     if (!myStoreId) {
       Alert.alert("오류", "가게 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    // [추가] 필수 입력 검증 (가게명, 지점명)
+    if (!editBasicData.name || editBasicData.name.trim().length === 0) {
+      Alert.alert("알림", "가게명을 입력해주세요.");
+      return;
+    }
+
+    if (!editBasicData.branch || editBasicData.branch.trim().length === 0) {
+      Alert.alert("알림", "가게 지점명을 입력해주세요.");
+      return;
+    }
+
+    // 필수 선택 검증 (가게 종류, 가게 분위기)
+    if (!editBasicData.categories || editBasicData.categories.length === 0) {
+      Alert.alert("알림", "카테고리를 선택해주세요.");
+      return;
+    }
+
+    if (!editBasicData.vibes || editBasicData.vibes.length === 0) {
+      Alert.alert("알림", "선호하는 가게 분위기를 선택해주세요.");
+      return;
+    }
+
+    if (!editBasicData.intro || editBasicData.intro.trim().length === 0) {
+      Alert.alert("알림", "가게를 소개해주세요.");
+      return;
+    }
+
+    // [추가] 전화번호 검증
+    const rawPhone = editBasicData.phone || "";
+    const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+
+    if (rawPhone.trim().length === 0) {
+      Alert.alert("알림", "전화번호를 입력해주세요.");
+      return;
+    }
+
+    // 0으로 시작하지 않거나 숫자/하이픈 이외의 값이 있는 경우 (cleanPhone과 비숫자 제거 전이 다르면 형식 오류로 간주 가능하지만, 
+    // 여기서는 사용자의 요구사항인 '123-456' 같은 '0' 미시작 케이스와 비숫자 포함 케이스를 처리)
+    if (!rawPhone.startsWith('0') || /[^0-9-]/.test(rawPhone)) {
+      Alert.alert("알림", "올바른 전화번호를 입력해주세요.");
+      return;
+    }
+
+    if (cleanPhone.length < 9) {
+      Alert.alert("알림", "전화번호 자릿수를 확인해주세요.");
+      return;
+    }
+
+    // [추가] 주소 검증 (상세주소는 선택사항)
+    if (!editBasicData.address || editBasicData.address.trim().length === 0) {
+      Alert.alert("알림", "주소를 입력해주세요.");
       return;
     }
 
@@ -665,13 +741,12 @@ export default function StoreScreen() {
         storeMoods: editBasicData.vibes.map(v => {
           // 한글 -> 영어 변환 매핑 (API 스펙에 맞게)
           const VIBE_KR_TO_EN = {
-            '모임': 'GROUP_GATHERING',
+            '회식•모임': 'GROUP_GATHERING',
             '데이트': 'ROMANTIC',
-            '조용한': 'QUIET',
-            '활기찬': 'LIVELY',
+            // '조용한': 'QUIET',
+            // '활기찬': 'LIVELY',
             '1인 혼밥': 'SOLO_DINING',
             '야식': 'LATE_NIGHT',
-            '회식': 'COMPANY_DINNER'
           };
           return VIBE_KR_TO_EN[v] || v;
         }),
@@ -747,6 +822,7 @@ export default function StoreScreen() {
 
     } catch (error) {
       console.error("💥 [매장 수정 에러]", error);
+      setBasicModalVisible(false); // Close modal to show error popup
       setIsErrorPopupVisible(true); // 에러 팝업으로 변경
     }
   };
@@ -847,6 +923,7 @@ export default function StoreScreen() {
 
     } catch (error) {
       console.error("[Menu Save Error]", error);
+      setMenuModalVisible(false); // Close modal to show error popup
       setIsErrorPopupVisible(true); // 에러 팝업으로 변경
     }
   };
@@ -1026,6 +1103,34 @@ export default function StoreScreen() {
 
   const toggleSelection = (item, key) => {
     const currentList = editBasicData[key];
+
+    // [추가] 가게 종류 'ETC' 특수 로직
+    if (key === 'categories') {
+      const isETC = item === 'ETC';
+      const hasETC = currentList.includes('ETC');
+
+      if (isETC) {
+        // 이미 선택된 상태면 해제
+        if (hasETC) {
+          setEditBasicData({ ...editBasicData, categories: [] });
+        } else {
+          // 새로 선택 시 다른 항목이 있으면 제한
+          if (currentList.length > 0) {
+            Alert.alert("알림", "ETC는 단독으로만 선택 가능합니다.");
+          } else {
+            setEditBasicData({ ...editBasicData, categories: ['ETC'] });
+          }
+        }
+        return;
+      } else {
+        // 일반 카테고리 선택 시 ETC가 있으면 해제하고 본인 선택
+        if (hasETC) {
+          setEditBasicData({ ...editBasicData, categories: [item] });
+          return;
+        }
+      }
+    }
+
     if (currentList.includes(item)) {
       setEditBasicData({ ...editBasicData, [key]: currentList.filter(i => i !== item) });
     } else {
@@ -1311,8 +1416,8 @@ export default function StoreScreen() {
     setTargetItemId(item.id);
     setMenuForm({
       name: item.name,
-      price: String(item.price),
-      desc: item.desc,
+      price: String(item.price).replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+      desc: item.desc || '',
       category: item.category,
       isRepresentative: item.isRepresentative,
       badge: item.badge,
@@ -1352,13 +1457,23 @@ export default function StoreScreen() {
     if (!result.canceled) {
       const asset = result.assets[0];
 
-      // 4. 용량 제한 확인 (10MB)
-      if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
-        Alert.alert('용량 초과', '이미지 파일 크기는 10MB 이하여야 합니다.');
+      // 4. 형식 제한 확인 (JPG, PNG)
+      const filename = asset.uri.split('/').pop();
+      const ext = filename.split('.').pop().toLowerCase();
+      const isAllowedFormat = ['jpg', 'jpeg', 'png'].includes(ext);
+
+      if (!isAllowedFormat) {
+        Alert.alert('알림', 'JPG, PNG 형식만 가능합니다');
         return;
       }
 
-      // 5. 상태 업데이트 (배열에 추가)
+      // 5. 용량 제한 확인 (10MB)
+      if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
+        Alert.alert('알림', '10MB 이하로 업로드 해주세요');
+        return;
+      }
+
+      // 6. 상태 업데이트 (배열에 추가)
       const newImageUri = asset.uri;
       setEditBasicData(prev => ({
         ...prev,
@@ -1400,7 +1515,10 @@ export default function StoreScreen() {
                 setMenuModalVisible(false);
                 refetchItems();
               },
-              onError: () => Alert.alert("실패", "메뉴 삭제에 실패했습니다.")
+              onError: () => {
+                setMenuModalVisible(false); // Close modal to show error popup
+                setIsErrorPopupVisible(true);
+              }
             }
           );
         }
@@ -1897,7 +2015,18 @@ export default function StoreScreen() {
                 <View style={styles.inputGroup}>
                   <View style={{ flexDirection: 'row' }}><Text style={styles.inputLabel}>가격 </Text><Text style={styles.requiredStar}>*</Text></View>
                   <View style={styles.textInputBox}>
-                    <TextInput style={styles.textInput} keyboardType="numeric" placeholder="0" placeholderTextColor="#999" value={menuForm.price} onChangeText={(t) => setMenuForm({ ...menuForm, price: t })} />
+                    <TextInput
+                      style={styles.textInput}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor="#999"
+                      value={menuForm.price}
+                      onChangeText={(t) => {
+                        const clean = t.replace(/[^0-9]/g, '');
+                        const formatted = clean.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        setMenuForm({ ...menuForm, price: formatted });
+                      }}
+                    />
                     <Text style={styles.unitText}>원</Text>
                   </View>
                 </View>
@@ -1905,8 +2034,23 @@ export default function StoreScreen() {
                 {/* 설명 */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>메뉴 설명</Text>
-                  <View style={[styles.textInputBox, { height: rs(60), alignItems: 'flex-start', paddingVertical: rs(10) }]}>
-                    <TextInput style={[styles.textInput, { height: '100%' }]} multiline placeholder="메뉴 설명을 입력해주세요" placeholderTextColor="#999" value={menuForm.desc} onChangeText={(t) => setMenuForm({ ...menuForm, desc: t })} />
+                  <View style={[styles.textInputBox, { height: rs(80), alignItems: 'flex-start', paddingVertical: rs(10) }]}>
+                    <TextInput
+                      style={[styles.textInput, { height: '100%', textAlignVertical: 'top' }]}
+                      multiline
+                      placeholder="메뉴 설명을 입력해주세요"
+                      placeholderTextColor="#999"
+                      value={menuForm.desc}
+                      onChangeText={(t) => {
+                        if (t.length > 50) {
+                          Alert.alert("알림", "50자까지 입력 가능합니다.");
+                          setMenuForm({ ...menuForm, desc: t.slice(0, 50) });
+                        } else {
+                          setMenuForm({ ...menuForm, desc: t });
+                        }
+                      }}
+                    />
+                    <Text style={[styles.charCount, { position: 'absolute', bottom: rs(8), right: rs(12) }]}>{(menuForm.desc || '').length}/50</Text>
                   </View>
                 </View>
 
@@ -2136,17 +2280,63 @@ export default function StoreScreen() {
                   </View>
                   <View style={{ flex: 1, gap: rs(8) }}>
                     <View style={styles.inputWrapper}>
-                      <TextInput style={styles.textInput} placeholder="가게명을 입력해주세요" placeholderTextColor="#666" value={editBasicData.name} onChangeText={(text) => setEditBasicData({ ...editBasicData, name: text })} />
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="가게명을 입력해주세요"
+                        placeholderTextColor="#666"
+                        value={editBasicData.name}
+                        onChangeText={(text) => {
+                          if (text.length > 30) {
+                            Alert.alert("알림", "30자까지 입력 가능합니다.");
+                            setEditBasicData({ ...editBasicData, name: text.slice(0, 30) });
+                          } else {
+                            setEditBasicData({ ...editBasicData, name: text });
+                          }
+                        }}
+                        maxLength={30}
+                      />
                     </View>
                     <View style={styles.inputWrapper}>
-                      <TextInput style={styles.textInput} placeholder="가게 지점명을 입력해주세요(선택)" placeholderTextColor="#666" value={editBasicData.branch} onChangeText={(text) => setEditBasicData({ ...editBasicData, branch: text })} />
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="가게 지점명을 입력해주세요"
+                        placeholderTextColor="#666"
+                        value={editBasicData.branch}
+                        onChangeText={(text) => {
+                          if (text.length > 30) {
+                            Alert.alert("알림", "30자까지 입력 가능합니다.");
+                            setEditBasicData({ ...editBasicData, branch: text.slice(0, 30) });
+                          } else {
+                            setEditBasicData({ ...editBasicData, branch: text });
+                          }
+                        }}
+                        maxLength={30}
+                      />
                     </View>
                   </View>
                 </View>
                 <EditSection icon="grid" label="가게 종류"><View style={styles.selectionGrid}>{ALL_CATEGORIES.map((cat) => (<TouchableOpacity key={cat} style={[styles.selectChip, editBasicData.categories.includes(cat) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(cat, 'categories')}><Text style={[styles.chipText, editBasicData.categories.includes(cat) ? styles.chipTextActive : styles.chipTextInactive]}>{cat}</Text></TouchableOpacity>))}</View></EditSection>
                 <EditSection icon="sparkles" label="가게 분위기"><View style={styles.selectionGrid}>{ALL_VIBES.map((vibe) => (<TouchableOpacity key={vibe} style={[styles.selectChip, editBasicData.vibes.includes(vibe) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(vibe, 'vibes')}><Text style={[styles.chipText, editBasicData.vibes.includes(vibe) ? styles.chipTextActive : styles.chipTextInactive]}>{vibe}</Text></TouchableOpacity>))}</View></EditSection>
-                <EditSection icon="information-circle" label="가게 소개"><View style={styles.inputWrapper}><TextInput style={styles.textInput} placeholder="가게를 소개하는 글을 적어주세요" value={editBasicData.intro} onChangeText={(text) => setEditBasicData({ ...editBasicData, intro: text })} /><Text style={styles.charCount}>{editBasicData.intro.length}/50</Text></View></EditSection>
-                <EditSection icon="image" label="가게 이미지(최대 3장)">
+                <EditSection icon="information-circle" label="가게 소개">
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="가게를 소개하는 글을 적어주세요"
+                      placeholderTextColor="#999"
+                      value={editBasicData.intro}
+                      onChangeText={(text) => {
+                        if (text.length > 50) {
+                          Alert.alert("알림", "50자까지 입력 가능합니다.");
+                          setEditBasicData({ ...editBasicData, intro: text.slice(0, 50) });
+                        } else {
+                          setEditBasicData({ ...editBasicData, intro: text });
+                        }
+                      }}
+                    />
+                    <Text style={styles.charCount}>{editBasicData.intro.length}/50</Text>
+                  </View>
+                </EditSection>
+                <EditSection icon="image" label="가게 배너 이미지(최대 3장)">
                   <View style={{ gap: rs(10), width: '100%' }}>
                     {/* 1. 이미지 슬라이더 (1.7:1 비율) */}
                     {editBasicData.bannerImages && editBasicData.bannerImages.length > 0 && (
@@ -2216,7 +2406,7 @@ export default function StoreScreen() {
                   <View style={styles.inputWrapper}>
                     <TextInput
                       style={styles.textInput}
-                      placeholder="숫자만 입력해주세요"
+                      placeholder="가게 전화번호를 입력해주세요"
                       placeholderTextColor="#999"
                       keyboardType="number-pad"
                       value={editBasicData.phone}
