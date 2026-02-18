@@ -75,6 +75,7 @@ export interface ReviewItem {
   commentCount: number;
   isOwner?: boolean;
   hasReply?: boolean;
+  isLiked?: boolean;
 }
 
 export interface ReviewRating {

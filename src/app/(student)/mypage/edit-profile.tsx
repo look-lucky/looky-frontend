@@ -1,13 +1,15 @@
 import { useChangePassword, useChangeUsername } from '@/src/api/my-page';
 import { useWithdraw } from '@/src/api/auth';
 import { WithdrawRequestReasonsItem } from '@/src/api/generated.schemas';
+import { AppPopup } from '@/src/shared/common/app-popup';
+import { isNetworkError } from '@/src/shared/contexts/network-error-context';
 import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
+import { Gray } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -48,6 +50,9 @@ export default function EditProfileScreen() {
   const [detailReason, setDetailReason] = useState('');
   const { mutate: withdraw, isPending: isWithdrawing } = useWithdraw();
 
+  const [errorPopup, setErrorPopup] = useState<{ visible: boolean; title: string; subtitle?: string }>({ visible: false, title: '' });
+  const [confirmPopup, setConfirmPopup] = useState<{ visible: boolean; title: string; subtitle?: string; onConfirm: () => void }>({ visible: false, title: '', onConfirm: () => {} });
+
   const closeModal = () => {
     setModal(null);
     setNewUsername('');
@@ -60,38 +65,46 @@ export default function EditProfileScreen() {
 
   const handleChangeUsername = () => {
     if (!newUsername.trim()) {
-      Alert.alert('오류', '새 아이디를 입력해주세요.');
+      setErrorPopup({ visible: true, title: '새 아이디를 입력해주세요' });
       return;
     }
     changeUsername(
       { data: { newUsername: newUsername.trim() } },
       {
         onSuccess: () => {
-          Alert.alert('완료', '아이디가 변경되었습니다.');
+          setErrorPopup({ visible: true, title: '아이디가 변경되었습니다' });
           closeModal();
         },
-        onError: () => Alert.alert('오류', '아이디 변경에 실패했습니다.'),
+        onError: (error) => {
+          if (!isNetworkError(error)) {
+            setErrorPopup({ visible: true, title: '아이디 변경에 실패했습니다' });
+          }
+        },
       }
     );
   };
 
   const handleChangePassword = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('오류', '모든 항목을 입력해주세요.');
+      setErrorPopup({ visible: true, title: '모든 항목을 입력해주세요' });
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('오류', '새 비밀번호가 일치하지 않습니다.');
+      setErrorPopup({ visible: true, title: '새 비밀번호가 일치하지 않습니다' });
       return;
     }
     changePassword(
       { data: { currentPassword, newPassword } },
       {
         onSuccess: () => {
-          Alert.alert('완료', '비밀번호가 변경되었습니다.');
+          setErrorPopup({ visible: true, title: '비밀번호가 변경되었습니다' });
           closeModal();
         },
-        onError: () => Alert.alert('오류', '비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해주세요.'),
+        onError: (error) => {
+          if (!isNetworkError(error)) {
+            setErrorPopup({ visible: true, title: '비밀번호 변경에 실패했습니다', subtitle: '현재 비밀번호를 확인해주세요' });
+          }
+        },
       }
     );
   };
@@ -102,31 +115,35 @@ export default function EditProfileScreen() {
     );
   };
 
+  const executeWithdraw = () => {
+    withdraw(
+      { data: { reasons: selectedReasons, detailReason: detailReason || undefined } },
+      {
+        onSuccess: async () => {
+          closeModal();
+          await handleLogout();
+          router.replace('/landing');
+        },
+        onError: (error) => {
+          if (!isNetworkError(error)) {
+            setErrorPopup({ visible: true, title: '회원탈퇴에 실패했습니다', subtitle: '다시 시도해주세요' });
+          }
+        },
+      }
+    );
+  };
+
   const handleWithdraw = () => {
     if (selectedReasons.length === 0) {
-      Alert.alert('오류', '탈퇴 사유를 하나 이상 선택해주세요.');
+      setErrorPopup({ visible: true, title: '탈퇴 사유를 하나 이상 선택해주세요' });
       return;
     }
-    Alert.alert('회원탈퇴', '정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '탈퇴',
-        style: 'destructive',
-        onPress: () => {
-          withdraw(
-            { data: { reasons: selectedReasons, detailReason: detailReason || undefined } },
-            {
-              onSuccess: async () => {
-                closeModal();
-                await handleLogout();
-                router.replace('/landing');
-              },
-              onError: () => Alert.alert('오류', '회원탈퇴에 실패했습니다.'),
-            }
-          );
-        },
-      },
-    ]);
+    setConfirmPopup({
+      visible: true,
+      title: '정말 탈퇴하시겠습니까?',
+      subtitle: '이 작업은 되돌릴 수 없습니다',
+      onConfirm: executeWithdraw,
+    });
   };
 
   return (
@@ -220,6 +237,26 @@ export default function EditProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* 에러/알림 팝업 */}
+      <AppPopup
+        visible={errorPopup.visible}
+        title={errorPopup.title}
+        subtitle={errorPopup.subtitle}
+        onClose={() => setErrorPopup({ visible: false, title: '' })}
+      />
+
+      {/* 확인 팝업 */}
+      <AppPopup
+        visible={confirmPopup.visible}
+        title={confirmPopup.title}
+        subtitle={confirmPopup.subtitle}
+        buttons={[
+          { label: '취소', onPress: () => setConfirmPopup(prev => ({ ...prev, visible: false })), backgroundColor: Gray.gray5 },
+          { label: '탈퇴', onPress: () => { setConfirmPopup(prev => ({ ...prev, visible: false })); confirmPopup.onConfirm(); } },
+        ]}
+        onClose={() => setConfirmPopup(prev => ({ ...prev, visible: false }))}
+      />
 
       {/* 회원탈퇴 모달 */}
       <Modal visible={modal === 'withdraw'} transparent animationType="slide">

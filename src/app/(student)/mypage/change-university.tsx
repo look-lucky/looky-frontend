@@ -2,16 +2,17 @@ import { useSend, useVerify } from "@/src/api/auth";
 import { getGetStudentInfoQueryKey, useUpdateUniversity } from "@/src/api/my-page";
 import { useGetUniversities } from "@/src/api/university";
 import { AppButton } from "@/src/shared/common/app-button";
+import { AppPopup } from "@/src/shared/common/app-popup";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
 import { ThemedText } from "@/src/shared/common/themed-text";
+import { isNetworkError } from "@/src/shared/contexts/network-error-context";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Fonts, Gray, System, Text as TextColors } from "@/src/shared/theme/theme";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
   AppState,
   StyleSheet,
   TextInput,
@@ -58,6 +59,7 @@ export default function ChangeUniversityScreen() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [message, setMessage] = useState("");
   const messageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [popupState, setPopupState] = useState<{ visible: boolean; title: string; subtitle?: string; onClose?: () => void }>({ visible: false, title: '' });
 
   // 대학 목록
   const { data: universitiesData } = useGetUniversities();
@@ -197,13 +199,13 @@ export default function ChangeUniversityScreen() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetStudentInfoQueryKey() });
-          Alert.alert("완료", "대학교가 변경되었습니다.", [
-            { text: "확인", onPress: () => router.back() },
-          ]);
+          setPopupState({ visible: true, title: "대학교가 변경되었습니다", onClose: () => router.back() });
         },
         onError: (error) => {
           console.error("대학 변경 실패:", error);
-          Alert.alert("오류", "대학 변경에 실패했습니다. 다시 시도해주세요.");
+          if (!isNetworkError(error)) {
+            setPopupState({ visible: true, title: "대학 변경에 실패했습니다", subtitle: "다시 시도해주세요" });
+          }
         },
       }
     );
@@ -339,6 +341,18 @@ export default function ChangeUniversityScreen() {
           disabled={!isFormValid || updateUniversityMutation.isPending}
         />
       </View>
+
+      {/* 알림 팝업 */}
+      <AppPopup
+        visible={popupState.visible}
+        title={popupState.title}
+        subtitle={popupState.subtitle}
+        onClose={() => {
+          const onCloseCallback = popupState.onClose;
+          setPopupState({ visible: false, title: '' });
+          onCloseCallback?.();
+        }}
+      />
 
       {/* 대학 선택 모달 */}
       <SelectModal

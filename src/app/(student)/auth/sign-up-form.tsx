@@ -113,6 +113,7 @@ export default function SignupTypePage() {
   // 학생 전용 상태
   const [nickname, setNickname] = useState("");
   const [nicknameTouched, setNicknameTouched] = useState(false);
+  const [nicknameFocused, setNicknameFocused] = useState(false);
 
   // 점주 전용 상태
   const [email, setEmail] = useState("");
@@ -529,7 +530,7 @@ export default function SignupTypePage() {
                 <View style={styles.inputGroup}>
                   <View style={[
                     styles.inputContainer,
-                    (nicknameTouched || hasSubmitted) && !isNicknameValid(nickname) && styles.inputError,
+                    !nicknameFocused && (nicknameTouched || hasSubmitted) && !isNicknameValid(nickname) && styles.inputError,
                   ]}>
                     <TextInput
                       style={styles.input}
@@ -538,13 +539,17 @@ export default function SignupTypePage() {
                       value={nickname}
                       onChangeText={setNickname}
                       maxLength={10}
-                      onBlur={() => setNicknameTouched(true)}
+                      onFocus={() => setNicknameFocused(true)}
+                      onBlur={() => {
+                        setNicknameFocused(false);
+                        setNicknameTouched(true);
+                      }}
                     />
                   </View>
-                  {hasSubmitted && nickname.length === 0 && (
+                  {!nicknameFocused && hasSubmitted && nickname.length === 0 && (
                     <ThemedText style={styles.errorText}>닉네임을 입력해주세요</ThemedText>
                   )}
-                  {(nicknameTouched || hasSubmitted) && nickname.length > 0 && !isNicknameValid(nickname) && (
+                  {!nicknameFocused && (nicknameTouched || hasSubmitted) && nickname.length > 0 && !isNicknameValid(nickname) && (
                     <ThemedText style={styles.errorText}>닉네임은 한글, 영문을 포함한 2~10자 이내로 입력해주세요</ThemedText>
                   )}
                 </View>
