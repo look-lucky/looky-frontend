@@ -9,7 +9,7 @@ import type {
   StoreResponse,
 } from '@/src/api/generated.schemas';
 import { useGetItems } from '@/src/api/item';
-import { useGetReviews, useGetReviewStats } from '@/src/api/review';
+import { useAddLike, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
 import { useGetStore } from '@/src/api/store';
 import { useGetStoreNewsList } from '@/src/api/store-news';
 import { StoreBenefits } from '@/src/app/(student)/components/store/benefits';
@@ -177,6 +177,22 @@ export default function StoreDetailScreen() {
     },
   });
 
+  // 리뷰 좋아요 mutation
+  const addLikeMutation = useAddLike({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
+      },
+    },
+  });
+  const removeLikeMutation = useRemoveLike({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
+      },
+    },
+  });
+
   // 소식 (paginated)
   const { data: newsRes, isLoading: isNewsLoading } = useGetStoreNewsList(
     storeId,
@@ -235,7 +251,7 @@ export default function StoreDetailScreen() {
   // TODO: 백엔드 필드 추가 후 API 연동 (현재 API에 없는 필드)
   const storeCloverGrade = apiStore?.cloverGrade;
   const storeUniversity = '';  // TODO: StoreResponse에 university 필드 추가 후 연동
-  const storeIsPartner = false; // TODO: StoreResponse에 isPartner 필드 추가 후 연동
+  const storeIsPartner = apiStore?.isPartnership ?? false;
   const storeBenefits: string[] = []; // TODO: 혜택 API 추가 후 연동
 
   // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 필터링 포함)
@@ -250,10 +266,12 @@ export default function StoreDetailScreen() {
       .map((c) => ({
         id: String(c.id),
         title: c.title ?? '',
-        description: '',
+        description: c.minOrderAmount ? `최소 주문 ${Number(c.minOrderAmount).toLocaleString()}원` : '',
         discount: c.benefitValue ?? '',
-        expiryDate: c.issueEndsAt ? `${formatDate(c.issueEndsAt)}까지` : '',
-        isDownloaded: c.isDownloaded ?? false,
+        expiryDate: c.issueEndsAt ? `${formatDate(c.issueEndsAt)}까지 발급 가능` : '',
+        remainingCount: c.totalQuantity != null && c.downloadCount != null
+          ? Math.max(0, c.totalQuantity - c.downloadCount) : undefined,
+        benefitType: c.benefitType as any,
       }));
   }, [apiCoupons]);
 
@@ -305,6 +323,7 @@ export default function StoreDetailScreen() {
       commentCount: 0,
       isOwner: !!(currentUsername && r.username === currentUsername),
       hasReply: r.ownerReply ?? false,
+      isLiked: r.liked ?? false,
     })),
   [allReviews, currentUsername]);
 
@@ -407,6 +426,14 @@ export default function StoreDetailScreen() {
       },
     ]);
   };
+  const handleLikeReview = (reviewId: string) => {
+    const review = allReviews.find((r) => String(r.reviewId) === reviewId);
+    if (review?.liked) {
+      removeLikeMutation.mutate({ reviewId: Number(reviewId) });
+    } else {
+      addLikeMutation.mutate({ reviewId: Number(reviewId) });
+    }
+  };
   const handleLoadMoreReviews = () => {
     if (!isReviewsFetching && hasMoreReviews) {
       setReviewPage((prev) => prev + 1);
@@ -490,13 +517,14 @@ export default function StoreDetailScreen() {
               onTabChange={setActiveTab}
               news={storeNews}
               menu={storeMenu}
-              announcements={[]} // TODO: 공지 API 추가 후 연동
+              announcements={storeNews.map((n) => ({ id: n.id, title: n.title, content: n.content }))}
               recommendStores={[]} // TODO: 추천 가게 API 추가 후 연동
               reviewRating={storeReviewRating}
               reviews={storeReviews}
               onWriteReview={handleWriteReview}
               onEditReview={handleEditReview}
               onDeleteReview={handleDeleteReview}
+              onLikeReview={handleLikeReview}
               storeInfo={storeInfo}
               scrollViewRef={scrollViewRef}
               scrollOffsetY={scrollOffsetY}
@@ -518,6 +546,7 @@ export default function StoreDetailScreen() {
       <CouponModal
         visible={isCouponModalVisible}
         onClose={() => setIsCouponModalVisible(false)}
+        storeName={storeName}
         coupons={filteredCoupons}
         issuedCouponIds={issuedCouponIds}
         onIssueCoupon={handleIssueCoupon}

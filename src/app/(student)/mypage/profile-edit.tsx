@@ -2,9 +2,11 @@ import { getGetStudentInfoQueryKey, useGetStudentInfo, useUpdateStudentProfile }
 import { OrganizationResponseCategory } from "@/src/api/generated.schemas";
 import { useGetDepartmentsByCollege, useGetOrganizations } from "@/src/api/organization";
 import { AppButton } from "@/src/shared/common/app-button";
+import { AppPopup } from "@/src/shared/common/app-popup";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
 import { ThemedText } from "@/src/shared/common/themed-text";
+import { isNetworkError } from "@/src/shared/contexts/network-error-context";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Fonts, Gray, Text as TextColors } from "@/src/shared/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,7 +14,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   ScrollView,
   StyleSheet,
@@ -126,6 +127,9 @@ export default function ProfileEditScreen() {
     setNickname(text.slice(0, 10));
   };
 
+  // 팝업 상태
+  const [popupState, setPopupState] = useState<{ visible: boolean; title: string; subtitle?: string; onClose?: () => void }>({ visible: false, title: '' });
+
   // 모달 상태
   const [collegeModalVisible, setCollegeModalVisible] = useState(false);
   const [departmentModalVisible, setDepartmentModalVisible] = useState(false);
@@ -190,7 +194,7 @@ export default function ProfileEditScreen() {
       return;
     }
     if (!selectedCollegeId || !selectedDepartmentId || isClubMember === null) {
-      Alert.alert("알림", "모든 항목을 입력해주세요.");
+      setPopupState({ visible: true, title: "모든 항목을 입력해주세요" });
       return;
     }
 
@@ -206,13 +210,13 @@ export default function ProfileEditScreen() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetStudentInfoQueryKey() });
-          Alert.alert("완료", "프로필이 수정되었습니다.", [
-            { text: "확인", onPress: () => router.back() },
-          ]);
+          setPopupState({ visible: true, title: "프로필이 수정되었습니다", onClose: () => router.back() });
         },
         onError: (error) => {
           console.error("프로필 수정 실패:", error);
-          Alert.alert("오류", "프로필 수정에 실패했습니다. 다시 시도해주세요.");
+          if (!isNetworkError(error)) {
+            setPopupState({ visible: true, title: "프로필 수정에 실패했습니다", subtitle: "다시 시도해주세요" });
+          }
         },
       }
     );
@@ -367,6 +371,18 @@ export default function ProfileEditScreen() {
         onSelect={(id) => setSelectedDepartmentId(id as number)}
         onClose={() => setDepartmentModalVisible(false)}
         title="학과"
+      />
+
+      {/* 알림 팝업 */}
+      <AppPopup
+        visible={popupState.visible}
+        title={popupState.title}
+        subtitle={popupState.subtitle}
+        onClose={() => {
+          const onCloseCallback = popupState.onClose;
+          setPopupState({ visible: false, title: '' });
+          onCloseCallback?.();
+        }}
       />
 
       {/* 닉네임 토스트 */}

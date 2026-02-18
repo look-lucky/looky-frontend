@@ -31,6 +31,8 @@ export interface Coupon {
   description: string;
   discount: string;
   expiryDate: string;
+  remainingCount?: number;
+  benefitType?: 'FIXED_DISCOUNT' | 'PERCENTAGE_DISCOUNT' | 'SERVICE_GIFT';
   targetOrganizationId?: number | null; // 특정 단과대학 전용 쿠폰 (null이면 전체 대상)
 }
 
@@ -73,6 +75,7 @@ export interface ReviewItem {
   commentCount: number;
   isOwner?: boolean;
   hasReply?: boolean;
+  isLiked?: boolean;
 }
 
 export interface ReviewRating {

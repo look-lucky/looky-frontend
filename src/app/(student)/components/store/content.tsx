@@ -35,6 +35,7 @@ interface StoreContentProps {
   onEditReview?: (reviewId: string) => void;
   onDeleteReview?: (reviewId: string) => void;
   onReportReview?: (reviewId: string) => void;
+  onLikeReview?: (reviewId: string) => void;
   storeInfo?: StoreInfo;
   scrollViewRef?: React.RefObject<ScrollView | null>;
   scrollOffsetY?: React.RefObject<number>;
@@ -57,6 +58,7 @@ export function StoreContent({
   onEditReview,
   onDeleteReview,
   onReportReview,
+  onLikeReview,
   storeInfo,
   scrollViewRef,
   scrollOffsetY,
@@ -78,6 +80,7 @@ export function StoreContent({
           onEditReview={onEditReview}
           onDeleteReview={onDeleteReview}
           onReportReview={onReportReview}
+          onLikeReview={onLikeReview}
           onLoadMore={onLoadMoreReviews}
           hasMore={hasMoreReviews}
           isLoadingMore={isLoadingMoreReviews}

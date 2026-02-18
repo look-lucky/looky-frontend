@@ -10,6 +10,20 @@ const NetworkErrorContext = createContext<NetworkErrorContextValue>({
   showNetworkError: () => {},
 });
 
+export const isNetworkError = (error: unknown): boolean => {
+  if (error instanceof TypeError) return true;
+  if (
+    error instanceof Error &&
+    /network request failed|failed to fetch/i.test(error.message)
+  )
+    return true;
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    const status = (error as { status: number }).status;
+    return status >= 500;
+  }
+  return false;
+};
+
 export function NetworkErrorProvider({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -19,11 +33,6 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
   // queryClient를 여기서 생성해 onError에서 팝업을 트리거
   const queryClientRef = useRef<QueryClient | null>(null);
   if (!queryClientRef.current) {
-    const isNetworkError = (error: unknown) => {
-      if (error instanceof TypeError) return true;
-      if (typeof error === 'object' && error !== null && 'status' in error) return false;
-      return false;
-    };
 
     queryClientRef.current = new QueryClient({
       queryCache: new QueryCache({

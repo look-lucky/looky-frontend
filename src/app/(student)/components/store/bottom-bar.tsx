@@ -33,7 +33,7 @@ export function BottomFixedBar({
       </TouchableOpacity>
 
       <AppButton
-        label="쿠폰 받기"
+        label="쿠폰 보기"
         backgroundColor="#40CE2B"
         onPress={onCouponPress}
         style={styles.couponButton}
