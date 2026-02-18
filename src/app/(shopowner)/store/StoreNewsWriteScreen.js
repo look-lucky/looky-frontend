@@ -55,11 +55,11 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
             });
 
             if (!result.canceled && result.assets) {
-                // 이미지 개수 제한 (최대 4개)
+                // 이미지 개수 제한 (최대 5개)
                 const currentCount = selectedImages.length;
                 const newCount = result.assets.length;
-                if (currentCount + newCount > 4) {
-                    Alert.alert('알림', '이미지는 최대 4개까지 첨부할 수 있습니다.');
+                if (currentCount + newCount > 5) {
+                    Alert.alert('알림', '이미지는 최대 5개까지 첨부할 수 있습니다.');
                     return;
                 }
 
@@ -258,7 +258,7 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
                         <View style={styles.inputGroup}>
                             <Text style={styles.labelText}>이미지</Text>
                             <TouchableOpacity style={styles.fileSelectBox} activeOpacity={0.7} onPress={handlePickImages}>
-                                <Text style={styles.filePlaceholder}>파일을 첨부해주세요(최대 4개)</Text>
+                                <Text style={styles.filePlaceholder}>파일을 첨부해주세요(최대 5개)</Text>
                                 <Ionicons name="attach" size={rs(20)} color="#444444" style={{ transform: [{ rotate: '-45deg' }] }} />
                             </TouchableOpacity>
                             {selectedImages.length > 0 && (

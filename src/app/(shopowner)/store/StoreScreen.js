@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert, Dimensions, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView,
+  Alert, Animated, Dimensions, Image, KeyboardAvoidingView, Modal, Platform, SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -14,6 +14,8 @@ import {
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // [필수] 네비게이션 훅 임포트
+import PostcodeModal from '@/src/shared/common/PostcodeModal';
+import { ErrorPopup } from '@/src/shared/common/error-popup';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from 'expo-router';
 
@@ -91,7 +93,12 @@ export default function StoreScreen() {
   // =================================================================
 
   // (1) 내 가게 조회
-  const { data: storeDataResponse, isLoading: isStoreLoading, refetch: refetchStore } = useGetMyStores();
+  const {
+    data: storeDataResponse,
+    isLoading: isStoreLoading,
+    isError: isStoreError,
+    refetch: refetchStore
+  } = useGetMyStores();
   const [myStoreId, setMyStoreId] = useState(null);
 
   // (2) 가게 정보 수정 (Mutation은 사용 안 함 -> Direct Fetch로 대체)
@@ -102,29 +109,73 @@ export default function StoreScreen() {
   const {
     data: itemsDataResponse,
     isLoading: isItemsLoading,
+    isError: isItemsError,
+    isRefetching: isItemsRefetching,
     refetch: refetchItems
-  } = useGetItems(myStoreId, { query: { enabled: !!myStoreId } });
+  } = useGetItems(myStoreId, {
+    query: {
+      enabled: !!myStoreId,
+      onError: () => setIsErrorPopupVisible(true)
+    }
+  });
 
   const [basicModalVisible, setBasicModalVisible] = useState(false);
   const [hoursModalVisible, setHoursModalVisible] = useState(false);
   const [holidayModalVisible, setHolidayModalVisible] = useState(false); // 휴무일 모달 상태
   const [isFullScreenBannerVisible, setIsFullScreenBannerVisible] = useState(false); // 배너 전체화면 모달 상태
+  const [postcodeVisible, setPostcodeVisible] = useState(false); // 주소 검색 모달 상태
 
   // Temp Data for Modals
   const [tempSelectedHolidays, setTempSelectedHolidays] = useState([]); // 모달용 임시 휴무일 데이터
 
   // (4) 메뉴 추가/수정/삭제 Mutations
-  const createItemMutation = useCreateItem();
-  const updateItemMutation = useUpdateItem();
-  const deleteItemMutation = useDeleteItem();
+  const createItemMutation = useCreateItem({ mutation: { onError: () => setIsErrorPopupVisible(true) } });
+  const updateItemMutation = useUpdateItem({ mutation: { onError: () => setIsErrorPopupVisible(true) } });
+  const deleteItemMutation = useDeleteItem({ mutation: { onError: () => setIsErrorPopupVisible(true) } });
 
   // (5) 카테고리 목록 조회
-  const { data: categoriesResponse, refetch: refetchCategories } = useGetItemCategories(myStoreId, { query: { enabled: !!myStoreId } });
+  const {
+    data: categoriesResponse,
+    isError: isCategoriesError,
+    refetch: refetchCategories
+  } = useGetItemCategories(myStoreId, {
+    query: {
+      enabled: !!myStoreId,
+      onError: () => setIsErrorPopupVisible(true)
+    }
+  });
   const categories = categoriesResponse?.data?.data || [];
 
 
   // # State: UI Control
   const [activeTab, setActiveTab] = useState('info');
+  const [isErrorPopupVisible, setIsErrorPopupVisible] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // 에러 발생 시 팝업 노출
+  useEffect(() => {
+    if (isStoreError || isItemsError || isCategoriesError) {
+      setIsErrorPopupVisible(true);
+    }
+  }, [isStoreError, isItemsError, isCategoriesError]);
+
+  // 에러 팝업 내 새로고침 로직
+  const handleErrorRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchStore(),
+        myStoreId ? refetchItems() : Promise.resolve(),
+        myStoreId ? refetchCategories() : Promise.resolve(),
+      ]);
+      // 성공적으로 데이터를 가져오면 팝업 닫기
+      setIsErrorPopupVisible(false);
+    } catch (err) {
+      console.error("재시도 실패:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // # State: Time Picker
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -156,6 +207,41 @@ export default function StoreScreen() {
 
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false); // 카테고리 추가 입력 모드
+
+  // [추가] 매장 정보 등록 상태 확인 (소개, 전화번호, 주소, 이미지, 영업시간)
+  const isProfileComplete = useMemo(() => {
+    const hasIntro = !!storeInfo.intro;
+    const hasPhone = !!storeInfo.phone;
+    const hasAddress = !!storeInfo.address;
+    const hasBanners = storeInfo.bannerImages && storeInfo.bannerImages.length > 0;
+    const hasHours = operatingHours.some(h => !h.isClosed && h.open && h.close);
+
+    return hasIntro && hasPhone && hasAddress && hasBanners && hasHours;
+  }, [storeInfo, operatingHours]);
+
+  // [추가] 메뉴 등록 상태 확인 (모든 카테고리 합산 메뉴 수)
+  const isMenusEmpty = useMemo(() => {
+    // itemsDataResponse가 null이거나 data가 비어있으면 메뉴 없음
+    const items = itemsDataResponse?.data?.data || [];
+    return items.length === 0;
+  }, [itemsDataResponse]);
+
+  // [추가] 강조 애니메이션 (Opacity Pulse)
+  const pulseAnim = useMemo(() => new Animated.Value(1), []);
+
+  useEffect(() => {
+    // 정보 미등록 또는 메뉴 미등록 시 애니메이션 가동
+    if (!isProfileComplete || isMenusEmpty) {
+      const pulse = Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.5, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+      ]);
+      Animated.loop(pulse).start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [isProfileComplete, isMenusEmpty, pulseAnim]);
+
   const [newCategoryName, setNewCategoryName] = useState(''); // 새 카테고리 이름 입력
 
   // Selected Category ID for Tab Filtering
@@ -469,6 +555,13 @@ export default function StoreScreen() {
     initStore();
   }, [storeDataResponse]);
 
+  // [Fix] 기본 모달이 닫힐 때 주소 검색 모달도 함께 닫히도록 처리 (화면 멈춤 방지)
+  useEffect(() => {
+    if (!basicModalVisible) {
+      setPostcodeVisible(false);
+    }
+  }, [basicModalVisible]);
+
   // Force Refetch when menuCategories changes or simple refetch
   // This helps UI refresh
   useEffect(() => {
@@ -590,8 +683,8 @@ export default function StoreScreen() {
 
       console.log("🚀 [handleBasicSave] Request Payload:", JSON.stringify(requestData, null, 2));
 
-      // [핵심] JSON 포장 (표준 전송 방식)
-      formData.append("request", JSON.stringify(requestData));
+      // [핵심] JSON 포장 (표준 전송 방식 - Blob 사용하여 Content-Type 지정)
+      formData.append("request", new Blob([JSON.stringify(requestData)], { type: 'application/json' }));
 
       // 4. 이미지 파일이 있다면 formData에 추가 (키: images) - 다중 이미지 처리
       if (editBasicData.bannerImages && editBasicData.bannerImages.length > 0) {
@@ -654,7 +747,7 @@ export default function StoreScreen() {
 
     } catch (error) {
       console.error("💥 [매장 수정 에러]", error);
-      Alert.alert("오류", "네트워크 통신 중 문제가 발생했습니다.");
+      setIsErrorPopupVisible(true); // 에러 팝업으로 변경
     }
   };
 
@@ -754,7 +847,7 @@ export default function StoreScreen() {
 
     } catch (error) {
       console.error("[Menu Save Error]", error);
-      Alert.alert("실패", "메뉴 저장 중 오류가 발생했습니다.");
+      setIsErrorPopupVisible(true); // 에러 팝업으로 변경
     }
   };
 
@@ -902,7 +995,7 @@ export default function StoreScreen() {
       refetchItems();
     } catch (error) {
       console.error("[Menu Drag Error]", error);
-      Alert.alert("오류", "메뉴 순서 변경에 실패했습니다.");
+      setIsErrorPopupVisible(true); // 에러 팝업으로 변경
       refetchItems(); // Restore from server on error
     }
   };
@@ -1007,7 +1100,7 @@ export default function StoreScreen() {
       }
     } catch (error) {
       console.error("영업시간 저장 에러:", error);
-      Alert.alert("오류", "저장 중 문제가 발생했습니다.");
+      setIsErrorPopupVisible(true); // 에러 팝업으로 변경
     }
   };
 
@@ -1118,7 +1211,7 @@ export default function StoreScreen() {
       setHolidayModalVisible(false);
     } catch (error) {
       console.error("휴무일 저장 실패", error);
-      Alert.alert("실패", "휴무일 저장 중 오류가 발생했습니다.");
+      setIsErrorPopupVisible(true); // 에러 팝업으로 변경
     }
   };
 
@@ -1138,7 +1231,7 @@ export default function StoreScreen() {
     } catch (error) {
       console.error("영업 일시 중지 변경 실패", error);
       setIsPaused(!newValue);
-      Alert.alert("실패", "상태 변경 중 오류가 발생했습니다.");
+      setIsErrorPopupVisible(true); // 에러 팝업으로 변경
     }
   };
 
@@ -1345,10 +1438,23 @@ export default function StoreScreen() {
           </View>
         </View>
 
+        {/* [추가] 매장 정보 등록 안내 (탭별 분리 및 상단 고정) */}
+        {activeTab === 'info' && !isProfileComplete && (
+          <Animated.View style={[styles.registrationAlertContainer, { opacity: pulseAnim }]}>
+            <Text style={styles.registrationAlertText}>매장 정보를 등록해주세요!</Text>
+          </Animated.View>
+        )}
+        {activeTab === 'management' && isMenusEmpty && (
+          <Animated.View style={[styles.registrationAlertContainer, { opacity: pulseAnim }]}>
+            <Text style={styles.registrationAlertText}>메뉴를 추가해주세요!</Text>
+          </Animated.View>
+        )}
+
         {/* ==================== 매장 정보 탭 ==================== */}
         {activeTab === 'info' ? (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={{ gap: rs(20) }}>
+
               <View style={styles.infoCard}>
                 <View style={styles.cardHeader}>
                   <View style={[styles.headerTitleRow, { alignItems: 'center' }]}>
@@ -2080,12 +2186,38 @@ export default function StoreScreen() {
                     </TouchableOpacity>
                   </View>
                 </EditSection>
-                <EditSection icon="location" label="주소"><TouchableOpacity style={[styles.inputWrapper, { marginBottom: rs(8) }]} onPress={() => handleMockAction("주소 검색")}><Text style={[styles.textInput, { color: editBasicData.address ? 'black' : '#ccc' }]}>{editBasicData.address || "건물명, 도로명 또는 지번 검색"}</Text><Ionicons name="search" size={rs(16)} color="#4e4949ff" style={{ marginRight: rs(10) }} /></TouchableOpacity><View style={[styles.inputWrapper, { backgroundColor: 'rgba(218, 218, 218, 0.50)' }]}><TextInput style={styles.textInput} placeholder="상세주소를 입력해주세요." value={editBasicData.detailAddress} onChangeText={(text) => setEditBasicData({ ...editBasicData, detailAddress: text })} /></View></EditSection>
+
+                <EditSection icon="location" label="주소">
+                  <TouchableOpacity
+                    style={[styles.inputWrapper, { marginBottom: rs(8), height: rs(29), backgroundColor: '#FCFCFC' }]}
+                    onPress={() => {
+                      console.log("📍 [Address Search] Triggered");
+                      setPostcodeVisible(true);
+                    }}
+                    activeOpacity={0.6}
+                  >
+                    <Text style={[styles.textInput, { color: editBasicData.address ? 'black' : '#999', fontSize: rs(12) }]}>
+                      {editBasicData.address || "건물명, 도로명 또는 지번 검색"}
+                    </Text>
+                    <Ionicons name="search" size={rs(18)} color="#34B262" style={{ marginRight: rs(10) }} />
+                  </TouchableOpacity>
+                  <View style={[styles.inputWrapper, { backgroundColor: 'rgba(218, 218, 218, 0.50)' }]}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="상세주소를 입력해주세요."
+                      placeholderTextColor="#999"
+                      value={editBasicData.detailAddress}
+                      onChangeText={(text) => setEditBasicData({ ...editBasicData, detailAddress: text })}
+                    />
+                  </View>
+                </EditSection>
+
                 <EditSection icon="call" label="전화번호">
                   <View style={styles.inputWrapper}>
                     <TextInput
                       style={styles.textInput}
                       placeholder="숫자만 입력해주세요"
+                      placeholderTextColor="#999"
                       keyboardType="number-pad"
                       value={editBasicData.phone}
                       onChangeText={(text) => {
@@ -2096,9 +2228,49 @@ export default function StoreScreen() {
                 </EditSection>
               </ScrollView>
             </View>
+
+            {/* 주소 검색 모달을 메인 팝업 내부로 이동 (Android 스태킹 이슈 해결) */}
+            <PostcodeModal
+              visible={postcodeVisible}
+              onClose={() => setPostcodeVisible(false)}
+              onSelected={(data) => {
+                console.log("📍 [Address Search] Received data:", data);
+
+                // 도로명 주소 조합 로직 (RN에서 처리하여 안정성 확보)
+                let fullRoadAddr = data.roadAddress || data.address;
+                let extraRoadAddr = '';
+
+                if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
+                  extraRoadAddr += data.bname;
+                }
+                if (data.buildingName !== '' && data.apartment === 'Y') {
+                  extraRoadAddr += (extraRoadAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                }
+                if (extraRoadAddr !== '') {
+                  fullRoadAddr += ' (' + extraRoadAddr + ')';
+                }
+
+                console.log("📍 [Address Search] Result:", fullRoadAddr);
+
+                setEditBasicData(prev => ({ ...prev, address: fullRoadAddr }));
+
+                // 모달 닫기
+                setTimeout(() => {
+                  setPostcodeVisible(false);
+                }, 300);
+              }}
+            />
           </KeyboardAvoidingView>
         </Modal >
 
+        {/* 네트워크 에러 팝업 */}
+        <ErrorPopup
+          visible={isErrorPopupVisible}
+          type="NETWORK"
+          isRefreshing={isRefreshing}
+          onRefresh={handleErrorRefresh}
+          onClose={() => setIsErrorPopupVisible(false)}
+        />
         <Modal animationType="slide" transparent={true} visible={hoursModalVisible} onRequestClose={() => setHoursModalVisible(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
             <View style={[styles.modalContainer, { height: 'auto', maxHeight: rs(700) }]}>
@@ -2626,4 +2798,21 @@ const styles = StyleSheet.create({
   newCategoryInput: { flex: 1, fontSize: rs(11), color: 'black', padding: 0, fontFamily: 'Pretendard' },
   editBannerAddBtn: { width: '100%', height: rs(32), backgroundColor: '#F0F0F0', borderRadius: rs(8), flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(6), marginTop: rs(5) },
   editBannerAddText: { fontSize: rs(11), color: '#828282', fontWeight: '500', fontFamily: 'Pretendard' },
+  registrationAlertContainer: {
+    marginHorizontal: rs(20),
+    marginBottom: rs(10),
+    paddingVertical: rs(10),
+    backgroundColor: '#FFF5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: rs(12),
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
+  registrationAlertText: {
+    color: '#DC2626',
+    fontSize: rs(14),
+    fontFamily: 'Pretendard-Bold',
+    fontWeight: '700',
+  },
 });
