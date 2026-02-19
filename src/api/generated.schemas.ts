@@ -69,54 +69,6 @@ export interface CreateOrganizationRequest {
   expiresAt?: string;
 }
 
-export type StoreCreateRequestStoreCategoriesItem = typeof StoreCreateRequestStoreCategoriesItem[keyof typeof StoreCreateRequestStoreCategoriesItem];
-
-
-export const StoreCreateRequestStoreCategoriesItem = {
-  BAR: 'BAR',
-  CAFE: 'CAFE',
-  RESTAURANT: 'RESTAURANT',
-  ENTERTAINMENT: 'ENTERTAINMENT',
-  BEAUTY_HEALTH: 'BEAUTY_HEALTH',
-  ETC: 'ETC',
-} as const;
-
-export type StoreCreateRequestStoreMoodsItem = typeof StoreCreateRequestStoreMoodsItem[keyof typeof StoreCreateRequestStoreMoodsItem];
-
-
-export const StoreCreateRequestStoreMoodsItem = {
-  SOLO_DINING: 'SOLO_DINING',
-  GROUP_GATHERING: 'GROUP_GATHERING',
-  LATE_NIGHT: 'LATE_NIGHT',
-  ROMANTIC: 'ROMANTIC',
-} as const;
-
-export interface StoreCreateRequest {
-  name: string;
-  bizRegNo: string;
-  roadAddress: string;
-  jibunAddress?: string;
-  latitude?: number;
-  longitude?: number;
-  storePhone?: string;
-  representativeName?: string;
-  introduction?: string;
-  operatingHours?: string;
-  storeCategories: StoreCreateRequestStoreCategoriesItem[];
-  storeMoods?: StoreCreateRequestStoreMoodsItem[];
-  universityIds?: number[];
-}
-
-export interface CreateReviewRequest {
-  content: string;
-  /**
-   * @minimum 1
-   * @maximum 5
-   */
-  rating?: number;
-  parentReviewId?: number;
-}
-
 export type StoreReportRequestReasonsItem = typeof StoreReportRequestReasonsItem[keyof typeof StoreReportRequestReasonsItem];
 
 
@@ -133,38 +85,6 @@ export const StoreReportRequestReasonsItem = {
 export interface StoreReportRequest {
   reasons: StoreReportRequestReasonsItem[];
   detail?: string;
-}
-
-/**
- * 가게 소식 생성 요청
- */
-export interface CreateStoreNewsRequest {
-  /** 소식 제목 */
-  title: string;
-  /** 소식 내용 */
-  content: string;
-}
-
-export type CreateItemRequestBadge = typeof CreateItemRequestBadge[keyof typeof CreateItemRequestBadge];
-
-
-export const CreateItemRequestBadge = {
-  BEST: 'BEST',
-  NEW: 'NEW',
-  HOT: 'HOT',
-} as const;
-
-export interface CreateItemRequest {
-  name: string;
-  /** @minimum 0 */
-  price?: number;
-  description?: string;
-  itemOrder?: number;
-  badge?: CreateItemRequestBadge;
-  itemCategoryId?: number;
-  hidden?: boolean;
-  soldOut?: boolean;
-  representative?: boolean;
 }
 
 export type CreateCouponRequestBenefitType = typeof CreateCouponRequestBenefitType[keyof typeof CreateCouponRequestBenefitType];
@@ -243,15 +163,6 @@ export interface CreateStoreNewsCommentRequest {
   content: string;
 }
 
-export interface StoreClaimRequest {
-  storeId: number;
-  userId: number;
-  bizRegNo: string;
-  representativeName: string;
-  storeName: string;
-  storePhone?: string;
-}
-
 export type ReportRequestReason = typeof ReportRequestReason[keyof typeof ReportRequestReason];
 
 
@@ -291,32 +202,6 @@ export interface ChangePasswordRequest {
 export interface CommonResponseString {
   isSuccess?: boolean;
   data?: string;
-}
-
-export type CreateInquiryRequestType = typeof CreateInquiryRequestType[keyof typeof CreateInquiryRequestType];
-
-
-export const CreateInquiryRequestType = {
-  COUPON_BENEFIT: 'COUPON_BENEFIT',
-  MAP_LOCATION: 'MAP_LOCATION',
-  STORE_INFO_ERROR: 'STORE_INFO_ERROR',
-  EVENT_PARTICIPATION: 'EVENT_PARTICIPATION',
-  ALERT_ACCOUNT: 'ALERT_ACCOUNT',
-  PROPOSAL_OTHER: 'PROPOSAL_OTHER',
-} as const;
-
-export interface CreateInquiryRequest {
-  type: CreateInquiryRequestType;
-  /**
-   * @minLength 1
-   * @maxLength 14
-   */
-  title: string;
-  /**
-   * @minLength 0
-   * @maxLength 500
-   */
-  content: string;
 }
 
 export type IssueCouponResponseStatus = typeof IssueCouponResponseStatus[keyof typeof IssueCouponResponseStatus];
@@ -525,139 +410,10 @@ export interface StoreClaimRejectionRequest {
 }
 
 /**
- * 이벤트 타입 목록
- */
-export type CreateEventRequestEventTypesItem = typeof CreateEventRequestEventTypesItem[keyof typeof CreateEventRequestEventTypesItem];
-
-
-export const CreateEventRequestEventTypesItem = {
-  FOOD_EVENT: 'FOOD_EVENT',
-  POPUP_STORE: 'POPUP_STORE',
-  SCHOOL_EVENT: 'SCHOOL_EVENT',
-  FLEA_MARKET: 'FLEA_MARKET',
-  PERFORMANCE: 'PERFORMANCE',
-  COMMUNITY: 'COMMUNITY',
-} as const;
-
-/**
- * 이벤트 생성 요청
- */
-export interface CreateEventRequest {
-  /** 이벤트 제목 */
-  title: string;
-  /** 이벤트 설명 */
-  description?: string;
-  /** 이벤트 부제목 */
-  subtitle?: string;
-  /** 이벤트 타입 목록 */
-  eventTypes: CreateEventRequestEventTypesItem[];
-  /** 위도 */
-  latitude?: number;
-  /** 경도 */
-  longitude?: number;
-  /** 이벤트 시작일시 */
-  startDateTime: string;
-  /** 이벤트 종료일시 */
-  endDateTime?: string;
-  /** 장소 */
-  place: string;
-  /** 대학교 ID */
-  universityId: number;
-}
-
-/**
  * 대학교 이름
  */
 export interface JsonNullableString {
   present?: boolean;
-}
-
-/**
- * 영업 중지 여부
- */
-export interface JsonNullableBoolean {
-  present?: boolean;
-}
-
-/**
- * 경도
- */
-export interface JsonNullableDouble {
-  present?: boolean;
-}
-
-/**
- * 휴무일 목록
- */
-export interface JsonNullableListLocalDate {
-  present?: boolean;
-}
-
-/**
- * 유지할 이미지 ID 목록 (누락된 ID는 삭제됨)
- */
-export interface JsonNullableListLong {
-  present?: boolean;
-}
-
-/**
- * 가게 카테고리 목록
- */
-export interface JsonNullableListStoreCategory {
-  present?: boolean;
-}
-
-/**
- * 가게 분위기 목록
- */
-export interface JsonNullableListStoreMood {
-  present?: boolean;
-}
-
-/**
- * 가게 정보 수정 요청
- */
-export interface StoreUpdateRequest {
-  name?: JsonNullableString;
-  branch?: JsonNullableString;
-  roadAddress?: JsonNullableString;
-  jibunAddress?: JsonNullableString;
-  latitude?: JsonNullableDouble;
-  longitude?: JsonNullableDouble;
-  phone?: JsonNullableString;
-  representativeName?: JsonNullableString;
-  introduction?: JsonNullableString;
-  operatingHours?: JsonNullableString;
-  storeCategories?: JsonNullableListStoreCategory;
-  storeMoods?: JsonNullableListStoreMood;
-  holidayDates?: JsonNullableListLocalDate;
-  isSuspended?: JsonNullableBoolean;
-  preserveImageIds?: JsonNullableListLong;
-}
-
-/**
- * 가게 소식 수정 요청
- */
-export interface UpdateStoreNewsRequest {
-  title?: JsonNullableString;
-  content?: JsonNullableString;
-  preserveImageIds?: JsonNullableListLong;
-}
-
-/**
- * 별점 (1~5)
- */
-export interface JsonNullableInteger {
-  present?: boolean;
-}
-
-/**
- * 리뷰 수정 요청
- */
-export interface UpdateReviewRequest {
-  content?: JsonNullableString;
-  rating?: JsonNullableInteger;
-  preserveImageIds?: JsonNullableListLong;
 }
 
 /**
@@ -692,28 +448,6 @@ export interface UpdateOrganizationRequest {
 }
 
 /**
- * 뱃지 (NEW, BEST, HOT 등)
- */
-export interface JsonNullableItemBadge {
-  present?: boolean;
-}
-
-/**
- * 메뉴(상품) 수정 요청
- */
-export interface UpdateItemRequest {
-  name?: JsonNullableString;
-  price?: JsonNullableInteger;
-  description?: JsonNullableString;
-  isSoldOut?: JsonNullableBoolean;
-  itemOrder?: JsonNullableInteger;
-  isRepresentative?: JsonNullableBoolean;
-  isHidden?: JsonNullableBoolean;
-  badge?: JsonNullableItemBadge;
-  itemCategoryId?: JsonNullableLong;
-}
-
-/**
  * 혜택 타입 (DISCOUNT_AMOUNT, DISCOUNT_RATE 등)
  */
 export interface JsonNullableCouponBenefitType {
@@ -724,6 +458,13 @@ export interface JsonNullableCouponBenefitType {
  * 쿠폰 상태 (ACTIVE, INACTIVE 등)
  */
 export interface JsonNullableCouponStatus {
+  present?: boolean;
+}
+
+/**
+ * 최소 주문 금액
+ */
+export interface JsonNullableInteger {
   present?: boolean;
 }
 
@@ -772,36 +513,6 @@ export interface UpdatePartnershipRequest {
   benefit?: JsonNullableString;
   startsAt?: JsonNullableLocalDate;
   endsAt?: JsonNullableLocalDate;
-}
-
-/**
- * 이벤트 상태
- */
-export interface JsonNullableEventStatus {
-  present?: boolean;
-}
-
-/**
- * 이벤트 타입 목록
- */
-export interface JsonNullableListEventType {
-  present?: boolean;
-}
-
-/**
- * 이벤트 수정 요청
- */
-export interface UpdateEventRequest {
-  title?: JsonNullableString;
-  description?: JsonNullableString;
-  subtitle?: JsonNullableString;
-  eventTypes?: JsonNullableListEventType;
-  place?: JsonNullableString;
-  latitude?: JsonNullableDouble;
-  longitude?: JsonNullableDouble;
-  startDateTime?: JsonNullableLocalDateTime;
-  endDateTime?: JsonNullableLocalDateTime;
-  status?: JsonNullableEventStatus;
 }
 
 export interface UniversityResponse {
@@ -973,6 +684,7 @@ export interface StoreStatsResponse {
   totalIssuedCoupons?: number;
   totalUsedCoupons?: number;
   totalReviews?: number;
+  favoriteIncreaseCount?: number;
 }
 
 export interface CommonResponseStoreStatsResponse {
@@ -992,6 +704,7 @@ export interface ReviewResponse {
   likeCount?: number;
   imageUrls?: string[];
   ownerReply?: boolean;
+  liked?: boolean;
 }
 
 export interface PageResponseReviewResponse {
@@ -1620,7 +1333,7 @@ export const GetStoresMoodsItem = {
 export type CreateStoreBody = {
   /** 상품 이미지 목록 */
   images?: string[];
-  request: StoreCreateRequest;
+  request: string;
 };
 
 export type GetReviewsParams = {
@@ -1631,7 +1344,7 @@ pageable: Pageable;
 };
 
 export type CreateReviewBody = {
-  request: CreateReviewRequest;
+  request: string;
   /** 리뷰 이미지 목록 */
   images?: string[];
 };
@@ -1646,13 +1359,13 @@ pageable: Pageable;
 export type CreateStoreNewsBody = {
   /** 소식 이미지 목록 */
   images?: string[];
-  request: CreateStoreNewsRequest;
+  request: string;
 };
 
 export type CreateItemBody = {
   /** 상품 이미지 */
   image?: Blob;
-  request?: CreateItemRequest;
+  request?: string;
 };
 
 export type CreateItemCategoryBody = {[key: string]: string};
@@ -1665,7 +1378,7 @@ pageable: Pageable;
 };
 
 export type CreateStoreClaimsBody = {
-  request: StoreClaimRequest;
+  request: string;
   /** 사업자등록증 이미지 */
   image: string;
 };
@@ -1678,7 +1391,7 @@ pageable: Pageable;
 };
 
 export type CreateInquiryBody = {
-  request: CreateInquiryRequest;
+  request: string;
   images?: string[];
 };
 
@@ -1705,13 +1418,13 @@ export type UploadPartnershipDataBody = {
 };
 
 export type CreateEventBody = {
-  request: CreateEventRequest;
+  request: string;
   /** 이벤트 이미지 */
   images?: string[];
 };
 
 export type UpdateStoreBody = {
-  request: StoreUpdateRequest;
+  request: string;
   images?: string[];
 };
 
@@ -1720,11 +1433,11 @@ export type UpdateItemCategoryBody = {[key: string]: string};
 export type UpdateStoreNewsBody = {
   /** 변경할 소식 이미지 목록 */
   images?: string[];
-  request: UpdateStoreNewsRequest;
+  request: string;
 };
 
 export type UpdateReviewBody = {
-  request: UpdateReviewRequest;
+  request: string;
   /** 리뷰 이미지 목록 */
   images?: string[];
 };
@@ -1732,11 +1445,11 @@ export type UpdateReviewBody = {
 export type UpdateItemBody = {
   /** 변경할 상품 이미지 */
   image?: Blob;
-  request?: UpdateItemRequest;
+  request?: string;
 };
 
 export type UpdateEventBody = {
-  request: UpdateEventRequest;
+  request: string;
   /** 이벤트 이미지 */
   images?: string[];
 };
