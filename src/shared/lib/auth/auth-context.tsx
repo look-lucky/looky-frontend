@@ -8,7 +8,7 @@ import {
 } from "react";
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { clearToken, getCollegeId, getUsername, getUserType, isTokenValid, saveCollegeId, saveToken, UserType, getCredentials, clearCredentials } from "./token";
+import { clearToken, getCollegeId, getCollegeName, getUsername, getUserType, isTokenValid, saveCollegeId, saveCollegeName, saveToken, UserType, getCredentials, clearCredentials } from "./token";
 import { authEvents } from "./auth-events";
 
 interface AuthState {
@@ -16,6 +16,7 @@ interface AuthState {
   isLoading: boolean;
   userType: UserType | null;
   collegeId: number | null;
+  collegeName: string | null;
   username: string | null;
 }
 
@@ -23,6 +24,7 @@ interface AuthContextValue extends AuthState {
   handleAuthSuccess: (accessToken: string, expiresIn: number, userType: UserType) => Promise<void>;
   handleLogout: () => Promise<void>;
   saveUserCollegeId: (collegeId: number) => Promise<void>;
+  saveUserCollegeName: (collegeName: string) => Promise<void>;
   // 개발용: 로그인 없이 userType 전환
   devSetUserType: (userType: UserType) => void;
 }
@@ -36,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
     userType: null,
     collegeId: null,
+    collegeName: null,
     username: null,
   });
 
@@ -45,8 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const valid = await isTokenValid();
       const userType = await getUserType();
       const collegeId = await getCollegeId();
+      const collegeName = await getCollegeName();
       const username = await getUsername();
-      setState({ isAuthenticated: valid, isLoading: false, userType, collegeId, username });
+      setState({ isAuthenticated: valid, isLoading: false, userType, collegeId, collegeName, username });
     })();
   }, []);
 
@@ -79,8 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             await saveToken(accessToken, expiresIn ?? 3600, role);
             const collegeId = await getCollegeId();
+            const collegeName = await getCollegeName();
             const username = await getUsername();
-            setState({ isAuthenticated: true, isLoading: false, userType: role, collegeId, username });
+            setState({ isAuthenticated: true, isLoading: false, userType: role, collegeId, collegeName, username });
             console.log("[AuthContext] Auto-login succeeded");
             return;
           }
@@ -97,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         userType: null,
         collegeId: null,
+        collegeName: null,
         username: null,
       });
 
@@ -120,8 +126,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (accessToken: string, expiresIn: number, userType: UserType) => {
       await saveToken(accessToken, expiresIn, userType);
       const collegeId = await getCollegeId();
+      const collegeName = await getCollegeName();
       const username = await getUsername();
-      setState({ isAuthenticated: true, isLoading: false, userType, collegeId, username });
+      setState({ isAuthenticated: true, isLoading: false, userType, collegeId, collegeName, username });
     },
     []
   );
@@ -129,12 +136,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleLogout = useCallback(async () => {
     await clearToken();
     await clearCredentials();
-    setState({ isAuthenticated: false, isLoading: false, userType: null, collegeId: null, username: null });
+    setState({ isAuthenticated: false, isLoading: false, userType: null, collegeId: null, collegeName: null, username: null });
   }, []);
 
   const saveUserCollegeId = useCallback(async (collegeId: number) => {
     await saveCollegeId(collegeId);
     setState((prev) => ({ ...prev, collegeId }));
+  }, []);
+
+  const saveUserCollegeName = useCallback(async (collegeName: string) => {
+    await saveCollegeName(collegeName);
+    setState((prev) => ({ ...prev, collegeName }));
   }, []);
 
   // 개발용: 로그인 없이 userType 전환 (테스트용)
@@ -144,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, handleAuthSuccess, handleLogout, saveUserCollegeId, devSetUserType }}
+      value={{ ...state, handleAuthSuccess, handleLogout, saveUserCollegeId, saveUserCollegeName, devSetUserType }}
     >
       {children}
     </AuthContext.Provider>
