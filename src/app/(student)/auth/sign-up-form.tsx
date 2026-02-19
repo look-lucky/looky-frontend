@@ -476,18 +476,12 @@ export default function SignupTypePage() {
                   placeholder="MM"
                   placeholderTextColor={TextColors.placeholder}
                   value={birthMonth}
-                  onChangeText={(text) => {
-                    const num = parseInt(text, 10);
-                    if (text === "" || isNaN(num)) {
-                      setBirthMonth(text);
-                    } else {
-                      setBirthMonth(String(Math.min(num, 12)));
-                    }
-                  }}
+                  onChangeText={setBirthMonth}
                   onBlur={() => {
                     setBirthTouched(true);
-                    if (birthMonth.length === 1) {
-                      setBirthMonth(birthMonth.padStart(2, "0"));
+                    const num = parseInt(birthMonth, 10);
+                    if (birthMonth !== "" && !isNaN(num)) {
+                      setBirthMonth(String(Math.min(num, 12)).padStart(2, "0"));
                     }
                   }}
                   keyboardType="number-pad"
@@ -498,18 +492,12 @@ export default function SignupTypePage() {
                   placeholder="DD"
                   placeholderTextColor={TextColors.placeholder}
                   value={birthDay}
-                  onChangeText={(text) => {
-                    const num = parseInt(text, 10);
-                    if (text === "" || isNaN(num)) {
-                      setBirthDay(text);
-                    } else {
-                      setBirthDay(String(Math.min(num, 31)));
-                    }
-                  }}
+                  onChangeText={setBirthDay}
                   onBlur={() => {
                     setBirthTouched(true);
-                    if (birthDay.length === 1) {
-                      setBirthDay(birthDay.padStart(2, "0"));
+                    const num = parseInt(birthDay, 10);
+                    if (birthDay !== "" && !isNaN(num)) {
+                      setBirthDay(String(Math.min(num, 31)).padStart(2, "0"));
                     }
                   }}
                   keyboardType="number-pad"
