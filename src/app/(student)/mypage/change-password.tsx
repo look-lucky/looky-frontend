@@ -1,5 +1,6 @@
 import { changePassword } from '@/src/api/my-page';
 import { useAuth } from '@/src/shared/lib/auth';
+import { isNetworkError, useNetworkError } from '@/src/shared/contexts/network-error-context';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -20,6 +21,7 @@ export default function ChangePasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { handleLogout } = useAuth();
+  const { showNetworkError } = useNetworkError();
 
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
@@ -63,13 +65,21 @@ export default function ChangePasswordScreen() {
     }
   };
 
+  const [confirmPwErrorMsg, setConfirmPwErrorMsg] = useState('');
+
   const handleConfirmPwChange = (text: string) => {
     setConfirmPw(text);
     const hasLetter = /[A-Za-z]/.test(newPw);
     const hasNum = /[0-9]/.test(newPw);
     const hasSpecial = /[@$!%*^#?&]/.test(newPw);
     const isNewPwValid = newPw.length >= 8 && hasLetter && hasNum && hasSpecial;
-    setIsMatch(newPw === text && isNewPwValid);
+    const matched = newPw === text && isNewPwValid;
+    setIsMatch(matched);
+    if (text.length > 0 && !matched) {
+      setConfirmPwErrorMsg('비밀번호가 일치하지 않습니다.');
+    } else {
+      setConfirmPwErrorMsg('');
+    }
   };
 
   const handleSubmit = async () => {
@@ -78,8 +88,12 @@ export default function ChangePasswordScreen() {
     try {
       await changePassword({ currentPassword: currentPw, newPassword: newPw });
       setSuccessVisible(true);
-    } catch {
-      setErrorVisible(true);
+    } catch (error) {
+      if (isNetworkError(error)) {
+        showNetworkError();
+      } else {
+        setErrorVisible(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -168,6 +182,9 @@ export default function ChangePasswordScreen() {
                 <Ionicons name={showConfirmPw ? 'eye' : 'eye-off'} size={rs(20)} color="#D5D5D5" />
               </TouchableOpacity>
             </View>
+            {confirmPwErrorMsg !== '' && (
+              <Text style={styles.errorText}>{confirmPwErrorMsg}</Text>
+            )}
           </View>
 
           <View style={styles.guideContainer}>
