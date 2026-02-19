@@ -141,7 +141,7 @@ export default function EditReview() {
       {
         reviewId: Number(reviewId),
         data: {
-          request: { content: reviewText, rating },
+          request: JSON.stringify({ content: reviewText, rating }),
           images: images.length > 0 ? (images as any) : undefined,
         },
       },
