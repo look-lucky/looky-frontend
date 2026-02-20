@@ -39,8 +39,8 @@ const EVENT_MARKER_ICONS_LIVE: Record<EventType, any> = {
   COMMUNITY: require('@/assets/images/icons/map/event-student-live.png'),
 };
 
-const MARKER_SIZE = rs(40);
-const EVENT_MARKER_SIZE = rs(60);
+const MARKER_SIZE = rs(16);
+const EVENT_MARKER_SIZE = rs(30);
 
 // 가게 마커 아이콘 선택 헬퍼
 function getStoreMarkerIcon(isPartner: boolean, hasCoupon: boolean) {
@@ -160,7 +160,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
             onCameraChanged?.({
               lat: params.latitude,
               lng: params.longitude,
-              zoom: params.zoom,
+              zoom: params.zoom ?? 15,
               reason: params.reason,
             });
           }}

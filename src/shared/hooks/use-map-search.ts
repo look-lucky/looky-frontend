@@ -1,4 +1,5 @@
 import { useGetStoreMap } from '@/src/api/store';
+import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import { CATEGORY_TO_API } from '@/src/shared/constants/map';
 import type { Store } from '@/src/shared/types/store';
 import {
@@ -17,6 +18,7 @@ function getViewportRadiusKm(zoom: number): number {
 // Hook
 // -------------------------------------------------------------------
 export function useMapSearch() {
+  const { collegeId } = useAuth();
   // 검색
   const [keyword, setKeyword] = useState('');
   const [submittedKeyword, setSubmittedKeyword] = useState('');
@@ -78,11 +80,15 @@ export function useMapSearch() {
     isLoading,
     isError,
     refetch,
-  } = useGetStoreMap({
-    query: {
-      staleTime: 3 * 60 * 1000,
+  } = useGetStoreMap(
+    collegeId != null ? { universityId: collegeId } : undefined,
+    {
+      query: {
+        staleTime: 3 * 60 * 1000,
+        gcTime: 24 * 60 * 60 * 1000,
+      },
     },
-  });
+  );
 
   // ------ 데이터 변환 ------
   const allStores: Store[] = useMemo(() => {
@@ -148,13 +154,14 @@ export function useMapSearch() {
         );
       });
     } else {
-      // 거리 필터 모드: 내 위치 기준
+      // 거리 필터 모드: 내 위치 기준 (미획득 시 지도 초기 중심으로 폴백)
+      const filterCenter = myLocation ?? mapCenter;
       const maxKm = parseInt(selectedDistance);
-      if (maxKm > 0 && myLocation) {
+      if (maxKm > 0) {
         result = result.filter((store) => {
           if (!store.lat || !store.lng) return false;
           return (
-            getDistanceKm(myLocation.lat, myLocation.lng, store.lat, store.lng) <=
+            getDistanceKm(filterCenter.lat, filterCenter.lng, store.lat, store.lng) <=
             maxKm
           );
         });
@@ -183,21 +190,29 @@ export function useMapSearch() {
     }
 
     return result;
-  }, [stores, myLocation, selectedDistance, selectedSort, viewportSearch]);
+  }, [stores, myLocation, mapCenter, selectedDistance, selectedSort, viewportSearch]);
 
-  // 마커 생성
-  const markers = useMemo(
-    () =>
-      filteredStores.map((store) => ({
-        id: store.id,
-        lat: store.lat,
-        lng: store.lng,
-        title: store.name,
-        isPartner: store.isPartner,
-        hasCoupon: store.hasCoupon,
-      })),
-    [filteredStores],
-  );
+  // 마커 생성 (중심점 기준 가까운 순 최대 150개)
+  const MAX_MAP_MARKERS = 150;
+  const markers = useMemo(() => {
+    const center = viewportSearch?.center ?? myLocation ?? mapCenter;
+    const sorted = [...filteredStores].sort((a, b) => {
+      if (!a.lat || !a.lng) return 1;
+      if (!b.lat || !b.lng) return -1;
+      return (
+        getDistanceKm(center.lat, center.lng, a.lat, a.lng) -
+        getDistanceKm(center.lat, center.lng, b.lat, b.lng)
+      );
+    });
+    return sorted.slice(0, MAX_MAP_MARKERS).map((store) => ({
+      id: store.id,
+      lat: store.lat,
+      lng: store.lng,
+      title: store.name,
+      isPartner: store.isPartner,
+      hasCoupon: store.hasCoupon,
+    }));
+  }, [filteredStores, viewportSearch, myLocation, mapCenter]);
 
   // 선택된 가게
   const selectedStore = useMemo(() => {
