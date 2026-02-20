@@ -65,14 +65,19 @@ export const getCreateEventUrl = () => {
 }
 
 export const createEvent = async (createEventBody: CreateEventBody, options?: RequestInit): Promise<createEventResponse> => {
-  
+    const formData = new FormData();
+formData.append(`request`, createEventBody.request);
+if(createEventBody.images !== undefined) {
+ createEventBody.images.forEach(value => formData.append(`images`, value));
+ }
+
   return customFetch<createEventResponse>(getCreateEventUrl(),
   {      
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createEventBody,)
+    method: 'POST'
+    ,
+    body: 
+      formData,
   }
 );}
 
@@ -255,14 +260,19 @@ export const getUpdateEventUrl = (eventId: number,) => {
 
 export const updateEvent = async (eventId: number,
     updateEventBody: UpdateEventBody, options?: RequestInit): Promise<updateEventResponse> => {
-  
+    const formData = new FormData();
+formData.append(`request`, updateEventBody.request);
+if(updateEventBody.images !== undefined) {
+ updateEventBody.images.forEach(value => formData.append(`images`, value));
+ }
+
   return customFetch<updateEventResponse>(getUpdateEventUrl(eventId),
   {      
     ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateEventBody,)
+    method: 'PATCH'
+    ,
+    body: 
+      formData,
   }
 );}
 

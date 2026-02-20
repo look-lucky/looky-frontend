@@ -222,7 +222,7 @@ export const getCreateReviewUrl = (storeId: number,) => {
 export const createReview = async (storeId: number,
     createReviewBody: CreateReviewBody, options?: RequestInit): Promise<createReviewResponse> => {
     const formData = new FormData();
-formData.append(`request`, JSON.stringify(createReviewBody.request));
+formData.append(`request`, createReviewBody.request);
 if(createReviewBody.images !== undefined) {
  createReviewBody.images.forEach(value => formData.append(`images`, value));
  }
@@ -696,7 +696,7 @@ export const getUpdateReviewUrl = (reviewId: number,) => {
 export const updateReview = async (reviewId: number,
     updateReviewBody: UpdateReviewBody, options?: RequestInit): Promise<updateReviewResponse> => {
     const formData = new FormData();
-formData.append(`request`, JSON.stringify(updateReviewBody.request));
+formData.append(`request`, updateReviewBody.request);
 if(updateReviewBody.images !== undefined) {
  updateReviewBody.images.forEach(value => formData.append(`images`, value));
  }

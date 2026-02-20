@@ -88,7 +88,7 @@ export default function StudentVerificationPage() {
   } = useSignupStore();
 
   // Auth
-  const { handleAuthSuccess, saveUserCollegeId } = useAuth();
+  const { handleAuthSuccess, saveUserCollegeId, saveUserCollegeName } = useAuth();
 
   // Mutations
   const signupMutation = useSignupStudent();
@@ -330,6 +330,7 @@ export default function StudentVerificationPage() {
               })();
               const role = (jwtPayload?.role as UserType) ?? "ROLE_STUDENT";
               await saveUserCollegeId(selectedCollegeId!);
+              await saveUserCollegeName(selectedCollegeName);
 
               // Store에 회원가입 정보 저장 (sign-up-done 화면에서 표시하기 위함)
               setSignupFields({
@@ -378,6 +379,7 @@ export default function StudentVerificationPage() {
           console.log("회원가입 성공:", response);
 
           await saveUserCollegeId(selectedCollegeId!);
+          await saveUserCollegeName(selectedCollegeName);
 
           setSignupFields({
             universityId: selectedUniversityId,
@@ -709,6 +711,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: rs(24),
+    paddingBottom: rs(24),
     gap: rs(24),
   },
   section: {

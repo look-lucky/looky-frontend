@@ -1,150 +1,18 @@
-import { useChangePassword, useChangeUsername } from '@/src/api/my-page';
-import { useWithdraw } from '@/src/api/auth';
-import { WithdrawRequestReasonsItem } from '@/src/api/generated.schemas';
-import { AppPopup } from '@/src/shared/common/app-popup';
-import { isNetworkError } from '@/src/shared/contexts/network-error-context';
-import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import {
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const WITHDRAW_REASONS: { label: string; value: WithdrawRequestReasonsItem }[] = [
-  { label: '사용하지 않아요', value: WithdrawRequestReasonsItem.UNUSED },
-  { label: '혜택이 부족해요', value: WithdrawRequestReasonsItem.INSUFFICIENT_BENEFITS },
-  { label: '사용이 불편해요', value: WithdrawRequestReasonsItem.INCONVENIENT },
-  { label: '광고가 너무 많아요', value: WithdrawRequestReasonsItem.TOO_MANY_ADS },
-  { label: '더 이상 필요 없어요', value: WithdrawRequestReasonsItem.NOT_NEEDED },
-  { label: '기타', value: WithdrawRequestReasonsItem.OTHER },
-];
-
-type ModalType = 'username' | 'password' | 'withdraw' | null;
-
 export default function EditProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { handleLogout } = useAuth();
-
-  const [modal, setModal] = useState<ModalType>(null);
-
-  const [newUsername, setNewUsername] = useState('');
-  const { mutate: changeUsername, isPending: isChangingUsername } = useChangeUsername();
-
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const { mutate: changePassword, isPending: isChangingPassword } = useChangePassword();
-
-  const [selectedReasons, setSelectedReasons] = useState<WithdrawRequestReasonsItem[]>([]);
-  const [detailReason, setDetailReason] = useState('');
-  const { mutate: withdraw, isPending: isWithdrawing } = useWithdraw();
-
-  const [errorPopup, setErrorPopup] = useState<{ visible: boolean; title: string; subtitle?: string }>({ visible: false, title: '' });
-  const [confirmPopup, setConfirmPopup] = useState<{ visible: boolean; title: string; subtitle?: string; onConfirm: () => void }>({ visible: false, title: '', onConfirm: () => {} });
-
-  const closeModal = () => {
-    setModal(null);
-    setNewUsername('');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setSelectedReasons([]);
-    setDetailReason('');
-  };
-
-  const handleChangeUsername = () => {
-    if (!newUsername.trim()) {
-      setErrorPopup({ visible: true, title: '새 아이디를 입력해주세요' });
-      return;
-    }
-    changeUsername(
-      { data: { newUsername: newUsername.trim() } },
-      {
-        onSuccess: () => {
-          setErrorPopup({ visible: true, title: '아이디가 변경되었습니다' });
-          closeModal();
-        },
-        onError: (error) => {
-          if (!isNetworkError(error)) {
-            setErrorPopup({ visible: true, title: '아이디 변경에 실패했습니다' });
-          }
-        },
-      }
-    );
-  };
-
-  const handleChangePassword = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setErrorPopup({ visible: true, title: '모든 항목을 입력해주세요' });
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setErrorPopup({ visible: true, title: '새 비밀번호가 일치하지 않습니다' });
-      return;
-    }
-    changePassword(
-      { data: { currentPassword, newPassword } },
-      {
-        onSuccess: () => {
-          setErrorPopup({ visible: true, title: '비밀번호가 변경되었습니다' });
-          closeModal();
-        },
-        onError: (error) => {
-          if (!isNetworkError(error)) {
-            setErrorPopup({ visible: true, title: '비밀번호 변경에 실패했습니다', subtitle: '현재 비밀번호를 확인해주세요' });
-          }
-        },
-      }
-    );
-  };
-
-  const toggleReason = (reason: WithdrawRequestReasonsItem) => {
-    setSelectedReasons(prev =>
-      prev.includes(reason) ? prev.filter(r => r !== reason) : [...prev, reason]
-    );
-  };
-
-  const executeWithdraw = () => {
-    withdraw(
-      { data: { reasons: selectedReasons, detailReason: detailReason || undefined } },
-      {
-        onSuccess: async () => {
-          closeModal();
-          await handleLogout();
-          router.replace('/landing');
-        },
-        onError: (error) => {
-          if (!isNetworkError(error)) {
-            setErrorPopup({ visible: true, title: '회원탈퇴에 실패했습니다', subtitle: '다시 시도해주세요' });
-          }
-        },
-      }
-    );
-  };
-
-  const handleWithdraw = () => {
-    if (selectedReasons.length === 0) {
-      setErrorPopup({ visible: true, title: '탈퇴 사유를 하나 이상 선택해주세요' });
-      return;
-    }
-    setConfirmPopup({
-      visible: true,
-      title: '정말 탈퇴하시겠습니까?',
-      subtitle: '이 작업은 되돌릴 수 없습니다',
-      onConfirm: executeWithdraw,
-    });
-  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -159,185 +27,37 @@ export default function EditProfileScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity style={styles.menuRow} onPress={() => setModal('username')}>
-          <Text style={styles.menuText}>아이디</Text>
-          <Ionicons name="chevron-forward" size={rs(16)} color="#1B1D1F" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuRow} onPress={() => setModal('password')}>
-          <Text style={styles.menuText}>비밀번호</Text>
-          <Ionicons name="chevron-forward" size={rs(16)} color="#1B1D1F" />
-        </TouchableOpacity>
+        <View>
+          <MenuRow label="아이디" onPress={() => router.push('/mypage/change-id' as any)} />
+          <MenuRow label="비밀번호" onPress={() => router.push('/mypage/change-password' as any)} />
+        </View>
 
         <View style={styles.divider} />
 
-        <TouchableOpacity style={styles.menuRow} onPress={() => setModal('withdraw')}>
+        <TouchableOpacity style={styles.menuRow} onPress={() => router.push('/mypage/withdraw' as any)}>
           <Text style={styles.deleteAccountText}>회원탈퇴</Text>
           <Ionicons name="chevron-forward" size={rs(16)} color="#BDBDBD" />
         </TouchableOpacity>
       </ScrollView>
-
-      {/* 아이디 변경 모달 */}
-      <Modal visible={modal === 'username'} transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>아이디 변경</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="새 아이디 입력"
-              value={newUsername}
-              onChangeText={setNewUsername}
-              autoCapitalize="none"
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={closeModal}>
-                <Text style={styles.cancelText}>취소</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleChangeUsername} disabled={isChangingUsername}>
-                <Text style={styles.confirmText}>{isChangingUsername ? '변경 중...' : '변경'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* 비밀번호 변경 모달 */}
-      <Modal visible={modal === 'password'} transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>비밀번호 변경</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="현재 비밀번호"
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              secureTextEntry
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="새 비밀번호"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="새 비밀번호 확인"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={closeModal}>
-                <Text style={styles.cancelText}>취소</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleChangePassword} disabled={isChangingPassword}>
-                <Text style={styles.confirmText}>{isChangingPassword ? '변경 중...' : '변경'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* 에러/알림 팝업 */}
-      <AppPopup
-        visible={errorPopup.visible}
-        title={errorPopup.title}
-        subtitle={errorPopup.subtitle}
-        onClose={() => setErrorPopup({ visible: false, title: '' })}
-      />
-
-      {/* 확인 팝업 */}
-      <AppPopup
-        visible={confirmPopup.visible}
-        title={confirmPopup.title}
-        subtitle={confirmPopup.subtitle}
-        buttons={[
-          { label: '취소', onPress: () => setConfirmPopup(prev => ({ ...prev, visible: false })), backgroundColor: Gray.gray5 },
-          { label: '탈퇴', onPress: () => { setConfirmPopup(prev => ({ ...prev, visible: false })); confirmPopup.onConfirm(); } },
-        ]}
-        onClose={() => setConfirmPopup(prev => ({ ...prev, visible: false }))}
-      />
-
-      {/* 회원탈퇴 모달 */}
-      <Modal visible={modal === 'withdraw'} transparent animationType="slide">
-        <View style={styles.overlay}>
-          <View style={[styles.modalBox, styles.withdrawBox]}>
-            <Text style={styles.modalTitle}>회원탈퇴</Text>
-            <Text style={styles.withdrawSubtitle}>탈퇴 사유를 선택해주세요 (복수 선택 가능)</Text>
-            {WITHDRAW_REASONS.map(({ label, value }) => (
-              <TouchableOpacity
-                key={value}
-                style={styles.reasonRow}
-                onPress={() => toggleReason(value)}
-              >
-                <Ionicons
-                  name={selectedReasons.includes(value) ? 'checkbox' : 'square-outline'}
-                  size={rs(20)}
-                  color={selectedReasons.includes(value) ? '#34B262' : '#BDBDBD'}
-                />
-                <Text style={styles.reasonText}>{label}</Text>
-              </TouchableOpacity>
-            ))}
-            {selectedReasons.includes(WithdrawRequestReasonsItem.OTHER) && (
-              <TextInput
-                style={[styles.input, { marginTop: rs(8) }]}
-                placeholder="기타 사유 입력"
-                value={detailReason}
-                onChangeText={setDetailReason}
-                multiline
-              />
-            )}
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={closeModal}>
-                <Text style={styles.cancelText}>취소</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.confirmBtn, styles.withdrawBtn]}
-                onPress={handleWithdraw}
-                disabled={isWithdrawing}
-              >
-                <Text style={styles.confirmText}>{isWithdrawing ? '처리 중...' : '탈퇴'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
 
+const MenuRow = ({ label, onPress }: { label: string; onPress: () => void }) => (
+  <TouchableOpacity style={styles.menuRow} onPress={onPress}>
+    <Text style={styles.menuText}>{label}</Text>
+    <Ionicons name="chevron-forward" size={rs(16)} color="#1B1D1F" />
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  header: { paddingHorizontal: rs(20), paddingVertical: rs(10), justifyContent: 'center', alignItems: 'flex-start' },
-  fixedTitleContainer: { paddingHorizontal: rs(20), marginTop: rs(10), marginBottom: rs(10) },
+  header: { paddingHorizontal: rs(20), paddingVertical: rs(10), justifyContent: 'center', alignItems: 'flex-start', backgroundColor: '#FAFAFA' },
+  fixedTitleContainer: { paddingHorizontal: rs(20), marginTop: rs(10), marginBottom: rs(10), backgroundColor: '#FAFAFA', zIndex: 1 },
   pageTitle: { fontSize: rs(20), fontWeight: '700', color: 'black', fontFamily: 'Pretendard' },
   content: { paddingHorizontal: rs(20), paddingBottom: rs(50), paddingTop: rs(10) },
-  menuRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: rs(18) },
+  menuRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: rs(18), backgroundColor: 'transparent' },
   menuText: { fontSize: rs(15), fontWeight: '500', color: '#1B1D1F', fontFamily: 'Pretendard' },
   divider: { height: 1, backgroundColor: '#E6E6E6', marginVertical: rs(10) },
   deleteAccountText: { fontSize: rs(14), fontWeight: '500', color: '#BDBDBD', fontFamily: 'Pretendard' },
-
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: rs(20) },
-  modalBox: { backgroundColor: 'white', borderRadius: rs(16), padding: rs(24), width: '100%' },
-  withdrawBox: { maxHeight: '80%' },
-  modalTitle: { fontSize: rs(18), fontWeight: '700', color: '#1B1D1F', fontFamily: 'Pretendard', marginBottom: rs(16) },
-  withdrawSubtitle: { fontSize: rs(13), color: '#828282', fontFamily: 'Pretendard', marginBottom: rs(12) },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E6E6E6',
-    borderRadius: rs(8),
-    paddingHorizontal: rs(12),
-    paddingVertical: rs(10),
-    fontSize: rs(14),
-    fontFamily: 'Pretendard',
-    marginBottom: rs(8),
-  },
-  modalButtons: { flexDirection: 'row', gap: rs(8), marginTop: rs(8) },
-  cancelBtn: { flex: 1, paddingVertical: rs(12), borderRadius: rs(8), backgroundColor: '#F0F0F0', alignItems: 'center' },
-  cancelText: { fontSize: rs(14), fontWeight: '600', color: '#444', fontFamily: 'Pretendard' },
-  confirmBtn: { flex: 1, paddingVertical: rs(12), borderRadius: rs(8), backgroundColor: '#34B262', alignItems: 'center' },
-  withdrawBtn: { backgroundColor: '#FF4B4B' },
-  confirmText: { fontSize: rs(14), fontWeight: '600', color: 'white', fontFamily: 'Pretendard' },
-  reasonRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: rs(8), gap: rs(8) },
-  reasonText: { fontSize: rs(14), color: '#1B1D1F', fontFamily: 'Pretendard' },
 });

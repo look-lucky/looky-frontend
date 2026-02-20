@@ -116,6 +116,12 @@ export default function MyReview() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+            {allReviews.length === 0 && (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>작성한 리뷰가 없습니다</Text>
+            </View>
+          )}
+
           {allReviews.map((review) => {
             const hasReply = review.ownerReply ?? false;
             const dateStr = review.createdAt
@@ -418,5 +424,16 @@ const styles = StyleSheet.create({
   },
   popupBtnFull: {
     width: rs(295),
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: rs(80),
+  },
+  emptyText: {
+    fontSize: rs(14),
+    fontWeight: '400',
+    color: '#828282',
+    fontFamily: 'Pretendard',
   },
 });

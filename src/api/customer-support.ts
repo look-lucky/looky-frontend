@@ -188,7 +188,7 @@ export const getCreateInquiryUrl = () => {
 
 export const createInquiry = async (createInquiryBody: CreateInquiryBody, options?: RequestInit): Promise<createInquiryResponse> => {
     const formData = new FormData();
-formData.append(`request`, new Blob([JSON.stringify(createInquiryBody.request)], { type: 'application/json' }));
+formData.append(`request`, createInquiryBody.request);
 if(createInquiryBody.images !== undefined) {
  createInquiryBody.images.forEach(value => formData.append(`images`, value));
  }

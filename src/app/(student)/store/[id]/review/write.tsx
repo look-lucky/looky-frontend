@@ -94,10 +94,10 @@ export default function ReviewWriteScreen() {
     createReview({
       storeId: Number(id),
       data: {
-        request: {
+        request: JSON.stringify({
           content: reviewContent.trim(),
           rating,
-        },
+        }),
         images: images.length > 0 ? (images as any) : undefined,
       },
     });

@@ -9,6 +9,7 @@ import type {
   StoreResponse,
 } from '@/src/api/generated.schemas';
 import { useGetItems } from '@/src/api/item';
+import { useGetStudentInfo } from '@/src/api/my-page';
 import { useAddLike, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
 import { useGetStore } from '@/src/api/store';
 import { useGetStoreNewsList } from '@/src/api/store-news';
@@ -66,7 +67,7 @@ export default function StoreDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const { collegeId: userCollegeId, username: currentUsername } = useAuth();
+  const { collegeId: userCollegeId, collegeName: userCollegeName, username: currentUsername, saveUserCollegeName } = useAuth();
   const [activeTab, setActiveTab] = useState(tab ?? 'news');
   const [isLiked, setIsLiked] = useState(false);
   const [isLikeInitialized, setIsLikeInitialized] = useState(false);
@@ -92,6 +93,19 @@ export default function StoreDetailScreen() {
   const storeId = Number(id);
 
   // ── API hooks ──────────────────────────────────────────────
+
+  // 학생 프로필 (collegeName 없는 기존 유저용 fallback)
+  const { data: studentInfoRes } = useGetStudentInfo({
+    query: { enabled: userCollegeName === null, staleTime: 10 * 60 * 1000 },
+  });
+  const profileCollegeName = (studentInfoRes as any)?.data?.data?.collegeName as string | undefined;
+
+  // profileCollegeName이 로드되면 auth에 저장 (이후 API 호출 불필요)
+  React.useEffect(() => {
+    if (profileCollegeName && userCollegeName === null) {
+      saveUserCollegeName(profileCollegeName);
+    }
+  }, [profileCollegeName, userCollegeName]);
 
   // 가게 기본 정보
   const { data: storeRes, isLoading: isStoreLoading, isError } = useGetStore(storeId, {
@@ -353,9 +367,10 @@ export default function StoreDetailScreen() {
 
   // ── 대학 필터 & 쿠폰 필터 ──────────────────────────────────
 
+  const resolvedCollegeName = userCollegeName ?? profileCollegeName ?? storeUniversity;
   const selectedUniversity = selectedUniversityId
-    ? UNIVERSITY_OPTIONS.find((opt) => opt.id === selectedUniversityId)?.label ?? storeUniversity
-    : storeUniversity;
+    ? UNIVERSITY_OPTIONS.find((opt) => opt.id === selectedUniversityId)?.label ?? resolvedCollegeName
+    : resolvedCollegeName;
 
   const filteredCoupons = storeCoupons;
 

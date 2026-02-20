@@ -34,6 +34,11 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={rs(16)} color={Gray.gray6} />
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/mypage/edit-profile' as any)}>
+          <ThemedText style={styles.menuText}>내 정보 수정</ThemedText>
+          <Ionicons name="chevron-forward" size={rs(16)} color={Gray.gray6} />
+        </TouchableOpacity>
+
         <View style={styles.divider} />
 
         <View style={styles.sectionHeader}>

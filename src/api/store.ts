@@ -205,7 +205,7 @@ export const createStore = async (createStoreBody: CreateStoreBody, options?: Re
 if(createStoreBody.images !== undefined) {
  createStoreBody.images.forEach(value => formData.append(`images`, value));
  }
-formData.append(`request`, JSON.stringify(createStoreBody.request));
+formData.append(`request`, createStoreBody.request);
 
   return customFetch<createStoreResponse>(getCreateStoreUrl(),
   {      
@@ -616,7 +616,7 @@ export const getUpdateStoreUrl = (storeId: number,) => {
 export const updateStore = async (storeId: number,
     updateStoreBody: UpdateStoreBody, options?: RequestInit): Promise<updateStoreResponse> => {
     const formData = new FormData();
-formData.append(`request`, JSON.stringify(updateStoreBody.request));
+formData.append(`request`, updateStoreBody.request);
 if(updateStoreBody.images !== undefined) {
  updateStoreBody.images.forEach(value => formData.append(`images`, value));
  }
