@@ -703,8 +703,8 @@ export interface ReviewResponse {
   createdAt?: string;
   likeCount?: number;
   imageUrls?: string[];
-  ownerReply?: boolean;
   liked?: boolean;
+  ownerReply?: boolean;
 }
 
 export interface PageResponseReviewResponse {
@@ -1025,8 +1025,8 @@ export interface PageInquiryResponse {
   content?: InquiryResponse[];
   number?: number;
   sort?: SortObject;
-  numberOfElements?: number;
   last?: boolean;
+  numberOfElements?: number;
   empty?: boolean;
 }
 
@@ -1243,8 +1243,8 @@ export interface PageStoreClaimResponse {
   content?: StoreClaimResponse[];
   number?: number;
   sort?: SortObject;
-  numberOfElements?: number;
   last?: boolean;
+  numberOfElements?: number;
   empty?: boolean;
 }
 

@@ -1,5 +1,7 @@
 import { withdraw } from '@/src/api/auth';
 import { WithdrawRequestReasonsItem } from '@/src/api/generated.schemas';
+import { AppPopup } from '@/src/shared/common/app-popup';
+import { isNetworkError, useNetworkError } from '@/src/shared/contexts/network-error-context';
 import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +9,6 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -32,10 +33,13 @@ export default function WithdrawScreen() {
   const insets = useSafeAreaInsets();
   const { handleLogout } = useAuth();
 
+  const { showNetworkError } = useNetworkError();
+
   const [selectedReasons, setSelectedReasons] = useState<WithdrawRequestReasonsItem[]>([]);
   const [detailReason, setDetailReason] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
+  const [errorPopupVisible, setErrorPopupVisible] = useState(false);
 
   const toggleReason = (reason: WithdrawRequestReasonsItem) => {
     setSelectedReasons(prev =>
@@ -59,10 +63,13 @@ export default function WithdrawScreen() {
       await withdraw({ reasons: selectedReasons, detailReason: detailReason || undefined });
       setWithdrawModalVisible(false);
       await handleLogout();
-      Alert.alert('완료', '회원탈퇴가 완료되었습니다.');
-    } catch {
-      Alert.alert('오류', '회원탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } catch (error) {
       setWithdrawModalVisible(false);
+      if (isNetworkError(error)) {
+        showNetworkError();
+      } else {
+        setErrorPopupVisible(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -144,6 +151,14 @@ export default function WithdrawScreen() {
           <Text style={styles.withdrawBtnText}>탈퇴하기</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 탈퇴 실패 팝업 */}
+      <AppPopup
+        visible={errorPopupVisible}
+        title="회원탈퇴에 실패했습니다"
+        subtitle="잠시 후 다시 시도해주세요"
+        onClose={() => setErrorPopupVisible(false)}
+      />
 
       {/* 탈퇴 재확인 팝업 */}
       <Modal transparent animationType="fade" visible={withdrawModalVisible} onRequestClose={() => !isLoading && setWithdrawModalVisible(false)}>
