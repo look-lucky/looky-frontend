@@ -1,6 +1,6 @@
 import { useMapCluster } from '@/src/shared/hooks/use-map-cluster';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray, Owner } from '@/src/shared/theme/theme';
+import { Gray } from '@/src/shared/theme/theme';
 import type { EventStatus, EventType } from '@/src/shared/types/event';
 import {
   NaverMapMarkerOverlay,
@@ -8,7 +8,10 @@ import {
   type NaverMapViewRef,
 } from '@mj-studio/react-native-naver-map';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+
+// 클러스터 마커 아이콘 PNG
+const CLUSTER_ICON = require('@/assets/images/icons/map/clover-cluster.png');
 
 // 가게 마커 아이콘 PNG
 const STORE_MARKER_ICONS = {
@@ -219,6 +222,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                   onTap={() => handleClusterClick(item.lat, item.lng)}
                 >
                   <View style={styles.clusterMarker}>
+                    <Image source={CLUSTER_ICON} style={styles.clusterIcon} />
                     <Text style={styles.clusterCount}>{item.count}</Text>
                   </View>
                 </NaverMapMarkerOverlay>
@@ -268,16 +272,18 @@ const styles = StyleSheet.create({
   clusterMarker: {
     width: CLUSTER_SIZE,
     height: CLUSTER_SIZE,
-    borderRadius: CLUSTER_SIZE / 2,
-    backgroundColor: Owner.primary,
-    borderWidth: 2.5,
-    borderColor: Gray.white,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  clusterIcon: {
+    ...StyleSheet.absoluteFillObject,
+    width: CLUSTER_SIZE,
+    height: CLUSTER_SIZE,
   },
   clusterCount: {
     color: Gray.white,
     fontWeight: '700',
     fontSize: rs(14),
+    transform: [{ translateY: -rs(4) }],
   },
 });
