@@ -359,19 +359,18 @@ export type getMyFavoritesResponseSuccess = (getMyFavoritesResponse200) & {
 export type getMyFavoritesResponse = (getMyFavoritesResponseSuccess)
 
 export const getGetMyFavoritesUrl = (params: GetMyFavoritesParams,) => {
-  const parts: string[] = [];
+  const normalizedParams = new URLSearchParams();
 
-  const { pageable } = params;
-  if (pageable) {
-    if (pageable.page !== undefined) parts.push(`page=${pageable.page}`);
-    if (pageable.size !== undefined) parts.push(`size=${pageable.size}`);
-    if (pageable.sort) {
-      // sort 값에 콤마가 포함되므로 URLSearchParams 인코딩(%2C) 없이 그대로 사용
-      pageable.sort.forEach((s) => parts.push(`sort=${s}`));
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
-  }
+  });
 
-  return parts.length > 0 ? `/api/favorites?${parts.join('&')}` : `/api/favorites`
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/favorites?${stringifiedParams}` : `/api/favorites`
 }
 
 export const getMyFavorites = async (params: GetMyFavoritesParams, options?: RequestInit): Promise<getMyFavoritesResponse> => {
