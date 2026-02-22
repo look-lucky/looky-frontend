@@ -1,6 +1,14 @@
 import { ErrorPopup } from '@/src/shared/common/error-popup';
-import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+
+const persister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+  throttleTime: 1000,
+});
 
 interface NetworkErrorContextValue {
   showNetworkError: () => void;
@@ -53,7 +61,10 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
 
   return (
     <NetworkErrorContext.Provider value={{ showNetworkError }}>
-      <QueryClientProvider client={queryClientRef.current}>
+      <PersistQueryClientProvider
+        client={queryClientRef.current}
+        persistOptions={{ persister, maxAge: 24 * 60 * 60 * 1000 }}
+      >
         {children}
         <ErrorPopup
           visible={visible}
@@ -62,7 +73,7 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
           onRefresh={handleRefresh}
           onClose={() => setVisible(false)}
         />
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </NetworkErrorContext.Provider>
   );
 }

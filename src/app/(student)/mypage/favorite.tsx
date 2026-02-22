@@ -25,9 +25,12 @@ export default function Favorite() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterType, setFilterType] = useState<'recent' | 'rating'>('recent');
 
-  const { data: favoritesRes, refetch } = useGetMyFavorites({
-    pageable: { page: 0, size: 100 },
-  });
+  const sortParam = filterType === 'rating' ? 'store.averageRating,desc' : 'createdAt,desc';
+
+  const { data: favoritesRes, refetch } = useGetMyFavorites(
+    { pageable: { page: 0, size: 100, sort: [sortParam] } },
+    { query: { placeholderData: (prev: any) => prev } },
+  );
 
   const { mutate: removeFavorite } = useRemoveFavorite();
 
@@ -37,19 +40,6 @@ export default function Favorite() {
       | undefined;
     return raw?.content ?? [];
   }, [favoritesRes]);
-
-  const sortedStores = useMemo(() => {
-    const list = [...stores];
-    if (filterType === 'rating') {
-      list.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
-    } else {
-      list.sort((a, b) => {
-        if (!a.createdAt || !b.createdAt) return 0;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-    }
-    return list;
-  }, [stores, filterType]);
 
   const toggleFilter = () => setIsFilterOpen(!isFilterOpen);
 
@@ -81,19 +71,19 @@ export default function Favorite() {
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { flexGrow: 1 }]}
           showsVerticalScrollIndicator={false}
           scrollEnabled={!isFilterOpen}
         >
           <View style={{ height: rs(40) }} />
 
-          {sortedStores.length === 0 && (
+          {stores.length === 0 && (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>찜한 매장이 없습니다</Text>
             </View>
           )}
 
-          {sortedStores.map((store) => (
+          {stores.map((store) => (
             <TouchableOpacity
               key={store.storeId}
               style={styles.storeCard}
@@ -112,6 +102,15 @@ export default function Favorite() {
                     )}
                   </Text>
                   <Text style={styles.storeName}>{store.name}</Text>
+                  <View style={styles.ratingRow}>
+                    <Ionicons name="star" size={rs(12)} color="#F5C242" />
+                    <Text style={styles.ratingText}>
+                      {store.averageRating != null ? store.averageRating.toFixed(1) : '-'}
+                    </Text>
+                    {store.reviewCount != null && (
+                      <Text style={styles.reviewCountText}>({store.reviewCount})</Text>
+                    )}
+                  </View>
                 </View>
               </View>
               <TouchableOpacity
@@ -242,6 +241,19 @@ const styles = StyleSheet.create({
     color: 'black',
     fontFamily: 'Pretendard',
   },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: rs(4) },
+  ratingText: {
+    fontSize: rs(12),
+    fontWeight: '500',
+    color: '#1B1D1F',
+    fontFamily: 'Pretendard',
+  },
+  reviewCountText: {
+    fontSize: rs(12),
+    fontWeight: '400',
+    color: '#828282',
+    fontFamily: 'Pretendard',
+  },
   bookmarkBtn: { padding: rs(4) },
   filterContainer: { position: 'absolute', top: rs(50), left: rs(20), zIndex: 100 },
   filterClosed: {
@@ -280,10 +292,9 @@ const styles = StyleSheet.create({
   textSelected: { color: '#34B262', fontWeight: '600' },
   textUnselected: { color: 'black' },
   emptyContainer: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: rs(80),
+    paddingVertical: rs(80),
   },
   emptyText: {
     fontSize: rs(14),

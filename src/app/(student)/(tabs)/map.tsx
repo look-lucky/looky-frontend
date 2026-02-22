@@ -1,3 +1,4 @@
+import ConfettiIcon from '@/assets/images/icons/map/confetti.svg';
 import {
   useAddFavorite,
   useGetMyFavorites,
@@ -6,7 +7,6 @@ import {
 import { EventCard } from '@/src/app/(student)/components/event/event-card';
 import { SelectedEventDetail } from '@/src/app/(student)/components/event/selected-event-detail';
 import { NaverMap } from '@/src/app/(student)/components/map/naver-map-view';
-import type { NaverMapViewRef } from '@mj-studio/react-native-naver-map';
 import { SelectedStoreDetail } from '@/src/app/(student)/components/map/selected-store-detail';
 import { FilterTab, StoreFilterModal } from '@/src/app/(student)/components/map/store-filter-modal';
 import { StoreCard } from '@/src/app/(student)/components/store/store-card';
@@ -22,13 +22,13 @@ import {
 import { useTabBar } from '@/src/shared/contexts/tab-bar-context';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { useMapSearch } from '@/src/shared/hooks/use-map-search';
-import type { EventType } from '@/src/shared/types/event';
-import type { Store } from '@/src/shared/types/store';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Owner, Text } from '@/src/shared/theme/theme';
-import ConfettiIcon from '@/assets/images/icons/map/confetti.svg';
+import type { Event, EventType } from '@/src/shared/types/event';
+import type { Store } from '@/src/shared/types/store';
 import { Ionicons } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import type { NaverMapViewRef } from '@mj-studio/react-native-naver-map';
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -46,6 +46,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+type ListItem =
+  | { type: 'store'; data: Store }
+  | { type: 'event'; data: Event }
+  | { type: 'divider' }
+  | { type: 'empty' };
 
 export default function MapTab() {
   const { setTabBarVisible } = useTabBar();
@@ -458,6 +464,108 @@ export default function MapTab() {
   }, [handleViewportSearch]);
 
   // ────────────────────────────────────────────
+  // 바텀시트 FlatList 데이터 (가상화)
+  // ────────────────────────────────────────────
+  const flatListData = useMemo((): ListItem[] => {
+    if (selectedStoreWithFavorite || selectedEvent || isLoading || isEventsLoading) return [];
+    const items: ListItem[] = [];
+    if (!isEventOnlyMode) {
+      storesWithFavorite.forEach((store) => items.push({ type: 'store', data: store }));
+    }
+    if (!isEventOnlyMode && storesWithFavorite.length > 0 && events.length > 0) {
+      items.push({ type: 'divider' });
+    }
+    events.forEach((event) => items.push({ type: 'event', data: event }));
+    if (storesWithFavorite.length === 0 && events.length === 0) {
+      items.push({ type: 'empty' });
+    }
+    return items;
+  }, [selectedStoreWithFavorite, selectedEvent, isLoading, isEventsLoading, isEventOnlyMode, storesWithFavorite, events]);
+
+  const renderBottomSheetHeader = useCallback(() => {
+    if (selectedStoreWithFavorite) {
+      return (
+        <SelectedStoreDetail
+          store={selectedStoreWithFavorite}
+          onViewDetail={() => handleViewStoreDetail(selectedStoreWithFavorite.id)}
+          onBookmarkPress={handleBookmarkPress}
+        />
+      );
+    }
+    if (selectedEvent) {
+      return (
+        <SelectedEventDetail
+          event={selectedEvent}
+          onViewDetail={() => handleViewEventDetail(selectedEvent.id)}
+        />
+      );
+    }
+    if (isLoading || isEventsLoading) {
+      return (
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={Owner.primary} />
+        </View>
+      );
+    }
+    return null;
+  }, [selectedStoreWithFavorite, selectedEvent, isLoading, isEventsLoading, handleViewStoreDetail, handleBookmarkPress, handleViewEventDetail]);
+
+  const renderBottomSheetItem = useCallback(({ item }: { item: ListItem }) => {
+    if (item.type === 'store') {
+      return (
+        <StoreCard
+          store={item.data}
+          onPress={() => handleStoreCardPress(item.data.id)}
+          onBookmarkPress={handleBookmarkPress}
+        />
+      );
+    }
+    if (item.type === 'event') {
+      return (
+        <EventCard
+          event={item.data}
+          onPress={() => handleEventCardPress(item.data.id)}
+        />
+      );
+    }
+    if (item.type === 'divider') {
+      return (
+        <View style={styles.sectionDivider}>
+          <View style={styles.dividerLine} />
+          <ThemedText style={styles.dividerText}>이벤트</ThemedText>
+          <View style={styles.dividerLine} />
+        </View>
+      );
+    }
+    if (item.type === 'empty') {
+      return (
+        <View style={styles.emptyState}>
+          <Image
+            source={require('@/assets/images/icons/map/search-none.png')}
+            style={styles.emptyStateImage}
+            resizeMode="contain"
+          />
+          <ThemedText style={styles.emptyStateTitle}>
+            어라? 찾으시는 매장이 안 보여요.
+          </ThemedText>
+          <View style={styles.emptyStateBullets}>
+            <ThemedText style={styles.emptyStateText}>
+              {'\u2022'} 검색어의 철자가 정확한지 확인해 보세요.
+            </ThemedText>
+            <ThemedText style={styles.emptyStateText}>
+              {'\u2022'} 다른 키워드로 검색해 보시겠어요?
+            </ThemedText>
+            <ThemedText style={styles.emptyStateText}>
+              {'\u2022'} 필터 조건을 변경하면 더 많은 결과를 찾을 수 있어요!
+            </ThemedText>
+          </View>
+        </View>
+      );
+    }
+    return null;
+  }, [handleStoreCardPress, handleBookmarkPress, handleEventCardPress]);
+
+  // ────────────────────────────────────────────
   // 공통: 검색바 + 카테고리 탭
   // ────────────────────────────────────────────
   const renderSearchBar = () => (
@@ -779,91 +887,18 @@ export default function MapTab() {
           </View>
 
           {/* 가게/이벤트 목록 또는 선택된 상세 */}
-          <BottomSheetScrollView
-            style={styles.scrollView}
+          <BottomSheetFlatList
+            data={flatListData}
+            keyExtractor={(item: ListItem, index: number) => {
+              if (item.type === 'store') return `store-${item.data.id}`;
+              if (item.type === 'event') return `event-${item.data.id}`;
+              return `${item.type}-${index}`;
+            }}
+            renderItem={renderBottomSheetItem}
+            ListHeaderComponent={renderBottomSheetHeader}
             contentContainerStyle={styles.storeListContent}
-          >
-            {/* 선택된 가게 상세 */}
-            {selectedStoreWithFavorite ? (
-              <SelectedStoreDetail
-                store={selectedStoreWithFavorite}
-                onViewDetail={() => handleViewStoreDetail(selectedStoreWithFavorite.id)}
-                onBookmarkPress={handleBookmarkPress}
-              />
-            ) : selectedEvent ? (
-              /* 선택된 이벤트 상세 */
-              <SelectedEventDetail
-                event={selectedEvent}
-                onViewDetail={() => handleViewEventDetail(selectedEvent.id)}
-              />
-            ) : isLoading || isEventsLoading ? (
-              <View style={styles.loadingState}>
-                <ActivityIndicator size="large" color={Owner.primary} />
-              </View>
-            ) : (
-              <>
-                {/* 이벤트만 보기 모드가 아닐 때 가게 목록 */}
-                {!isEventOnlyMode && storesWithFavorite.length > 0 && (
-                  <>
-                    {storesWithFavorite.map((store) => (
-                      <StoreCard
-                        key={store.id}
-                        store={store}
-                        onPress={() => handleStoreCardPress(store.id)}
-                        onBookmarkPress={handleBookmarkPress}
-                      />
-                    ))}
-                  </>
-                )}
-
-                {/* 이벤트 목록 (가게 아래 또는 이벤트만 보기 모드) */}
-                {events.length > 0 && (
-                  <>
-                    {/* 구분선 (가게가 있을 때만) */}
-                    {!isEventOnlyMode && storesWithFavorite.length > 0 && (
-                      <View style={styles.sectionDivider}>
-                        <View style={styles.dividerLine} />
-                        <ThemedText style={styles.dividerText}>이벤트</ThemedText>
-                        <View style={styles.dividerLine} />
-                      </View>
-                    )}
-                    {events.map((event) => (
-                      <EventCard
-                        key={event.id}
-                        event={event}
-                        onPress={() => handleEventCardPress(event.id)}
-                      />
-                    ))}
-                  </>
-                )}
-
-                {/* 빈 상태 */}
-                {storesWithFavorite.length === 0 && events.length === 0 && (
-                  <View style={styles.emptyState}>
-                    <Image
-                      source={require('@/assets/images/icons/map/search-none.png')}
-                      style={styles.emptyStateImage}
-                      resizeMode="contain"
-                    />
-                    <ThemedText style={styles.emptyStateTitle}>
-                      어라? 찾으시는 매장이 안 보여요.
-                    </ThemedText>
-                    <View style={styles.emptyStateBullets}>
-                      <ThemedText style={styles.emptyStateText}>
-                        {'\u2022'} 검색어의 철자가 정확한지 확인해 보세요.
-                      </ThemedText>
-                      <ThemedText style={styles.emptyStateText}>
-                        {'\u2022'} 다른 키워드로 검색해 보시겠어요?
-                      </ThemedText>
-                      <ThemedText style={styles.emptyStateText}>
-                        {'\u2022'} 필터 조건을 변경하면 더 많은 결과를 찾을 수 있어요!
-                      </ThemedText>
-                    </View>
-                  </View>
-                )}
-              </>
-            )}
-          </BottomSheetScrollView>
+            style={styles.scrollView}
+          />
         </View>
       </BottomSheet>
 

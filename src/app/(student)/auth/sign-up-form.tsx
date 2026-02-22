@@ -6,6 +6,7 @@ import { ThemedText } from "@/src/shared/common/themed-text";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/theme/theme";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -42,6 +43,34 @@ function EyeOffIcon({ color = Gray.gray5 }: { color?: string }) {
         d="M1 1l22 22"
         stroke={color}
         strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function XIcon({ color = System.error }: { color?: string }) {
+  return (
+    <Svg width={rs(16)} height={rs(16)} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M18 6L6 18M6 6l12 12"
+        stroke={color}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function CheckIcon({ color = Brand.primary }: { color?: string }) {
+  return (
+    <Svg width={rs(16)} height={rs(16)} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20 6L9 17l-5-5"
+        stroke={color}
+        strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -108,6 +137,7 @@ export default function SignupTypePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
+  const [passwordConfirmTouched, setPasswordConfirmTouched] = useState(false);
   const [birthTouched, setBirthTouched] = useState(false);
 
   // 학생 전용 상태
@@ -132,6 +162,22 @@ export default function SignupTypePage() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
+  const EMAIL_VERIFY_EXPIRY_KEY = "signup_email_verify_expiry";
+
+  // 마운트 시 AsyncStorage에서 만료 시간 복원 (앱 전환으로 리마운트된 경우 대응)
+  useEffect(() => {
+    AsyncStorage.getItem(EMAIL_VERIFY_EXPIRY_KEY).then((val) => {
+      if (!val) return;
+      const expiry = parseInt(val, 10);
+      if (expiry > Date.now()) {
+        setExpiryTime(expiry);
+        setIsCodeSent(true);
+      } else {
+        AsyncStorage.removeItem(EMAIL_VERIFY_EXPIRY_KEY);
+      }
+    });
+  }, []);
+
   const isStudent = userType === "student";
   const primaryColor = userType === "owner" ? Owner.primary : Brand.primary;
 
@@ -141,6 +187,9 @@ export default function SignupTypePage() {
   const isPasswordLengthValid = (pw: string) => pw.length >= 8 && pw.length <= 20;
 
   const isNicknameValid = (nick: string) => /^[가-힣a-zA-Z]{2,10}$/.test(nick);
+
+  const isUsernameFormatValid = (u: string) =>
+    /^(?=.*[a-z])(?=.*[0-9])[a-z0-9]{4,16}$/.test(u);
 
   const isBirthValid = () => {
     if (birthYear.length !== 4 || !birthMonth || !birthDay) return false;
@@ -192,6 +241,9 @@ export default function SignupTypePage() {
       const now = Date.now();
       const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000));
       setTimer(remaining);
+      if (remaining === 0) {
+        AsyncStorage.removeItem(EMAIL_VERIFY_EXPIRY_KEY);
+      }
     };
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
@@ -251,7 +303,7 @@ export default function SignupTypePage() {
 
     const commonValid =
       isBirthValid() &&
-      username.length >= 4 &&
+      isUsernameFormatValid(username) &&
       isUsernameChecked &&
       usernameAvailable === true &&
       isPasswordValid(password) &&
@@ -270,7 +322,7 @@ export default function SignupTypePage() {
   // ============================================
 
   const handleCheckUsername = async () => {
-    if (!username) return;
+    if (!username || !isUsernameFormatValid(username)) return;
     console.log("=== 아이디 중복 확인 시작 ===");
     console.log("확인할 아이디:", username);
     try {
@@ -305,13 +357,14 @@ export default function SignupTypePage() {
       setIsCodeSent(true);
       setExpiryTime(expiry);
       setTimer(300);
+      AsyncStorage.setItem(EMAIL_VERIFY_EXPIRY_KEY, String(expiry));
       setResendCooldown(5);
       setEmailCode("");
       setVerifyFailCount(0);
       showSendCodeMessage("인증번호가 발송되었습니다.");
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
-      showSendCodeMessage(error?.data?.message || error?.message || "인증번호 발송에 실패했습니다.");
+      showSendCodeMessage(error?.data?.data?.message || error?.data?.message || error?.message || "인증번호 발송에 실패했습니다.");
     }
   };
 
@@ -336,6 +389,7 @@ export default function SignupTypePage() {
         }
       });
       setIsEmailVerified(true);
+      AsyncStorage.removeItem(EMAIL_VERIFY_EXPIRY_KEY);
       showSendCodeMessage("이메일 인증이 완료되었습니다.");
     } catch (error: any) {
       console.error("이메일 인증 실패:", error);
@@ -344,7 +398,7 @@ export default function SignupTypePage() {
       if (newCount >= 5) {
         showSendCodeMessage("입력 횟수를 초과했습니다. 재발송해주세요.");
       } else {
-        showSendCodeMessage(error?.data?.message || error?.message || "인증번호가 일치하지 않습니다.");
+        showSendCodeMessage(error?.data?.data?.message || error?.data?.message || error?.message || "인증번호가 일치하지 않습니다.");
       }
     }
   };
@@ -518,7 +572,7 @@ export default function SignupTypePage() {
                 <View style={styles.inputGroup}>
                   <View style={[
                     styles.inputContainer,
-                    !nicknameFocused && (nicknameTouched || hasSubmitted) && !isNicknameValid(nickname) && styles.inputError,
+                    (hasSubmitted || (!nicknameFocused && nicknameTouched)) && !isNicknameValid(nickname) && styles.inputError,
                   ]}>
                     <TextInput
                       style={styles.input}
@@ -534,10 +588,10 @@ export default function SignupTypePage() {
                       }}
                     />
                   </View>
-                  {!nicknameFocused && hasSubmitted && nickname.length === 0 && (
+                  {hasSubmitted && nickname.length === 0 && (
                     <ThemedText style={styles.errorText}>닉네임을 입력해주세요</ThemedText>
                   )}
-                  {!nicknameFocused && (nicknameTouched || hasSubmitted) && nickname.length > 0 && !isNicknameValid(nickname) && (
+                  {(hasSubmitted || (!nicknameFocused && nicknameTouched)) && nickname.length > 0 && !isNicknameValid(nickname) && (
                     <ThemedText style={styles.errorText}>닉네임은 한글, 영문을 포함한 2~10자 이내로 입력해주세요</ThemedText>
                   )}
                 </View>
@@ -548,6 +602,7 @@ export default function SignupTypePage() {
                     styles.inputContainer,
                     usernameAvailable === true && styles.inputSuccess,
                     usernameAvailable === false && styles.inputError,
+                    usernameAvailable === null && username.length > 0 && !isUsernameFormatValid(username) && styles.inputError,
                   ]}>
                     <TextInput
                       style={styles.input}
@@ -555,8 +610,7 @@ export default function SignupTypePage() {
                       placeholderTextColor={TextColors.placeholder}
                       value={username}
                       onChangeText={(text) => {
-                        const filtered = text.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-                        setUsername(filtered);
+                        setUsername(text.toLowerCase());
                         setIsUsernameChecked(false);
                         setUsernameAvailable(null);
                       }}
@@ -566,10 +620,10 @@ export default function SignupTypePage() {
                     <TouchableOpacity
                       style={[
                         styles.smallButton,
-                        { backgroundColor: usernameAvailable === true ? Brand.primary : (username ? primaryColor : Gray.gray5) }
+                        { backgroundColor: usernameAvailable === true ? Brand.primary : (username && isUsernameFormatValid(username) ? primaryColor : Gray.gray5) }
                       ]}
                       onPress={handleCheckUsername}
-                      disabled={!username}
+                      disabled={!username || !isUsernameFormatValid(username)}
                     >
                       <ThemedText style={styles.smallButtonText}>
                         {usernameAvailable === true ? "확인완료" : "중복 확인"}
@@ -587,8 +641,8 @@ export default function SignupTypePage() {
                     </ThemedText>
                   )}
                   {usernameAvailable === null && (
-                    <ThemedText style={styles.hintText}>
-                      아이디는 영어, 숫자를 포함한 4~16자 이내로 입력해주세요
+                    <ThemedText style={username.length > 0 && !isUsernameFormatValid(username) ? styles.errorText : styles.hintText}>
+                      아이디는 소문자 영어, 숫자를 포함한 4~16자 이내로 입력해주세요
                     </ThemedText>
                   )}
                 </View>
@@ -606,6 +660,7 @@ export default function SignupTypePage() {
                     styles.inputContainer,
                     usernameAvailable === true && styles.inputSuccess,
                     usernameAvailable === false && styles.inputError,
+                    usernameAvailable === null && username.length > 0 && !isUsernameFormatValid(username) && styles.inputError,
                   ]}>
                     <TextInput
                       style={styles.input}
@@ -613,8 +668,7 @@ export default function SignupTypePage() {
                       placeholderTextColor={TextColors.placeholder}
                       value={username}
                       onChangeText={(text) => {
-                        const filtered = text.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-                        setUsername(filtered);
+                        setUsername(text.toLowerCase());
                         setIsUsernameChecked(false);
                         setUsernameAvailable(null);
                       }}
@@ -624,10 +678,10 @@ export default function SignupTypePage() {
                     <TouchableOpacity
                       style={[
                         styles.smallButton,
-                        { backgroundColor: usernameAvailable === true ? Brand.primary : (username ? primaryColor : Gray.gray5) }
+                        { backgroundColor: usernameAvailable === true ? Brand.primary : (username && isUsernameFormatValid(username) ? primaryColor : Gray.gray5) }
                       ]}
                       onPress={handleCheckUsername}
-                      disabled={!username}
+                      disabled={!username || !isUsernameFormatValid(username)}
                     >
                       <ThemedText style={styles.smallButtonText}>
                         {usernameAvailable === true ? "확인완료" : "중복 확인"}
@@ -645,8 +699,8 @@ export default function SignupTypePage() {
                     </ThemedText>
                   )}
                   {usernameAvailable === null && (
-                    <ThemedText style={styles.hintText}>
-                      아이디는 영어, 숫자를 포함한 4~16자 이내로 입력해주세요
+                    <ThemedText style={username.length > 0 && !isUsernameFormatValid(username) ? styles.errorText : styles.hintText}>
+                      아이디는 소문자 영어, 숫자를 포함한 4~16자 이내로 입력해주세요
                     </ThemedText>
                   )}
                 </View>
@@ -821,8 +875,8 @@ export default function SignupTypePage() {
             <View style={styles.inputGroup}>
               <View style={[
                 styles.inputContainer,
-                passwordConfirm.length > 0 && password === passwordConfirm && isPasswordValid(password) && styles.inputSuccess,
-                passwordConfirm.length > 0 && password !== passwordConfirm && styles.inputError,
+                passwordConfirm.length > 0 && (passwordConfirmTouched || hasSubmitted) && password === passwordConfirm && isPasswordValid(password) && styles.inputSuccess,
+                passwordConfirm.length > 0 && (passwordConfirmTouched || hasSubmitted) && password !== passwordConfirm && styles.inputError,
               ]}>
                 <TextInput
                   style={styles.input}
@@ -833,12 +887,19 @@ export default function SignupTypePage() {
                   secureTextEntry={!showPasswordConfirm}
                   autoCapitalize="none"
                   maxLength={20}
+                  clearTextOnFocus={false}
                   onFocus={() => {
                     setTimeout(() => {
                       scrollViewRef.current?.scrollToEnd({ animated: true });
                     }, 150);
                   }}
+                  onBlur={() => setPasswordConfirmTouched(true)}
                 />
+                {passwordConfirm.length > 0 && (passwordConfirmTouched || hasSubmitted) && (
+                  password === passwordConfirm && isPasswordValid(password)
+                    ? <CheckIcon color={Brand.primary} />
+                    : <XIcon color={System.error} />
+                )}
                 <TouchableOpacity
                   onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
                   style={styles.eyeIcon}
@@ -846,12 +907,12 @@ export default function SignupTypePage() {
                   <EyeOffIcon color={Gray.gray5} />
                 </TouchableOpacity>
               </View>
-              {passwordConfirm.length > 0 && password === passwordConfirm && isPasswordValid(password) && (
+              {passwordConfirm.length > 0 && (passwordConfirmTouched || hasSubmitted) && password === passwordConfirm && isPasswordValid(password) && (
                 <ThemedText style={styles.successText}>
                   비밀번호가 일치합니다
                 </ThemedText>
               )}
-              {passwordConfirm.length > 0 && password !== passwordConfirm && (
+              {passwordConfirm.length > 0 && (passwordConfirmTouched || hasSubmitted) && password !== passwordConfirm && (
                 <ThemedText style={styles.errorText}>
                   비밀번호가 일치하지 않습니다
                 </ThemedText>
@@ -867,7 +928,6 @@ export default function SignupTypePage() {
           label="다음으로"
           backgroundColor={isFormValid() ? primaryColor : Gray.gray5}
           onPress={handleNext}
-          disabled={!isFormValid()}
         />
       </View>
       </KeyboardAvoidingView>

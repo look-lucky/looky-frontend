@@ -102,6 +102,7 @@ export default function ProfileEditScreen() {
   const [nicknameToast, setNicknameToast] = useState("");
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nicknameRef = useRef<TextInput>(null);
 
   const showNicknameToast = (message: string) => {
     setNicknameToast(message);
@@ -115,16 +116,15 @@ export default function ProfileEditScreen() {
   };
 
   // 닉네임 입력 핸들러 (한글/영어만 허용, 최대 10자)
-  const NICKNAME_REGEX = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]*$/;
-
   const handleNicknameChange = (text: string) => {
-    if (!NICKNAME_REGEX.test(text)) {
+    const hasInvalidChars = /[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]/.test(text);
+    const filtered = text.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]/g, "").slice(0, 10);
+    if (hasInvalidChars) {
       showNicknameToast("특수문자는 사용할 수 없습니다");
-      const filtered = text.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]/g, "");
-      setNickname(filtered.slice(0, 10));
-      return;
+      // iOS: native TextInput이 state 업데이트를 반영하지 못하는 문제 직접 동기화
+      nicknameRef.current?.setNativeProps({ text: filtered });
     }
-    setNickname(text.slice(0, 10));
+    setNickname(filtered);
   };
 
   // 팝업 상태
@@ -254,6 +254,7 @@ export default function ProfileEditScreen() {
           <ThemedText style={styles.sectionLabel}>닉네임</ThemedText>
           <View style={styles.inputContainer}>
             <TextInput
+              ref={nicknameRef}
               style={styles.input}
               value={nickname}
               onChangeText={handleNicknameChange}

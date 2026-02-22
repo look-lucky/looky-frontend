@@ -32,9 +32,8 @@ export function StoreCard({ store, onPress, onBookmarkPress }: StoreCardProps) {
       {/* 이미지 + 북마크 */}
       <View style={styles.imageWrapper}>
         <Image
-          source={{ uri: store.image }}
+          source={store.image ? { uri: store.image } : require('@/assets/images/icon.png')}
           style={styles.image}
-          defaultSource={require('@/assets/images/icon.png')}
         />
         <TouchableOpacity
           style={styles.bookmarkButton}
