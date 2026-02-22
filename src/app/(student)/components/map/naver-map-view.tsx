@@ -1,12 +1,17 @@
+import { useMapCluster } from '@/src/shared/hooks/use-map-cluster';
 import { rs } from '@/src/shared/theme/scale';
+import { Gray } from '@/src/shared/theme/theme';
 import type { EventStatus, EventType } from '@/src/shared/types/event';
 import {
   NaverMapMarkerOverlay,
   NaverMapView,
   type NaverMapViewRef,
 } from '@mj-studio/react-native-naver-map';
-import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
+
+// 클러스터 마커 아이콘 PNG
+const CLUSTER_ICON = require('@/assets/images/icons/map/clover-cluster.png');
 
 // 가게 마커 아이콘 PNG
 const STORE_MARKER_ICONS = {
@@ -41,6 +46,7 @@ const EVENT_MARKER_ICONS_LIVE: Record<EventType, any> = {
 
 const MARKER_SIZE = rs(16);
 const EVENT_MARKER_SIZE = rs(30);
+const CLUSTER_SIZE = rs(44);
 
 // 가게 마커 아이콘 선택 헬퍼
 function getStoreMarkerIcon(isPartner: boolean, hasCoupon: boolean) {
@@ -126,6 +132,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
   ) {
     const mapRef = useRef<NaverMapViewRef>(null);
     const isInitialMount = useRef(true);
+    const [currentZoom, setCurrentZoom] = useState(15);
 
     useImperativeHandle(ref, () => mapRef.current!, []);
 
@@ -144,6 +151,22 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
       }
     }, [center?.lat, center?.lng]);
 
+    // 클러스터 클릭 시 해당 위치로 줌인
+    const handleClusterClick = useCallback(
+      (lat: number, lng: number) => {
+        mapRef.current?.animateCameraTo({
+          latitude: lat,
+          longitude: lng,
+          zoom: currentZoom + 2,
+          duration: 300,
+        });
+      },
+      [currentZoom],
+    );
+
+    // 가게 마커를 클러스터/개별 마커로 변환
+    const clusteredMarkers = useMapCluster(markers, currentZoom);
+
     return (
       <View style={[styles.container, style]}>
         <NaverMapView
@@ -157,10 +180,12 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           isShowZoomControls={isShowZoomControls}
           onInitialized={onMapReady}
           onCameraChanged={(params) => {
+            const zoom = params.zoom ?? 15;
+            setCurrentZoom(zoom);
             onCameraChanged?.({
               lat: params.latitude,
               lng: params.longitude,
-              zoom: params.zoom ?? 15,
+              zoom,
               reason: params.reason,
             });
           }}
@@ -181,19 +206,42 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
               image={MY_LOCATION_ICON}
             />
           )}
-          {/* 가게 마커 */}
-          {markers.map((marker) => (
-            <NaverMapMarkerOverlay
-              key={marker.id}
-              latitude={marker.lat}
-              longitude={marker.lng}
-              width={MARKER_SIZE}
-              height={MARKER_SIZE}
-              onTap={() => onMarkerClick?.(marker.id)}
-              anchor={{ x: 0.5, y: 0.5 }}
-              image={getStoreMarkerIcon(marker.isPartner, marker.hasCoupon)}
-            />
-          ))}
+
+          {/* 가게 마커 (클러스터 or 개별) */}
+          {clusteredMarkers.map((item) => {
+            if (item.type === 'cluster') {
+              return (
+                <NaverMapMarkerOverlay
+                  key={`cluster-${item.clusterId}`}
+                  latitude={item.lat}
+                  longitude={item.lng}
+                  width={CLUSTER_SIZE}
+                  height={CLUSTER_SIZE}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  zIndex={500}
+                  onTap={() => handleClusterClick(item.lat, item.lng)}
+                >
+                  <View style={styles.clusterMarker}>
+                    <Image source={CLUSTER_ICON} style={styles.clusterIcon} />
+                    <Text style={styles.clusterCount}>{item.count}</Text>
+                  </View>
+                </NaverMapMarkerOverlay>
+              );
+            }
+            return (
+              <NaverMapMarkerOverlay
+                key={item.id}
+                latitude={item.lat}
+                longitude={item.lng}
+                width={MARKER_SIZE}
+                height={MARKER_SIZE}
+                onTap={() => onMarkerClick?.(item.id)}
+                anchor={{ x: 0.5, y: 0.5 }}
+                image={getStoreMarkerIcon(item.isPartner, item.hasCoupon)}
+              />
+            );
+          })}
+
           {/* 이벤트 마커 */}
           {eventMarkers.map((marker) => (
             <NaverMapMarkerOverlay
@@ -220,5 +268,22 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  clusterMarker: {
+    width: CLUSTER_SIZE,
+    height: CLUSTER_SIZE,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clusterIcon: {
+    ...StyleSheet.absoluteFillObject,
+    width: CLUSTER_SIZE,
+    height: CLUSTER_SIZE,
+  },
+  clusterCount: {
+    color: Gray.white,
+    fontWeight: '700',
+    fontSize: rs(14),
+    transform: [{ translateY: -rs(4) }],
   },
 });
