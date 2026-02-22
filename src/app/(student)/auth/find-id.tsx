@@ -1,7 +1,8 @@
 import LookyLogo from "@/assets/images/logo/looky-logo.svg";
+import { useSendCodeForFindId, useVerifyCodeForFindId } from "@/src/api/auth";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AppState,
   StyleSheet,
@@ -15,10 +16,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function SigninEmailPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [verifyError, setVerifyError] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
-  const [timeLeft, setTimeLeft] = useState(295); // 4:55 in seconds
-  const [expiryTime, setExpiryTime] = useState<number | null>(null); // 만료 시간 (timestamp)
+  const [timeLeft, setTimeLeft] = useState(300);
+  const [expiryTime, setExpiryTime] = useState<number | null>(null);
   const [showVerification, setShowVerification] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [verifyFailCount, setVerifyFailCount] = useState(0);
+  const [sendCodeMessage, setSendCodeMessage] = useState("");
+  const [isSendCodeError, setIsSendCodeError] = useState(false);
+  const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const sendCodeMutation = useSendCodeForFindId();
+  const verifyCodeMutation = useVerifyCodeForFindId();
 
   // 타이머 로직 - 실제 만료 시간 기반으로 계산
   useEffect(() => {
@@ -30,12 +41,8 @@ export default function SigninEmailPage() {
       setTimeLeft(remaining);
     };
 
-    // 즉시 한 번 업데이트
     updateTimer();
-
-    // 매초 업데이트
     const interval = setInterval(updateTimer, 1000);
-
     return () => clearInterval(interval);
   }, [showVerification, expiryTime]);
 
@@ -48,11 +55,37 @@ export default function SigninEmailPage() {
         setTimeLeft(remaining);
       }
     });
-
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, [expiryTime, showVerification]);
+
+  // 재발송 쿨다운 타이머 (60초)
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (sendCodeMessageTimerRef.current) {
+        clearTimeout(sendCodeMessageTimerRef.current);
+      }
+    };
+  }, []);
+
+  const showMessage = useCallback((message: string, isError = false) => {
+    if (sendCodeMessageTimerRef.current) {
+      clearTimeout(sendCodeMessageTimerRef.current);
+    }
+    setSendCodeMessage(message);
+    setIsSendCodeError(isError);
+    sendCodeMessageTimerRef.current = setTimeout(() => {
+      setSendCodeMessage("");
+    }, 30000);
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -60,33 +93,97 @@ export default function SigninEmailPage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleGetVerificationCode = () => {
-    if (email) {
-      const now = Date.now();
-      const expiry = now + 300000; // 5분 (300초 = 300,000ms)
-      setShowVerification(true);
-      setExpiryTime(expiry);
-      setTimeLeft(300);
-      setVerificationCode(""); // 재발송 시 인증번호 초기화
-    }
-  };
+  const handleGetVerificationCode = async () => {
+    if (!email) return;
 
-  const handleVerifyCode = () => {
-    if (!verificationCode) return;
-
-    // 타이머 만료 체크
-    if (timeLeft <= 0) {
-      alert("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.");
+    // 쿨다운 중 재발송 시도
+    if (resendCooldown > 0) {
+      showMessage("1분 후 재발송 가능합니다", true);
       return;
     }
 
-    // 여기에 실제 인증 로직 추가
-    console.log("인증번호 확인:", verificationCode);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError("이메일 형식이 아닙니다");
+      return;
+    }
+
+    setEmailError("");
+    try {
+      await sendCodeMutation.mutateAsync({ data: { email } });
+      const now = Date.now();
+      const expiry = now + 300000;
+      setShowVerification(true);
+      setExpiryTime(expiry);
+      setTimeLeft(300);
+      setVerificationCode("");
+      setVerifyFailCount(0);
+      setResendCooldown(60);
+      setVerifyError("");
+      showMessage("인증번호가 발송되었습니다.");
+    } catch (error: any) {
+      const serverMessage = error?.data?.data?.message ?? error?.data?.message ?? error?.message;
+      setEmailError(serverMessage || "가입되지 않은 이메일입니다");
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode) return;
+
+    if (timeLeft <= 0) {
+      setVerifyError("인증 시간이 만료되었습니다. 재발송해주세요.");
+      return;
+    }
+
+    // 5회 초과 체크
+    if (verifyFailCount >= 5) {
+      setVerifyError("입력 횟수를 초과했습니다. 재발송해주세요.");
+      return;
+    }
+
+    setVerifyError("");
+    try {
+      const result = await verifyCodeMutation.mutateAsync({ data: { email, code: verificationCode } });
+      // API가 200 OK로 false를 반환하는 경우 처리
+      const responseData = (result as any)?.data?.data ?? (result as any)?.data;
+      if (responseData === false) {
+        const newCount = verifyFailCount + 1;
+        setVerifyFailCount(newCount);
+        if (newCount >= 5) {
+          setVerifyError("입력 횟수를 초과했습니다. 재발송해주세요.");
+        } else {
+          setVerifyError("인증번호가 일치하지 않습니다");
+        }
+        return;
+      }
+      // 아이디 확인 화면으로 이동 (responseData가 아이디 문자열)
+      const foundUsername = typeof responseData === "string" ? responseData : String(responseData ?? "");
+      router.replace({ pathname: "/auth/find-id-result", params: { username: foundUsername } });
+    } catch (error: any) {
+      const newCount = verifyFailCount + 1;
+      setVerifyFailCount(newCount);
+      const serverMessage = error?.data?.data?.message ?? error?.data?.message ?? error?.message;
+      if (newCount >= 5) {
+        setVerifyError("입력 횟수를 초과했습니다. 재발송해주세요.");
+      } else {
+        setVerifyError(serverMessage || "인증번호가 일치하지 않습니다");
+      }
+    }
   };
 
   const handleFindPassword = () => {
     router.replace("/auth/find-password");
   };
+
+  const isSendButtonDisabled = !email || sendCodeMutation.isPending;
+  const sendButtonLabel = sendCodeMutation.isPending
+    ? "발송 중..."
+    : resendCooldown > 0
+    ? `재발송 (${resendCooldown}초)`
+    : showVerification
+    ? "재발송"
+    : "인증번호 받기";
+  const sendButtonColor = !isSendButtonDisabled ? "#40ce2b" : "#d5d5d5";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -117,23 +214,25 @@ export default function SigninEmailPage() {
               placeholder="가입하신 ID 이메일을 입력해주세요"
               placeholderTextColor="#828282"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(v) => { setEmail(v); setEmailError(""); }}
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
             <TouchableOpacity
-              style={[
-                styles.smallButton,
-                { backgroundColor: email ? "#40ce2b" : "#d5d5d5" },
-              ]}
+              style={[styles.smallButton, { backgroundColor: sendButtonColor }]}
               onPress={handleGetVerificationCode}
-              disabled={!email}
+              disabled={isSendButtonDisabled}
             >
-              <Text style={styles.smallButtonText}>인증번호 받기</Text>
+              <Text style={styles.smallButtonText}>{sendButtonLabel}</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.errorText}>
-            {" "}
-            ID 찾기를 위한 대학 이메일을 입력해주세요
-          </Text>
+          {emailError ? (
+            <Text style={styles.errorText}> {emailError}</Text>
+          ) : (
+            <Text style={[styles.hintText, isSendCodeError && styles.errorText]}>
+              {sendCodeMessage || " ID 찾기를 위한 대학 이메일을 입력해주세요"}
+            </Text>
+          )}
         </View>
 
         {/* Verification Code Input */}
@@ -145,18 +244,18 @@ export default function SigninEmailPage() {
                 placeholder="인증번호 6자리"
                 placeholderTextColor="#828282"
                 value={verificationCode}
-                onChangeText={setVerificationCode}
+                onChangeText={(v) => { setVerificationCode(v); setVerifyError(""); }}
                 maxLength={6}
                 keyboardType="numeric"
-                editable={timeLeft > 0}
+                editable={timeLeft > 0 && verifyFailCount < 5}
               />
               <TouchableOpacity
                 style={[
                   styles.smallButton,
-                  { backgroundColor: verificationCode && timeLeft > 0 ? "#40ce2b" : "#d5d5d5" }
+                  { backgroundColor: verificationCode && timeLeft > 0 && verifyFailCount < 5 && !verifyCodeMutation.isPending ? "#40ce2b" : "#d5d5d5" }
                 ]}
                 onPress={handleVerifyCode}
-                disabled={!verificationCode || timeLeft <= 0}
+                disabled={!verificationCode || timeLeft <= 0 || verifyFailCount >= 5 || verifyCodeMutation.isPending}
               >
                 <Text style={[styles.smallButtonText, { textAlign: "center" }]}>
                   확인
@@ -165,7 +264,11 @@ export default function SigninEmailPage() {
             </View>
             <View style={styles.verificationRow}>
               <Text style={styles.errorText}>
-                {timeLeft <= 0 ? " 인증 시간이 만료되었습니다" : " 인증번호 6자리를 입력해주세요"}
+                {verifyError
+                  ? ` ${verifyError}`
+                  : timeLeft <= 0
+                  ? " 인증 시간이 만료되었습니다"
+                  : " 인증번호 6자리를 입력해주세요"}
               </Text>
               <Text style={[styles.timerText, timeLeft <= 0 && { color: "#ff6200" }]}>
                 {formatTime(timeLeft)}
@@ -176,7 +279,7 @@ export default function SigninEmailPage() {
       </View>
 
       {/* Find ID Button */}
-      <TouchableOpacity style={styles.mainButton}>
+      <TouchableOpacity style={styles.mainButton} onPress={handleGetVerificationCode} disabled={!email || sendCodeMutation.isPending}>
         <Text style={styles.mainButtonText}>아이디 찾기</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -197,12 +300,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingHorizontal: 24,
-  },
-  logo: {
-    width: 169,
-    height: 57,
-    marginTop: 40,
-    marginBottom: 60,
   },
   tabsContainer: {
     flexDirection: "row",
@@ -257,6 +354,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#ffffff",
+    fontFamily: "Pretendard",
+  },
+  hintText: {
+    fontSize: 10,
+    color: "#828282",
     fontFamily: "Pretendard",
   },
   errorText: {

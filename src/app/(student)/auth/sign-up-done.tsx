@@ -68,7 +68,7 @@ export default function SignupCompletePage() {
       {/* Title */}
       <View style={styles.titleWrap}>
         <Text style={styles.title}>
-          {`(${displayName})님,\n니어딜을 시작해보세요!`}
+          {`(${displayName})님,\n루키를 시작해보세요!`}
         </Text>
         <Text style={styles.subtitle}>
           우리학교의 숨겨진 행운을 찾아보세요!
@@ -91,7 +91,7 @@ export default function SignupCompletePage() {
           }}
           activeOpacity={0.9}
         >
-          <Text style={styles.ctaText}>니어딜 시작하기</Text>
+          <Text style={styles.ctaText}>루키 시작하기</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
