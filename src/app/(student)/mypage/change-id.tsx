@@ -2,27 +2,34 @@ import { checkUsernameAvailability } from '@/src/api/auth';
 import { changeUsername } from '@/src/api/my-page';
 import { useAuth } from '@/src/shared/lib/auth';
 import { getUsername, saveUsername } from '@/src/shared/lib/auth/token';
+import { isNetworkError, useNetworkError } from '@/src/shared/contexts/network-error-context';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  Animated,
+  Keyboard,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const isIdFormatValid = (id: string) => /^(?=.*[a-z])(?=.*[0-9])[a-z0-9]{6,16}$/.test(id);
+const startsWithLowercase = (id: string) => /^[a-z]/.test(id);
 
 export default function ChangeIdScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { handleLogout } = useAuth();
+  const { showNetworkError } = useNetworkError();
 
   const [initialId, setInitialId] = useState('');
   const [userId, setUserId] = useState('');
@@ -30,10 +37,25 @@ export default function ChangeIdScreen() {
   const [checkMessage, setCheckMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [idErrorMsg, setIdErrorMsg] = useState('');
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+
+  // 토스트
+  const [toastMessage, setToastMessage] = useState('');
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    Animated.timing(toastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() =>
+        setToastMessage('')
+      );
+    }, 2000);
+  };
 
   useEffect(() => {
     const loadCurrentUsername = async () => {
@@ -49,42 +71,34 @@ export default function ChangeIdScreen() {
   const isIdChanged = userId !== initialId && userId.length > 0;
 
   const handleIdChange = (text: string) => {
-    const filteredText = text.replace(/[^A-Za-z0-9]/g, '');
+    const filteredText = text.toLowerCase().replace(/[^a-z0-9]/g, '');
     setUserId(filteredText);
-
-    const hasLetter = /[A-Za-z]/.test(filteredText);
-    const hasNum = /[0-9]/.test(filteredText);
-    const isComplexEnough = hasLetter && hasNum;
-
-    if (filteredText.length > 0) {
-      if (filteredText.length < 6) {
-        setIdErrorMsg('아이디는 최소 6자 이상이어야 합니다.');
-      } else if (!isComplexEnough) {
-        setIdErrorMsg('영문과 숫자를 모두 포함해야 합니다.');
-      } else {
-        setIdErrorMsg('');
-      }
-    } else {
-      setIdErrorMsg('');
-    }
-
     setIsChecked(false);
     setCheckMessage('');
     setIsError(false);
   };
 
   const handleCheckDuplicate = async () => {
-    if (userId.trim().length === 0) {
-      Alert.alert('알림', '아이디를 입력해주세요.');
+    if (userId.trim().length === 0) return;
+
+    if (userId.length < 6 || userId.length > 16) {
+      showToast('6-16자 영문+숫자로 입력해주세요');
       return;
     }
-    if (idErrorMsg !== '') return;
+    if (!startsWithLowercase(userId)) {
+      showToast('영문 소문자로 시작해야 합니다');
+      return;
+    }
+    if (!isIdFormatValid(userId)) {
+      showToast('6-16자 영문+숫자로 입력해주세요');
+      return;
+    }
 
     setIsChecking(true);
 
     try {
       const response = await checkUsernameAvailability({ username: userId });
-      const isAvailable = response.data?.data;
+      const isAvailable = (response.data as any)?.data;
 
       if (isAvailable) {
         setIsError(false);
@@ -92,12 +106,12 @@ export default function ChangeIdScreen() {
         setIsChecked(true);
       } else {
         setIsError(true);
-        setCheckMessage('이미 사용중인 아이디입니다.');
+        setCheckMessage('이미 사용 중인 아이디입니다.');
         setIsChecked(false);
       }
     } catch {
       setIsError(true);
-      setCheckMessage('이미 사용중이거나 사용할 수 없는 아이디입니다.');
+      setCheckMessage('이미 사용 중이거나 사용할 수 없는 아이디입니다.');
       setIsChecked(false);
     } finally {
       setIsChecking(false);
@@ -111,8 +125,20 @@ export default function ChangeIdScreen() {
       await changeUsername({ newUsername: userId });
       await saveUsername(userId);
       setSuccessVisible(true);
-    } catch {
-      setErrorVisible(true);
+    } catch (error: any) {
+      if (isNetworkError(error)) {
+        showNetworkError();
+      } else if (error?.status === 409) {
+        setIsChecked(false);
+        setIsError(true);
+        setCheckMessage('이미 사용 중인 아이디입니다.');
+      } else if (error?.status === 400) {
+        setIsChecked(false);
+        setIsError(true);
+        setCheckMessage('유효하지 않은 아이디 형식입니다.');
+      } else {
+        setErrorVisible(true);
+      }
     }
   };
 
@@ -131,7 +157,10 @@ export default function ChangeIdScreen() {
     }, 1000);
   };
 
+  const isCheckButtonActive = isIdChanged && !isChecking && userId.length > 0;
+
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -154,15 +183,15 @@ export default function ChangeIdScreen() {
               style={userId.length > 0 ? styles.textInput : styles.textinfoInput}
               value={userId}
               onChangeText={handleIdChange}
-              placeholder="영어, 숫자를 포함한 6~16자 이내로 입력해주세요"
+              placeholder="영문 소문자, 숫자를 포함한 6~16자 이내로 입력해주세요"
               placeholderTextColor="#BDBDBD"
               autoCapitalize="none"
               maxLength={16}
             />
             <TouchableOpacity
-              style={[styles.checkButton, (isIdChanged && idErrorMsg === '' && userId.length >= 6) ? styles.checkButtonActive : styles.checkButtonDisabled]}
+              style={[styles.checkButton, isCheckButtonActive ? styles.checkButtonActive : styles.checkButtonDisabled]}
               onPress={handleCheckDuplicate}
-              disabled={!isIdChanged || isChecking || idErrorMsg !== '' || userId.length < 6}
+              disabled={!isIdChanged || isChecking || userId.length === 0}
             >
               {isChecking ? (
                 <ActivityIndicator size="small" color="white" />
@@ -171,10 +200,6 @@ export default function ChangeIdScreen() {
               )}
             </TouchableOpacity>
           </View>
-
-          {idErrorMsg !== '' && (
-            <Text style={styles.errorText}>{idErrorMsg}</Text>
-          )}
 
           {checkMessage !== '' && (
             <Text style={[styles.messageText, isError ? styles.errorText : styles.successText]}>
@@ -193,6 +218,15 @@ export default function ChangeIdScreen() {
           <Text style={styles.submitBtnText}>변경하기</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 토스트 */}
+      {toastMessage !== '' && (
+        <Animated.View style={[styles.toastContainer, { opacity: toastOpacity }]} pointerEvents="none">
+          <View style={styles.toastBox}>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+        </Animated.View>
+      )}
 
       {/* 성공 팝업 */}
       <Modal transparent animationType="fade" visible={successVisible} onRequestClose={() => {}}>
@@ -231,6 +265,7 @@ export default function ChangeIdScreen() {
         </View>
       </Modal>
     </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -251,7 +286,7 @@ const styles = StyleSheet.create({
   checkButtonDisabled: { backgroundColor: '#D5D5D5' },
   checkButtonText: { color: 'white', fontSize: rs(11), fontWeight: '700', fontFamily: 'Pretendard' },
   messageText: { fontSize: rs(10), fontFamily: 'Pretendard', fontWeight: '400', marginTop: rs(5), marginLeft: rs(5) },
-  successText: { color: '#34B262' },
+  successText: { color: '#828282' },
   errorText: { color: '#FF6200', fontSize: rs(10), fontFamily: 'Pretendard', fontWeight: '400', marginTop: rs(5), marginLeft: rs(5) },
   bottomContainer: { position: 'absolute', bottom: rs(30), left: 0, right: 0, paddingHorizontal: rs(20) },
   submitBtn: { height: rs(48), borderRadius: rs(8), justifyContent: 'center', alignItems: 'center' },
@@ -269,4 +304,7 @@ const styles = StyleSheet.create({
   closeIcon: { position: 'absolute', top: rs(10), right: rs(10), padding: rs(5), zIndex: 1 },
   errorTextContainer: { marginBottom: rs(20), alignItems: 'center', marginTop: rs(10) },
   retryButton: { width: rs(150), height: rs(40), backgroundColor: 'black', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center' },
+  toastContainer: { position: 'absolute', bottom: rs(120), left: 0, right: 0, alignItems: 'center' },
+  toastBox: { paddingHorizontal: rs(20), paddingVertical: rs(10), borderRadius: rs(20), backgroundColor: 'rgba(0,0,0,0.7)' },
+  toastText: { fontSize: rs(13), color: 'white', fontFamily: 'Pretendard' },
 });

@@ -140,7 +140,7 @@ export default function ChangePasswordScreen() {
                 maxLength={20}
               />
               <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowCurrentPw(!showCurrentPw)}>
-                <Ionicons name={showCurrentPw ? 'eye' : 'eye-off'} size={rs(20)} color="#D5D5D5" />
+                <Ionicons name={showCurrentPw ? 'eye' : 'eye-off'} size={rs(20)} color="#9D9D9D" />
               </TouchableOpacity>
             </View>
           </View>
@@ -158,7 +158,7 @@ export default function ChangePasswordScreen() {
                 maxLength={20}
               />
               <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowNewPw(!showNewPw)}>
-                <Ionicons name={showNewPw ? 'eye' : 'eye-off'} size={rs(20)} color="#D5D5D5" />
+                <Ionicons name={showNewPw ? 'eye' : 'eye-off'} size={rs(20)} color="#9D9D9D" />
               </TouchableOpacity>
             </View>
             {pwErrorMsg !== '' && (
@@ -179,7 +179,7 @@ export default function ChangePasswordScreen() {
                 editable={newPw.length > 0}
               />
               <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirmPw(!showConfirmPw)} disabled={newPw.length === 0}>
-                <Ionicons name={showConfirmPw ? 'eye' : 'eye-off'} size={rs(20)} color="#D5D5D5" />
+                <Ionicons name={showConfirmPw ? 'eye' : 'eye-off'} size={rs(20)} color="#9D9D9D" />
               </TouchableOpacity>
             </View>
             {confirmPwErrorMsg !== '' && (
