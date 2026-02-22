@@ -28,6 +28,7 @@ import type {
   CreateStoreBody,
   GetNearbyStoresParams,
   GetStoreMapParams,
+  GetStoresByLocationParams,
   GetStoresParams,
   StoreReportRequest,
   UpdateStoreBody
@@ -1257,6 +1258,124 @@ export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetStoreMapQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * 위도, 경도가 일치하는 상점 목록을 조회합니다. (같은 건물/위치)
+ * @summary [학생] 특정 위치 상점 목록 조회
+ */
+export type getStoresByLocationResponse200 = {
+  data: Blob
+  status: 200
+}
+    
+export type getStoresByLocationResponseSuccess = (getStoresByLocationResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getStoresByLocationResponse = (getStoresByLocationResponseSuccess)
+
+export const getGetStoresByLocationUrl = (params: GetStoresByLocationParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/stores/location?${stringifiedParams}` : `/api/stores/location`
+}
+
+export const getStoresByLocation = async (params: GetStoresByLocationParams, options?: RequestInit): Promise<getStoresByLocationResponse> => {
+  
+  return customFetch<getStoresByLocationResponse>(getGetStoresByLocationUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetStoresByLocationQueryKey = (params?: GetStoresByLocationParams,) => {
+    return [
+    `/api/stores/location`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getGetStoresByLocationQueryOptions = <TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(params: GetStoresByLocationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoresByLocationQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoresByLocation>>> = ({ signal }) => getStoresByLocation(params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetStoresByLocationQueryResult = NonNullable<Awaited<ReturnType<typeof getStoresByLocation>>>
+export type GetStoresByLocationQueryError = unknown
+
+
+export function useGetStoresByLocation<TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(
+ params: GetStoresByLocationParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoresByLocation>>,
+          TError,
+          Awaited<ReturnType<typeof getStoresByLocation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStoresByLocation<TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(
+ params: GetStoresByLocationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoresByLocation>>,
+          TError,
+          Awaited<ReturnType<typeof getStoresByLocation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStoresByLocation<TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(
+ params: GetStoresByLocationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [학생] 특정 위치 상점 목록 조회
+ */
+
+export function useGetStoresByLocation<TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(
+ params: GetStoresByLocationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStoresByLocationQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -654,7 +654,7 @@ export interface StoreResponse {
   reviewCount?: number;
   holidayDates?: string[];
   isSuspended?: boolean;
-  isPartnership?: boolean;
+  myPartnerships?: string[];
   hasCoupon?: boolean;
   cloverGrade?: StoreResponseCloverGrade;
 }
@@ -745,6 +745,17 @@ export interface StoreRegistrationStatusResponse {
 export interface CommonResponseStoreRegistrationStatusResponse {
   isSuccess?: boolean;
   data?: StoreRegistrationStatusResponse;
+}
+
+export interface StorePartnershipResponse {
+  organizationName?: string;
+  benefit?: string;
+  isMyBenefit?: boolean;
+}
+
+export interface CommonResponseListStorePartnershipResponse {
+  isSuccess?: boolean;
+  data?: StorePartnershipResponse[];
 }
 
 export interface StoreNewsResponse {
@@ -842,7 +853,7 @@ export interface StoreMapResponse {
   reviewCount?: number;
   storeCategories?: StoreMapResponseStoreCategoriesItem[];
   operatingHours?: string;
-  isPartnership?: boolean;
+  myPartnerships?: string[];
   hasCoupon?: boolean;
   favoriteCount?: number;
 }
@@ -1025,8 +1036,8 @@ export interface PageInquiryResponse {
   content?: InquiryResponse[];
   number?: number;
   sort?: SortObject;
-  last?: boolean;
   numberOfElements?: number;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1060,6 +1071,7 @@ export interface FavoriteStoreResponse {
   storeCategories?: FavoriteStoreResponseStoreCategoriesItem[];
   imageUrl?: string;
   averageRating?: number;
+  reviewCount?: number;
   createdAt?: string;
 }
 
@@ -1243,8 +1255,8 @@ export interface PageStoreClaimResponse {
   content?: StoreClaimResponse[];
   number?: number;
   sort?: SortObject;
-  last?: boolean;
   numberOfElements?: number;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1476,6 +1488,17 @@ export type GetStoreMapParams = {
  * 대학(상권) ID 필터
  */
 universityId?: number;
+};
+
+export type GetStoresByLocationParams = {
+/**
+ * 위도
+ */
+latitude: number;
+/**
+ * 경도
+ */
+longitude: number;
 };
 
 export type SearchUnclaimedStoresParams = {
