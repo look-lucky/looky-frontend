@@ -199,10 +199,12 @@ function TagSection({
         <Ionicons name="chevron-down" size={rs(12)} color={Text.secondary} />
       </TouchableOpacity>
 
-      {isPartner && (
+      {isPartner ? (
         <ThemedView style={styles.partnerBadge}>
           <ThemedText style={styles.partnerText}>내 제휴</ThemedText>
         </ThemedView>
+      ) : (
+        <ThemedText style={styles.noPartnerText}>제휴를 제공하지 않는 매장입니다</ThemedText>
       )}
     </ThemedView>
   );
@@ -429,5 +431,9 @@ const styles = StyleSheet.create({
     fontSize: rs(12),
     color: Gray.white,
     fontWeight: '600',
+  },
+  noPartnerText: {
+    fontSize: rs(12),
+    color: Text.tertiary,
   },
 });

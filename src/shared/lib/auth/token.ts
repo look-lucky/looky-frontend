@@ -5,6 +5,7 @@ const ACCESS_TOKEN_KEY = "auth_access_token";
 const EXPIRES_AT_KEY = "auth_expires_at";
 const USER_TYPE_KEY = "auth_user_type";
 const COLLEGE_ID_KEY = "user_college_id";
+const COLLEGE_NAME_KEY = "user_college_name";
 const USERNAME_KEY = "auth_username";
 
 export interface TokenData {
@@ -56,6 +57,14 @@ export async function getCollegeId(): Promise<number | null> {
   return value ? parseInt(value, 10) : null;
 }
 
+export async function saveCollegeName(name: string): Promise<void> {
+  await AsyncStorage.setItem(COLLEGE_NAME_KEY, name);
+}
+
+export async function getCollegeName(): Promise<string | null> {
+  return await AsyncStorage.getItem(COLLEGE_NAME_KEY);
+}
+
 export async function saveUsername(username: string): Promise<void> {
   await AsyncStorage.setItem(USERNAME_KEY, username);
 }
@@ -88,6 +97,7 @@ export async function clearToken(): Promise<void> {
     EXPIRES_AT_KEY,
     USER_TYPE_KEY,
     COLLEGE_ID_KEY,
+    COLLEGE_NAME_KEY,
     USERNAME_KEY,
     "SELECTED_STORE_ID",
   ]);

@@ -1,6 +1,14 @@
 import { ErrorPopup } from '@/src/shared/common/error-popup';
-import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+
+const persister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+  throttleTime: 1000,
+});
 
 interface NetworkErrorContextValue {
   showNetworkError: () => void;
@@ -9,6 +17,20 @@ interface NetworkErrorContextValue {
 const NetworkErrorContext = createContext<NetworkErrorContextValue>({
   showNetworkError: () => {},
 });
+
+export const isNetworkError = (error: unknown): boolean => {
+  if (error instanceof TypeError) return true;
+  if (
+    error instanceof Error &&
+    /network request failed|failed to fetch/i.test(error.message)
+  )
+    return true;
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    const status = (error as { status: number }).status;
+    return status >= 500;
+  }
+  return false;
+};
 
 export function NetworkErrorProvider({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
@@ -19,11 +41,6 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
   // queryClient를 여기서 생성해 onError에서 팝업을 트리거
   const queryClientRef = useRef<QueryClient | null>(null);
   if (!queryClientRef.current) {
-    const isNetworkError = (error: unknown) => {
-      if (error instanceof TypeError) return true;
-      if (typeof error === 'object' && error !== null && 'status' in error) return false;
-      return false;
-    };
 
     queryClientRef.current = new QueryClient({
       queryCache: new QueryCache({
@@ -44,7 +61,10 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
 
   return (
     <NetworkErrorContext.Provider value={{ showNetworkError }}>
-      <QueryClientProvider client={queryClientRef.current}>
+      <PersistQueryClientProvider
+        client={queryClientRef.current}
+        persistOptions={{ persister, maxAge: 24 * 60 * 60 * 1000 }}
+      >
         {children}
         <ErrorPopup
           visible={visible}
@@ -53,7 +73,7 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
           onRefresh={handleRefresh}
           onClose={() => setVisible(false)}
         />
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </NetworkErrorContext.Provider>
   );
 }

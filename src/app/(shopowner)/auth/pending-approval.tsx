@@ -1,15 +1,15 @@
 import { ThemedText } from "@/src/shared/common/themed-text";
-import { ThemedView } from "@/src/shared/common/themed-view";
 import { AppButton } from "@/src/shared/common/app-button";
 import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
-import { useRouter } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
-import { useGetMyStoreClaims } from "@/src/api/store-claim";
+import { getGetMyStoreClaimsQueryKey } from "@/src/api/store-claim";
 import { useLogout } from "@/src/api/auth";
+import { useAuth } from "@/src/shared/lib/auth";
+import { useQueryClient } from "@tanstack/react-query";
 
 // 대기 중 아이콘
 function PendingIcon() {
@@ -28,67 +28,41 @@ function PendingIcon() {
 }
 
 export default function PendingApprovalScreen() {
-  const router = useRouter();
+  const { handleLogout } = useAuth();
+  const queryClient = useQueryClient();
 
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const { data: claimsData, refetch: refetchClaims } = useGetMyStoreClaims();
   const logoutMutation = useLogout();
 
-  // 자동 승인 확인
-  useEffect(() => {
-    const checkApprovalStatus = async () => {
-      if (!claimsData?.data) return;
-
-      const claims = (claimsData.data as any)?.data;
-      if (!claims || claims.length === 0) return;
-
-      const latestClaim = claims[0];
-
-      if (latestClaim.status === 'APPROVED') {
-        Alert.alert(
-          '승인 완료',
-          '관리자 승인이 완료되었습니다. 서비스를 이용하실 수 있습니다.',
-          [
-            {
-              text: '확인',
-              onPress: () => router.push('/(shopowner)/home/HomeScreen' as any),
-            }
-          ]
-        );
-      } else if (latestClaim.status === 'REJECTED') {
-        Alert.alert(
-          '승인 거부',
-          '승인이 거부되었습니다. 고객센터로 문의해주세요.',
-          [
-            {
-              text: '확인',
-              onPress: () => router.replace('/'),
-            }
-          ]
-        );
-      }
-    };
-
-    checkApprovalStatus();
-  }, [claimsData]);
-
-  // 상태 새로고침
+  // 상태 새로고침 → _layout의 useGetMyStoreClaims 쿼리를 invalidate
   const handleRefreshStatus = async () => {
     setIsChecking(true);
     try {
-      await refetchClaims();
+      const result = await queryClient.fetchQuery({
+        queryKey: getGetMyStoreClaimsQueryKey(),
+      });
 
-      const claims = (claimsData?.data as any)?.data || [];
-      if (claims.length === 0) {
+      const claims = (result as any)?.data?.data;
+      if (!claims || claims.length === 0) {
         Alert.alert('알림', '승인 요청 정보를 찾을 수 없습니다.');
         return;
       }
 
       const status = claims[0].status;
 
-      if (status === 'PENDING') {
+      if (status === 'APPROVED') {
+        // _layout에서 자동으로 ShopOwnerApp으로 전환됨
+        await queryClient.invalidateQueries({
+          queryKey: getGetMyStoreClaimsQueryKey(),
+        });
+      } else if (status === 'REJECTED') {
+        Alert.alert(
+          '승인 거부',
+          '승인이 거부되었습니다. 고객센터로 문의해주세요.',
+        );
+      } else {
         Alert.alert('알림', '아직 승인 대기 중입니다.');
       }
     } catch (error) {
@@ -100,7 +74,7 @@ export default function PendingApprovalScreen() {
   };
 
   // 로그아웃
-  const handleLogout = async () => {
+  const handleLogoutPress = async () => {
     Alert.alert(
       '로그아웃',
       '로그아웃 하시겠습니까?',
@@ -115,7 +89,7 @@ export default function PendingApprovalScreen() {
             setIsLoggingOut(true);
             try {
               await logoutMutation.mutateAsync();
-              router.replace('/');
+              await handleLogout();
             } catch (error) {
               console.error('로그아웃 실패:', error);
               Alert.alert('오류', '로그아웃 중 오류가 발생했습니다.');
@@ -170,7 +144,7 @@ export default function PendingApprovalScreen() {
         <AppButton
           label={isLoggingOut ? "처리 중..." : "로그아웃"}
           backgroundColor={Gray.gray4}
-          onPress={handleLogout}
+          onPress={handleLogoutPress}
           disabled={isLoggingOut}
           style={{ marginTop: rs(12) }}
         />

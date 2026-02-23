@@ -43,6 +43,7 @@ export default function EditReview() {
     decodeURIComponent(initialContent || '')
   );
   const [editSuccessVisible, setEditSuccessVisible] = useState(false);
+  const [editErrorVisible, setEditErrorVisible] = useState(false);
 
   // 이미지 관련 상태
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -141,11 +142,14 @@ export default function EditReview() {
       {
         reviewId: Number(reviewId),
         data: {
-          request: { content: reviewText, rating },
+          request: JSON.stringify({ content: reviewText, rating }),
           images: images.length > 0 ? (images as any) : undefined,
         },
       },
-      { onSuccess: () => setEditSuccessVisible(true) }
+      {
+        onSuccess: () => setEditSuccessVisible(true),
+        onError: () => setEditErrorVisible(true),
+      }
     );
   };
 
@@ -313,6 +317,36 @@ export default function EditReview() {
               style={styles.popupBtn}
               onPress={handleConfirmSuccess}
             />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={editErrorVisible}
+        animationType="fade"
+        onRequestClose={() => setEditErrorVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.popupContainer}>
+            <View style={styles.popupTextContainer}>
+              <Text style={styles.popupTitle}>리뷰 수정에 실패했어요</Text>
+              <Text style={styles.popupSubtitle}>다시 시도해주세요</Text>
+            </View>
+            <View style={styles.popupBtnRow}>
+              <AppButton
+                label="취소"
+                backgroundColor={Gray.gray5}
+                style={styles.popupBtnHalf}
+                onPress={() => setEditErrorVisible(false)}
+              />
+              <AppButton
+                label="다시 시도하기"
+                backgroundColor={Brand.primaryDarken}
+                style={styles.popupBtnHalf}
+                onPress={() => { setEditErrorVisible(false); handleUpdateReview(); }}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -492,5 +526,12 @@ const styles = StyleSheet.create({
   },
   popupBtn: {
     width: rs(295),
+  },
+  popupBtnRow: {
+    flexDirection: 'row',
+    gap: rs(8),
+  },
+  popupBtnHalf: {
+    flex: 1,
   },
 });

@@ -203,7 +203,7 @@ if(createItemBody.image !== undefined) {
  formData.append(`image`, createItemBody.image);
  }
 if(createItemBody.request !== undefined) {
- formData.append(`request`, JSON.stringify(createItemBody.request));
+ formData.append(`request`, createItemBody.request);
  }
 
   return customFetch<createItemResponse>(getCreateItemUrl(storeId),
@@ -518,7 +518,7 @@ if(updateItemBody.image !== undefined) {
  formData.append(`image`, updateItemBody.image);
  }
 if(updateItemBody.request !== undefined) {
- formData.append(`request`, JSON.stringify(updateItemBody.request));
+ formData.append(`request`, updateItemBody.request);
  }
 
   return customFetch<updateItemResponse>(getUpdateItemUrl(itemId),

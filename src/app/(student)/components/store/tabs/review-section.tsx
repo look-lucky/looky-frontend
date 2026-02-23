@@ -1,4 +1,5 @@
 import FavoriteIcon from '@/assets/images/icons/store/favorite.svg';
+import HeartIcon from '@/assets/images/icons/store/heart.svg';
 import SpeechBubbleIcon from '@/assets/images/icons/store/speech-bubble.svg';
 import StarIcon from '@/assets/images/icons/store/star.svg';
 import { ThemedText } from '@/src/shared/common/themed-text';
@@ -24,6 +25,7 @@ interface ReviewSectionProps {
   onEditReview?: (reviewId: string) => void;
   onDeleteReview?: (reviewId: string) => void;
   onReportReview?: (reviewId: string) => void;
+  onLikeReview?: (reviewId: string) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
@@ -140,6 +142,7 @@ function ReviewItemCard({
   onEdit,
   onDelete,
   onReport,
+  onLike,
   isLast,
   menuOpen,
   onMenuToggle,
@@ -149,6 +152,7 @@ function ReviewItemCard({
   onEdit?: () => void;
   onDelete?: () => void;
   onReport?: () => void;
+  onLike?: () => void;
   isLast?: boolean;
   menuOpen: boolean;
   onMenuToggle: () => void;
@@ -254,10 +258,14 @@ function ReviewItemCard({
       </View>
 
       <View style={styles.reviewActions}>
-        <View style={styles.actionItem}>
-          <FavoriteIcon width={rs(20)} height={rs(20)} color="#999" />
+        <TouchableOpacity style={styles.actionItem} onPress={onLike}>
+          {review.isLiked ? (
+            <HeartIcon width={rs(20)} height={rs(20)} />
+          ) : (
+            <FavoriteIcon width={rs(20)} height={rs(20)} color="#999" />
+          )}
           <ThemedText style={styles.actionCount}>{review.likeCount}</ThemedText>
-        </View>
+        </TouchableOpacity>
         <View style={styles.actionItem}>
           <SpeechBubbleIcon width={rs(20)} height={rs(20)} color="#999" />
           <ThemedText style={styles.actionCount}>{review.commentCount}</ThemedText>
@@ -299,6 +307,7 @@ export function ReviewSection({
   onEditReview,
   onDeleteReview,
   onReportReview,
+  onLikeReview,
   onLoadMore,
   hasMore,
   isLoadingMore,
@@ -340,6 +349,7 @@ export function ReviewSection({
               onEdit={() => onEditReview?.(review.id)}
               onDelete={() => onDeleteReview?.(review.id)}
               onReport={() => onReportReview?.(review.id)}
+              onLike={() => onLikeReview?.(review.id)}
               menuOpen={activeMenuId === review.id}
               onMenuToggle={() =>
                 setActiveMenuId((prev) => (prev === review.id ? null : review.id))

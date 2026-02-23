@@ -88,7 +88,7 @@ export default function StudentVerificationPage() {
   } = useSignupStore();
 
   // Auth
-  const { handleAuthSuccess, saveUserCollegeId } = useAuth();
+  const { handleAuthSuccess, saveUserCollegeId, saveUserCollegeName } = useAuth();
 
   // Mutations
   const signupMutation = useSignupStudent();
@@ -111,6 +111,7 @@ export default function StudentVerificationPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [sendCodeMessage, setSendCodeMessage] = useState("");
   const [isErrorMessage, setIsErrorMessage] = useState(false);
+  const [verifyFailCount, setVerifyFailCount] = useState(0);
   const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 동아리 가입 여부
@@ -145,7 +146,12 @@ export default function StudentVerificationPage() {
   );
 
   // 선택된 단과대학의 학과 목록 조회
-  const { data: departmentsData } = useGetDepartmentsByCollege(selectedCollegeId!, {
+  const {
+    data: departmentsData,
+    isFetching: isDepartmentsFetching,
+    isError: isDepartmentsError,
+    refetch: refetchDepartments,
+  } = useGetDepartmentsByCollege(selectedCollegeId!, {
     query: { enabled: selectedCollegeId !== null },
   });
   const rawDepartments = (departmentsData as any)?.data?.data;
@@ -173,7 +179,12 @@ export default function StudentVerificationPage() {
     const updateTimer = () => {
       const now = Date.now();
       const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000));
-      setTimer(remaining);
+      setTimer(prev => {
+        if (prev > 0 && remaining === 0) {
+          showSendCodeMessage("인증 시간이 만료되었습니다. 재발송해주세요.", true);
+        }
+        return remaining;
+      });
     };
 
     // 즉시 한 번 업데이트
@@ -183,7 +194,7 @@ export default function StudentVerificationPage() {
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [isCodeSent, expiryTime, isEmailVerified]);
+  }, [isCodeSent, expiryTime, isEmailVerified, showSendCodeMessage]);
 
   // AppState 변경 감지 - 앱이 다시 활성화될 때 타이머 재계산
   useEffect(() => {
@@ -251,12 +262,12 @@ export default function StudentVerificationPage() {
       setTimer(300);
       setResendCooldown(5);
       setVerificationCode(""); // 재발송 시 인증번호 초기화
+      setVerifyFailCount(0); // 재발송 시 실패 횟수 초기화
       showSendCodeMessage("인증번호가 발송되었습니다.");
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
-      const serverMessage = error?.data?.data?.message ?? error?.data?.message;
-      const fallback = serverMessage || "대학 이메일을 입력해주세요.";
-      showSendCodeMessage(fallback, true);
+      const serverMessage = error?.data?.data?.message ?? error?.data?.message ?? error?.message;
+      showSendCodeMessage(serverMessage || "해당 학교의 이메일을 입력해주세요.", true);
     }
   };
 
@@ -266,7 +277,13 @@ export default function StudentVerificationPage() {
 
     // 타이머 만료 체크
     if (timer <= 0) {
-      showSendCodeMessage("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.", true);
+      showSendCodeMessage("인증 시간이 만료되었습니다. 재발송해주세요.", true);
+      return;
+    }
+
+    // 5회 초과 체크
+    if (verifyFailCount >= 5) {
+      showSendCodeMessage("입력 횟수를 초과했습니다. 재발송해주세요.", true);
       return;
     }
 
@@ -281,8 +298,14 @@ export default function StudentVerificationPage() {
       showSendCodeMessage("이메일 인증이 완료되었습니다.");
     } catch (error: any) {
       console.error("이메일 인증 실패:", error);
-      const serverMessage = error?.data?.data?.message ?? error?.data?.message;
-      showSendCodeMessage(serverMessage || "인증번호가 일치하지 않습니다.", true);
+      const newCount = verifyFailCount + 1;
+      setVerifyFailCount(newCount);
+      const serverMessage = error?.data?.data?.message ?? error?.data?.message ?? error?.message;
+      if (newCount >= 5) {
+        showSendCodeMessage("입력 횟수를 초과했습니다. 재발송해주세요.", true);
+      } else {
+        showSendCodeMessage(serverMessage || "인증번호가 일치하지 않습니다.", true);
+      }
     }
   };
 
@@ -330,6 +353,7 @@ export default function StudentVerificationPage() {
               })();
               const role = (jwtPayload?.role as UserType) ?? "ROLE_STUDENT";
               await saveUserCollegeId(selectedCollegeId!);
+              await saveUserCollegeName(selectedCollegeName);
 
               // Store에 회원가입 정보 저장 (sign-up-done 화면에서 표시하기 위함)
               setSignupFields({
@@ -378,6 +402,7 @@ export default function StudentVerificationPage() {
           console.log("회원가입 성공:", response);
 
           await saveUserCollegeId(selectedCollegeId!);
+          await saveUserCollegeName(selectedCollegeName);
 
           setSignupFields({
             universityId: selectedUniversityId,
@@ -420,11 +445,31 @@ export default function StudentVerificationPage() {
           const errorMessage = errorData?.message;
 
           if (errorCode === "DUPLICATE_RESOURCE" || error?.status === 409) {
-            Alert.alert(
-              "회원가입 실패",
-              errorMessage || "이미 존재하는 아이디입니다. 다른 아이디로 다시 시도해주세요.",
-              [{ text: "확인", onPress: () => router.canGoBack() ? router.back() : router.replace("/auth") }]
-            );
+            const isEmailDuplicate = errorMessage?.includes("이메일") || errorMessage?.toLowerCase().includes("email");
+            if (isEmailDuplicate) {
+              // 이메일 중복 → 현재 화면에서 이메일 재인증 유도
+              Alert.alert(
+                "이미 가입된 이메일",
+                errorMessage || "이미 가입된 이메일입니다. 다른 이메일로 다시 인증해주세요.",
+                [{
+                  text: "확인",
+                  onPress: () => {
+                    setIsEmailVerified(false);
+                    setIsCodeSent(false);
+                    setEmail("");
+                    setVerificationCode("");
+                    setVerifyFailCount(0);
+                  },
+                }]
+              );
+            } else {
+              // 아이디 중복 → 이전 화면으로
+              Alert.alert(
+                "회원가입 실패",
+                errorMessage || "이미 존재하는 아이디입니다. 다른 아이디로 다시 시도해주세요.",
+                [{ text: "확인", onPress: () => router.canGoBack() ? router.back() : router.replace("/auth") }]
+              );
+            }
           } else {
             Alert.alert(
               "회원가입 실패",
@@ -514,7 +559,7 @@ export default function StudentVerificationPage() {
           </View>
 
           {/* 인라인 발송 메시지 */}
-          {sendCodeMessage !== "" && (
+          {sendCodeMessage !== "" && !isEmailVerified && (
             <ThemedText style={[styles.inlineMessage, isErrorMessage && styles.inlineMessageError]}>
               {sendCodeMessage}
             </ThemedText>
@@ -541,10 +586,10 @@ export default function StudentVerificationPage() {
               <TouchableOpacity
                 style={[
                   styles.smallButton,
-                  { backgroundColor: verificationCode && timer > 0 ? Brand.primary : Gray.gray5 },
+                  { backgroundColor: verificationCode && timer > 0 && verifyFailCount < 5 ? Brand.primary : Gray.gray5 },
                 ]}
                 onPress={handleVerifyCode}
-                disabled={!verificationCode || timer <= 0}
+                disabled={!verificationCode || timer <= 0 || verifyFailCount >= 5}
               >
                 <ThemedText style={styles.smallButtonText}>
                   확인
@@ -592,20 +637,30 @@ export default function StudentVerificationPage() {
             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
               학과 선택
             </ThemedText>
-            <TouchableOpacity
-              style={styles.selectField}
-              onPress={() => setDepartmentModalVisible(true)}
-            >
-              <ThemedText
-                style={[
-                  styles.selectFieldText,
-                  !selectedDepartmentId && styles.selectFieldPlaceholder,
-                ]}
+            {isDepartmentsFetching ? (
+              <ThemedText style={styles.hintText}>학과 목록을 불러오는 중...</ThemedText>
+            ) : isDepartmentsError ? (
+              <TouchableOpacity onPress={() => refetchDepartments()}>
+                <ThemedText style={styles.retryText}>학과 목록을 불러올 수 없습니다. 탭하여 재시도</ThemedText>
+              </TouchableOpacity>
+            ) : departments.length === 0 ? (
+              <ThemedText style={styles.hintText}>등록된 학과 정보가 없습니다</ThemedText>
+            ) : (
+              <TouchableOpacity
+                style={styles.selectField}
+                onPress={() => setDepartmentModalVisible(true)}
               >
-                {selectedDepartmentName || "학과를 선택해주세요"}
-              </ThemedText>
-              <ChevronDownIcon />
-            </TouchableOpacity>
+                <ThemedText
+                  style={[
+                    styles.selectFieldText,
+                    !selectedDepartmentId && styles.selectFieldPlaceholder,
+                  ]}
+                >
+                  {selectedDepartmentName || "학과를 선택해주세요"}
+                </ThemedText>
+                <ChevronDownIcon />
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -709,6 +764,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: rs(24),
+    paddingBottom: rs(24),
     gap: rs(24),
   },
   section: {
@@ -800,6 +856,16 @@ const styles = StyleSheet.create({
   },
   inlineMessageError: {
     color: System.error,
+  },
+  retryText: {
+    fontSize: rs(14),
+    color: System.error,
+    paddingLeft: rs(4),
+  },
+  hintText: {
+    fontSize: rs(14),
+    color: Gray.gray5,
+    paddingLeft: rs(4),
   },
   successMessage: {
     paddingVertical: rs(8),

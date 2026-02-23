@@ -9,7 +9,8 @@ import type {
   StoreResponse,
 } from '@/src/api/generated.schemas';
 import { useGetItems } from '@/src/api/item';
-import { useGetReviews, useGetReviewStats } from '@/src/api/review';
+import { useGetStudentInfo } from '@/src/api/my-page';
+import { useAddLike, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
 import { useGetStore } from '@/src/api/store';
 import { useGetStoreNewsList } from '@/src/api/store-news';
 import { StoreBenefits } from '@/src/app/(student)/components/store/benefits';
@@ -66,7 +67,7 @@ export default function StoreDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const { collegeId: userCollegeId, username: currentUsername } = useAuth();
+  const { collegeId: userCollegeId, collegeName: userCollegeName, username: currentUsername, saveUserCollegeName } = useAuth();
   const [activeTab, setActiveTab] = useState(tab ?? 'news');
   const [isLiked, setIsLiked] = useState(false);
   const [isLikeInitialized, setIsLikeInitialized] = useState(false);
@@ -92,6 +93,19 @@ export default function StoreDetailScreen() {
   const storeId = Number(id);
 
   // ── API hooks ──────────────────────────────────────────────
+
+  // 학생 프로필 (collegeName 없는 기존 유저용 fallback)
+  const { data: studentInfoRes } = useGetStudentInfo({
+    query: { enabled: userCollegeName === null, staleTime: 10 * 60 * 1000 },
+  });
+  const profileCollegeName = (studentInfoRes as any)?.data?.data?.collegeName as string | undefined;
+
+  // profileCollegeName이 로드되면 auth에 저장 (이후 API 호출 불필요)
+  React.useEffect(() => {
+    if (profileCollegeName && userCollegeName === null) {
+      saveUserCollegeName(profileCollegeName);
+    }
+  }, [profileCollegeName, userCollegeName]);
 
   // 가게 기본 정보
   const { data: storeRes, isLoading: isStoreLoading, isError } = useGetStore(storeId, {
@@ -177,6 +191,22 @@ export default function StoreDetailScreen() {
     },
   });
 
+  // 리뷰 좋아요 mutation
+  const addLikeMutation = useAddLike({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
+      },
+    },
+  });
+  const removeLikeMutation = useRemoveLike({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
+      },
+    },
+  });
+
   // 소식 (paginated)
   const { data: newsRes, isLoading: isNewsLoading } = useGetStoreNewsList(
     storeId,
@@ -235,7 +265,7 @@ export default function StoreDetailScreen() {
   // TODO: 백엔드 필드 추가 후 API 연동 (현재 API에 없는 필드)
   const storeCloverGrade = apiStore?.cloverGrade;
   const storeUniversity = '';  // TODO: StoreResponse에 university 필드 추가 후 연동
-  const storeIsPartner = false; // TODO: StoreResponse에 isPartner 필드 추가 후 연동
+  const storeIsPartner = apiStore?.isPartnership ?? false;
   const storeBenefits: string[] = []; // TODO: 혜택 API 추가 후 연동
 
   // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 필터링 포함)
@@ -250,10 +280,12 @@ export default function StoreDetailScreen() {
       .map((c) => ({
         id: String(c.id),
         title: c.title ?? '',
-        description: '',
+        description: c.minOrderAmount ? `최소 주문 ${Number(c.minOrderAmount).toLocaleString()}원` : '',
         discount: c.benefitValue ?? '',
-        expiryDate: c.issueEndsAt ? `${formatDate(c.issueEndsAt)}까지` : '',
-        isDownloaded: c.isDownloaded ?? false,
+        expiryDate: c.issueEndsAt ? `${formatDate(c.issueEndsAt)}까지 발급 가능` : '',
+        remainingCount: c.totalQuantity != null && c.downloadCount != null
+          ? Math.max(0, c.totalQuantity - c.downloadCount) : undefined,
+        benefitType: c.benefitType as any,
       }));
   }, [apiCoupons]);
 
@@ -305,6 +337,7 @@ export default function StoreDetailScreen() {
       commentCount: 0,
       isOwner: !!(currentUsername && r.username === currentUsername),
       hasReply: r.ownerReply ?? false,
+      isLiked: r.liked ?? false,
     })),
   [allReviews, currentUsername]);
 
@@ -334,9 +367,10 @@ export default function StoreDetailScreen() {
 
   // ── 대학 필터 & 쿠폰 필터 ──────────────────────────────────
 
+  const resolvedCollegeName = userCollegeName ?? profileCollegeName ?? storeUniversity;
   const selectedUniversity = selectedUniversityId
-    ? UNIVERSITY_OPTIONS.find((opt) => opt.id === selectedUniversityId)?.label ?? storeUniversity
-    : storeUniversity;
+    ? UNIVERSITY_OPTIONS.find((opt) => opt.id === selectedUniversityId)?.label ?? resolvedCollegeName
+    : resolvedCollegeName;
 
   const filteredCoupons = storeCoupons;
 
@@ -406,6 +440,14 @@ export default function StoreDetailScreen() {
           ),
       },
     ]);
+  };
+  const handleLikeReview = (reviewId: string) => {
+    const review = allReviews.find((r) => String(r.reviewId) === reviewId);
+    if (review?.liked) {
+      removeLikeMutation.mutate({ reviewId: Number(reviewId) });
+    } else {
+      addLikeMutation.mutate({ reviewId: Number(reviewId) });
+    }
   };
   const handleLoadMoreReviews = () => {
     if (!isReviewsFetching && hasMoreReviews) {
@@ -490,13 +532,14 @@ export default function StoreDetailScreen() {
               onTabChange={setActiveTab}
               news={storeNews}
               menu={storeMenu}
-              announcements={[]} // TODO: 공지 API 추가 후 연동
+              announcements={storeNews.map((n) => ({ id: n.id, title: n.title, content: n.content }))}
               recommendStores={[]} // TODO: 추천 가게 API 추가 후 연동
               reviewRating={storeReviewRating}
               reviews={storeReviews}
               onWriteReview={handleWriteReview}
               onEditReview={handleEditReview}
               onDeleteReview={handleDeleteReview}
+              onLikeReview={handleLikeReview}
               storeInfo={storeInfo}
               scrollViewRef={scrollViewRef}
               scrollOffsetY={scrollOffsetY}
@@ -518,6 +561,7 @@ export default function StoreDetailScreen() {
       <CouponModal
         visible={isCouponModalVisible}
         onClose={() => setIsCouponModalVisible(false)}
+        storeName={storeName}
         coupons={filteredCoupons}
         issuedCouponIds={issuedCouponIds}
         onIssueCoupon={handleIssueCoupon}

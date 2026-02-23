@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Image,
@@ -51,6 +52,7 @@ export default function ReviewWriteScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   const [rating, setRating] = useState(0);
   const [reviewContent, setReviewContent] = useState('');
@@ -61,6 +63,8 @@ export default function ReviewWriteScreen() {
   const { mutate: createReview, isPending } = useCreateReview({
     mutation: {
       onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/stores/${id}/reviews`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/stores/${id}/reviews/stats`] });
         setSuccessVisible(true);
       },
       onError: (error: any) => {
@@ -94,10 +98,10 @@ export default function ReviewWriteScreen() {
     createReview({
       storeId: Number(id),
       data: {
-        request: {
+        request: JSON.stringify({
           content: reviewContent.trim(),
           rating,
-        },
+        }),
         images: images.length > 0 ? (images as any) : undefined,
       },
     });

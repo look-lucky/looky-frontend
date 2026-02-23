@@ -208,7 +208,7 @@ export const createStoreNews = async (storeId: number,
 if(createStoreNewsBody.images !== undefined) {
  createStoreNewsBody.images.forEach(value => formData.append(`images`, value));
  }
-formData.append(`request`, JSON.stringify(createStoreNewsBody.request));
+formData.append(`request`, createStoreNewsBody.request);
 
   return customFetch<createStoreNewsResponse>(getCreateStoreNewsUrl(storeId),
   {      
@@ -782,7 +782,7 @@ export const updateStoreNews = async (newsId: number,
 if(updateStoreNewsBody.images !== undefined) {
  updateStoreNewsBody.images.forEach(value => formData.append(`images`, value));
  }
-formData.append(`request`, JSON.stringify(updateStoreNewsBody.request));
+formData.append(`request`, updateStoreNewsBody.request);
 
   return customFetch<updateStoreNewsResponse>(getUpdateStoreNewsUrl(newsId),
   {      

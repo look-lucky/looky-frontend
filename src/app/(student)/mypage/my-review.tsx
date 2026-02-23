@@ -1,6 +1,8 @@
 import type { PageResponseReviewResponse } from '@/src/api/generated.schemas';
 import { useDeleteReview, useGetMyReviews } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
+import { AppPopup } from '@/src/shared/common/app-popup';
+import { ErrorPopup } from '@/src/shared/common/error-popup';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,6 +39,9 @@ export default function MyReview() {
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const [deletePopupVisible, setDeletePopupVisible] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null);
+  const [deleteSuccessVisible, setDeleteSuccessVisible] = useState(false);
+  const [networkErrorVisible, setNetworkErrorVisible] = useState(false);
+  const [deleteApiErrorVisible, setDeleteApiErrorVisible] = useState(false);
 
   const { mutate: deleteReview } = useDeleteReview();
 
@@ -77,6 +82,15 @@ export default function MyReview() {
           refetch();
           setDeletePopupVisible(false);
           setSelectedReviewId(null);
+          setDeleteSuccessVisible(true);
+        },
+        onError: (error: any) => {
+          setDeletePopupVisible(false);
+          if (error?.status) {
+            setDeleteApiErrorVisible(true);
+          } else {
+            setNetworkErrorVisible(true);
+          }
         },
       }
     );
@@ -116,6 +130,12 @@ export default function MyReview() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+            {allReviews.length === 0 && (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>작성한 리뷰가 없습니다</Text>
+            </View>
+          )}
+
           {allReviews.map((review) => {
             const hasReply = review.ownerReply ?? false;
             const dateStr = review.createdAt
@@ -246,6 +266,31 @@ export default function MyReview() {
           </View>
         </Modal>
 
+      <AppPopup
+        visible={deleteSuccessVisible}
+        title="리뷰가 삭제되었습니다"
+        onClose={() => setDeleteSuccessVisible(false)}
+      />
+
+      <ErrorPopup
+        visible={networkErrorVisible}
+        type="NETWORK"
+        onRefresh={() => {
+          setNetworkErrorVisible(false);
+          confirmDelete();
+        }}
+        onClose={() => {
+          setNetworkErrorVisible(false);
+          setSelectedReviewId(null);
+        }}
+      />
+
+      <AppPopup
+        visible={deleteApiErrorVisible}
+        title="리뷰 삭제에 실패했어요"
+        subtitle="다시 시도해주세요"
+        onClose={() => setDeleteApiErrorVisible(false)}
+      />
       </View>
     </TouchableWithoutFeedback>
   );
@@ -418,5 +463,16 @@ const styles = StyleSheet.create({
   },
   popupBtnFull: {
     width: rs(295),
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: rs(80),
+  },
+  emptyText: {
+    fontSize: rs(14),
+    fontWeight: '400',
+    color: '#828282',
+    fontFamily: 'Pretendard',
   },
 });
