@@ -81,8 +81,15 @@ export default function FindPasswordPage() {
       return;
     }
     try {
-      await verifyCodeMutation.mutateAsync({ data: { email, code: verificationCode } });
-      // TODO: 새 비밀번호 설정 화면으로 이동
+      const result = await verifyCodeMutation.mutateAsync({ data: { email, code: verificationCode } });
+      const resetToken = String(
+        (result as any)?.data?.data?.resetToken ??
+        (result as any)?.data?.resetToken ??
+        (result as any)?.data?.data ??
+        (result as any)?.data ??
+        ""
+      );
+      router.replace({ pathname: "/auth/reset-password", params: { resetToken } });
     } catch {
       alert("인증번호가 올바르지 않습니다.");
     }
@@ -188,10 +195,13 @@ export default function FindPasswordPage() {
       </View>
 
       <TouchableOpacity
-        style={[styles.mainButton, { backgroundColor: username && email ? "#40ce2b" : "#d5d5d5" }]}
-        disabled={!username || !email}
+        style={[styles.mainButton, { backgroundColor: username && email && !sendCodeMutation.isPending ? "#40ce2b" : "#d5d5d5" }]}
+        onPress={handleGetVerificationCode}
+        disabled={!username || !email || sendCodeMutation.isPending}
       >
-        <Text style={styles.mainButtonText}>비밀번호 찾기</Text>
+        <Text style={styles.mainButtonText}>
+          {sendCodeMutation.isPending ? "발송 중..." : "비밀번호 찾기"}
+        </Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

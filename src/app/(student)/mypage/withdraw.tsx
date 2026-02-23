@@ -63,6 +63,7 @@ export default function WithdrawScreen() {
       await withdraw({ reasons: selectedReasons, detailReason: detailReason || undefined });
       setWithdrawModalVisible(false);
       await handleLogout();
+      router.replace("/landing");
     } catch (error) {
       setWithdrawModalVisible(false);
       if (isNetworkError(error)) {

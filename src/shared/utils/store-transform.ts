@@ -222,6 +222,8 @@ export function transformStoreMapResponse(
     distance = formatDistance(km);
   }
 
+  const myPartnerships = response.myPartnerships ?? [];
+
   return {
     id: String(response.id ?? 0),
     name: response.name ?? '',
@@ -231,10 +233,10 @@ export function transformStoreMapResponse(
     distance,
     openStatus: '',
     openHours: response.operatingHours ?? '',
-    benefits: [],
+    benefits: myPartnerships,
     lat,
     lng,
-    isPartner: response.isPartnership ?? false,
+    isPartner: myPartnerships.length > 0,
     hasCoupon: response.hasCoupon ?? false,
     category: formatStoreCategories(response.storeCategories as StoreResponseStoreCategoriesItem[]),
     isFavorite: false,

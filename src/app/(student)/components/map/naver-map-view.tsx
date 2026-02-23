@@ -8,10 +8,12 @@ import {
   type NaverMapViewRef,
 } from '@mj-studio/react-native-naver-map';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image as RNImage, StyleSheet, View } from 'react-native';
+import { G, Svg, Image as SvgImage, Text as SvgText } from 'react-native-svg';
 
 // 클러스터 마커 아이콘 PNG
 const CLUSTER_ICON = require('@/assets/images/icons/map/clover-cluster.png');
+const CLUSTER_ICON_URI = RNImage.resolveAssetSource(CLUSTER_ICON).uri;
 
 // 가게 마커 아이콘 PNG
 const STORE_MARKER_ICONS = {
@@ -44,9 +46,32 @@ const EVENT_MARKER_ICONS_LIVE: Record<EventType, any> = {
   COMMUNITY: require('@/assets/images/icons/map/event-student-live.png'),
 };
 
-const MARKER_SIZE = rs(16);
+// 클러스터 마커 SVG 컴포넌트 (iOS Image 렌더링 이슈 회피 — SvgImage 사용)
+function ClusterMarkerIcon({ count, size }: { count: number; size: number }) {
+  const fontSize = count >= 100 ? size * 0.22 : count >= 10 ? size * 0.25 : size * 0.28;
+
+  return (
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <G>
+        <SvgImage href={CLUSTER_ICON_URI} x={0} y={0} width={size} height={size} />
+        <SvgText
+          x={size / 2}
+          y={size * 0.44}
+          textAnchor="middle"
+          fill={Gray.white}
+          fontSize={fontSize}
+          fontWeight="700"
+        >
+          {count}
+        </SvgText>
+      </G>
+    </Svg>
+  );
+}
+
+const MARKER_SIZE = rs(32);
 const EVENT_MARKER_SIZE = rs(30);
-const CLUSTER_SIZE = rs(44);
+const CLUSTER_SIZE = rs(60);
 
 // 가게 마커 아이콘 선택 헬퍼
 function getStoreMarkerIcon(isPartner: boolean, hasCoupon: boolean) {
@@ -135,6 +160,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     const mapRef = useRef<NaverMapViewRef>(null);
     const isInitialMount = useRef(true);
     const [currentZoom, setCurrentZoom] = useState(15);
+    const [isMapReady, setIsMapReady] = useState(false);
 
     useImperativeHandle(ref, () => mapRef.current!, []);
 
@@ -180,10 +206,16 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
             zoom: 15,
           }}
           isShowZoomControls={isShowZoomControls}
-          onInitialized={onMapReady}
+          onInitialized={() => {
+            setIsMapReady(true);
+            onMapReady?.();
+          }}
           onCameraChanged={(params) => {
             const zoom = params.zoom ?? 15;
-            setCurrentZoom(zoom);
+            setCurrentZoom((prev) => {
+              if (Math.floor(zoom) !== Math.floor(prev)) return zoom;
+              return prev;
+            });
             onCameraChanged?.({
               lat: params.latitude,
               lng: params.longitude,
@@ -195,8 +227,9 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
             onMapClick?.(event.latitude, event.longitude);
           }}
         >
+          {/* 맵 초기화 완료 후에만 마커 렌더링 (초기화 전 마커 추가 시 IndexOutOfBoundsException 방지) */}
           {/* 내 위치 마커 */}
-          {myLocation && (
+          {isMapReady && myLocation && (
             <NaverMapMarkerOverlay
               key="my-location"
               latitude={myLocation.lat}
@@ -210,7 +243,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           )}
 
           {/* 가게 마커 (클러스터 or 개별) */}
-          {!hideStoreMarkers && clusteredMarkers.map((item) => {
+          {isMapReady && !hideStoreMarkers && clusteredMarkers.map((item) => {
             if (item.type === 'cluster') {
               return (
                 <NaverMapMarkerOverlay
@@ -219,14 +252,11 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                   longitude={item.lng}
                   width={CLUSTER_SIZE}
                   height={CLUSTER_SIZE}
-                  anchor={{ x: 0.5, y: 0.5 }}
+                  anchor={{ x: 0.5, y: 1.0 }}
                   zIndex={500}
                   onTap={() => handleClusterClick(item.lat, item.lng)}
                 >
-                  <View style={styles.clusterMarker}>
-                    <Image source={CLUSTER_ICON} style={styles.clusterIcon} />
-                    <Text style={styles.clusterCount}>{item.count}</Text>
-                  </View>
+                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} />
                 </NaverMapMarkerOverlay>
               );
             }
@@ -245,7 +275,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           })}
 
           {/* 이벤트 마커 */}
-          {eventMarkers.map((marker) => (
+          {isMapReady && eventMarkers.map((marker) => (
             <NaverMapMarkerOverlay
               key={marker.id}
               latitude={marker.lat}
@@ -270,22 +300,5 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-  },
-  clusterMarker: {
-    width: CLUSTER_SIZE,
-    height: CLUSTER_SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clusterIcon: {
-    ...StyleSheet.absoluteFillObject,
-    width: CLUSTER_SIZE,
-    height: CLUSTER_SIZE,
-  },
-  clusterCount: {
-    color: Gray.white,
-    fontWeight: '700',
-    fontSize: rs(14),
-    transform: [{ translateY: -rs(4) }],
   },
 });

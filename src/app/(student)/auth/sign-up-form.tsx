@@ -197,6 +197,7 @@ export default function SignupTypePage() {
     const month = parseInt(birthMonth, 10);
     const day = parseInt(birthDay, 10);
     if (isNaN(year) || isNaN(month) || isNaN(day)) return false;
+    if (year < 1900 || year > 2010) return false;
     const birthDate = new Date(year, month - 1, day);
     if (
       birthDate.getFullYear() !== year ||
@@ -226,6 +227,7 @@ export default function SignupTypePage() {
       birthDate.getMonth() !== month - 1 ||
       birthDate.getDate() !== day
     ) return '존재하지 않는 날짜입니다';
+    if (year < 1900 || year > 2010) return '1900~2010년생만 가입 가능합니다';
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (birthDate > today) return '미래 날짜는 입력할 수 없습니다';

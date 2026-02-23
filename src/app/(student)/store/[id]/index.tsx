@@ -374,11 +374,11 @@ export default function StoreDetailScreen() {
 
   const filteredCoupons = storeCoupons;
 
-  // 이미 발급받은 쿠폰 ID 목록
-  const issuedCouponIds = useMemo(() =>
+  // 이미 발급받은 쿠폰 타이틀 목록 (API에 couponId 필드 없어서 title로 매칭)
+  const issuedCouponTitles = useMemo(() =>
     myCoupons
-      .filter((mc) => mc.couponId != null)
-      .map((mc) => mc.couponId as number),
+      .filter((mc) => mc.title != null)
+      .map((mc) => mc.title as string),
     [myCoupons],
   );
 
@@ -521,9 +521,7 @@ export default function StoreDetailScreen() {
             <StoreBenefits
               benefits={storeBenefits}
               coupons={filteredCoupons}
-              issuedCouponIds={issuedCouponIds}
-              onIssueCoupon={handleIssueCoupon}
-              isIssuing={issueCouponMutation.isPending}
+              onCouponPress={handleCouponPress}
             />
 
             <StoreContent
@@ -563,7 +561,7 @@ export default function StoreDetailScreen() {
         onClose={() => setIsCouponModalVisible(false)}
         storeName={storeName}
         coupons={filteredCoupons}
-        issuedCouponIds={issuedCouponIds}
+        issuedCouponTitles={issuedCouponTitles}
         onIssueCoupon={handleIssueCoupon}
         isIssuing={issueCouponMutation.isPending}
       />

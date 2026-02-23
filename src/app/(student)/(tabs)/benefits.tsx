@@ -1,6 +1,7 @@
 import GiftIcon from "@/assets/images/icons/coupon/gift.svg";
 import HotPriceIcon from "@/assets/images/icons/coupon/hot-price.svg";
 import PriceTagDollarIcon from "@/assets/images/icons/coupon/price-tag-dollar.svg";
+import LocationIcon from "@/assets/images/icons/home/location-icon.svg";
 import { getGetMyCouponsQueryKey, useActivateCoupon, useGetMyCoupons } from "@/src/api/coupon";
 import type { IssueCouponResponse } from "@/src/api/generated.schemas";
 import { AppButton } from "@/src/shared/common/app-button";
@@ -346,18 +347,27 @@ export default function BenefitsTab() {
                   <ThemedText style={styles.couponTitle}>
                     {coupon.title ?? `쿠폰 #${coupon.studentCouponId}`}
                   </ThemedText>
-                  <ThemedText style={styles.couponDescription}>
-                    {coupon.storeName ?? ""}
-                  </ThemedText>
                   <ThemedText style={styles.couponMinOrder}>
                     최소 주문 {coupon.minOrderAmount ? `${Number(coupon.minOrderAmount).toLocaleString()}원` : "-"}
                   </ThemedText>
                   <ThemedText style={styles.couponExpireDate}>
                     {formatExpiryDateTime(coupon.expiresAt)}
                   </ThemedText>
-                  <ThemedText style={styles.couponTimeRemaining}>
-                    {getTimeRemaining(coupon.expiresAt)}
-                  </ThemedText>
+                  <View style={styles.couponBottomRow}>
+                    <View style={styles.couponStoreNameRow}>
+                      <LocationIcon width={rs(12)} height={rs(12)} fill={Gray.white} />
+                      <ThemedText style={styles.couponDescription}>
+                        {coupon.storeName ?? ""}
+                      </ThemedText>
+                    </View>
+                    {getTimeRemaining(coupon.expiresAt) ? (
+                      <View style={styles.couponTimeRemainingBadge}>
+                        <ThemedText style={styles.couponTimeRemaining}>
+                          {getTimeRemaining(coupon.expiresAt)}
+                        </ThemedText>
+                      </View>
+                    ) : null}
+                  </View>
                 </View>
               </TouchableOpacity>
             );
@@ -625,9 +635,9 @@ const styles = StyleSheet.create({
   },
   couponDescription: {
     fontFamily: Fonts.regular,
-    fontSize: rs(12),
+    fontSize: rs(11),
     lineHeight: rs(16),
-    color: TextColor.placeholder,
+    color: Gray.white,
   },
   couponMinOrder: {
     fontFamily: Fonts.regular,
@@ -640,6 +650,26 @@ const styles = StyleSheet.create({
     fontSize: rs(11),
     lineHeight: rs(16),
     color: TextColor.secondary,
+  },
+  couponBottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rs(8),
+  },
+  couponStoreNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rs(4),
+    backgroundColor: Gray.black,
+    borderRadius: rs(4),
+    paddingHorizontal: rs(6),
+    paddingVertical: rs(2),
+  },
+  couponTimeRemainingBadge: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: rs(4),
+    paddingHorizontal: rs(6),
+    paddingVertical: rs(2),
   },
   couponTimeRemaining: {
     fontFamily: Fonts.medium,
@@ -678,9 +708,9 @@ const styles = StyleSheet.create({
   },
   modalCloseButton: {
     position: "absolute",
-    top: rs(16),
-    right: rs(16),
-    padding: rs(4),
+    top: rs(8),
+    right: rs(8),
+    padding: rs(12),
   },
   modalCloseText: {
     fontSize: rs(18),
