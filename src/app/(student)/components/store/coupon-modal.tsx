@@ -1,3 +1,4 @@
+import DownloadDoneIcon from '@/assets/images/icons/store/download-done.svg';
 import DownloadIcon from '@/assets/images/icons/store/download.svg';
 import GiftIcon from '@/assets/images/icons/coupon/gift.svg';
 import HotPriceIcon from '@/assets/images/icons/coupon/hot-price.svg';
@@ -22,7 +23,7 @@ interface CouponModalProps {
   onClose: () => void;
   storeName: string;
   coupons: Coupon[];
-  issuedCouponIds: number[];
+  issuedCouponTitles: string[];
   onIssueCoupon: (couponId: string) => void;
   isIssuing: boolean;
 }
@@ -44,7 +45,7 @@ export function CouponModal({
   onClose,
   storeName,
   coupons,
-  issuedCouponIds,
+  issuedCouponTitles,
   onIssueCoupon,
   isIssuing,
 }: CouponModalProps) {
@@ -90,7 +91,7 @@ export function CouponModal({
               </View>
             ) : (
               coupons.map((coupon) => {
-                const isIssued = issuedCouponIds.includes(Number(coupon.id));
+                const isIssued = issuedCouponTitles.includes(coupon.title);
                 const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ''];
                 return (
                   <View key={coupon.id} style={[styles.couponCard, isIssued && styles.couponCardIssued]}>
@@ -144,7 +145,7 @@ export function CouponModal({
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       {isIssued ? (
-                        <ThemedText style={styles.issuedText}>발급완료</ThemedText>
+                        <DownloadDoneIcon width={rs(16)} height={rs(16)} />
                       ) : (
                         <DownloadIcon width={rs(16)} height={rs(16)} />
                       )}
@@ -295,11 +296,6 @@ const styles = StyleSheet.create({
     width: rs(32),
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  issuedText: {
-    fontFamily: Fonts.medium,
-    fontSize: rs(10),
-    color: TextColor.tertiary,
   },
   closeButton: {
     alignItems: 'center',

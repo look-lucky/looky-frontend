@@ -150,8 +150,12 @@ export default function SocialSignupFormPage() {
   const isFormValid = () => {
     if (!selectedUserType) return false;
 
+    const year = parseInt(birthYear, 10);
     const commonValid =
       birthYear.length === 4 &&
+      !isNaN(year) &&
+      year >= 1900 &&
+      year <= 2010 &&
       birthMonth.length >= 1 &&
       birthDay.length >= 1;
 

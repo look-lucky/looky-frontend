@@ -113,7 +113,8 @@ export default function SignupOwnerPage() {
     representativeName.length > 0 &&
     businessNumber.length > 0 &&
     isBizVerified &&
-    openDate !== null;
+    openDate !== null &&
+    businessImageUri !== null;
 
   // 날짜 선택 확인
   const handleDateConfirm = (date: Date) => {

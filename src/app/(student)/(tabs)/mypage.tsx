@@ -58,7 +58,7 @@ export default function MyPageTab() {
   const queryClient = useQueryClient();
 
   const { data: myCouponsRes } = useGetMyCoupons();
-  const { data: favoritesRes } = useGetMyFavorites({ pageable: { page: 0, size: 100 } });
+  const { data: favoritesRes } = useGetMyFavorites({ page: 0, size: 100 } as any);
   const { data: myReviewsRes } = useGetMyReviews({ pageable: { page: 0, size: 100 } });
   const { data: studentInfo } = useGetStudentInfo();
 
