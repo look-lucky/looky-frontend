@@ -8,8 +8,9 @@ import {
 } from '@/src/shared/constants/map';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Text } from '@/src/shared/theme/theme';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Modal,
   Pressable,
   StyleSheet,
@@ -48,6 +49,50 @@ export function StoreFilterModal({
   const [draftStoreTypes, setDraftStoreTypes] = useState<string[]>(selectedStoreTypes);
   const [draftMoods, setDraftMoods] = useState<string[]>(selectedMoods);
   const [draftEvents, setDraftEvents] = useState<string[]>(selectedEvents);
+
+  const tabTranslateX = useRef(new Animated.Value(0)).current;
+  const [tabLayouts, setTabLayouts] = useState<{ [key in FilterTab]?: { x: number; width: number } }>({});
+
+  const handleTabLayout = useCallback(
+    (tab: FilterTab, e: { nativeEvent: { layout: { x: number; width: number } } }) => {
+      const { x, width } = e.nativeEvent.layout;
+      setTabLayouts((prev) => {
+        if (prev[tab]?.x === x && prev[tab]?.width === width) return prev;
+        return { ...prev, [tab]: { x, width } };
+      });
+    },
+    [],
+  );
+
+  // 레이아웃 측정 완료 시 인디케이터 초기 위치 설정
+  useEffect(() => {
+    const layout = tabLayouts[activeTab];
+    if (layout) tabTranslateX.setValue(layout.x);
+  }, [tabLayouts]);
+
+  // 모달 재오픈 시 인디케이터 위치 재설정
+  useEffect(() => {
+    if (visible) {
+      const layout = tabLayouts[activeTab];
+      if (layout) tabTranslateX.setValue(layout.x);
+    }
+  }, [visible]);
+
+  const handleTabChangeWithAnimation = useCallback(
+    (tab: FilterTab) => {
+      const layout = tabLayouts[tab];
+      if (layout) {
+        Animated.spring(tabTranslateX, {
+          toValue: layout.x,
+          useNativeDriver: true,
+          tension: 80,
+          friction: 14,
+        }).start();
+      }
+      onTabChange(tab);
+    },
+    [tabTranslateX, tabLayouts, onTabChange],
+  );
 
   // 모달이 열릴 때 현재 적용된 값으로 draft 초기화
   useEffect(() => {
@@ -104,7 +149,8 @@ export function StoreFilterModal({
             <View style={styles.tabRow}>
               <TouchableOpacity
                 style={styles.tab}
-                onPress={() => onTabChange('storeType')}
+                onLayout={(e) => handleTabLayout('storeType', e)}
+                onPress={() => handleTabChangeWithAnimation('storeType')}
               >
                 <ThemedText
                   type="subtitle"
@@ -115,7 +161,8 @@ export function StoreFilterModal({
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.tab}
-                onPress={() => onTabChange('event')}
+                onLayout={(e) => handleTabLayout('event', e)}
+                onPress={() => handleTabChangeWithAnimation('event')}
               >
                 <ThemedText
                   type="subtitle"
@@ -124,6 +171,15 @@ export function StoreFilterModal({
                   이벤트
                 </ThemedText>
               </TouchableOpacity>
+              <Animated.View
+                style={[
+                  styles.tabIndicator,
+                  {
+                    width: tabLayouts[activeTab]?.width ?? 0,
+                    transform: [{ translateX: tabTranslateX }],
+                  },
+                ]}
+              />
             </View>
             <TouchableOpacity onPress={handleReset}>
               <ThemedText style={styles.resetText}>초기화</ThemedText>
@@ -255,7 +311,6 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    gap: rs(16),
   },
   resetText: {
     fontSize: 14,
@@ -263,6 +318,16 @@ const styles = StyleSheet.create({
   },
   tab: {
     paddingVertical: rs(4),
+    paddingBottom: rs(8),
+    marginRight: rs(16),
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: Text.primary,
   },
   content: {
     backgroundColor: Gray.white,
