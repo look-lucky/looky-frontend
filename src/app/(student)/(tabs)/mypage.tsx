@@ -283,6 +283,7 @@ const styles = StyleSheet.create({
     gap: rs(16),
   },
 
+
   profileTextColumn: {
     flex: 1,
     gap: rs(6),
