@@ -5,8 +5,7 @@ import { useGetMyReviews } from "@/src/api/review";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";
-import { Fonts, Gray, Owner, Primary, System, Text as TextColor } from "@/src/shared/theme/theme";
-import BannerCapIcon from "@/assets/images/icons/mypage/banner-cap.svg";
+import { Fonts, Gray, Owner, Primary, Text as TextColor } from "@/src/shared/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
@@ -136,9 +135,7 @@ export default function MyPageTab() {
           end={{ x: 0, y: 1 }}
         >
           <View style={styles.profileContentRow}>
-            <View style={styles.profileIconBox}>
-              <BannerCapIcon width={rs(28)} height={rs(28)} />
-            </View>
+            <Ionicons name="school" size={rs(44)} color={Gray.white} />
             <View style={styles.profileTextColumn}>
               <ThemedText style={styles.profileName}>
                 {(studentInfo as any)?.data?.data?.nickname ?? "알 수 없음"}
@@ -182,21 +179,21 @@ export default function MyPageTab() {
           {/* 쿠폰 카드 */}
           <View style={styles.couponCard}>
             <View style={styles.couponItem}>
-              <ThemedText style={[styles.couponNumber, { color: Primary[500] }]}>
+              <ThemedText style={[styles.couponNumber, { color: "#009951" }]}>
                 {couponCounts.owned}
               </ThemedText>
               <ThemedText style={styles.couponLabel}>보유 쿠폰</ThemedText>
             </View>
             <View style={styles.couponDivider} />
             <View style={styles.couponItem}>
-              <ThemedText style={[styles.couponNumber, { color: System.error }]}>
+              <ThemedText style={[styles.couponNumber, { color: "#EB4335" }]}>
                 {couponCounts.expiringSoon}
               </ThemedText>
               <ThemedText style={styles.couponLabel}>곧 만료</ThemedText>
             </View>
             <View style={styles.couponDivider} />
             <View style={styles.couponItem}>
-              <ThemedText style={[styles.couponNumber, { color: TextColor.primary }]}>
+              <ThemedText style={[styles.couponNumber, { color: "#000000" }]}>
                 {couponCounts.used}
               </ThemedText>
               <ThemedText style={styles.couponLabel}>사용 완료</ThemedText>
@@ -285,47 +282,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: rs(16),
   },
-  profileIconBox: {
-    width: rs(44),
-    height: rs(44),
-    backgroundColor: Gray.white,
-    borderRadius: rs(12),
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: Gray.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
+
   profileTextColumn: {
     flex: 1,
-    gap: rs(4),
+    gap: rs(6),
   },
   profileName: {
     fontSize: rs(18),
+    marginBottom: rs(2),
     fontWeight: "700",
     color: Gray.white,
     fontFamily: Fonts.bold,
   },
   profileUniversity: {
+    fontSize: rs(12),
     color: Gray.white,
     fontFamily: Fonts.medium,
   },
   profileSubText: {
+    fontSize: rs(12),
     color: Gray.white,
   },
   editButton: {
-    paddingHorizontal: rs(12),
-    paddingVertical: rs(6),
-    borderRadius: rs(12),
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    paddingHorizontal: rs(10),
+    paddingVertical: rs(3),
+    borderRadius: rs(16),
+    backgroundColor: Gray.white,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   editButtonText: {
     fontSize: rs(12),
-    fontWeight: "500",
-    color: Gray.white,
-    fontFamily: Fonts.medium,
+    color: "#828282",
+    fontFamily: Fonts.regular,
+    lineHeight: rs(22),
   },
 
   // 메뉴 영역
@@ -362,6 +354,7 @@ const styles = StyleSheet.create({
     fontSize: rs(28),
     fontWeight: "600",
     fontFamily: Fonts.semiBold,
+    lineHeight: rs(34),
   },
   couponLabel: {
     fontSize: rs(12),
