@@ -103,6 +103,7 @@ interface NaverMapProps {
   center?: { lat: number; lng: number };
   markers?: StoreMarkerData[];
   eventMarkers?: EventMarkerData[];
+  hideStoreMarkers?: boolean;
   myLocation?: { lat: number; lng: number } | null;
   onMapClick?: (lat: number, lng: number) => void;
   onMarkerClick?: (markerId: string) => void;
@@ -119,6 +120,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
       center = { lat: 35.8358, lng: 127.1294 }, // 전북대학교 기본 좌표
       markers = [],
       eventMarkers = [],
+      hideStoreMarkers = false,
       myLocation = null,
       onMapClick,
       onMarkerClick,
@@ -208,7 +210,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           )}
 
           {/* 가게 마커 (클러스터 or 개별) */}
-          {clusteredMarkers.map((item) => {
+          {!hideStoreMarkers && clusteredMarkers.map((item) => {
             if (item.type === 'cluster') {
               return (
                 <NaverMapMarkerOverlay
