@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 
@@ -14,6 +15,7 @@ import { getMyStoreClaims } from '@/src/api/store-claim';
 import { ErrorPopup } from '@/src/shared/common/error-popup';
 
 export default function HomeScreen({ navigation }) {
+  const router = useRouter();
   // [상태 관리]
   const [modalVisible, setModalVisible] = useState(false); // 등급 안내 모달
   const [isLoading, setIsLoading] = useState(true);        // 로딩 상태

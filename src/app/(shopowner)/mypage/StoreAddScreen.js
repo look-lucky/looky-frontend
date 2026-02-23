@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Modal,
   Platform,
   SafeAreaView,
@@ -16,8 +17,12 @@ import {
   View
 } from 'react-native';
 
+import { getOwnerInfo } from '@/src/api/my-page';
 import { createStore, updateStore } from '@/src/api/store';
 import { verifyBizRegNo } from '@/src/api/store-claim';
+import { ErrorPopup } from '@/src/shared/common/error-popup';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function StoreAddScreen({ navigation, route }) {
   const { mode, storeData } = route.params || { mode: 'add', storeData: null };
@@ -30,50 +35,90 @@ export default function StoreAddScreen({ navigation, route }) {
   // 입력 폼 상태
   const [form, setForm] = useState({
     name: '',
+    branch: '',
     phone: '',
     owner: '',
-    mobile: '',
     bizNum: '',
   });
 
   const [isBizNumVerified, setIsBizNumVerified] = useState(false);
-  const [hasBizLicenseImage, setHasBizLicenseImage] = useState(false);
+  const [isBizNumFailed, setIsBizNumFailed] = useState(false);
+  const [bizLicenseImage, setBizLicenseImage] = useState(null);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
 
   // 팝업 상태 관리
   const [popupVisible, setPopupVisible] = useState(false);
-  const [popupType, setPopupType] = useState(null); 
+  const [popupType, setPopupType] = useState(null);
+  const [isErrorPopupVisible, setIsErrorPopupVisible] = useState(false);
 
-  // [수정 모드] 초기 데이터 세팅
+  // 토스트 상태
+  const [toastMessage, setToastMessage] = useState('');
+  const toastOpacity = React.useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     if (isEditMode && storeData) {
       setForm({
         name: storeData.name || '',
-        phone: storeData.phone || '', 
-        owner: storeData.ownerName || '',        
-        mobile: storeData.mobile || '', 
-        bizNum: storeData.businessNumber || '',  
+        branch: storeData.branch || '',
+        phone: storeData.phone || '',
+        owner: storeData.representativeName || '',
+        bizNum: storeData.businessNumber || '',
       });
       // 수정 모드일 땐 이미 인증된 것으로 간주
       setIsBizNumVerified(true);
-      setHasBizLicenseImage(true); 
+      // 이미지는 id나 url이 있을 수 있음 (여기서는 첨부 여부만 체크)
+      setBizLicenseImage(storeData.imageUrl || true);
+    } else if (!isEditMode) {
+      // [추가 모드] 계정 대표자명 미리 가져오기
+      const fetchDefaultOwner = async () => {
+        try {
+          const response = await getOwnerInfo();
+          const data = response.data?.data || response.data;
+          if (data && data.name) {
+            setForm(prev => ({ ...prev, owner: data.name }));
+          }
+        } catch (error) {
+          console.error('대표자 정보 가져오기 실패:', error);
+        }
+      };
+      fetchDefaultOwner();
     }
   }, [isEditMode, storeData]);
 
   // 유효성 검사
   useEffect(() => {
-    const { name, phone, owner, mobile, bizNum } = form;
-    const isValid = 
+    const { name, phone, owner, bizNum } = form;
+    const isPhoneValid = validatePhone(phone);
+    const isValid =
       name.trim().length > 0 &&
-      phone.trim().length > 0 &&
+      isPhoneValid &&
       owner.trim().length > 0 &&
-      mobile.trim().length > 0 &&
       bizNum.trim().length > 0 &&
       isBizNumVerified &&
-      hasBizLicenseImage;
+      bizLicenseImage !== null;
 
     setIsFormValid(isValid);
-  }, [form, isBizNumVerified, hasBizLicenseImage]);
+    if (phone.length > 0 && !isPhoneValid) {
+      setPhoneError('올바른 전화번호를 입력해주세요');
+    } else {
+      setPhoneError('');
+    }
+  }, [form, isBizNumVerified, bizLicenseImage]);
+
+  const validatePhone = (num) => {
+    const cleaned = num.replace(/-/g, '');
+    return (cleaned.length >= 8 && cleaned.length <= 11);
+  };
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    Animated.sequence([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.delay(2000),
+      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => setToastMessage(''));
+  };
 
   // --- 포맷팅 함수 ---
   const formatPhoneNumber = (value) => {
@@ -82,7 +127,7 @@ export default function StoreAddScreen({ navigation, route }) {
       if (cleaned.length <= 2) return cleaned;
       if (cleaned.length <= 5) return `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
       if (cleaned.length <= 9) return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 5)}-${cleaned.slice(5)}`;
-      return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 6)}-${cleaned.slice(6)}`; 
+      return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
     } else {
       if (cleaned.length <= 3) return cleaned;
       if (cleaned.length <= 6) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
@@ -101,11 +146,20 @@ export default function StoreAddScreen({ navigation, route }) {
 
   const handleChange = (key, text) => {
     let formattedText = text;
-    if (['phone', 'mobile'].includes(key)) {
+    if (key === 'phone') {
       formattedText = formatPhoneNumber(text);
     } else if (key === 'bizNum') {
       formattedText = formatBizNumber(text);
-      if (isBizNumVerified) setIsBizNumVerified(false); // 수정하면 인증 초기화
+      if (isBizNumVerified) setIsBizNumVerified(false);
+      if (isBizNumFailed) setIsBizNumFailed(false);
+    } else if (key === 'branch' || key === 'name') {
+      if (text.length > 50) {
+        const label = key === 'name' ? '가게명' : '가게 지점명';
+        showToast(`${label}은 50자 이하로 입력해주세요`);
+        return;
+      }
+    } else if (key === 'owner') {
+      if (text.length > 20) return;
     }
     setForm({ ...form, [key]: formattedText });
   };
@@ -113,36 +167,105 @@ export default function StoreAddScreen({ navigation, route }) {
   // --- [API 연결] 사업자 번호 실제 검증 ---
   const handleBizNumCheck = async () => {
     const pureBizNum = form.bizNum.replace(/-/g, '');
-    
+
     if (pureBizNum.length !== 10) {
-        Alert.alert('알림', '사업자등록번호 10자리를 올바르게 입력해주세요.');
-        return;
+      Alert.alert('알림', '사업자등록번호 10자리를 올바르게 입력해주세요.');
+      return;
     }
 
     setIsVerifying(true);
+    setIsBizNumFailed(false);
 
     try {
-        // [API 호출] 실제 서버에 사업자 번호 확인 요청
-        // 요청 바디 형식: { businessNumber: "..." }
-        await verifyBizRegNo({ businessNumber: pureBizNum });
-        
-        // 에러가 안 나면 성공
-        setIsBizNumVerified(true);
-        Alert.alert('성공', '사업자 정보가 확인되었습니다.');
-
+      await verifyBizRegNo({ businessNumber: pureBizNum });
+      setIsBizNumVerified(true);
     } catch (error) {
-        console.error("사업자 인증 실패:", error);
-        // 서버가 400, 404 등을 보내면 여기서 잡힘
-        setIsBizNumVerified(false);
-        Alert.alert('실패', '유효하지 않은 사업자 번호이거나\n등록할 수 없는 번호입니다.');
+      console.error("사업자 인증 실패:", error);
+      setIsBizNumVerified(false);
+      setIsBizNumFailed(true);
     } finally {
-        setIsVerifying(false);
+      setIsVerifying(false);
     }
   };
 
   const handleImageAttach = () => {
-    setHasBizLicenseImage(true);
-    Alert.alert('알림', '이미지가 첨부되었습니다.');
+    Alert.alert(
+      '첨부 방식 선택',
+      '사업자등록증을 가져올 방식을 선택해주세요.',
+      [
+        {
+          text: '앨범에서 선택',
+          onPress: pickFromGallery,
+        },
+        {
+          text: '파일에서 선택',
+          onPress: pickFromFiles,
+        },
+        {
+          text: '취소',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const pickFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('알림', '갤러리 접근 권한이 필요합니다.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      processSelectedFile(result.assets[0], 'image');
+    }
+  };
+
+  const pickFromFiles = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*', 'application/pdf'],
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled) {
+        processSelectedFile(result.assets[0], 'file');
+      }
+    } catch (error) {
+      console.error('File pick error:', error);
+      Alert.alert('오류', '파일을 선택하는 중 오류가 발생했습니다.');
+    }
+  };
+
+  const processSelectedFile = (asset, source) => {
+    const fileSize = source === 'file' ? asset.size : asset.fileSize;
+
+    // 파일 크기 체크 (10MB)
+    if (fileSize && fileSize > 10 * 1024 * 1024) {
+      Alert.alert('오류', '10MB 이하 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    // 형식 체크
+    const fileName = asset.name || asset.uri.split('/').pop();
+    const extension = fileName.split('.').pop()?.toLowerCase();
+
+    if (!['jpg', 'jpeg', 'png', 'pdf'].includes(extension)) {
+      Alert.alert('오류', 'JPG, PNG, PDF 형식만 가능합니다.');
+      return;
+    }
+
+    setBizLicenseImage({
+      uri: asset.uri,
+      name: fileName,
+      type: asset.mimeType || (extension === 'pdf' ? 'application/pdf' : 'image/jpeg')
+    });
   };
 
   const handleGoBack = () => {
@@ -155,41 +278,50 @@ export default function StoreAddScreen({ navigation, route }) {
     if (!isFormValid) return;
 
     setIsLoading(true);
+    setIsErrorPopupVisible(false); // 시도 시작 시 팝업 닫기
 
-    // 데이터 정리 (하이픈 제거)
-    const payload = {
-        name: form.name,
-        phone: form.phone, 
-        ownerName: form.owner,
-        mobile: form.mobile,
-        businessNumber: form.bizNum.replace(/-/g, ''), 
+    // 데이터 정리
+    const requestPayload = {
+      name: form.name,
+      branch: form.branch || null,
+      storePhone: form.phone.replace(/-/g, ''),
+      representativeName: form.owner,
+      bizRegNo: form.bizNum.replace(/-/g, ''),
+      roadAddress: isEditMode ? (storeData.roadAddress || '') : '', // 기존 로직 유지용 (필수값일 경우 대비)
+      storeCategories: isEditMode ? (storeData.storeCategories || []) : [],
+    };
+
+    // FormData 구성 (파일 포함)
+    const formData = {
+      request: requestPayload,
+      images: bizLicenseImage && bizLicenseImage.uri && typeof bizLicenseImage.uri === 'string' ? [bizLicenseImage] : []
     };
 
     try {
-        if (isEditMode) {
-            await updateStore(storeData.id, payload);
-            setPopupType('success_edit');
-        } else {
-            await createStore(payload);
-            setPopupType('success_add');
-        }
-        setPopupVisible(true);
+      if (isEditMode) {
+        // updateStore(id, {request, images}) 형식에 맞춤
+        await updateStore(storeData.id, formData);
+        setPopupType('success_edit');
+      } else {
+        await createStore(formData);
+        setPopupType('success_add');
+      }
+      setPopupVisible(true);
     } catch (error) {
-        console.error("가게 저장 실패:", error);
-        const msg = error?.data?.message || "가게 저장 중 오류가 발생했습니다.";
-        Alert.alert("오류", msg);
+      console.error("가게 저장 실패:", error);
+      setIsErrorPopupVisible(true);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handlePopupAction = (action) => {
     setPopupVisible(false);
-    
+
     if (action === 'confirm_success') {
-      navigation.goBack(); 
+      navigation.goBack();
     } else if (action === 'cancel_warning') {
-      navigation.goBack(); 
+      navigation.goBack();
     } else if (action === 'retry_warning') {
       // 머무르기
     }
@@ -201,7 +333,7 @@ export default function StoreAddScreen({ navigation, route }) {
 
       {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} hitSlop={{top:10, bottom:10, left:10, right:10}}>
+        <TouchableOpacity onPress={handleGoBack} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="arrow-back" size={rs(24)} color="#1B1D1F" />
         </TouchableOpacity>
       </View>
@@ -215,75 +347,100 @@ export default function StoreAddScreen({ navigation, route }) {
         </View>
 
         <View style={styles.formContainer}>
-          <InputGroup label="가게 이름" value={form.name} onChangeText={(t) => handleChange('name', t)} placeholder="가게 이름을 입력하세요" />
-          <InputGroup label="가게 전화번호" value={form.phone} onChangeText={(t) => handleChange('phone', t)} placeholder="000-0000-0000" keyboardType="number-pad" />
-          <InputGroup label="대표자명" value={form.owner} onChangeText={(t) => handleChange('owner', t)} placeholder="대표자 이름을 입력하세요" />
-          <InputGroup label="휴대폰번호" value={form.mobile} onChangeText={(t) => handleChange('mobile', t)} placeholder="010-0000-0000" keyboardType="number-pad" />
-          
+          <InputGroup label="가게명" value={form.name} onChangeText={(t) => handleChange('name', t)} placeholder="가게명을 입력하세요" />
+          <InputGroup label="지점명" value={form.branch} onChangeText={(t) => handleChange('branch', t)} placeholder="지점명을 입력하세요(선택)" />
+          <View>
+            <InputGroup label="가게 전화번호" value={form.phone} onChangeText={(t) => handleChange('phone', t)} placeholder="가게 전화번호를 입력해주세요" keyboardType="number-pad" />
+            {phoneError ? <Text style={styles.phoneErrorText}>{phoneError}</Text> : null}
+          </View>
+          <InputGroup label="대표자명" value={form.owner} onChangeText={(t) => handleChange('owner', t)} placeholder="대표자명을 입력해주세요" />
+
           {/* 사업자 번호 입력 필드 */}
           <View>
             <Text style={styles.inputLabel}>사업자등록번호</Text>
-            <TextInput 
-                style={[styles.textInput, isBizNumVerified && styles.inputDisabled]} 
-                value={form.bizNum} 
-                onChangeText={(t) => handleChange('bizNum', t)} 
+            <View style={styles.bizInputRow}>
+              <TextInput
+                style={[styles.textInput, { flex: 1 }, isBizNumVerified && styles.inputDisabled]}
+                value={form.bizNum}
+                onChangeText={(t) => handleChange('bizNum', t)}
                 placeholder="000-00-00000"
                 keyboardType="number-pad"
-                editable={!isBizNumVerified} 
-            />
-            
-            {/* 사업자 확인 버튼 (로딩 중일 때 인디케이터 표시) */}
-            <TouchableOpacity 
-                style={[styles.bizCheckBtn, isBizNumVerified ? styles.bizCheckBtnDisabled : styles.bizCheckBtnActive]}
+                editable={!isBizNumVerified}
+              />
+
+              <TouchableOpacity
+                style={[styles.bizCheckBtnNew, isBizNumVerified ? styles.bizCheckBtnDisabled : styles.bizCheckBtnActive]}
                 onPress={handleBizNumCheck}
                 disabled={isBizNumVerified || isVerifying}
-            >
+              >
                 {isVerifying ? (
-                    <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator size="small" color="white" />
                 ) : (
-                    <Text style={styles.bizCheckText}>사업자 확인</Text>
+                  <Text style={styles.bizCheckText}>사업자 확인</Text>
                 )}
-            </TouchableOpacity>
-            
+              </TouchableOpacity>
+            </View>
+
             {isBizNumVerified && <Text style={styles.verifiedText}>사업자 확인이 완료되었습니다</Text>}
+            {isBizNumFailed && <Text style={styles.failedText}>사업자 정보를 찾을 수 없습니다</Text>}
           </View>
         </View>
 
         <View style={styles.attachContainer}>
-            <Text style={styles.attachTitle}>사업자 등록증 첨부</Text>
-            <View style={styles.attachBox}>
-                <Text style={styles.attachFileName}>{hasBizLicenseImage ? '사업자등록증.png' : '파일을 첨부해주세요'}</Text>
-                <TouchableOpacity onPress={handleImageAttach}>
-                    <View style={[styles.imagePlaceholder, hasBizLicenseImage && styles.imageAttached]}>
-                        <Ionicons name={hasBizLicenseImage ? "checkmark-circle" : "image"} size={rs(24)} color={hasBizLicenseImage ? "#34B262" : "rgba(130, 130, 130, 0.70)"} />
-                    </View>
-                </TouchableOpacity>
-            </View>
+          <Text style={styles.attachTitle}>사업자 등록증 첨부</Text>
+          <View style={styles.attachBox}>
+            <Text style={styles.attachFileName}>{bizLicenseImage ? (bizLicenseImage.name || '사업자등록증.png') : '파일을 첨부해주세요'}</Text>
+            <TouchableOpacity onPress={handleImageAttach}>
+              <View style={[styles.imagePlaceholder, bizLicenseImage && styles.imageAttached]}>
+                <Ionicons name={bizLicenseImage ? "checkmark-circle" : "image"} size={rs(24)} color={bizLicenseImage ? "#34B262" : "rgba(130, 130, 130, 0.70)"} />
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
       {/* 하단 버튼 */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity 
-            style={[styles.submitBtn, isFormValid ? styles.submitBtnActive : styles.submitBtnDisabled]} 
-            onPress={handleSubmit}
-            disabled={!isFormValid || isLoading} 
+        <TouchableOpacity
+          style={[styles.submitBtn, isFormValid ? styles.submitBtnActive : styles.submitBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={!isFormValid || isLoading}
         >
-            {isLoading ? (
-                <ActivityIndicator color="white" />
-            ) : (
-                <Text style={styles.submitBtnText}>{isEditMode ? '수정 완료' : '가게 추가하기'}</Text>
-            )}
+          {isLoading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.submitBtnText}>{isEditMode ? '수정 완료' : '가게 추가하기'}</Text>
+          )}
         </TouchableOpacity>
       </View>
 
       {/* 팝업 모달 */}
-      <CustomPopup 
-        visible={popupVisible} 
-        type={popupType} 
+      <CustomPopup
+        visible={popupVisible}
+        type={popupType}
         onClose={() => setPopupVisible(false)}
         onAction={handlePopupAction}
       />
+
+      {/* 에러 팝업 */}
+      <ErrorPopup
+        visible={isErrorPopupVisible}
+        type="NETWORK"
+        onRefresh={() => {
+          setIsErrorPopupVisible(false);
+          handleSubmit();
+        }}
+        onClose={() => setIsErrorPopupVisible(false)}
+      />
+
+      {/* 토스트 메시지 */}
+      {toastMessage ? (
+        <Animated.View style={[styles.toastContainer, { opacity: toastOpacity }]} pointerEvents="none">
+          <View style={styles.toastBox}>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+        </Animated.View>
+      ) : null}
 
     </SafeAreaView>
   );
@@ -339,10 +496,10 @@ const CustomPopup = ({ visible, type, onClose, onAction }) => {
 };
 
 const InputGroup = ({ label, value, onChangeText, placeholder, keyboardType = 'default' }) => (
-    <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>{label}</Text>
-        <TextInput style={styles.textInput} value={value} onChangeText={onChangeText} placeholder={placeholder} keyboardType={keyboardType} />
-    </View>
+  <View style={styles.inputGroup}>
+    <Text style={styles.inputLabel}>{label}</Text>
+    <TextInput style={styles.textInput} value={value} onChangeText={onChangeText} placeholder={placeholder} keyboardType={keyboardType} />
+  </View>
 );
 
 const styles = StyleSheet.create({
@@ -357,11 +514,14 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: rs(12), color: 'black', fontFamily: 'Pretendard', marginBottom: rs(5), marginLeft: rs(5) },
   textInput: { height: rs(40), backgroundColor: 'white', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: rs(8), paddingHorizontal: rs(16), fontSize: rs(14), fontFamily: 'Pretendard', fontWeight: '500', color: 'black' },
   inputDisabled: { backgroundColor: '#F5F5F5', color: '#828282' },
-  bizCheckBtn: { position: 'absolute', right: 0, top: rs(25), borderRadius: rs(8), paddingHorizontal: rs(10), paddingVertical: rs(5), marginRight: rs(5), marginTop: rs(3), minWidth: rs(70), alignItems:'center', justifyContent:'center' },
+  bizCheckBtnNew: { borderRadius: rs(8), paddingHorizontal: rs(12), height: rs(40), alignItems: 'center', justifyContent: 'center', minWidth: rs(80) },
   bizCheckBtnActive: { backgroundColor: '#34B262' },
   bizCheckBtnDisabled: { backgroundColor: '#D5D5D5' },
   bizCheckText: { color: 'white', fontSize: rs(11), fontWeight: '700', fontFamily: 'Pretendard' },
-  verifiedText: { fontSize: rs(11), color: '#828282', fontFamily: 'Pretendard', marginTop: rs(4), marginLeft: rs(5) },
+  bizInputRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8) },
+  verifiedText: { fontSize: rs(11), color: '#34B262', fontFamily: 'Pretendard', marginTop: rs(4), marginLeft: rs(5), fontWeight: '600' },
+  failedText: { fontSize: rs(11), color: '#FF4D4D', fontFamily: 'Pretendard', marginTop: rs(4), marginLeft: rs(5), fontWeight: '600' },
+  phoneErrorText: { fontSize: rs(11), color: '#FF4D4D', fontFamily: 'Pretendard', marginTop: rs(2), marginLeft: rs(5) },
   attachContainer: { marginTop: rs(30), gap: rs(10) },
   attachTitle: { fontSize: rs(16), fontWeight: '700', color: '#272828', fontFamily: 'Pretendard' },
   attachBox: { gap: rs(5) },
@@ -383,4 +543,7 @@ const styles = StyleSheet.create({
   cancelButton: { flex: 1, height: rs(30), backgroundColor: '#D5D5D5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center' },
   retryButton: { flex: 1, height: rs(30), backgroundColor: '#FF6200', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center' },
   buttonTextWhite: { color: 'white', fontSize: rs(14), fontWeight: '700', fontFamily: 'Pretendard' },
+  toastContainer: { position: 'absolute', top: rs(100), left: 0, right: 0, alignItems: 'center', zIndex: 9999 },
+  toastBox: { backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: rs(20), paddingVertical: rs(10), borderRadius: rs(20) },
+  toastText: { color: 'white', fontSize: rs(12), fontFamily: 'Pretendard' },
 });

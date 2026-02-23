@@ -18,6 +18,8 @@ import {
 } from 'react-native';
 
 import { withdraw } from '@/src/api/auth';
+import { getCouponsByStore } from '@/src/api/coupon';
+import { getMyStores } from '@/src/api/store';
 
 const REASONS = [
   "서비스를 잘 이용하지 않아요",
@@ -72,27 +74,61 @@ export default function WithdrawScreen({ navigation }) {
 
   // 팝업 내 '확인' 버튼 클릭 (최종 탈퇴 API 호출)
   const handleFinalWithdraw = async () => {
-    // API 명세서에 맞게 데이터 변환
-    const REASON_MAP = {
-      "서비스를 잘 이용하지 않아요": "UNUSED",
-      "매력적인 혜택이 부족해요": "INSUFFICIENT_BENEFITS",
-      "앱/서비스 이용이 너무 불편해요": "INCONVENIENT",
-      "잦은 알림과 광고가 부담스러워요": "TOO_MANY_ADS",
-      "더 이상 필요한 상품/서비스가 없어요": "NOT_NEEDED",
-      "기타": "OTHER"
-    };
-
-    const mappedReasons = selectedReasons.map(r => REASON_MAP[r] || "OTHER");
-
-    // 최종 전송할 데이터
-    const requestData = {
-      reasons: mappedReasons,
-      detailReason: detailReason || undefined
-    };
-
     setIsLoading(true);
 
     try {
+      // 1. 진행 중인 쿠폰 확인
+      const storeRes = await getMyStores();
+      const myStores = storeRes.data?.data || [];
+
+      if (myStores.length > 0) {
+        // 첫 번째 가게 기준 (추후 다중 가게 지원 시 루프 필요)
+        const storeId = myStores[0].id;
+        const couponRes = await getCouponsByStore(storeId);
+        const coupons = couponRes.data?.data || [];
+
+        const now = new Date();
+        const hasActiveCoupons = coupons.some(coupon => {
+          // 날짜 보정
+          let expireStr = coupon.issueEndsAt || coupon.expiredAt;
+          if (expireStr) {
+            expireStr = expireStr.replace(' ', 'T');
+            if (!expireStr.includes('Z') && !expireStr.includes('+') && expireStr.length >= 10) {
+              expireStr += 'Z';
+            }
+          }
+
+          const expireDate = new Date(expireStr);
+          const isTerminated = coupon.status === 'EXPIRED' || expireDate < now;
+          return !isTerminated; // 진행 중인 쿠폰
+        });
+
+        if (hasActiveCoupons) {
+          Alert.alert("알림", "진행 중인 쿠폰이 있어 탈퇴할 수 없습니다.");
+          setWithdrawModalVisible(false);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // API 명세서에 맞게 데이터 변환
+      const REASON_MAP = {
+        "서비스를 잘 이용하지 않아요": "UNUSED",
+        "매력적인 혜택이 부족해요": "INSUFFICIENT_BENEFITS",
+        "앱/서비스 이용이 너무 불편해요": "INCONVENIENT",
+        "잦은 알림과 광고가 부담스러워요": "TOO_MANY_ADS",
+        "더 이상 필요한 상품/서비스가 없어요": "NOT_NEEDED",
+        "기타": "OTHER"
+      };
+
+      const mappedReasons = selectedReasons.map(r => REASON_MAP[r] || "OTHER");
+
+      // 최종 전송할 데이터
+      const requestData = {
+        reasons: mappedReasons,
+        detailReason: detailReason || undefined
+      };
+
       // 회원 탈퇴
       await withdraw(requestData);
 
@@ -101,7 +137,7 @@ export default function WithdrawScreen({ navigation }) {
       // 로그아웃 처리 (토큰 삭제 및 상태 초기화)
       await handleLogout();
 
-      // 알림 표시 후 로그인 화면으로 이동 (handleLogout에 의해 RootLayout이 반응하여 로그인 화면으로 전환됨)
+      // 알림 표시 후 로그인 화면으로 이동
       Alert.alert("완료", "회원탈퇴가 완료되었습니다.");
 
     } catch (error) {
