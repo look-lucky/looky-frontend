@@ -1,3 +1,4 @@
+import { ErrorPopup } from '@/src/shared/common/error-popup';
 import { getToken } from '@/src/shared/lib/auth/token';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,10 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [selectedImages, setSelectedImages] = useState([]);
+
+    // [추가] 에러 팝업 상태
+    const [errorVisible, setErrorVisible] = useState(false);
+    const [errorConfig, setErrorConfig] = useState({ message: '', onRetry: null });
 
     // 수정 모드라면 기존 데이터 채워넣기
     useEffect(() => {
@@ -61,6 +66,19 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
                 if (currentCount + newCount > 5) {
                     Alert.alert('알림', '이미지는 최대 5개까지 첨부할 수 있습니다.');
                     return;
+                }
+
+                // [추가] 이미지 용량 및 형식 검증
+                for (const asset of result.assets) {
+                    const filename = asset.uri.split('/').pop();
+                    const ext = filename.split('.').pop().toLowerCase();
+                    const isAllowedFormat = ['jpg', 'jpeg', 'png'].includes(ext);
+                    const isOverSize = asset.fileSize && asset.fileSize > 10 * 1024 * 1024;
+
+                    if (!isAllowedFormat || isOverSize) {
+                        Alert.alert('알림', '10MB 이하 JPG/PNG만 가능');
+                        return;
+                    }
                 }
 
                 // 이미지 압축 및 리사이징 처리
@@ -182,12 +200,25 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
                     { text: "확인", onPress: () => navigation.goBack() }
                 ]);
             } else {
-                throw new Error(`API Error: ${response.status} ${responseText}`);
+                // [변경] 에러 시 알림 대신 팝업 표시
+                const errorData = JSON.parse(responseText);
+                setErrorConfig({
+                    title: "저장에 실패했습니다",
+                    subtitle: errorData.message || "매장 소식 저장에 실패했습니다. 다시 시도해 주세요.",
+                    onRetry: () => saveStoreNews()
+                });
+                setErrorVisible(true);
             }
 
         } catch (error) {
             console.error("[StoreNews] Save Error:", error);
-            Alert.alert("오류", "소식 저장 중 문제가 발생했습니다.");
+            // [변경] 에러 시 알림 대신 팝업 표시
+            setErrorConfig({
+                title: "네트워크 오류",
+                subtitle: "네트워크 연결이 원활하지 않습니다. 다시 시도해 주세요.",
+                onRetry: () => saveStoreNews()
+            });
+            setErrorVisible(true);
         }
     };
 
@@ -288,6 +319,15 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
+
+            {/* [추가] 에러 팝업 */}
+            <ErrorPopup
+                visible={errorVisible}
+                onClose={() => setErrorVisible(false)}
+                title={errorConfig.title}
+                subtitle={errorConfig.subtitle}
+                onRefresh={errorConfig.onRetry}
+            />
         </SafeAreaView>
     );
 }

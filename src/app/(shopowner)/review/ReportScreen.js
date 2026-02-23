@@ -38,6 +38,28 @@ export default function ReportScreen({ navigation, route }) {
     '기타',
   ];
 
+  // [추가] 뒤로가기 버튼 클릭 시 확인 팝업
+  const handleBackPress = () => {
+    if (selectedReason === '기타' && detailText.trim().length > 0) {
+      Alert.alert(
+        '작성 중인 내용이 있습니다',
+        '나가시겠습니까? 작성 중인 내용은 저장되지 않습니다.',
+        [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '나가기',
+            style: 'destructive',
+            onPress: () => {
+              navigation.goBack();
+            }
+          },
+        ]
+      );
+    } else {
+      navigation.goBack();
+    }
+  };
+
   const handleSubmit = () => {
     if (!selectedReason) {
       Alert.alert('알림', '신고 사유를 선택해주세요.');
@@ -99,7 +121,7 @@ export default function ReportScreen({ navigation, route }) {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#1B1D1F" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>리뷰 신고</Text>
@@ -134,7 +156,7 @@ export default function ReportScreen({ navigation, route }) {
                   key={index}
                   label={reason}
                   isSelected={selectedReason === reason}
-                  onPress={() => setSelectedReason(reason)}
+                  onPress={() => setSelectedReason(prev => prev === reason ? null : reason)}
                 />
               ))}
             </View>
@@ -175,9 +197,12 @@ export default function ReportScreen({ navigation, route }) {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.submitButton, (!selectedReason || reportMutation.isPending) && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            (!selectedReason || (selectedReason === '기타' && detailText.trim().length === 0) || reportMutation.isPending) && styles.submitButtonDisabled
+          ]}
           onPress={handleSubmit}
-          disabled={!selectedReason || reportMutation.isPending}
+          disabled={!selectedReason || (selectedReason === '기타' && detailText.trim().length === 0) || reportMutation.isPending}
         >
           <Text style={styles.submitButtonText}>{reportMutation.isPending ? '처리 중...' : '신고하기'}</Text>
         </TouchableOpacity>

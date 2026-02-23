@@ -1,7 +1,6 @@
 import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
@@ -18,7 +17,7 @@ import {
 } from 'react-native';
 
 // [API 함수 임포트]
-import { getMyStores } from '@/src/api/store'; // 내 가게 정보 가져오기 (점주 이름 확인용)
+import { getOwnerInfo } from '@/src/api/my-page'; // 점주 프로필 정보 가져오기 (대표자명 확인용)
 
 // 재사용 가능한 메뉴 아이템 컴포넌트
 const MenuItem = ({ icon, text, onPress, isLast }) => (
@@ -39,33 +38,15 @@ export default function MypageScreen({ navigation }) {
   // [상태 관리] 점주 이름 (기본값: 루키)
   const [ownerName, setOwnerName] = useState('루키');
 
-  // [API 호출] 내 정보(점주 이름) 가져오기
+  // [API 호출] 점주 대표자명 가져오기
   useEffect(() => {
     const fetchOwnerInfo = async () => {
       try {
-        // 1. AsyncStorage에서 선택된 가게 ID 가져오기
-        const savedStoreId = await AsyncStorage.getItem('SELECTED_STORE_ID');
+        const response = await getOwnerInfo();
+        const data = response.data?.data || response.data;
 
-        const response = await getMyStores();
-        const myStores = (response.data?.data || response.data || []);
-
-        // myStores가 단일 객체인 경우를 배열로 정규화
-        const normalizedList = Array.isArray(myStores) ? myStores : [myStores];
-
-        if (normalizedList.length > 0) {
-          let currentStore = null;
-          if (savedStoreId) {
-            currentStore = normalizedList.find(s => s.id === parseInt(savedStoreId, 10));
-          }
-
-          // 못 찾거나 저장된 게 없으면 첫 번째 가게 사용
-          if (!currentStore) {
-            currentStore = normalizedList[0];
-          }
-
-          if (currentStore) {
-            setOwnerName(currentStore.ownerName || '사장님');
-          }
+        if (data && data.name) {
+          setOwnerName(data.name);
         }
       } catch (error) {
         console.error('점주 정보 로딩 실패:', error);

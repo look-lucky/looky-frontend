@@ -9,9 +9,9 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+import { useGetMyStoreClaims } from "@/src/api/store-claim";
 import "react-native-reanimated";
 import { useAuth } from "../shared/lib/auth";
-import { useGetMyStoreClaims } from "@/src/api/store-claim";
 
 // 점주용 앱 import
 import ShopOwnerApp from "@/src/app/(shopowner)/ShopOwnerNavigator";
@@ -62,7 +62,11 @@ function AppContent() {
       return <PendingApprovalScreen />;
     }
 
-    return <ShopOwnerApp />;
+    return (
+      <TabBarProvider>
+        <ShopOwnerApp />
+      </TabBarProvider>
+    );
   }
 
   // 👇 학생 또는 미로그인 시 기존 Expo Router 흐름

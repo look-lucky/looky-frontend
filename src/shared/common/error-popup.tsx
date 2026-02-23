@@ -18,7 +18,9 @@ export type ErrorType = 'NETWORK' | 'GPS';
 
 interface ErrorPopupProps extends ModalProps {
     visible: boolean;
-    type: ErrorType;
+    type?: ErrorType;
+    title?: string;
+    subtitle?: string;
     isRefreshing?: boolean;
     onRefresh: () => void;
     onClose: () => void;
@@ -37,13 +39,17 @@ const ERROR_MAPPINGS = {
 
 export function ErrorPopup({
     visible,
-    type,
+    type = 'NETWORK',
+    title,
+    subtitle,
     isRefreshing = false,
     onRefresh,
     onClose,
     ...modalProps
 }: ErrorPopupProps) {
-    const content = ERROR_MAPPINGS[type];
+    const mapping = ERROR_MAPPINGS[type] || ERROR_MAPPINGS.NETWORK;
+    const displayTitle = title || mapping.title;
+    const displaySubtitle = subtitle || mapping.subtitle;
 
     return (
         <Modal
@@ -73,8 +79,8 @@ export function ErrorPopup({
 
                     {/* Texts */}
                     <View style={styles.textSection}>
-                        <Text style={styles.title}>{content.title}</Text>
-                        <Text style={styles.subtitle}>{content.subtitle}</Text>
+                        <Text style={styles.title}>{displayTitle}</Text>
+                        <Text style={styles.subtitle}>{displaySubtitle}</Text>
                     </View>
 
                     {/* Refresh Button */}

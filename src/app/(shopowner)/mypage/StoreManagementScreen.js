@@ -17,6 +17,7 @@ import {
 
 // [API] 내 가게 목록 가져오기
 import { getMyStores } from '@/src/api/store';
+import { ErrorPopup } from '@/src/shared/common/error-popup';
 
 export default function StoreManagementScreen({ navigation, route }) {
   // [상태] 가게 목록 데이터
@@ -24,6 +25,7 @@ export default function StoreManagementScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
 
   const [selectedStoreId, setSelectedStoreId] = useState(null);
+  const [isErrorPopupVisible, setIsErrorPopupVisible] = useState(false);
 
   // 삭제 완료 팝업 상태
   const [deleteSuccessVisible, setDeleteSuccessVisible] = useState(false);
@@ -32,12 +34,14 @@ export default function StoreManagementScreen({ navigation, route }) {
   const fetchStores = async () => {
     try {
       setLoading(true);
+      setIsErrorPopupVisible(false); // 시도 시작 시 팝업 닫기
       const response = await getMyStores();
       // API 응답 구조에 맞게 수정: response.data가 응답 바디이며 그 안의 data 필드에 배열이 있음
       const storeList = response.data?.data;
       setStores(Array.isArray(storeList) ? storeList : []);
     } catch (error) {
       console.error('가게 목록 로딩 실패:', error);
+      setIsErrorPopupVisible(true);
     } finally {
       setLoading(false);
     }
@@ -88,14 +92,6 @@ export default function StoreManagementScreen({ navigation, route }) {
     setDeleteSuccessVisible(false);
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#34B262" />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ height: Platform.OS === 'android' ? StatusBar.currentHeight : 0, backgroundColor: 'white' }} />
@@ -117,7 +113,11 @@ export default function StoreManagementScreen({ navigation, route }) {
 
         <ScrollView style={styles.storeList} showsVerticalScrollIndicator={false}>
           <View style={styles.divider} />
-          {stores.length === 0 ? (
+          {loading && stores.length === 0 ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: rs(100) }}>
+              <ActivityIndicator size="large" color="#34B262" />
+            </View>
+          ) : stores.length === 0 ? (
             <View style={{ padding: rs(20), alignItems: 'center' }}>
               <Text style={{ color: '#828282' }}>등록된 가게가 없습니다.</Text>
             </View>
@@ -175,6 +175,18 @@ export default function StoreManagementScreen({ navigation, route }) {
         </View>
       </Modal>
 
+      <ErrorPopup
+        visible={isErrorPopupVisible}
+        onClose={() => setIsErrorPopupVisible(false)}
+        onRefresh={fetchStores}
+      />
+
+      {/* 로딩 오버레이 (이미 데이터가 있을 때 재로딩 시) */}
+      {loading && stores.length > 0 && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#34B262" />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -232,4 +244,11 @@ const styles = StyleSheet.create({
     bottom: rs(15)
   },
   buttonTextWhite: { color: 'white', fontSize: rs(14), fontWeight: '700', fontFamily: 'Pretendard' },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999
+  },
 });

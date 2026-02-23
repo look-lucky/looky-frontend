@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Modal,
     Platform,
     SafeAreaView,
@@ -36,6 +35,7 @@ export default function ChangePasswordScreen({ navigation }) {
     const [showConfirmPw, setShowConfirmPw] = useState(false);
 
     // 에러 메시지 및 유효성 상태
+    const [currentPwErrorMsg, setCurrentPwErrorMsg] = useState('');
     const [pwErrorMsg, setPwErrorMsg] = useState('');
     const [isMatch, setIsMatch] = useState(false);
 
@@ -45,7 +45,7 @@ export default function ChangePasswordScreen({ navigation }) {
     const [isRetrying, setIsRetrying] = useState(false);
 
     // 유효성 검사 정규식 (영문, 숫자, 특수문자 포함)
-    const ALLOWED_CHARS = /^[A-Za-z0-9@$!%*^#?&]*$/;
+    const ALLOWED_CHARS = /^[A-Za-z0-9@$!%*^#&]*$/;
 
     // 새 비밀번호 입력 핸들러
     const handleNewPwChange = (text) => {
@@ -55,7 +55,7 @@ export default function ChangePasswordScreen({ navigation }) {
 
         const hasLetter = /[A-Za-z]/.test(text);
         const hasNum = /[0-9]/.test(text);
-        const hasSpecial = /[@$!%*^#?&]/.test(text);
+        const hasSpecial = /[@$!%*^#&]/.test(text);
         const isComplexEnough = hasLetter && hasNum && hasSpecial;
 
         if (text.length > 0) {
@@ -87,7 +87,7 @@ export default function ChangePasswordScreen({ navigation }) {
 
         const hasLetter = /[A-Za-z]/.test(newPw);
         const hasNum = /[0-9]/.test(newPw);
-        const hasSpecial = /[@$!%*^#?&]/.test(newPw);
+        const hasSpecial = /[@$!%*^#&]/.test(newPw);
         const isNewPwValid = newPw.length >= 8 && hasLetter && hasNum && hasSpecial;
 
         if (newPw === text && isNewPwValid) {
@@ -100,11 +100,12 @@ export default function ChangePasswordScreen({ navigation }) {
     // 변경하기 핸들러
     const handleSubmit = async () => {
         if (currentPw.trim() === '') {
-            Alert.alert('알림', '현재 비밀번호를 입력해주세요.');
+            setCurrentPwErrorMsg('현재 비밀번호를 입력해주세요.');
             return;
         }
 
         setIsLoading(true); // 로딩 시작
+        setCurrentPwErrorMsg(''); // 기존 에러 초기화
 
         try {
             // [API 호출] 비밀번호 변경
@@ -118,8 +119,14 @@ export default function ChangePasswordScreen({ navigation }) {
 
         } catch (error) {
             console.error("비밀번호 변경 실패:", error);
-            // 실패 시 에러 팝업 오픈
-            setErrorVisible(true);
+
+            // 400 에러이고 서버에서 특정 코드를 주거나 메시지가 불일치할 때 처리
+            if (error.status === 400) {
+                setCurrentPwErrorMsg('현재 비밀번호가 일치하지 않습니다.');
+            } else {
+                // 기타 실패 시 에러 팝업 오픈
+                setErrorVisible(true);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -183,6 +190,10 @@ export default function ChangePasswordScreen({ navigation }) {
                                 <Ionicons name={showCurrentPw ? "eye" : "eye-off"} size={rs(20)} color="#D5D5D5" />
                             </TouchableOpacity>
                         </View>
+                        {/* 현재 비밀번호 에러 메시지 */}
+                        {currentPwErrorMsg !== '' && (
+                            <Text style={styles.errorText}>{currentPwErrorMsg}</Text>
+                        )}
                     </View>
 
                     {/* 2. 새 비밀번호 */}
@@ -231,7 +242,7 @@ export default function ChangePasswordScreen({ navigation }) {
                     {/* 안내 문구 */}
                     <View style={styles.guideContainer}>
                         <Text style={styles.guideText}>비밀번호는 영어, 숫자, 특수문자를 포함한 8자~20자 이내로 입력해주세요</Text>
-                        <Text style={styles.guideText}>특수문자는 <Text style={{ fontWeight: '700' }}>@$!%*^#?&</Text> 중에서 선택하여 입력해주세요</Text>
+                        <Text style={styles.guideText}>특수문자는 <Text style={{ fontWeight: '700' }}>@$!%*^#&</Text> 중에서 선택하여 입력해주세요</Text>
                     </View>
 
                 </View>

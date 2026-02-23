@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 
@@ -10,9 +11,11 @@ import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platfo
 import { verifyCoupon } from '@/src/api/coupon';
 import { getItems } from '@/src/api/item';
 import { getMyStores, getStore, getStoreStats } from '@/src/api/store';
+import { getMyStoreClaims } from '@/src/api/store-claim';
 import { ErrorPopup } from '@/src/shared/common/error-popup';
 
 export default function HomeScreen({ navigation }) {
+  const router = useRouter();
   // [상태 관리]
   const [modalVisible, setModalVisible] = useState(false); // 등급 안내 모달
   const [isLoading, setIsLoading] = useState(true);        // 로딩 상태
@@ -37,6 +40,7 @@ export default function HomeScreen({ navigation }) {
     storeName: "등록된 가게 없음",
     ownerName: "사장님",
     isStoreInfoComplete: false, // 매장 정보 등록 완료 여부
+    approvalStatus: 'APPROVED', // 승인 상태 (PENDING, APPROVED, REJECTED)
     menuCount: 0,                // 등록된 메뉴 개수
     stats: {
       regulars: 0,
@@ -100,6 +104,19 @@ export default function HomeScreen({ navigation }) {
       const itemsList = Array.isArray(itemsData) ? itemsData : (itemsData.content || []);
       const menuCount = itemsList.length;
 
+      // [추가] 7. 내 상점 요청 목록 조회 (승인 대기 상태 확인용)
+      let approvalStatus = 'APPROVED';
+      try {
+        const claimsResponse = await getMyStoreClaims();
+        const claimsList = claimsResponse?.data?.data || [];
+        const currentClaim = claimsList.find(c => c.storeId === storeId);
+        if (currentClaim) {
+          approvalStatus = currentClaim.status;
+        }
+      } catch (e) {
+        console.error("상점 요청 목록 조회 실패:", e);
+      }
+
       // 통계 데이터 언랩핑
       const statsData = statsResponse?.data?.data || {};
 
@@ -112,6 +129,7 @@ export default function HomeScreen({ navigation }) {
         storeName: currentStore.name,
         ownerName: currentStore.ownerName || "사장님",
         isStoreInfoComplete,
+        approvalStatus,
         menuCount,
         stats: {
           regulars: statsData.totalRegulars || 0,
@@ -247,7 +265,14 @@ export default function HomeScreen({ navigation }) {
             <Ionicons name="storefront-outline" size={rs(32)} color="#34B262" />
           </View>
           <View style={styles.textContainer}>
-            <Text style={styles.storeName}>{homeData.storeName}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6) }}>
+              <Text style={styles.storeName}>{homeData.storeName}</Text>
+              {homeData.approvalStatus === 'PENDING' && (
+                <View style={styles.pendingBadge}>
+                  <Text style={styles.pendingBadgeText}>승인 대기중</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.greeting}>사장님, 반가워요!</Text>
           </View>
           <Ionicons name="chevron-down" size={rs(20)} color="#828282" />
@@ -863,6 +888,19 @@ const styles = StyleSheet.create({
     fontSize: rs(11),
     color: '#828282',
     fontWeight: '500',
+  },
+  // 승인 대기 뱃지
+  pendingBadge: {
+    backgroundColor: '#FF9B26',
+    paddingHorizontal: rs(6),
+    paddingVertical: rs(2),
+    borderRadius: rs(4),
+  },
+  pendingBadgeText: {
+    fontSize: rs(10),
+    fontWeight: '600',
+    color: 'white',
+    fontFamily: 'Pretendard',
   },
 });
 
