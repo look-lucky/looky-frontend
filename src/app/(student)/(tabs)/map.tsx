@@ -27,7 +27,7 @@ import { Gray, Owner, Text } from '@/src/shared/theme/theme';
 import type { Event, EventType } from '@/src/shared/types/event';
 import type { Store } from '@/src/shared/types/store';
 import { Ionicons } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetFlatList, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import type { NaverMapViewRef } from '@mj-studio/react-native-naver-map';
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -45,7 +45,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ListItem =
   | { type: 'store'; data: Store }
@@ -198,10 +198,19 @@ export default function MapTab() {
     const event = events.find((e) => e.id === eventIdParam);
     if (event) {
       initialEventHandled.current = true;
-      handleMapClick(); // 가게 선택 해제
-      setSelectedEventId(eventIdParam);
-      setMapCenter({ lat: event.lat, lng: event.lng });
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      // 카메라 이동과 바텀시트 오픈을 분리 (동시 실행 시 Naver Map 리사이즈 crash 방지)
+      const timer1 = setTimeout(() => {
+        handleMapClick();
+        setSelectedEventId(eventIdParam);
+        setMapCenter({ lat: event.lat, lng: event.lng });
+      }, 300);
+      const timer2 = setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      }, 800);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
   }, [eventIdParam, events, handleMapClick, setMapCenter]);
 
@@ -224,6 +233,7 @@ export default function MapTab() {
   // 바텀시트 ref
   const bottomSheetRef = useRef<BottomSheet>(null);
 
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
   // 지도 탭을 이미 보고 있는 상태에서 탭 아이콘 재클릭 시 현재 위치로 리셋
@@ -244,46 +254,27 @@ export default function MapTab() {
   const [isTabFocused, setIsTabFocused] = useState(true);
 
   // 탭 포커스/블러 시 탭바 제어
-  // - 다른 탭으로 이동(blur) → 탭바 강제 복구
-  // - 다시 돌아올 때(focus) → 현재 상태에 맞게 탭바 적용
   useFocusEffect(
     useCallback(() => {
       setIsTabFocused(true);
-      if (viewMode === 'list') {
-        setTabBarVisible(false);
-      } else {
-        setTabBarVisible(currentIndexRef.current === SNAP_INDEX.COLLAPSED);
-      }
-
+      setTabBarVisible(true);
       return () => {
         setIsTabFocused(false);
         setTabBarVisible(true);
       };
-    }, [viewMode, setTabBarVisible, currentIndexRef]),
+    }, [setTabBarVisible]),
   );
 
-  // viewMode 변경 시 탭바 제어
-  useEffect(() => {
-    if (viewMode === 'list') {
-      setTabBarVisible(false);
-    } else {
-      setTabBarVisible(currentIndexRef.current === SNAP_INDEX.COLLAPSED);
-    }
-  }, [viewMode, setTabBarVisible, currentIndexRef]);
-
   // snap points
-  const snapPoints = useMemo(() => {
-    const collapsedHeight = 220;
-    return [collapsedHeight, '50%', '80%'];
-  }, []);
+  const collapsedHeight = 130;
+  const snapPoints = useMemo(() => [collapsedHeight, 740, '70%'], []);
 
   // 바텀시트 인덱스 변경
   const handleSheetChanges = useCallback(
     (index: number) => {
       currentIndexRef.current = index;
-      setTabBarVisible(index === SNAP_INDEX.COLLAPSED);
     },
-    [setTabBarVisible, currentIndexRef],
+    [currentIndexRef],
   );
 
   // 뒤로가기
@@ -700,6 +691,10 @@ export default function MapTab() {
     </ScrollView>
   );
 
+  // 탭바(56) + safe area → 컨트롤 버튼/검색버튼 위치 (바텀시트 collapsed 바로 위)
+  const tabBarHeight = 56 + insets.bottom;
+  const floatingButtonBottom = tabBarHeight + collapsedHeight + 12;
+
   // ────────────────────────────────────────────
   // 리스트 뷰 (전체화면)
   // ────────────────────────────────────────────
@@ -799,7 +794,8 @@ export default function MapTab() {
         <NaverMap
           ref={naverMapRef}
           center={mapCenter}
-          markers={isEventOnlyMode ? [] : markers}
+          markers={markers}
+          hideStoreMarkers={isEventOnlyMode}
           eventMarkers={eventMarkers}
           myLocation={myLocation}
           onMapClick={onMapClick}
@@ -820,7 +816,7 @@ export default function MapTab() {
 
       {/* "이 지역에서 검색" 버튼 */}
       {showSearchHereButton && (
-        <View style={styles.searchHereContainer} pointerEvents="box-none">
+        <View style={[styles.searchHereContainer, { bottom: floatingButtonBottom }]} pointerEvents="box-none">
           <TouchableOpacity style={styles.searchHereButton} onPress={handleSearchHerePress}>
             <Ionicons name="refresh" size={14} color={Owner.primary} />
             <ThemedText style={styles.searchHereText}>이 지역에서 검색</ThemedText>
@@ -830,7 +826,7 @@ export default function MapTab() {
 
       {/* 토스트 */}
       {showToast && (
-        <View style={styles.searchHereContainer} pointerEvents="none">
+        <View style={[styles.searchHereContainer, { bottom: floatingButtonBottom }]} pointerEvents="none">
           <View style={styles.toastBox}>
             <ThemedText style={styles.toastText}>현재 위치의 모든 가게를 불러왔어요.</ThemedText>
           </View>
@@ -839,7 +835,7 @@ export default function MapTab() {
 
       {/* 지도 컨트롤 버튼 */}
       <TouchableOpacity
-        style={[styles.controlButton, styles.controlButtonLeft]}
+        style={[styles.controlButton, styles.controlButtonLeft, { bottom: floatingButtonBottom }]}
         onPress={() => {
           if (myLocation && naverMapRef.current) {
             naverMapRef.current.animateCameraTo({
@@ -853,7 +849,7 @@ export default function MapTab() {
         <Ionicons name="locate" size={20} color={Owner.primary} />
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.controlButton, styles.controlButtonRight]}
+        style={[styles.controlButton, styles.controlButtonRight, { bottom: floatingButtonBottom }]}
         onPress={() => bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF)}
       >
         <Ionicons name="list" size={20} color={Owner.primary} />
@@ -868,6 +864,7 @@ export default function MapTab() {
         backgroundStyle={styles.bottomSheetBackground}
         handleIndicatorStyle={styles.bottomSheetHandle}
         enablePanDownToClose={false}
+        bottomInset={tabBarHeight}
         style={styles.bottomSheetContainer}
       >
         <View style={styles.bottomSheetContent}>
@@ -887,18 +884,26 @@ export default function MapTab() {
           </View>
 
           {/* 가게/이벤트 목록 또는 선택된 상세 */}
-          <BottomSheetFlatList
-            data={flatListData}
-            keyExtractor={(item: ListItem, index: number) => {
-              if (item.type === 'store') return `store-${item.data.id}`;
-              if (item.type === 'event') return `event-${item.data.id}`;
-              return `${item.type}-${index}`;
-            }}
-            renderItem={renderBottomSheetItem}
-            ListHeaderComponent={renderBottomSheetHeader}
-            contentContainerStyle={styles.storeListContent}
-            style={styles.scrollView}
-          />
+          {(selectedStoreWithFavorite || selectedEvent || isLoading || isEventsLoading) ? (
+            <BottomSheetScrollView
+              style={styles.scrollView}
+              contentContainerStyle={[styles.storeListContent, { paddingBottom: rs(20) }]}
+            >
+              {renderBottomSheetHeader()}
+            </BottomSheetScrollView>
+          ) : (
+            <BottomSheetFlatList
+              data={flatListData}
+              keyExtractor={(item: ListItem, index: number) => {
+                if (item.type === 'store') return `store-${item.data.id}`;
+                if (item.type === 'event') return `event-${item.data.id}`;
+                return `${item.type}-${index}`;
+              }}
+              renderItem={renderBottomSheetItem}
+              contentContainerStyle={[styles.storeListContent, { paddingBottom: rs(20) }]}
+              style={styles.scrollView}
+            />
+          )}
         </View>
       </BottomSheet>
 
@@ -1014,7 +1019,6 @@ const styles = StyleSheet.create({
   // 지도 컨트롤
   controlButton: {
     position: 'absolute',
-    bottom: 236,
     width: rs(44),
     height: rs(44),
     borderRadius: 22,
@@ -1036,7 +1040,6 @@ const styles = StyleSheet.create({
   // 이 지역에서 검색 버튼
   searchHereContainer: {
     position: 'absolute',
-    bottom: 236,
     left: 0,
     right: 0,
     alignItems: 'center',

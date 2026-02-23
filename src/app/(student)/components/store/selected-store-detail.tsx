@@ -12,18 +12,12 @@ import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface SelectedStoreDetailProps {
   store: Store;
-  onCall?: () => void;
-  onNavigate?: () => void;
-  onShare?: () => void;
   onViewDetail?: () => void;
   onBookmarkPress?: (storeId: string) => void;
 }
 
 export function SelectedStoreDetail({
   store,
-  onCall,
-  onNavigate,
-  onShare,
   onViewDetail,
   onBookmarkPress,
 }: SelectedStoreDetailProps) {
@@ -105,21 +99,6 @@ export function SelectedStoreDetail({
         </View>
       </TouchableOpacity>
 
-      {/* 액션 버튼 */}
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.actionButton} onPress={onCall}>
-          <Ionicons name="call-outline" size={20} color={Owner.primary} />
-          <ThemedText style={styles.actionButtonText}>전화</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={onNavigate}>
-          <Ionicons name="navigate-outline" size={20} color={Owner.primary} />
-          <ThemedText style={styles.actionButtonText}>길찾기</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={onShare}>
-          <Ionicons name="share-outline" size={20} color={Owner.primary} />
-          <ThemedText style={styles.actionButtonText}>공유</ThemedText>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -204,25 +183,6 @@ const styles = StyleSheet.create({
   },
   benefitsText: {
     fontSize: rs(14),
-    color: Owner.primary,
-    fontWeight: '500',
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: rs(16),
-    paddingTop: rs(16),
-    borderTopWidth: 1,
-    borderTopColor: Gray.gray3,
-  },
-  actionButton: {
-    alignItems: 'center',
-    gap: rs(4),
-    paddingVertical: rs(8),
-    paddingHorizontal: rs(20),
-  },
-  actionButtonText: {
-    fontSize: rs(13),
     color: Owner.primary,
     fontWeight: '500',
   },
