@@ -65,11 +65,11 @@ export function EventSection({ events }: EventSectionProps) {
   const flatListRef = useRef<FlatList>(null);
 
   const handleMorePress = () => {
-    router.push('/map?category=EVENT' as any);
+    router.push('/event' as any);
   };
 
   const handleEventPress = (eventId: number) => {
-    router.push(`/map?category=EVENT&eventId=${eventId}` as any);
+    router.push(`/(student)/(tabs)/map?eventId=${eventId}` as any);
   };
 
   const getDDayInfo = (event: EventItem) => {

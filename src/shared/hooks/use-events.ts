@@ -170,7 +170,7 @@ export function useEvents({
       );
     }
 
-    // 거리 필터 (뷰포트 모드 vs 거리 필터 모드)
+    // 거리 필터 (뷰포트 모드만 적용 - 이벤트는 캠퍼스 내 고정이므로 사용자 거리 필터 미적용)
     if (viewportSearch) {
       const radius = getViewportRadiusKm(viewportSearch.zoom);
       result = result.filter((event) => {
@@ -184,17 +184,6 @@ export function useEvents({
           ) <= radius
         );
       });
-    } else {
-      const maxKm = parseInt(selectedDistance);
-      if (maxKm > 0 && myLocation) {
-        result = result.filter((event) => {
-          if (!event.lat || !event.lng) return false;
-          return (
-            getDistanceKm(myLocation.lat, myLocation.lng, event.lat, event.lng) <=
-            maxKm
-          );
-        });
-      }
     }
 
     // 정렬
