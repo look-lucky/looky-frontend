@@ -1,7 +1,8 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, System, Text as TextColors } from '@/src/shared/theme/theme';
-import { formatOperatingHours } from '@/src/shared/utils/store-transform';
+import { formatOperatingHours, parseAllOperatingHours } from '@/src/shared/utils/store-transform';
+import { NaverMapMarkerOverlay, NaverMapView } from '@mj-studio/react-native-naver-map';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   type LayoutChangeEvent,
@@ -12,6 +13,8 @@ import {
   View,
 } from 'react-native';
 
+const CLOVER_MARKER = require('@/assets/images/icons/map/clover.png');
+
 export interface StoreInfo {
   introduction: string;
   operatingHours: string;
@@ -20,6 +23,8 @@ export interface StoreInfo {
   phone: string;
   category: string;
   moods: string;
+  lat?: number;
+  lng?: number;
 }
 
 interface InfoSectionProps extends StoreInfo {
@@ -40,6 +45,8 @@ export function InfoSection({
   operatingHours,
   roadAddress,
   phone,
+  lat,
+  lng,
   scrollViewRef,
   scrollOffsetY,
 }: InfoSectionProps) {
@@ -128,7 +135,32 @@ export function InfoSection({
       {/* 위치 */}
       <View onLayout={handleSectionLayout('location')} style={styles.section}>
         <ThemedText type="defaultSemiBold">위치</ThemedText>
-        <View style={styles.mapPlaceholder} />
+        {lat && lng ? (
+          <View style={styles.mapContainer}>
+            <NaverMapView
+              style={styles.mapView}
+              initialCamera={{ latitude: lat, longitude: lng, zoom: 16 }}
+              isShowZoomControls={false}
+              isScrollGesturesEnabled={false}
+              isZoomGesturesEnabled={false}
+              isRotateGesturesEnabled={false}
+              isTiltGesturesEnabled={false}
+              isShowLocationButton={false}
+              isShowCompass={false}
+            >
+              <NaverMapMarkerOverlay
+                latitude={lat}
+                longitude={lng}
+                anchor={{ x: 0.5, y: 0.5 }}
+                width={rs(32)}
+                height={rs(32)}
+                image={CLOVER_MARKER}
+              />
+            </NaverMapView>
+          </View>
+        ) : (
+          <View style={styles.mapPlaceholder} />
+        )}
         <ThemedText style={styles.address}>{roadAddress || '-'}</ThemedText>
       </View>
 
@@ -145,7 +177,16 @@ export function InfoSection({
 
         <View style={styles.detailItem}>
           <ThemedText style={styles.detailLabel}>영업시간</ThemedText>
-          <ThemedText style={styles.body}>{formatOperatingHours(operatingHours) || '-'}</ThemedText>
+          {parseAllOperatingHours(operatingHours).length > 0 ? (
+            parseAllOperatingHours(operatingHours).map(({ day, hours }) => (
+              <View key={day} style={styles.hoursRow}>
+                <ThemedText style={styles.dayLabel}>{day}</ThemedText>
+                <ThemedText style={styles.hoursText}>{hours}</ThemedText>
+              </View>
+            ))
+          ) : (
+            <ThemedText style={styles.body}>{formatOperatingHours(operatingHours) || '-'}</ThemedText>
+          )}
         </View>
       </View>
     </View>
@@ -184,8 +225,16 @@ const styles = StyleSheet.create({
   body: {
     color: TextColors.secondary,
   },
+  mapContainer: {
+    height: rs(180),
+    borderRadius: rs(12),
+    overflow: 'hidden',
+  },
+  mapView: {
+    flex: 1,
+  },
   mapPlaceholder: {
-    height: rs(160),
+    height: rs(180),
     backgroundColor: Gray.gray2,
     borderRadius: rs(12),
   },
@@ -202,5 +251,20 @@ const styles = StyleSheet.create({
   },
   phone: {
     color: System.phoneNumber,
+  },
+  hoursRow: {
+    flexDirection: 'row',
+    gap: rs(8),
+    paddingVertical: rs(2),
+  },
+  dayLabel: {
+    fontSize: rs(13),
+    color: TextColors.secondary,
+    width: rs(48),
+  },
+  hoursText: {
+    fontSize: rs(13),
+    color: TextColors.primary,
+    flex: 1,
   },
 });

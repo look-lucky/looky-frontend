@@ -1,4 +1,5 @@
 import type {
+  PartnershipInfo,
   StoreMapResponse,
   StoreMapResponseStoreCategoriesItem,
   StoreResponse,
@@ -186,7 +187,7 @@ export function transformStoreResponse(
     distance,
     openStatus: '', // TODO: 서버에서 영업상태 제공 시 연동
     openHours: response.operatingHours ?? '',
-    benefits: [], // TODO: 서버에서 혜택 목록 제공 시 연동
+    benefits: (response.myPartnerships ?? []).map((p) => p.name ?? '').filter(Boolean),
     lat,
     lng,
     isPartner: response.isPartnership ?? false,
@@ -222,7 +223,7 @@ export function transformStoreMapResponse(
     distance = formatDistance(km);
   }
 
-  const myPartnerships = response.myPartnerships ?? [];
+  const myPartnerships: PartnershipInfo[] = response.myPartnerships ?? [];
 
   return {
     id: String(response.id ?? 0),
@@ -233,7 +234,7 @@ export function transformStoreMapResponse(
     distance,
     openStatus: '',
     openHours: response.operatingHours ?? '',
-    benefits: myPartnerships,
+    benefits: myPartnerships.map((p) => p.name ?? '').filter(Boolean),
     lat,
     lng,
     isPartner: myPartnerships.length > 0,
