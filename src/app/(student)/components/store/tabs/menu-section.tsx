@@ -83,10 +83,8 @@ function MenuItemCard({ item }: { item: MenuItem }) {
           </View>
         </View>
 
-        {item.image ? (
+        {item.image && (
           <Image source={{ uri: item.image }} style={styles.menuImage} />
-        ) : (
-          <View style={[styles.menuImage, styles.menuImagePlaceholder]} />
         )}
       </View>
     </View>
@@ -159,9 +157,6 @@ const styles = StyleSheet.create({
     height: rs(80),
     borderRadius: rs(8),
     backgroundColor: '#f0f0f0',
-  },
-  menuImagePlaceholder: {
-    backgroundColor: '#e0e0e0',
   },
   menuInfo: {
     flex: 1,

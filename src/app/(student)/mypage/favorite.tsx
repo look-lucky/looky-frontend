@@ -28,7 +28,7 @@ export default function Favorite() {
   const sortParam = filterType === 'rating' ? 'store.averageRating,desc' : 'createdAt,desc';
 
   const { data: favoritesRes, refetch } = useGetMyFavorites(
-    { pageable: { page: 0, size: 100, sort: [sortParam] } },
+    { page: 0, size: 100, sort: sortParam } as any,
     { query: { placeholderData: (prev: any) => prev } },
   );
 

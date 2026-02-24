@@ -1,4 +1,3 @@
-import DownloadIcon from '@/assets/images/icons/store/download.svg';
 import GiftIcon from '@/assets/images/icons/coupon/gift.svg';
 import HotPriceIcon from '@/assets/images/icons/coupon/hot-price.svg';
 import PriceTagDollarIcon from '@/assets/images/icons/coupon/price-tag-dollar.svg';
@@ -21,9 +20,7 @@ export type { Coupon };
 interface StoreBenefitsProps {
   benefits: string[];
   coupons: Coupon[];
-  issuedCouponIds?: number[];
-  onIssueCoupon?: (couponId: string) => void;
-  isIssuing?: boolean;
+  onCouponPress?: () => void;
 }
 
 const BENEFIT_ICON_BG: Record<string, string> = {
@@ -60,82 +57,70 @@ function BenefitBanner({ benefits }: { benefits: string[] }) {
 
 function CouponSection({
   coupons,
-  issuedCouponIds = [],
-  onIssueCoupon,
-  isIssuing = false,
+  onCouponPress,
 }: {
   coupons: Coupon[];
-  issuedCouponIds?: number[];
-  onIssueCoupon?: (couponId: string) => void;
-  isIssuing?: boolean;
+  onCouponPress?: () => void;
 }) {
   if (coupons.length === 0) return null;
 
+  const coupon = coupons[0];
+  const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ''];
+
   return (
     <View style={styles.couponContainer}>
-      {coupons.map((coupon) => {
-        const isIssued = issuedCouponIds.includes(Number(coupon.id));
-        const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ''];
-        return (
-          <View key={coupon.id} style={[styles.couponCard, isIssued && styles.couponCardIssued]}>
-            {/* Left: Icon + Info */}
-            <View style={styles.couponMain}>
-              <View
-                style={[
-                  styles.couponIconContainer,
-                  { backgroundColor: BENEFIT_ICON_BG[coupon.benefitType ?? ''] ?? CouponColor.yellow },
-                ]}
-              >
-                {CouponIcon ? (
-                  <CouponIcon width={rs(40)} height={rs(40)} />
-                ) : (
-                  <View style={styles.couponIconPlaceholder} />
-                )}
-              </View>
-              <View style={styles.couponTextContainer}>
-                <ThemedText style={styles.couponDiscount}>
-                  {coupon.discount}
-                </ThemedText>
-                <ThemedText style={styles.couponTitle} numberOfLines={1}>
-                  {coupon.title}
-                </ThemedText>
-                {coupon.description !== '' && (
-                  <ThemedText style={styles.couponMinOrder}>
-                    {coupon.description}
-                  </ThemedText>
-                )}
-                <ThemedText style={styles.couponExpiry}>
-                  {coupon.expiryDate}
-                </ThemedText>
-                {coupon.remainingCount != null && (
-                  <View style={styles.remainingBadge}>
-                    <ThemedText style={styles.remainingText}>
-                      {coupon.remainingCount}장 남음
-                    </ThemedText>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Dashed Divider */}
-            <View style={styles.dashedDivider} />
-
-            {/* Right: Download Icon */}
-            <TouchableOpacity
-              style={styles.downloadArea}
-              onPress={() => onIssueCoupon?.(coupon.id)}
-              disabled={isIssued || isIssuing || !onIssueCoupon}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              {isIssued ? (
-                <ThemedText style={styles.issuedText}>발급완료</ThemedText>
-              ) : (
-                <DownloadIcon width={rs(16)} height={rs(16)} />
-              )}
-            </TouchableOpacity>
+      <View key={coupon.id} style={styles.couponCard}>
+        {/* Left: Icon + Info */}
+        <View style={styles.couponMain}>
+          <View
+            style={[
+              styles.couponIconContainer,
+              { backgroundColor: BENEFIT_ICON_BG[coupon.benefitType ?? ''] ?? CouponColor.yellow },
+            ]}
+          >
+            {CouponIcon ? (
+              <CouponIcon width={rs(40)} height={rs(40)} />
+            ) : (
+              <View style={styles.couponIconPlaceholder} />
+            )}
           </View>
-        );
-      })}
+          <View style={styles.couponTextContainer}>
+            <ThemedText style={styles.couponDiscount}>
+              {coupon.discount}
+            </ThemedText>
+            <ThemedText style={styles.couponTitle} numberOfLines={1}>
+              {coupon.title}
+            </ThemedText>
+            {coupon.description !== '' && (
+              <ThemedText style={styles.couponMinOrder}>
+                {coupon.description}
+              </ThemedText>
+            )}
+            <ThemedText style={styles.couponExpiry}>
+              {coupon.expiryDate}
+            </ThemedText>
+            {coupon.remainingCount != null && (
+              <View style={styles.remainingBadge}>
+                <ThemedText style={styles.remainingText}>
+                  {coupon.remainingCount}장 남음
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Dashed Divider */}
+        <View style={styles.dashedDivider} />
+
+        {/* Right: 쿠폰 보기 버튼 */}
+        <TouchableOpacity
+          style={styles.couponViewArea}
+          onPress={onCouponPress}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <ThemedText style={styles.couponViewText}>쿠폰{'\n'}보기</ThemedText>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -147,18 +132,14 @@ function CouponSection({
 export function StoreBenefits({
   benefits,
   coupons,
-  issuedCouponIds,
-  onIssueCoupon,
-  isIssuing,
+  onCouponPress,
 }: StoreBenefitsProps) {
   return (
     <View style={styles.container}>
       <BenefitBanner benefits={benefits} />
       <CouponSection
         coupons={coupons}
-        issuedCouponIds={issuedCouponIds}
-        onIssueCoupon={onIssueCoupon}
-        isIssuing={isIssuing}
+        onCouponPress={onCouponPress}
       />
     </View>
   );
@@ -273,14 +254,16 @@ const styles = StyleSheet.create({
     borderColor: Gray.gray5,
     marginHorizontal: rs(12),
   },
-  downloadArea: {
-    width: rs(32),
+  couponViewArea: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: rs(4),
   },
-  issuedText: {
-    fontFamily: Fonts.medium,
-    fontSize: rs(10),
-    color: TextColor.tertiary,
+  couponViewText: {
+    fontFamily: Fonts.semiBold,
+    fontSize: rs(12),
+    color: Brand.primary,
+    textAlign: 'center',
+    lineHeight: rs(18),
   },
 });

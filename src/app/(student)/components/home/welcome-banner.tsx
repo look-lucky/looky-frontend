@@ -25,12 +25,13 @@ export function WelcomeBanner({
   const router = useRouter();
 
   const handleCouponPress = () => {
-    router.push('/(student)/(tabs)/map');
+    // category=all 명시 → 이전에 EVENT 필터가 걸려 있어도 전체로 리셋
+    router.push('/(student)/(tabs)/map?category=all');
   };
 
   const handleEventPress = () => {
-    // TODO: 이벤트 필터링된 지도로 이동
-    router.push('/map?category=EVENT');
+    // EVENT 카테고리 필터 + 이벤트 위치로 카메라 이동
+    router.push('/(student)/(tabs)/map?category=EVENT&centerOnEvents=true');
   };
 
   return (

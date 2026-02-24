@@ -194,6 +194,10 @@ export default function ProfileEditScreen() {
       showNicknameToast("닉네임은 2자 이상 입력해주세요");
       return;
     }
+    if (/[ㄱ-ㅎㅏ-ㅣ]/.test(nickname)) {
+      showNicknameToast("완성되지 않은 한글은 사용할 수 없습니다");
+      return;
+    }
     if (!selectedCollegeId || !selectedDepartmentId || isClubMember === null) {
       setPopupState({ visible: true, title: "모든 항목을 입력해주세요" });
       return;

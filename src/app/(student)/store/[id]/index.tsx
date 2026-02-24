@@ -84,6 +84,7 @@ export default function StoreDetailScreen() {
   const [isCouponModalVisible, setIsCouponModalVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollOffsetY = useRef(0);
+  const contentYRef = useRef(0);
 
   // 리뷰 페이지네이션 상태
   const [reviewPage, setReviewPage] = useState(0);
@@ -327,7 +328,7 @@ export default function StoreDetailScreen() {
     allReviews.map((r) => ({
       id: String(r.reviewId),
       userId: '',
-      nickname: r.username ?? '',
+      nickname: r.nickname ?? r.username ?? '',
       profileImage: '',
       rating: r.rating ?? 0,
       date: formatDate(r.createdAt),
@@ -350,6 +351,8 @@ export default function StoreDetailScreen() {
     phone: apiStore?.phone ?? '',
     category: storeCategory,
     moods: storeMoods,
+    lat: apiStore?.latitude ?? undefined,
+    lng: apiStore?.longitude ?? undefined,
   }), [apiStore, storeOpenHours, storeAddress, storeCategory, storeMoods]);
 
   // 리뷰 통계: API ReviewStatsResponse → 컴포넌트 ReviewRating 타입
@@ -374,11 +377,11 @@ export default function StoreDetailScreen() {
 
   const filteredCoupons = storeCoupons;
 
-  // 이미 발급받은 쿠폰 ID 목록
-  const issuedCouponIds = useMemo(() =>
+  // 이미 발급받은 쿠폰 타이틀 목록 (API에 couponId 필드 없어서 title로 매칭)
+  const issuedCouponTitles = useMemo(() =>
     myCoupons
-      .filter((mc) => mc.couponId != null)
-      .map((mc) => mc.couponId as number),
+      .filter((mc) => mc.title != null)
+      .map((mc) => mc.title as string),
     [myCoupons],
   );
 
@@ -409,7 +412,14 @@ export default function StoreDetailScreen() {
   const handleIssueCoupon = (couponId: string) => {
     issueCouponMutation.mutate({ couponId: Number(couponId) });
   };
-  const handleWriteReview = () => router.push(`/store/${id}/review/write`);
+  const handleReviewPress = () => {
+    setActiveTab('review');
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: contentYRef.current, animated: true });
+    }, 50);
+  };
+
+  const handleWriteReview = () => router.push(`/store/${id}/review/write?storeName=${encodeURIComponent(storeName)}`);
   const handleEditReview = (reviewId: string) => {
     const review = allReviews.find((r) => String(r.reviewId) === reviewId);
     if (!review) return;
@@ -502,13 +512,14 @@ export default function StoreDetailScreen() {
           name={storeName}
           rating={storeRating}
           category={storeCategory}
-          reviewCount={storeReviewCount}
+          reviewCount={storeReviewRating.totalCount || storeReviewCount}
           address={storeAddress}
           openHours={storeOpenHours}
           university={selectedUniversity}
           isPartner={storeIsPartner}
           onBack={handleBack}
           onLike={handleLike}
+          onReviewPress={handleReviewPress}
           onUniversityChange={setSelectedUniversityId}
         />
 
@@ -517,13 +528,14 @@ export default function StoreDetailScreen() {
             <ActivityIndicator size="small" color="#34b262" />
           </View>
         ) : (
-          <View style={styles.content}>
+          <View
+            style={styles.content}
+            onLayout={(e) => { contentYRef.current = e.nativeEvent.layout.y; }}
+          >
             <StoreBenefits
               benefits={storeBenefits}
               coupons={filteredCoupons}
-              issuedCouponIds={issuedCouponIds}
-              onIssueCoupon={handleIssueCoupon}
-              isIssuing={issueCouponMutation.isPending}
+              onCouponPress={handleCouponPress}
             />
 
             <StoreContent
@@ -563,7 +575,7 @@ export default function StoreDetailScreen() {
         onClose={() => setIsCouponModalVisible(false)}
         storeName={storeName}
         coupons={filteredCoupons}
-        issuedCouponIds={issuedCouponIds}
+        issuedCouponTitles={issuedCouponTitles}
         onIssueCoupon={handleIssueCoupon}
         isIssuing={issueCouponMutation.isPending}
       />

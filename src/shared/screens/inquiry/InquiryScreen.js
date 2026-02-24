@@ -263,9 +263,9 @@ export default function InquiryScreen({ navigation, route }) {
                                 </Text>
                                 <View style={styles.rightGroup}>
                                     <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
-                                    <View style={[styles.badge, styles.badgeGray]}>
+                                    <View style={[styles.badge, item.answered ? styles.badgeGreen : styles.badgeGray]}>
                                         <Text style={styles.badgeText}>
-                                            {INQUIRY_TYPE_MAP[item.type] ?? item.type}
+                                            {item.answered ? '답변완료' : '미완료'}
                                         </Text>
                                     </View>
                                     <Ionicons

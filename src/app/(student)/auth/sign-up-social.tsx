@@ -10,7 +10,7 @@ import { useAuth } from "@/src/shared/lib/auth";
 import type { UserType } from "@/src/shared/lib/auth/token";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
-import { Brand, Gray, Text as TextColors } from "@/src/shared/theme/theme";
+import { Brand, Gray, System, Text as TextColors } from "@/src/shared/theme/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
@@ -96,6 +96,10 @@ export default function SocialSignupPage() {
   const [birthMonth, setBirthMonth] = useState("");
   const [birthDay, setBirthDay] = useState("");
   const [nickname, setNickname] = useState("");
+  const [birthTouched, setBirthTouched] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [nicknameTouched, setNicknameTouched] = useState(false);
+  const [nicknameFocused, setNicknameFocused] = useState(false);
 
   // 대학/단과대학/학과 선택
   const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null);
@@ -146,18 +150,63 @@ export default function SocialSignupPage() {
   const selectedCollegeName = colleges.find((c) => c.id === selectedCollegeId)?.name ?? "";
   const selectedDepartmentName = departments.find((d: any) => d.id === selectedDepartmentId)?.name ?? "";
 
+  const isBirthValid = () => {
+    if (birthYear.length !== 4 || !birthMonth || !birthDay) return false;
+    const year = parseInt(birthYear, 10);
+    const month = parseInt(birthMonth, 10);
+    const day = parseInt(birthDay, 10);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return false;
+    if (year < 1900 || year > 2010) return false;
+    const birthDate = new Date(year, month - 1, day);
+    if (
+      birthDate.getFullYear() !== year ||
+      birthDate.getMonth() !== month - 1 ||
+      birthDate.getDate() !== day
+    ) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (birthDate > today) return false;
+    const age14Date = new Date(today.getFullYear() - 14, today.getMonth(), today.getDate());
+    if (birthDate > age14Date) return false;
+    return true;
+  };
+
+  const getBirthError = (): string | null => {
+    if (!birthTouched && !hasSubmitted) return null;
+    if (!birthYear || !birthMonth || !birthDay || birthYear.length !== 4) {
+      return '생년월일을 입력해주세요';
+    }
+    const year = parseInt(birthYear, 10);
+    const month = parseInt(birthMonth, 10);
+    const day = parseInt(birthDay, 10);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return '생년월일을 입력해주세요';
+    const birthDate = new Date(year, month - 1, day);
+    if (
+      birthDate.getFullYear() !== year ||
+      birthDate.getMonth() !== month - 1 ||
+      birthDate.getDate() !== day
+    ) return '존재하지 않는 날짜입니다';
+    if (year < 1900 || year > 2010) return '1900~2010년생만 가입 가능합니다';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (birthDate > today) return '미래 날짜는 입력할 수 없습니다';
+    const age14Date = new Date(today.getFullYear() - 14, today.getMonth(), today.getDate());
+    if (birthDate > age14Date) return '만 14세 이상만 가입 가능합니다';
+    return null;
+  };
+
+  const isNicknameValid = (nick: string) => /^[가-힣a-zA-Z]{2,10}$/.test(nick);
+
   // 폼 유효성 검사
   const isFormValid =
-    birthYear.length === 4 &&
-    birthMonth.length >= 1 &&
-    birthDay.length >= 1 &&
-    nickname.length >= 2 &&
-    nickname.length <= 10 &&
+    isBirthValid() &&
+    isNicknameValid(nickname) &&
     selectedUniversityId !== null &&
     selectedCollegeId !== null &&
     selectedDepartmentId !== null;
 
   const handleComplete = () => {
+    setHasSubmitted(true);
     if (!isFormValid || !userId) return;
 
     const birthDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
@@ -167,6 +216,8 @@ export default function SocialSignupPage() {
       {
         params: {
           userId: parseInt(userId, 10),
+        },
+        data: {
           role: "ROLE_STUDENT",
           gender: apiGender,
           birthDate,
@@ -269,6 +320,7 @@ export default function SocialSignupPage() {
               placeholderTextColor={TextColors.placeholder}
               value={birthYear}
               onChangeText={setBirthYear}
+              onBlur={() => setBirthTouched(true)}
               keyboardType="number-pad"
               maxLength={4}
             />
@@ -278,6 +330,13 @@ export default function SocialSignupPage() {
               placeholderTextColor={TextColors.placeholder}
               value={birthMonth}
               onChangeText={setBirthMonth}
+              onBlur={() => {
+                setBirthTouched(true);
+                const num = parseInt(birthMonth, 10);
+                if (birthMonth !== "" && !isNaN(num)) {
+                  setBirthMonth(String(Math.min(num, 12)).padStart(2, "0"));
+                }
+              }}
               keyboardType="number-pad"
               maxLength={2}
             />
@@ -287,10 +346,20 @@ export default function SocialSignupPage() {
               placeholderTextColor={TextColors.placeholder}
               value={birthDay}
               onChangeText={setBirthDay}
+              onBlur={() => {
+                setBirthTouched(true);
+                const num = parseInt(birthDay, 10);
+                if (birthDay !== "" && !isNaN(num)) {
+                  setBirthDay(String(Math.min(num, 31)).padStart(2, "0"));
+                }
+              }}
               keyboardType="number-pad"
               maxLength={2}
             />
           </View>
+          {getBirthError() !== null && (
+            <ThemedText style={styles.errorText}>{getBirthError()}</ThemedText>
+          )}
         </View>
 
         {/* 닉네임 */}
@@ -306,8 +375,19 @@ export default function SocialSignupPage() {
               value={nickname}
               onChangeText={setNickname}
               maxLength={10}
+              onFocus={() => setNicknameFocused(true)}
+              onBlur={() => {
+                setNicknameFocused(false);
+                setNicknameTouched(true);
+              }}
             />
           </View>
+          {hasSubmitted && nickname.length === 0 && (
+            <ThemedText style={styles.errorText}>닉네임을 입력해주세요</ThemedText>
+          )}
+          {(hasSubmitted || (!nicknameFocused && nicknameTouched)) && nickname.length > 0 && !isNicknameValid(nickname) && (
+            <ThemedText style={styles.errorText}>닉네임은 한글, 영문을 포함한 2~10자 이내로 입력해주세요</ThemedText>
+          )}
         </View>
 
         {/* 대학 선택 */}
@@ -522,5 +602,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(24),
     paddingBottom: rs(40),
     paddingTop: rs(16),
+  },
+  errorText: {
+    fontSize: rs(10),
+    color: System.error,
   },
 });
