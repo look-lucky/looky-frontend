@@ -130,7 +130,7 @@ export default function MyReview() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-            {allReviews.length === 0 && (
+          {allReviews.length === 0 && (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>작성한 리뷰가 없습니다</Text>
             </View>
@@ -140,10 +140,10 @@ export default function MyReview() {
             const hasReply = review.ownerReply ?? false;
             const dateStr = review.createdAt
               ? new Date(review.createdAt).toLocaleDateString('ko-KR', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                })
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+              })
               : '';
             return (
               <TouchableOpacity
@@ -266,31 +266,31 @@ export default function MyReview() {
           </View>
         </Modal>
 
-      <AppPopup
-        visible={deleteSuccessVisible}
-        title="리뷰가 삭제되었습니다"
-        onClose={() => setDeleteSuccessVisible(false)}
-      />
+        <AppPopup
+          visible={deleteSuccessVisible}
+          title="리뷰가 삭제되었습니다"
+          onClose={() => setDeleteSuccessVisible(false)}
+        />
 
-      <ErrorPopup
-        visible={networkErrorVisible}
-        type="NETWORK"
-        onRefresh={() => {
-          setNetworkErrorVisible(false);
-          confirmDelete();
-        }}
-        onClose={() => {
-          setNetworkErrorVisible(false);
-          setSelectedReviewId(null);
-        }}
-      />
+        <ErrorPopup
+          visible={networkErrorVisible}
+          type="NETWORK"
+          onRefresh={() => {
+            setNetworkErrorVisible(false);
+            confirmDelete();
+          }}
+          onClose={() => {
+            setNetworkErrorVisible(false);
+            setSelectedReviewId(null);
+          }}
+        />
 
-      <AppPopup
-        visible={deleteApiErrorVisible}
-        title="리뷰 삭제에 실패했어요"
-        subtitle="다시 시도해주세요"
-        onClose={() => setDeleteApiErrorVisible(false)}
-      />
+        <AppPopup
+          visible={deleteApiErrorVisible}
+          title="리뷰 삭제에 실패했어요"
+          subtitle="다시 시도해주세요"
+          onClose={() => setDeleteApiErrorVisible(false)}
+        />
       </View>
     </TouchableWithoutFeedback>
   );
@@ -379,7 +379,12 @@ const styles = StyleSheet.create({
     lineHeight: rs(20),
     marginBottom: rs(12),
   },
-  divider: { height: 1, backgroundColor: '#E0E0E0', marginVertical: rs(12) },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: rs(12),
+    marginHorizontal: -rs(20),
+  },
   replySection: {},
   replyHeader: {
     flexDirection: 'row',
