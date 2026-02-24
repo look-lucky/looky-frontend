@@ -84,7 +84,7 @@ export function useMapSearch() {
     collegeId != null ? { universityId: collegeId } : undefined,
     {
       query: {
-        staleTime: 3 * 60 * 1000,
+        staleTime: 0,
         gcTime: 24 * 60 * 60 * 1000,
       },
     },
@@ -93,6 +93,13 @@ export function useMapSearch() {
   // ------ 데이터 변환 ------
   const allStores: Store[] = useMemo(() => {
     const raw = rawData?.data?.data ?? [];
+    // TODO: 디버그 - myPartnerships 확인 후 제거
+    const partners = raw.filter((s) => (s.myPartnerships?.length ?? 0) > 0);
+    if (partners.length > 0) {
+      console.log('[MAP] myPartnerships 있는 가게:', partners.map((s) => ({ name: s.name, myPartnerships: s.myPartnerships })));
+    } else {
+      console.log('[MAP] myPartnerships 있는 가게 없음. 총 가게 수:', raw.length);
+    }
     return transformStoreMapResponses(raw, myLocation);
   }, [rawData, myLocation]);
 
@@ -195,6 +202,14 @@ export function useMapSearch() {
   // 마커 생성 (중심점 기준 가까운 순 최대 150개)
   const MAX_MAP_MARKERS = 150;
   const markers = useMemo(() => {
+    // 가게 선택 시 해당 가게만 단일 마커로 표시
+    if (selectedStoreId) {
+      const store = filteredStores.find((s) => s.id === selectedStoreId);
+      if (store && store.lat && store.lng) {
+        return [{ id: store.id, lat: store.lat, lng: store.lng, title: store.name, isPartner: store.isPartner, hasCoupon: store.hasCoupon }];
+      }
+      return [];
+    }
     const center = viewportSearch?.center ?? myLocation ?? mapCenter;
     const sorted = [...filteredStores].sort((a, b) => {
       if (!a.lat || !a.lng) return 1;
@@ -212,7 +227,7 @@ export function useMapSearch() {
       isPartner: store.isPartner,
       hasCoupon: store.hasCoupon,
     }));
-  }, [filteredStores, viewportSearch, myLocation, mapCenter]);
+  }, [filteredStores, selectedStoreId, viewportSearch, myLocation, mapCenter]);
 
   // 선택된 가게
   const selectedStore = useMemo(() => {
@@ -222,7 +237,7 @@ export function useMapSearch() {
 
   // ------ 액션 핸들러 ------
   const handleSearchFocus = useCallback(() => {
-    setViewMode('list');
+    // 검색 포커스 시 지도 뷰 유지 (바텀시트에서 결과 표시)
   }, []);
 
   const handleSearch = useCallback(() => {
@@ -233,12 +248,17 @@ export function useMapSearch() {
 
   const handleCategorySelect = useCallback((categoryId: string) => {
     setSelectedCategory(categoryId);
+    // 카테고리 탭 선택 → 필터 가게종류와 동기화 (단일 선택)
+    if (categoryId === 'all' || categoryId === 'EVENT') {
+      setSelectedStoreTypes([]);
+    } else {
+      setSelectedStoreTypes([categoryId]);
+    }
   }, []);
 
   const handleStoreSelect = useCallback(
     (storeId: string) => {
       setSelectedStoreId(storeId);
-      setViewMode('map');
       // 선택된 가게 위치로 지도 중심 이동
       const store = allStores.find((s) => s.id === storeId);
       if (store && store.lat && store.lng) {
@@ -263,26 +283,31 @@ export function useMapSearch() {
   }, []);
 
   const handleBack = useCallback(() => {
-    if (viewMode === 'list') {
-      setViewMode('map');
+    // 가게 선택 상태 → 선택 해제 (검색 결과 목록으로 복귀)
+    if (selectedStoreId) {
+      setSelectedStoreId(null);
+      return true;
+    }
+    // 검색 키워드 있음 → 키워드 초기화 (map.tsx에서 바텀시트도 접음)
+    if (submittedKeyword) {
       setKeyword('');
       setSubmittedKeyword('');
-      return true; // handled
+      return false; // map.tsx가 바텀시트 접기 처리
     }
-    // 검색 결과로 지도를 보다가 뒤로가기 → 검색 리스트로 복귀
-    if (viewMode === 'map' && submittedKeyword) {
-      setViewMode('list');
-      setSelectedStoreId(null);
-      return true; // handled
-    }
-    return false; // not handled (바텀시트 접기 등은 map.tsx에서 처리)
-  }, [viewMode, submittedKeyword]);
+    return false;
+  }, [selectedStoreId, submittedKeyword]);
 
   const handleFilterApply = useCallback(
     (storeTypes: string[], moods: string[], events: string[]) => {
       setSelectedStoreTypes(storeTypes);
       setSelectedMoods(moods);
       setSelectedEvents(events);
+      // 필터 가게종류 → 카테고리 탭 동기화 (단일 선택 기준)
+      if (storeTypes.length === 0) {
+        setSelectedCategory('all');
+      } else {
+        setSelectedCategory(storeTypes[0]);
+      }
     },
     [],
   );
@@ -291,6 +316,7 @@ export function useMapSearch() {
     setSelectedStoreTypes([]);
     setSelectedMoods([]);
     setSelectedEvents([]);
+    setSelectedCategory('all');
   }, []);
 
   const handleViewportSearch = useCallback(
