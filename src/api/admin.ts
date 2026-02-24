@@ -26,6 +26,7 @@ import type {
 
 import type {
   GetAllUsersParams,
+  GetGeocodeParams,
   UploadStoreDataBody,
   UserRoleUpdateRequest
 } from './generated.schemas';
@@ -347,6 +348,136 @@ export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetAllUsersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * 주소를 입력받아 위도, 경도 좌표를 반환합니다.
+ * @summary [관리자] 주소로 위경도 변환
+ */
+export type getGeocodeResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getGeocodeResponse400 = {
+  data: Blob
+  status: 400
+}
+
+export type getGeocodeResponse500 = {
+  data: Blob
+  status: 500
+}
+    
+export type getGeocodeResponseSuccess = (getGeocodeResponse200) & {
+  headers: Headers;
+};
+export type getGeocodeResponseError = (getGeocodeResponse400 | getGeocodeResponse500) & {
+  headers: Headers;
+};
+
+export type getGeocodeResponse = (getGeocodeResponseSuccess | getGeocodeResponseError)
+
+export const getGetGeocodeUrl = (params: GetGeocodeParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/stores/geocode?${stringifiedParams}` : `/api/admin/stores/geocode`
+}
+
+export const getGeocode = async (params: GetGeocodeParams, options?: RequestInit): Promise<getGeocodeResponse> => {
+  
+  return customFetch<getGeocodeResponse>(getGetGeocodeUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetGeocodeQueryKey = (params?: GetGeocodeParams,) => {
+    return [
+    `/api/admin/stores/geocode`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getGetGeocodeQueryOptions = <TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(params: GetGeocodeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGeocodeQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGeocode>>> = ({ signal }) => getGeocode(params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetGeocodeQueryResult = NonNullable<Awaited<ReturnType<typeof getGeocode>>>
+export type GetGeocodeQueryError = Blob
+
+
+export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(
+ params: GetGeocodeParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGeocode>>,
+          TError,
+          Awaited<ReturnType<typeof getGeocode>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(
+ params: GetGeocodeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGeocode>>,
+          TError,
+          Awaited<ReturnType<typeof getGeocode>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(
+ params: GetGeocodeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [관리자] 주소로 위경도 변환
+ */
+
+export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(
+ params: GetGeocodeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetGeocodeQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

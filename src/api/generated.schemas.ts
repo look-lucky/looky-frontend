@@ -624,6 +624,30 @@ export const StoreResponseStoreMoodsItem = {
   ROMANTIC: 'ROMANTIC',
 } as const;
 
+export type StoreResponseStoreStatus = typeof StoreResponseStoreStatus[keyof typeof StoreResponseStoreStatus];
+
+
+export const StoreResponseStoreStatus = {
+  UNCLAIMED: 'UNCLAIMED',
+  ACTIVE: 'ACTIVE',
+  BANNED: 'BANNED',
+} as const;
+
+export type PartnershipInfoCategory = typeof PartnershipInfoCategory[keyof typeof PartnershipInfoCategory];
+
+
+export const PartnershipInfoCategory = {
+  COLLEGE: 'COLLEGE',
+  DEPARTMENT: 'DEPARTMENT',
+  UNIVERSITY_COUNCIL: 'UNIVERSITY_COUNCIL',
+  CLUB_ASSOCIATION: 'CLUB_ASSOCIATION',
+} as const;
+
+export interface PartnershipInfo {
+  category?: PartnershipInfoCategory;
+  name?: string;
+}
+
 export type StoreResponseCloverGrade = typeof StoreResponseCloverGrade[keyof typeof StoreResponseCloverGrade];
 
 
@@ -654,7 +678,8 @@ export interface StoreResponse {
   reviewCount?: number;
   holidayDates?: string[];
   isSuspended?: boolean;
-  myPartnerships?: string[];
+  storeStatus?: StoreResponseStoreStatus;
+  myPartnerships?: PartnershipInfo[];
   hasCoupon?: boolean;
   cloverGrade?: StoreResponseCloverGrade;
 }
@@ -747,7 +772,18 @@ export interface CommonResponseStoreRegistrationStatusResponse {
   data?: StoreRegistrationStatusResponse;
 }
 
+export type StorePartnershipResponseOrganizationCategory = typeof StorePartnershipResponseOrganizationCategory[keyof typeof StorePartnershipResponseOrganizationCategory];
+
+
+export const StorePartnershipResponseOrganizationCategory = {
+  COLLEGE: 'COLLEGE',
+  DEPARTMENT: 'DEPARTMENT',
+  UNIVERSITY_COUNCIL: 'UNIVERSITY_COUNCIL',
+  CLUB_ASSOCIATION: 'CLUB_ASSOCIATION',
+} as const;
+
 export interface StorePartnershipResponse {
+  organizationCategory?: StorePartnershipResponseOrganizationCategory;
   organizationName?: string;
   benefit?: string;
   isMyBenefit?: boolean;
@@ -853,7 +889,7 @@ export interface StoreMapResponse {
   reviewCount?: number;
   storeCategories?: StoreMapResponseStoreCategoriesItem[];
   operatingHours?: string;
-  myPartnerships?: string[];
+  myPartnerships?: PartnershipInfo[];
   hasCoupon?: boolean;
   favoriteCount?: number;
 }
@@ -1221,6 +1257,16 @@ export interface CommonResponseListPartnershipResponse {
   data?: PartnershipResponse[];
 }
 
+export interface Coordinate {
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface CommonResponseCoordinate {
+  isSuccess?: boolean;
+  data?: Coordinate;
+}
+
 export type StoreClaimResponseStatus = typeof StoreClaimResponseStatus[keyof typeof StoreClaimResponseStatus];
 
 
@@ -1315,6 +1361,14 @@ moods?: GetStoresMoodsItem[];
  */
 universityId?: number;
 /**
+ * 제휴 업체 보유 여부 필터 (true: 있음, false: 없음, 생략: 전체)
+ */
+hasPartnership?: boolean;
+/**
+ * 상점 상태 필터 (UNCLAIMED, ACTIVE, BANNED, 생략: 전체)
+ */
+storeStatus?: GetStoresStoreStatus;
+/**
  * 페이징 정보 (page, size, sort)
  */
 pageable: Pageable;
@@ -1340,6 +1394,15 @@ export const GetStoresMoodsItem = {
   GROUP_GATHERING: 'GROUP_GATHERING',
   LATE_NIGHT: 'LATE_NIGHT',
   ROMANTIC: 'ROMANTIC',
+} as const;
+
+export type GetStoresStoreStatus = typeof GetStoresStoreStatus[keyof typeof GetStoresStoreStatus];
+
+
+export const GetStoresStoreStatus = {
+  UNCLAIMED: 'UNCLAIMED',
+  ACTIVE: 'ACTIVE',
+  BANNED: 'BANNED',
 } as const;
 
 export type CreateStoreBody = {
@@ -1409,7 +1472,6 @@ export type CreateInquiryBody = {
 
 export type CompleteSocialSignupParams = {
 userId: number;
-request: CompleteSocialSignupRequest;
 };
 
 export type UploadStoreDataBody = {
@@ -1572,6 +1634,13 @@ export type GetAllUsersParams = {
  * 페이징 정보
  */
 pageable: Pageable;
+};
+
+export type GetGeocodeParams = {
+/**
+ * 도로명 주소 (예: 전라북도 전주시 덕진구 명륜3길 22)
+ */
+address: string;
 };
 
 export type GetStoreClaimsParams = {

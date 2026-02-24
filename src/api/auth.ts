@@ -27,6 +27,7 @@ import type {
 import type {
   CheckUsernameAvailabilityParams,
   CompleteSocialSignupParams,
+  CompleteSocialSignupRequest,
   CouncilSignupRequest,
   FindPasswordSendCodeRequest,
   LoginRequest,
@@ -1195,14 +1196,16 @@ export const getCompleteSocialSignupUrl = (params: CompleteSocialSignupParams,) 
   return stringifiedParams.length > 0 ? `/api/auth/complete-social-signup?${stringifiedParams}` : `/api/auth/complete-social-signup`
 }
 
-export const completeSocialSignup = async (params: CompleteSocialSignupParams, options?: RequestInit): Promise<completeSocialSignupResponse> => {
+export const completeSocialSignup = async (completeSocialSignupRequest: CompleteSocialSignupRequest,
+    params: CompleteSocialSignupParams, options?: RequestInit): Promise<completeSocialSignupResponse> => {
   
   return customFetch<completeSocialSignupResponse>(getCompleteSocialSignupUrl(params),
   {      
     ...options,
-    method: 'POST'
-    
-    
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      completeSocialSignupRequest,)
   }
 );}
 
@@ -1210,8 +1213,8 @@ export const completeSocialSignup = async (params: CompleteSocialSignupParams, o
 
 
 export const getCompleteSocialSignupMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{params: CompleteSocialSignupParams}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}, TContext> => {
 
 const mutationKey = ['completeSocialSignup'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1223,10 +1226,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeSocialSignup>>, {params: CompleteSocialSignupParams}> = (props) => {
-          const {params} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeSocialSignup>>, {data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}> = (props) => {
+          const {data,params} = props ?? {};
 
-          return  completeSocialSignup(params,requestOptions)
+          return  completeSocialSignup(data,params,requestOptions)
         }
 
 
@@ -1237,18 +1240,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CompleteSocialSignupMutationResult = NonNullable<Awaited<ReturnType<typeof completeSocialSignup>>>
-    
+    export type CompleteSocialSignupMutationBody = CompleteSocialSignupRequest
     export type CompleteSocialSignupMutationError = Blob
 
     /**
  * @summary [공통] 소셜 회원가입 완료
  */
 export const useCompleteSocialSignup = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof completeSocialSignup>>,
         TError,
-        {params: CompleteSocialSignupParams},
+        {data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams},
         TContext
       > => {
       return useMutation(getCompleteSocialSignupMutationOptions(options), queryClient);
