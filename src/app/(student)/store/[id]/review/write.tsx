@@ -49,7 +49,7 @@ const COLORS = {
 } as const;
 
 export default function ReviewWriteScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, storeName } = useLocalSearchParams<{ id: string; storeName?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -89,11 +89,15 @@ export default function ReviewWriteScreen() {
   const handleSubmit = () => {
     if (isSubmitDisabled) return;
 
-    const images = photos.map((asset) => ({
-      uri: asset.uri,
-      type: asset.mimeType || 'image/jpeg',
-      name: asset.fileName || `review_${Date.now()}.jpg`,
-    }));
+    const timestamp = Date.now();
+    const images = photos.map((asset, index) => {
+      const rawType = asset.mimeType ?? 'image/jpeg';
+      // HEIC/HEIF는 서버에서 지원하지 않을 수 있으므로 JPEG로 처리
+      const type = rawType === 'image/heic' || rawType === 'image/heif' ? 'image/jpeg' : rawType;
+      const ext = type.split('/')[1] ?? 'jpg';
+      const name = asset.fileName ?? `review_${timestamp}_${index}.${ext}`;
+      return { uri: asset.uri, type, name };
+    });
 
     createReview({
       storeId: Number(id),
@@ -149,7 +153,7 @@ export default function ReviewWriteScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <ThemedText type="subtitle">평화와 평화 구내매점</ThemedText>
+        <ThemedText type="subtitle">{storeName ?? ''}</ThemedText>
 
         {/* 별점 */}
         <View style={styles.section}>
