@@ -4,7 +4,7 @@ import { ThemedText } from '@/src/shared/common/themed-text';
 import { ThemedView } from '@/src/shared/common/themed-view';
 import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray, Owner, System, Text } from '@/src/shared/theme/theme';
+import { Brand, Gray, Owner, System, Text } from '@/src/shared/theme/theme';
 import { formatOperatingHours, parseAllOperatingHours } from '@/src/shared/utils/store-transform';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
@@ -49,6 +49,7 @@ interface StoreHeaderProps {
   isPartner: boolean;
   onBack: () => void;
   onLike: () => void;
+  onReviewPress?: () => void;
   onUniversityChange?: (universityId: number) => void;
 }
 
@@ -88,9 +89,9 @@ function MainImageSection({
         onPress={onLike}
       >
         <Ionicons
-          name={isLiked ? 'heart' : 'heart-outline'}
+          name={isLiked ? 'bookmark' : 'bookmark-outline'}
           size={24}
-          color={isLiked ? System.error : Gray.white}
+          color={isLiked ? Brand.primary : Gray.white}
         />
       </TouchableOpacity>
 
@@ -114,6 +115,7 @@ function StoreInfoSection({
   reviewCount,
   address,
   openHours,
+  onReviewPress,
 }: {
   name: string;
   rating: number;
@@ -121,6 +123,7 @@ function StoreInfoSection({
   reviewCount: number;
   address: string;
   openHours: string;
+  onReviewPress?: () => void;
 }) {
   const [isHoursExpanded, setIsHoursExpanded] = useState(false);
 
@@ -141,7 +144,7 @@ function StoreInfoSection({
         </ThemedView>
       </ThemedView>
 
-      <TouchableOpacity style={styles.categoryRow}>
+      <TouchableOpacity style={styles.categoryRow} onPress={onReviewPress}>
         <ThemedText style={styles.category}>{category}</ThemedText>
         <ThemedText style={styles.divider}>|</ThemedText>
         <ThemedText style={styles.reviewCount}>리뷰 {reviewCount}개</ThemedText>
@@ -228,6 +231,7 @@ export function StoreHeader({
   isPartner,
   onBack,
   onLike,
+  onReviewPress,
   onUniversityChange,
 }: StoreHeaderProps) {
   const [showUniversityModal, setShowUniversityModal] = useState(false);
@@ -261,6 +265,7 @@ export function StoreHeader({
           reviewCount={reviewCount}
           address={address}
           openHours={openHours}
+          onReviewPress={onReviewPress}
         />
         <TagSection
           university={university}

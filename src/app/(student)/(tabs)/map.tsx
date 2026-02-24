@@ -35,7 +35,6 @@ import {
   ActivityIndicator,
   Alert,
   BackHandler,
-  FlatList,
   Image,
   Keyboard,
   Linking,
@@ -58,13 +57,13 @@ export default function MapTab() {
   const router = useRouter();
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
-  const { category, eventId: eventIdParam } = useLocalSearchParams<{ category?: string; eventId?: string }>();
+  const { category, eventId: eventIdParam, centerOnEvents } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string }>();
   const initialEventHandled = useRef(false);
+  const centerOnEventsHandledRef = useRef(false);
 
   const {
     keyword,
     setKeyword,
-    viewMode,
     selectedCategory,
     selectedSort,
     setSelectedSort,
@@ -214,6 +213,28 @@ export default function MapTab() {
     }
   }, [eventIdParam, events, handleMapClick, setMapCenter]);
 
+  // centerOnEvents 파라미터 변경 시 플래그 리셋
+  useEffect(() => {
+    centerOnEventsHandledRef.current = false;
+  }, [centerOnEvents]);
+
+  // '이벤트 N개' 배너 클릭 시 → 첫 번째 이벤트 위치로 카메라 이동
+  useEffect(() => {
+    if (centerOnEvents !== 'true' || centerOnEventsHandledRef.current || events.length === 0) return;
+    const firstEvent = events[0];
+    if (firstEvent?.lat && firstEvent?.lng) {
+      centerOnEventsHandledRef.current = true;
+      const timer = setTimeout(() => {
+        naverMapRef.current?.animateCameraTo({
+          latitude: firstEvent.lat,
+          longitude: firstEvent.lng,
+          duration: 500,
+        });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [centerOnEvents, events]);
+
   // 카테고리가 'EVENT'인지 확인 (이벤트만 보기 모드)
   const isEventOnlyMode = selectedCategory === 'EVENT';
 
@@ -257,7 +278,8 @@ export default function MapTab() {
   // 탭 포커스/블러 시 탭바 제어
   useFocusEffect(
     useCallback(() => {
-      setTabBarVisible(true);
+      // 탭 복귀 시 현재 시트 위치에 맞게 탭바 복원 (sheet가 올라가 있으면 탭바 숨김 유지)
+      setTabBarVisible(currentIndexRef.current === SNAP_INDEX.COLLAPSED);
       // 빠른 탭 전환 시 NaverMap 재마운트를 debounce (200ms 안정 후 마운트)
       if (mountTimerRef.current) clearTimeout(mountTimerRef.current);
       mountTimerRef.current = setTimeout(() => setIsTabFocused(true), 200);
@@ -273,30 +295,39 @@ export default function MapTab() {
   );
 
   // snap points
-  const collapsedHeight = 130;
-  const snapPoints = useMemo(() => [collapsedHeight, 740, '70%'], []);
+  // bottomInset을 insets.bottom만 사용하므로, 탭바 높이(56)를 collapsedHeight에 흡수
+  const collapsedHeight = 130 + 56;
+  const snapPoints = useMemo(() => [collapsedHeight, '60%', '90%'], []);
 
   // 바텀시트 인덱스 변경
   const handleSheetChanges = useCallback(
     (index: number) => {
       currentIndexRef.current = index;
+      setTabBarVisible(index === SNAP_INDEX.COLLAPSED);
     },
-    [currentIndexRef],
+    [currentIndexRef, setTabBarVisible],
   );
 
   // 뒤로가기
   const handleBackPress = useCallback(() => {
-    const handled = handleBack();
-    if (!handled) {
-      // 바텀시트가 확장된 상태면 접기
-      if (currentIndexRef.current > SNAP_INDEX.COLLAPSED) {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
-        return true;
-      }
-      return false;
+    // 가게 선택 상태 → 선택 해제 (검색 결과 복귀, 바텀시트 유지)
+    if (selectedStore) {
+      handleBack();
+      return true;
     }
-    return true;
-  }, [handleBack, currentIndexRef]);
+    // 검색 결과 표시 중 → 바텀시트 먼저 접고 키워드 초기화 (애니메이션 즉시 시작)
+    if (submittedKeyword) {
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
+      handleBack();
+      return true;
+    }
+    // 바텀시트가 열려있으면 접기
+    if (currentIndexRef.current > SNAP_INDEX.COLLAPSED) {
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
+      return true;
+    }
+    return false;
+  }, [handleBack, selectedStore, submittedKeyword, currentIndexRef]);
 
   // 안드로이드 하드웨어 뒤로가기 처리
   useFocusEffect(
@@ -388,9 +419,18 @@ export default function MapTab() {
     (storeId: string) => {
       Keyboard.dismiss();
       handleStoreSelect(storeId);
+      // 지도 카메라를 선택한 가게 위치로 직접 이동
+      const store = stores.find((s) => s.id === storeId);
+      if (store?.lat && store?.lng) {
+        naverMapRef.current?.animateCameraTo({
+          latitude: store.lat,
+          longitude: store.lng,
+          duration: 500,
+        });
+      }
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
     },
-    [handleStoreSelect],
+    [handleStoreSelect, stores],
   );
 
   // 검색 포커스
@@ -400,9 +440,29 @@ export default function MapTab() {
 
   // 검색 실행
   const onSearchSubmit = useCallback(() => {
+    if (!keyword.trim()) return;
     handleSearch();
     Keyboard.dismiss();
-  }, [handleSearch]);
+    // 검색 결과를 바텀시트(절반)로 표시
+    bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+  }, [handleSearch, keyword]);
+
+  // stores 최신값을 ref로 유지 (검색 카메라 이동에서 stale closure 방지)
+  const storesRef = useRef(stores);
+  useEffect(() => { storesRef.current = stores; }, [stores]);
+
+  // 검색 키워드가 바뀌면 첫 번째 결과 위치로 카메라 이동
+  useEffect(() => {
+    if (!submittedKeyword || storesRef.current.length === 0) return;
+    const first = storesRef.current[0];
+    if (first?.lat && first?.lng) {
+      naverMapRef.current?.animateCameraTo({
+        latitude: first.lat,
+        longitude: first.lng,
+        duration: 500,
+      });
+    }
+  }, [submittedKeyword]);
 
   // 필터 모달 핸들러
   const handleOpenFilterModal = (tab: FilterTab) => {
@@ -470,15 +530,18 @@ export default function MapTab() {
     if (!isEventOnlyMode) {
       storesWithFavorite.forEach((store) => items.push({ type: 'store', data: store }));
     }
-    if (!isEventOnlyMode && storesWithFavorite.length > 0 && events.length > 0) {
-      items.push({ type: 'divider' });
+    // 검색 중에는 가게만 표시 (이벤트 숨김)
+    if (!submittedKeyword) {
+      if (!isEventOnlyMode && storesWithFavorite.length > 0 && events.length > 0) {
+        items.push({ type: 'divider' });
+      }
+      events.forEach((event) => items.push({ type: 'event', data: event }));
     }
-    events.forEach((event) => items.push({ type: 'event', data: event }));
-    if (storesWithFavorite.length === 0 && events.length === 0) {
+    if (items.length === 0) {
       items.push({ type: 'empty' });
     }
     return items;
-  }, [selectedStoreWithFavorite, selectedEvent, isLoading, isEventsLoading, isEventOnlyMode, storesWithFavorite, events]);
+  }, [selectedStoreWithFavorite, selectedEvent, isLoading, isEventsLoading, isEventOnlyMode, storesWithFavorite, events, submittedKeyword]);
 
   const renderBottomSheetHeader = useCallback(() => {
     if (selectedStoreWithFavorite) {
@@ -698,101 +761,12 @@ export default function MapTab() {
     </ScrollView>
   );
 
-  // 탭바(56) + safe area → 컨트롤 버튼/검색버튼 위치 (바텀시트 collapsed 바로 위)
-  const tabBarHeight = 56 + insets.bottom;
-  const floatingButtonBottom = tabBarHeight + collapsedHeight + 12;
+  // 컨트롤 버튼/검색버튼 위치 (바텀시트 collapsed 바로 위)
+  // collapsedHeight가 탭바 높이(56)를 흡수하므로 safe area만 더함
+  const floatingButtonBottom = insets.bottom + collapsedHeight + 12;
 
   // ────────────────────────────────────────────
-  // 리스트 뷰 (전체화면)
-  // ────────────────────────────────────────────
-  if (viewMode === 'list') {
-    return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.listSafeArea} edges={['top']}>
-          {renderSearchBar()}
-
-          {/* 검색어 제출 전에는 카테고리/필터/목록 숨김 */}
-          {submittedKeyword ? (
-            <>
-              {renderCategoryTabs()}
-              <View style={styles.listFilterRow}>{renderFilterChips()}</View>
-
-              {isLoading ? (
-                <View style={styles.centerContent}>
-                  <ActivityIndicator size="large" color={Owner.primary} />
-                </View>
-              ) : storesWithFavorite.length > 0 ? (
-                <FlatList
-                  data={storesWithFavorite}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <StoreCard
-                      store={item}
-                      onPress={() => handleStoreCardPress(item.id)}
-                      onBookmarkPress={handleBookmarkPress}
-                    />
-                  )}
-                  contentContainerStyle={styles.listContent}
-                  keyboardShouldPersistTaps="handled"
-                />
-              ) : (
-                <View style={styles.centerContent}>
-                  <Image
-                    source={require('@/assets/images/icons/map/search-none.png')}
-                    style={styles.emptyStateImage}
-                    resizeMode="contain"
-                  />
-                  <ThemedText style={styles.emptyStateTitle}>
-                    어라? 찾으시는 매장이 안 보여요.
-                  </ThemedText>
-                  <View style={styles.emptyStateBullets}>
-                    <ThemedText style={styles.emptyStateText}>
-                      {'\u2022'} 검색어의 철자가 정확한지 확인해 보세요.
-                    </ThemedText>
-                    <ThemedText style={styles.emptyStateText}>
-                      {'\u2022'} 다른 키워드로 검색해 보시겠어요?
-                    </ThemedText>
-                    <ThemedText style={styles.emptyStateText}>
-                      {'\u2022'} 필터 조건을 변경하면 더 많은 결과를 찾을 수 있어요!
-                    </ThemedText>
-                  </View>
-                </View>
-              )}
-            </>
-          ) : (
-            <View style={styles.centerContent}>
-              <ThemedText style={styles.emptyStateTitle}>
-                검색어를 입력해 주세요
-              </ThemedText>
-            </View>
-          )}
-        </SafeAreaView>
-
-        {/* 모달들 */}
-        <SelectModal
-          visible={showSortModal}
-          options={SORT_OPTIONS}
-          selectedId={selectedSort}
-          onSelect={handleSortSelect}
-          onClose={() => setShowSortModal(false)}
-        />
-        <StoreFilterModal
-          visible={showFilterModal}
-          activeTab={activeFilterTab}
-          selectedStoreTypes={selectedStoreTypes}
-          selectedMoods={selectedMoods}
-          selectedEvents={selectedEvents}
-          onTabChange={setActiveFilterTab}
-          onReset={handleFilterReset}
-          onClose={() => setShowFilterModal(false)}
-          onApply={onFilterApply}
-        />
-      </ThemedView>
-    );
-  }
-
-  // ────────────────────────────────────────────
-  // 지도 뷰 (기본)
+  // 지도 뷰 (기본) — 검색 결과도 바텀시트로 표시
   // ────────────────────────────────────────────
   return (
     <ThemedView style={styles.container}>
@@ -862,6 +836,11 @@ export default function MapTab() {
         <Ionicons name="list" size={20} color={Owner.primary} />
       </TouchableOpacity>
 
+      {/* safe area 하단 배경 (bottomInset 영역에 지도가 비치지 않도록) */}
+      {insets.bottom > 0 && (
+        <View style={[styles.safeAreaBackground, { height: insets.bottom }]} />
+      )}
+
       {/* 바텀시트 */}
       <BottomSheet
         ref={bottomSheetRef}
@@ -871,7 +850,8 @@ export default function MapTab() {
         backgroundStyle={styles.bottomSheetBackground}
         handleIndicatorStyle={styles.bottomSheetHandle}
         enablePanDownToClose={false}
-        bottomInset={tabBarHeight}
+        enableContentPanningGesture={false}
+        bottomInset={insets.bottom}
         style={styles.bottomSheetContainer}
       >
         <View style={styles.bottomSheetContent}>
@@ -1214,5 +1194,12 @@ const styles = StyleSheet.create({
     width: rs(160),
     height: rs(160),
     marginBottom: 20,
+  },
+  safeAreaBackground: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Gray.white,
   },
 });

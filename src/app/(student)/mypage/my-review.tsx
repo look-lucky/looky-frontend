@@ -1,4 +1,5 @@
 import type { PageResponseReviewResponse } from '@/src/api/generated.schemas';
+import { useGetStudentInfo } from '@/src/api/my-page';
 import { useDeleteReview, useGetMyReviews } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { AppPopup } from '@/src/shared/common/app-popup';
@@ -27,6 +28,9 @@ export default function MyReview() {
   const { data: myReviewsRes, refetch } = useGetMyReviews({
     pageable: { page: 0, size: 100 },
   });
+
+  const { data: studentInfoRes } = useGetStudentInfo();
+  const nickname = (studentInfoRes as any)?.data?.data?.nickname ?? '나';
 
   const allReviews = useMemo(() => {
     const raw = (myReviewsRes as any)?.data?.data as
@@ -118,7 +122,7 @@ export default function MyReview() {
             <Ionicons name="pencil" size={rs(14)} color="#34B262" />
           </View>
           <Text style={styles.summaryText}>
-            <Text style={{ fontWeight: '600' }}>니어딜</Text>님은 지금까지{' '}
+            <Text style={{ fontWeight: '600' }}>{nickname}</Text>님은 지금까지{' '}
             <Text style={{ fontWeight: '700', color: '#34B262' }}>
               {allReviews.length}번
             </Text>

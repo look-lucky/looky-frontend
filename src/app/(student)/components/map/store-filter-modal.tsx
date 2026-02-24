@@ -103,10 +103,9 @@ export function StoreFilterModal({
     }
   }, [visible]);
 
+  // 가게 종류는 단일 선택 (이미 선택된 항목 재클릭 시 해제)
   const handleStoreTypeToggle = (id: string) => {
-    setDraftStoreTypes((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
+    setDraftStoreTypes((prev) => (prev.includes(id) ? [] : [id]));
   };
 
   const handleMoodToggle = (id: string) => {

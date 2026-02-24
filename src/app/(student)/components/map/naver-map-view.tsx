@@ -1,4 +1,4 @@
-import { useMapCluster } from '@/src/shared/hooks/use-map-cluster';
+import { useEventCluster, useMapCluster } from '@/src/shared/hooks/use-map-cluster';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray } from '@/src/shared/theme/theme';
 import type { EventStatus, EventType } from '@/src/shared/types/event';
@@ -8,12 +8,16 @@ import {
   type NaverMapViewRef,
 } from '@mj-studio/react-native-naver-map';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Image as RNImage, StyleSheet, View } from 'react-native';
+import { Image as RNImage, StyleSheet, Text, View } from 'react-native';
 import { G, Svg, Image as SvgImage, Text as SvgText } from 'react-native-svg';
 
 // 클러스터 마커 아이콘 PNG
 const CLUSTER_ICON = require('@/assets/images/icons/map/clover-cluster.png');
 const CLUSTER_ICON_URI = RNImage.resolveAssetSource(CLUSTER_ICON).uri;
+
+// 이벤트 클러스터 마커 아이콘 PNG
+const EVENT_CLUSTER_ICON = require('@/assets/images/icons/map/event-cluster.png');
+const EVENT_CLUSTER_ICON_URI = RNImage.resolveAssetSource(EVENT_CLUSTER_ICON).uri;
 
 // 가게 마커 아이콘 PNG
 const STORE_MARKER_ICONS = {
@@ -47,16 +51,16 @@ const EVENT_MARKER_ICONS_LIVE: Record<EventType, any> = {
 };
 
 // 클러스터 마커 SVG 컴포넌트 (iOS Image 렌더링 이슈 회피 — SvgImage 사용)
-function ClusterMarkerIcon({ count, size }: { count: number; size: number }) {
+function ClusterMarkerIcon({ count, size, iconUri = CLUSTER_ICON_URI }: { count: number; size: number; iconUri?: string }) {
   const fontSize = count >= 100 ? size * 0.22 : count >= 10 ? size * 0.25 : size * 0.28;
 
   return (
     <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <G>
-        <SvgImage href={CLUSTER_ICON_URI} x={0} y={0} width={size} height={size} />
+        <SvgImage href={iconUri} x={0} y={0} width={size} height={size} />
         <SvgText
           x={size / 2}
-          y={size * 0.44}
+          y={size * 0.5}
           textAnchor="middle"
           fill={Gray.white}
           fontSize={fontSize}
@@ -70,7 +74,7 @@ function ClusterMarkerIcon({ count, size }: { count: number; size: number }) {
 }
 
 const MARKER_SIZE = rs(32);
-const EVENT_MARKER_SIZE = rs(30);
+const EVENT_MARKER_SIZE = rs(40);
 const CLUSTER_SIZE = rs(60);
 
 // 가게 마커 아이콘 선택 헬퍼
@@ -160,6 +164,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     const mapRef = useRef<NaverMapViewRef>(null);
     const isInitialMount = useRef(true);
     const [currentZoom, setCurrentZoom] = useState(15);
+    const [rawZoom, setRawZoom] = useState(15);
     const [isMapReady, setIsMapReady] = useState(false);
 
     useImperativeHandle(ref, () => mapRef.current!, []);
@@ -194,9 +199,16 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
 
     // 가게 마커를 클러스터/개별 마커로 변환
     const clusteredMarkers = useMapCluster(markers, currentZoom);
+    // 이벤트 마커를 클러스터/개별 마커로 변환
+    const clusteredEventMarkers = useEventCluster(eventMarkers, currentZoom);
 
     return (
       <View style={[styles.container, style]}>
+        {/* TODO: 클러스터링 조정 후 제거 */}
+        <View style={styles.zoomDebug} pointerEvents="none">
+          <Text style={styles.zoomDebugText}>zoom: {rawZoom.toFixed(2)} (floor: {Math.floor(rawZoom)})</Text>
+          <Text style={styles.zoomDebugText}>cluster radius: 60 / maxZoom: 16</Text>
+        </View>
         <NaverMapView
           ref={mapRef}
           style={styles.map}
@@ -212,6 +224,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           }}
           onCameraChanged={(params) => {
             const zoom = params.zoom ?? 15;
+            setRawZoom(zoom);
             setCurrentZoom((prev) => {
               if (Math.floor(zoom) !== Math.floor(prev)) return zoom;
               return prev;
@@ -274,20 +287,38 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
             );
           })}
 
-          {/* 이벤트 마커 */}
-          {isMapReady && eventMarkers.map((marker) => (
-            <NaverMapMarkerOverlay
-              key={marker.id}
-              latitude={marker.lat}
-              longitude={marker.lng}
-              width={EVENT_MARKER_SIZE}
-              height={EVENT_MARKER_SIZE}
-              onTap={() => onEventMarkerClick?.(marker.id)}
-              anchor={{ x: 0.5, y: 0.5 }}
-              image={getEventMarkerIcon(marker.eventType, marker.status)}
-              alpha={getEventMarkerOpacity(marker.status)}
-            />
-          ))}
+          {/* 이벤트 마커 (클러스터 or 개별) */}
+          {isMapReady && clusteredEventMarkers.map((item) => {
+            if (item.type === 'cluster') {
+              return (
+                <NaverMapMarkerOverlay
+                  key={`event-cluster-${item.clusterId}`}
+                  latitude={item.lat}
+                  longitude={item.lng}
+                  width={CLUSTER_SIZE}
+                  height={CLUSTER_SIZE}
+                  anchor={{ x: 0.5, y: 1.0 }}
+                  zIndex={500}
+                  onTap={() => handleClusterClick(item.lat, item.lng)}
+                >
+                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} iconUri={EVENT_CLUSTER_ICON_URI} />
+                </NaverMapMarkerOverlay>
+              );
+            }
+            return (
+              <NaverMapMarkerOverlay
+                key={item.id}
+                latitude={item.lat}
+                longitude={item.lng}
+                width={EVENT_MARKER_SIZE}
+                height={EVENT_MARKER_SIZE}
+                onTap={() => onEventMarkerClick?.(item.id)}
+                anchor={{ x: 0.5, y: 0.5 }}
+                image={getEventMarkerIcon(item.eventType, item.status)}
+                alpha={getEventMarkerOpacity(item.status)}
+              />
+            );
+          })}
         </NaverMapView>
       </View>
     );
@@ -300,5 +331,21 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  zoomDebug: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    zIndex: 9999,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 2,
+  },
+  zoomDebugText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
