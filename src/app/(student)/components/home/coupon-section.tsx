@@ -37,6 +37,9 @@ export function CouponSection({ coupons }: CouponSectionProps) {
     const now = new Date();
     const created = new Date(dateString);
     const diffMs = now.getTime() - created.getTime();
+
+    if (diffMs < 0) return '방금 전';
+
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
     if (diffHours < 1) {
