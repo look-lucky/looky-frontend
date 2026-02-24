@@ -14,6 +14,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo } from "react";
 import {
   Alert,
+  Linking,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -222,7 +223,7 @@ export default function MyPageTab() {
 
           {/* 그룹 2: 고객센터 / 설정 */}
           <View style={styles.menuGroupBox}>
-            <MenuItem icon="chatbubble-ellipses-outline" text="고객센터" onPress={() => router.push("/inquiry" as any)} />
+            <MenuItem icon="chatbubble-ellipses-outline" text="고객센터" onPress={() => Linking.openURL('http://pf.kakao.com/_rvkhX/friend')} />
             <MenuItem icon="settings-sharp" text="설정" isLast onPress={() => router.push('/mypage/settings' as any)} />
           </View>
 
