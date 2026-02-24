@@ -16,6 +16,7 @@ import {
   Primary,
   Text as TextColor,
 } from "@/src/shared/theme/theme";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
@@ -26,6 +27,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -42,7 +44,7 @@ const FILTER_BUTTONS: { type: CouponFilter; label: string }[] = [
 const TABS: { type: TabType; label: string }[] = [
   { type: "owned", label: "보유" },
   { type: "expiring", label: "곧 만료" },
-  { type: "used", label: "사용 완료" },
+  { type: "used", label: "사용완료" },
 ];
 
 const BENEFIT_ICON_BG: Record<string, string> = {
@@ -134,6 +136,9 @@ const getTimeRemaining = (expiresAt?: string) => {
 
 export default function BenefitsTab() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+  const { width: screenWidth } = useWindowDimensions();
+  const tabWidth = (screenWidth - rs(40)) / TABS.length;
   const [selectedFilter, setSelectedFilter] = useState<CouponFilter>("all");
   const [selectedTab, setSelectedTab] = useState<TabType>("owned");
   const [selectedCoupon, setSelectedCoupon] = useState<IssueCouponResponse | null>(null);
@@ -172,7 +177,11 @@ export default function BenefitsTab() {
   const tabFilteredCoupons = useMemo(() => {
     switch (selectedTab) {
       case "owned":
-        return coupons.filter((c) => c.status === "UNUSED");
+        return coupons.filter(
+          (c) =>
+            c.status === "UNUSED" &&
+            (!c.expiresAt || new Date(c.expiresAt) > new Date()),
+        );
       case "expiring":
         return coupons.filter(
           (c) => c.status === "UNUSED" && isExpiringSoon(c.expiresAt),
@@ -252,12 +261,8 @@ export default function BenefitsTab() {
           style={[
             styles.tabIndicator,
             {
-              left:
-                selectedTab === "owned"
-                  ? rs(20)
-                  : selectedTab === "expiring"
-                    ? rs(20) + rs(60) + rs(60)
-                    : rs(20) + rs(60) * 2 + rs(60) * 2,
+              width: tabWidth,
+              left: rs(20) + TABS.findIndex((t) => t.type === selectedTab) * tabWidth,
             },
           ]}
         />
@@ -296,7 +301,7 @@ export default function BenefitsTab() {
       {/* Coupon List */}
       <ScrollView
         style={styles.couponListContainer}
-        contentContainerStyle={styles.couponListContent}
+        contentContainerStyle={[styles.couponListContent, { paddingBottom: tabBarHeight }]}
         showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
@@ -505,13 +510,11 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: "row",
-    gap: rs(60),
     alignItems: "center",
-    justifyContent: "center",
     paddingHorizontal: rs(20),
   },
   tabButton: {
-    width: rs(60),
+    flex: 1,
     height: rs(24),
     alignItems: "center",
     justifyContent: "center",
@@ -536,12 +539,12 @@ const styles = StyleSheet.create({
   tabIndicator: {
     position: "absolute",
     bottom: 0,
-    width: rs(95),
     height: rs(2),
     backgroundColor: Gray.black,
   },
   filterContainer: {
     height: rs(44),
+    backgroundColor: Primary["textBg"],
   },
   filterScrollContent: {
     paddingHorizontal: rs(20),
