@@ -163,7 +163,7 @@ export default function Favorite() {
         </ScrollView>
 
         <View style={styles.filterContainer}>
-          {/* 하단 버튼 (드롭다운이 없을 때만 보이거나 뒤에 숨음) */}
+          {/* 하단 버튼 */}
           <TouchableOpacity
             style={styles.filterClosed}
             onPress={toggleFilter}
@@ -177,7 +177,7 @@ export default function Favorite() {
             </Animated.View>
           </TouchableOpacity>
 
-          {/* 오버레이 드롭다운 (버튼 위를 덮으며 아래로 확장) */}
+          {/* 오버레이 드롭다운 */}
           {isFilterOpen && (
             <Animated.View style={[styles.filterDropdown, animatedDropdownStyle]}>
               <TouchableOpacity
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   filterDropdown: {
     position: 'absolute',
-    top: 0, // 버튼 위를 정확히 덮음
+    top: 0,
     left: 0,
     width: rs(105),
     backgroundColor: 'white',

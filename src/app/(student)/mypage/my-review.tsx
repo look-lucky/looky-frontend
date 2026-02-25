@@ -150,17 +150,18 @@ export default function MyReview() {
               })
               : '';
             return (
-              <TouchableOpacity
+              <View
                 key={review.reviewId}
-                activeOpacity={0.8}
-                onPress={() => handleCardPress(review.storeId)}
                 style={styles.reviewCard}
               >
                 <View style={styles.reviewHeader}>
-                  <View>
+                  <TouchableOpacity
+                    onPress={() => handleCardPress(review.storeId)}
+                    activeOpacity={0.7}
+                  >
                     <Text style={styles.storeName}>{review.storeName}</Text>
                     <Text style={styles.reviewDate}>{dateStr}</Text>
-                  </View>
+                  </TouchableOpacity>
                   <View style={{ position: 'relative', zIndex: 10 }}>
                     <TouchableOpacity
                       onPress={() => toggleMenu(review.reviewId!)}
@@ -234,7 +235,7 @@ export default function MyReview() {
                     </View>
                   </>
                 )}
-              </TouchableOpacity>
+              </View>
             );
           })}
           <View style={{ height: rs(50) }} />
