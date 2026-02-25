@@ -134,6 +134,8 @@ export function StoreBenefits({
   coupons,
   onCouponPress,
 }: StoreBenefitsProps) {
+  if (benefits.length === 0 && coupons.length === 0) return null;
+
   return (
     <View style={styles.container}>
       <BenefitBanner benefits={benefits} />
@@ -141,6 +143,7 @@ export function StoreBenefits({
         coupons={coupons}
         onCouponPress={onCouponPress}
       />
+      {coupons.length > 0 && <View style={styles.thickDivider} />}
     </View>
   );
 }
@@ -171,6 +174,7 @@ const styles = StyleSheet.create({
   // CouponSection
   couponContainer: {
     gap: rs(12),
+    marginTop: rs(15),
   },
   couponCard: {
     flexDirection: 'row',
@@ -265,5 +269,11 @@ const styles = StyleSheet.create({
     color: Brand.primary,
     textAlign: 'center',
     lineHeight: rs(18),
+  },
+  thickDivider: {
+    height: rs(10),
+    backgroundColor: '#F5F5F5',
+    marginHorizontal: -rs(20),
+    marginTop: rs(3),
   },
 });

@@ -1,3 +1,4 @@
+import { rs } from '@/src/shared/theme/scale';
 import type {
   Announcement,
   MenuCategory,
@@ -6,10 +7,8 @@ import type {
   ReviewItem,
   ReviewRating,
 } from '@/src/shared/types/store';
-import { rs } from '@/src/shared/theme/scale';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { AnnouncementCarousel } from './announcement-carousel';
 import { RecommendSection } from './recommend-section';
 import { ReportSection } from './report-section';
 import { InfoSection, type StoreInfo } from './tabs/info-section';
@@ -93,7 +92,6 @@ export function StoreContent({
 
       {activeTab === 'news' && (
         <>
-          <AnnouncementCarousel announcements={announcements} />
           <RecommendSection stores={recommendStores} />
           <ReportSection storeId={storeId} />
         </>

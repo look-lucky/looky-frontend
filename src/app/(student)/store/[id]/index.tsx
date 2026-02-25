@@ -10,7 +10,7 @@ import type {
 } from '@/src/api/generated.schemas';
 import { useGetItems } from '@/src/api/item';
 import { useGetStudentInfo } from '@/src/api/my-page';
-import { useAddLike, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
+import { useAddLike, useDeleteReview, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
 import { useGetStore } from '@/src/api/store';
 import { useGetStoreNewsList } from '@/src/api/store-news';
 import { StoreBenefits } from '@/src/app/(student)/components/store/benefits';
@@ -20,7 +20,6 @@ import { CouponModal } from '@/src/app/(student)/components/store/coupon-modal';
 import { StoreHeader } from '@/src/app/(student)/components/store/header';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
-import { useDeleteReview } from '@/src/api/review';
 import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
 import { useQueryClient } from '@tanstack/react-query';
@@ -340,7 +339,7 @@ export default function StoreDetailScreen() {
       hasReply: r.ownerReply ?? false,
       isLiked: r.liked ?? false,
     })),
-  [allReviews, currentUsername]);
+    [allReviews, currentUsername]);
 
   // 매장 정보: API StoreResponse → InfoSection props
   const storeInfo = useMemo(() => ({
@@ -396,7 +395,7 @@ export default function StoreDetailScreen() {
     });
     return () => subscription.remove();
   }, []);
-  
+
   const handleLike = () => {
     if (isLiked) {
       setIsLiked(false);
@@ -600,7 +599,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: rs(20),
-    gap: rs(16),
+    gap: 0,
   },
   tabLoading: {
     paddingVertical: rs(40),
