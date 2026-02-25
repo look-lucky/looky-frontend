@@ -17,6 +17,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Favorite() {
@@ -24,6 +30,8 @@ export default function Favorite() {
   const insets = useSafeAreaInsets();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterType, setFilterType] = useState<'recent' | 'rating'>('recent');
+  const dropdownHeight = useSharedValue(0);
+  const dropdownOpacity = useSharedValue(0);
 
   const sortParam = filterType === 'rating' ? 'store.averageRating,desc' : 'createdAt,desc';
 
@@ -41,12 +49,38 @@ export default function Favorite() {
     return raw?.content ?? [];
   }, [favoritesRes]);
 
-  const toggleFilter = () => setIsFilterOpen(!isFilterOpen);
+  const toggleFilter = () => {
+    if (isFilterOpen) {
+      dropdownHeight.value = withTiming(0, { duration: 250 });
+      dropdownOpacity.value = withTiming(0, { duration: 200 });
+      setTimeout(() => setIsFilterOpen(false), 250);
+    } else {
+      setIsFilterOpen(true);
+      dropdownHeight.value = withTiming(rs(92), { duration: 300 }); // 옵션 2개 높이 + 보더
+      dropdownOpacity.value = withTiming(1, { duration: 300 });
+    }
+  };
 
   const selectFilter = (type: 'recent' | 'rating') => {
     setFilterType(type);
-    setIsFilterOpen(false);
+    dropdownHeight.value = withTiming(0, { duration: 200 });
+    dropdownOpacity.value = withTiming(0, { duration: 200 });
+    setTimeout(() => setIsFilterOpen(false), 200);
   };
+
+  const animatedDropdownStyle = useAnimatedStyle(() => ({
+    height: dropdownHeight.value,
+    opacity: dropdownOpacity.value,
+    transform: [
+      { translateY: interpolate(dropdownOpacity.value, [0, 1], [-10, 0]) }
+    ],
+  }));
+
+  const animatedChevronStyle = useAnimatedStyle(() => ({
+    transform: [
+      { rotate: `${interpolate(dropdownOpacity.value, [0, 1], [0, 180])}deg` }
+    ],
+  }));
 
   const handleRemoveFavorite = (store: FavoriteStoreResponse) => {
     if (!store.storeId) return;
@@ -129,8 +163,23 @@ export default function Favorite() {
         </ScrollView>
 
         <View style={styles.filterContainer}>
-          {isFilterOpen ? (
-            <View style={styles.filterDropdown}>
+          {/* 하단 버튼 (드롭다운이 없을 때만 보이거나 뒤에 숨음) */}
+          <TouchableOpacity
+            style={styles.filterClosed}
+            onPress={toggleFilter}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.filterText}>
+              {filterType === 'recent' ? '최근 찜한 순' : '별점 높은 순'}
+            </Text>
+            <Animated.View style={animatedChevronStyle}>
+              <Ionicons name="chevron-down" size={rs(12)} color="#828282" />
+            </Animated.View>
+          </TouchableOpacity>
+
+          {/* 오버레이 드롭다운 (버튼 위를 덮으며 아래로 확장) */}
+          {isFilterOpen && (
+            <Animated.View style={[styles.filterDropdown, animatedDropdownStyle]}>
               <TouchableOpacity
                 style={[
                   styles.filterOption,
@@ -148,6 +197,7 @@ export default function Favorite() {
                 >
                   최근 찜한 순
                 </Text>
+                {filterType === 'recent' && <Ionicons name="checkmark" size={rs(14)} color="#34B262" />}
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -166,15 +216,9 @@ export default function Favorite() {
                 >
                   별점 높은 순
                 </Text>
+                {filterType === 'rating' && <Ionicons name="checkmark" size={rs(14)} color="#34B262" />}
               </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity style={styles.filterClosed} onPress={toggleFilter}>
-              <Text style={styles.filterText}>
-                {filterType === 'recent' ? '최근 찜한 순' : '별점 높은 순'}
-              </Text>
-              <Ionicons name="chevron-down" size={rs(12)} color="#828282" />
-            </TouchableOpacity>
+            </Animated.View>
           )}
         </View>
       </View>
@@ -259,7 +303,8 @@ const styles = StyleSheet.create({
   filterClosed: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: rs(4),
+    justifyContent: 'space-between',
+    width: rs(105),
     backgroundColor: 'rgba(217, 217, 217, 0.50)',
     paddingHorizontal: rs(12),
     paddingVertical: rs(6),
@@ -272,22 +317,30 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
   },
   filterDropdown: {
+    position: 'absolute',
+    top: 0, // 버튼 위를 정확히 덮음
+    left: 0,
+    width: rs(105),
     backgroundColor: 'white',
     borderRadius: rs(12),
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    minWidth: rs(110),
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
   },
   filterOption: {
-    paddingVertical: rs(10),
+    height: rs(44),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: rs(12),
     backgroundColor: 'white',
   },
-  filterOptionSelected: { backgroundColor: '#D0E9D9' },
+  filterOptionSelected: { backgroundColor: '#F8F8F8' },
   filterOptionText: { fontSize: rs(13), fontFamily: 'Inter', fontWeight: '400' },
   textSelected: { color: '#34B262', fontWeight: '600' },
   textUnselected: { color: 'black' },
