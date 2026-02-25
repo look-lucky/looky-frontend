@@ -1,15 +1,15 @@
-import { ThemedText } from "@/src/shared/common/themed-text";
+import { useLogout } from "@/src/api/auth";
+import { getGetMyStoreClaimsQueryKey } from "@/src/api/store-claim";
 import { AppButton } from "@/src/shared/common/app-button";
+import { ThemedText } from "@/src/shared/common/themed-text";
+import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
+import { useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
-import { getGetMyStoreClaimsQueryKey } from "@/src/api/store-claim";
-import { useLogout } from "@/src/api/auth";
-import { useAuth } from "@/src/shared/lib/auth";
-import { useQueryClient } from "@tanstack/react-query";
 
 // 대기 중 아이콘
 function PendingIcon() {
@@ -174,6 +174,8 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: TextColors.primary,
     textAlign: "center",
+    paddingTop: rs(4),
+    lineHeight: rs(32),
   },
   description: {
     fontSize: rs(14),
