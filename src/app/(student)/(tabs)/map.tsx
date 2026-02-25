@@ -26,6 +26,7 @@ import { rs } from '@/src/shared/theme/scale';
 import { Gray, Owner, Text } from '@/src/shared/theme/theme';
 import type { Event, EventType } from '@/src/shared/types/event';
 import type { Store } from '@/src/shared/types/store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetFlatList, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import type { NaverMapViewRef } from '@mj-studio/react-native-naver-map';
@@ -38,6 +39,7 @@ import {
   Image,
   Keyboard,
   Linking,
+  Modal,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -52,9 +54,35 @@ type ListItem =
   | { type: 'divider' }
   | { type: 'empty' };
 
+const TUTORIAL_IMAGES = [
+  require('@/assets/images/map-tuto/1.png'),
+  require('@/assets/images/map-tuto/2.png'),
+  require('@/assets/images/map-tuto/3.png'),
+  require('@/assets/images/map-tuto/4.png'),
+  require('@/assets/images/map-tuto/5.png'),
+];
+
 export default function MapTab() {
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
+
+  // ── 튜토리얼 ──────────────────────────────────
+  const [tutorialStep, setTutorialStep] = useState(0);
+
+  useEffect(() => {
+    AsyncStorage.getItem('MAP_TUTORIAL_SHOWN')
+      .then((shown) => { if (shown !== 'true') setTutorialStep(1); })
+      .catch(() => setTutorialStep(1));
+  }, []);
+
+  const finishTutorial = useCallback(async () => {
+    try { await AsyncStorage.setItem('MAP_TUTORIAL_SHOWN', 'true'); } catch {}
+    setTutorialStep(0);
+  }, []);
+
+  const nextTutorial = useCallback(() => {
+    setTutorialStep((s) => (s < TUTORIAL_IMAGES.length ? s + 1 : s));
+  }, []);
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
   const { category, eventId: eventIdParam, centerOnEvents } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string }>();
@@ -927,6 +955,39 @@ export default function MapTab() {
         onClose={() => setShowFilterModal(false)}
         onApply={onFilterApply}
       />
+      {/* 튜토리얼 Modal */}
+      {tutorialStep > 0 && (
+        <Modal visible animationType="fade" statusBarTranslucent>
+          <TouchableOpacity
+            style={styles.tutorialContainer}
+            activeOpacity={1}
+            onPress={tutorialStep < TUTORIAL_IMAGES.length ? nextTutorial : undefined}
+          >
+            <Image
+              source={TUTORIAL_IMAGES[tutorialStep - 1]}
+              style={styles.tutorialImage}
+              resizeMode="cover"
+            />
+            <View style={styles.tutorialFooter}>
+              <View style={styles.tutorialDots}>
+                {TUTORIAL_IMAGES.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[styles.tutorialDot, tutorialStep - 1 === i && styles.tutorialDotActive]}
+                  />
+                ))}
+              </View>
+              {tutorialStep === TUTORIAL_IMAGES.length ? (
+                <TouchableOpacity style={styles.tutorialFinishButton} onPress={finishTutorial}>
+                  <ThemedText style={styles.tutorialFinishText}>지도 보러가기 {'>'}</ThemedText>
+                </TouchableOpacity>
+              ) : (
+                <ThemedText style={styles.tutorialTapHint}>탭하여 계속</ThemedText>
+              )}
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </ThemedView>
   );
 }
@@ -1201,5 +1262,50 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: Gray.white,
+  },
+  // ── 튜토리얼 ──
+  tutorialContainer: {
+    flex: 1,
+    backgroundColor: Gray.black,
+  },
+  tutorialImage: {
+    flex: 1,
+    width: '100%',
+  },
+  tutorialFooter: {
+    position: 'absolute',
+    bottom: rs(48),
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    gap: rs(16),
+  },
+  tutorialDots: {
+    flexDirection: 'row',
+    gap: rs(8),
+  },
+  tutorialDot: {
+    width: rs(8),
+    height: rs(8),
+    borderRadius: rs(4),
+    backgroundColor: 'rgba(255,255,255,0.4)',
+  },
+  tutorialDotActive: {
+    backgroundColor: Gray.white,
+  },
+  tutorialTapHint: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: rs(13),
+  },
+  tutorialFinishButton: {
+    paddingHorizontal: rs(24),
+    paddingVertical: rs(12),
+    borderRadius: rs(24),
+    backgroundColor: Owner.primary,
+  },
+  tutorialFinishText: {
+    color: Gray.white,
+    fontSize: rs(15),
+    fontWeight: '700',
   },
 });
