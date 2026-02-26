@@ -101,6 +101,7 @@ export type CreateCouponRequestStatus = typeof CreateCouponRequestStatus[keyof t
 
 export const CreateCouponRequestStatus = {
   ACTIVE: 'ACTIVE',
+  SOLD_OUT: 'SOLD_OUT',
   EXPIRED: 'EXPIRED',
   WITHDRAWN_BY_OWNER: 'WITHDRAWN_BY_OWNER',
 } as const;
@@ -558,6 +559,7 @@ export type CouponResponseStatus = typeof CouponResponseStatus[keyof typeof Coup
 
 export const CouponResponseStatus = {
   ACTIVE: 'ACTIVE',
+  SOLD_OUT: 'SOLD_OUT',
   EXPIRED: 'EXPIRED',
   WITHDRAWN_BY_OWNER: 'WITHDRAWN_BY_OWNER',
 } as const;
