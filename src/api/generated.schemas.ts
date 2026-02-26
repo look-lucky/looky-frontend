@@ -725,6 +725,7 @@ export interface ReviewResponse {
   storeName?: string;
   parentReviewId?: number;
   username?: string;
+  nickname?: string;
   content?: string;
   rating?: number;
   createdAt?: string;
@@ -1074,8 +1075,8 @@ export interface PageInquiryResponse {
   content?: InquiryResponse[];
   number?: number;
   sort?: SortObject;
-  numberOfElements?: number;
   last?: boolean;
+  numberOfElements?: number;
   empty?: boolean;
 }
 
@@ -1303,8 +1304,8 @@ export interface PageStoreClaimResponse {
   content?: StoreClaimResponse[];
   number?: number;
   sort?: SortObject;
-  numberOfElements?: number;
   last?: boolean;
+  numberOfElements?: number;
   empty?: boolean;
 }
 
