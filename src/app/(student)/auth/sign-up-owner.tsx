@@ -7,7 +7,6 @@ import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
 import { useSignupOwner, useCompleteSocialSignup, login } from "@/src/api/auth";
 import { useAuth } from "@/src/shared/lib/auth";
 import type { UserType } from "@/src/shared/lib/auth/token";
-import { getMyStoreClaims } from "@/src/api/store-claim";
 import { useCreateStoreClaims, useVerifyBizRegNo } from "@/src/api/store-claim";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -62,6 +61,7 @@ export default function SignupOwnerPage() {
   console.log("=== SignupOwnerPage mounted ===");
   const router = useRouter();
   const {
+    storeId: savedStoreId,
     storeName: savedStoreName,
     storeAddress: savedStoreAddress,
     username,
@@ -221,16 +221,8 @@ export default function SignupOwnerPage() {
           password,
           name: representativeName,
           email: ownerEmail,
-          phone: ownerPhone,
           gender: apiGender,
           birthDate,
-          storeList: [
-            {
-              name: storeName,
-              roadAddress: savedStoreAddress || "",
-              bizRegNo: businessNumber,
-            },
-          ],
         },
       });
 
@@ -243,16 +235,11 @@ export default function SignupOwnerPage() {
       await handleAuthSuccess(loginData.accessToken, loginData.expiresIn ?? 3600, "ROLE_OWNER");
       console.log("✅ 자동 로그인 성공");
 
-      // 3️⃣ 내 상점 소유 요청 목록 조회
-      const myStoreClaimsResponse = await getMyStoreClaims();
-      console.log("✅ 상점 소유 요청 조회 성공:", myStoreClaimsResponse);
-
-      const claims = (myStoreClaimsResponse.data as any).data;
-      if (!claims || claims.length === 0) {
-        throw new Error("가게 정보를 찾을 수 없습니다.");
+      // 3️⃣ storeId 확인 (가게 검색으로 선택한 경우 savedStoreId 사용)
+      if (!savedStoreId) {
+        throw new Error("가게 정보를 찾을 수 없습니다. 가게 검색 후 다시 시도해주세요.");
       }
-
-      const storeId = claims[0].storeId;
+      const storeId = savedStoreId;
 
       // 4️⃣ 상점 소유 요청 (사업자등록증 업로드)
       if (businessImageUri) {
