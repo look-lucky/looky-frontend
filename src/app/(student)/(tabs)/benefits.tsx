@@ -187,7 +187,7 @@ export default function BenefitsTab() {
       case "owned":
         return coupons.filter(
           (c) =>
-            c.status === "UNUSED" &&
+            (c.status === "UNUSED" || c.status === "ACTIVATED") &&
             (!c.expiresAt || new Date(c.expiresAt) > new Date()),
         );
       case "expiring":
@@ -198,7 +198,6 @@ export default function BenefitsTab() {
         return coupons.filter(
           (c) =>
             c.status === "USED" ||
-            c.status === "ACTIVATED" ||
             c.status === "EXPIRED",
         );
       default:
@@ -329,7 +328,7 @@ export default function BenefitsTab() {
         ) : (
           filteredCoupons.map((coupon) => {
             const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ""];
-            const isUsed = coupon.status === "USED" || coupon.status === "ACTIVATED" || coupon.status === "EXPIRED";
+            const isUsed = coupon.status === "USED" || coupon.status === "EXPIRED";
             return (
               <TouchableOpacity
                 key={coupon.studentCouponId}

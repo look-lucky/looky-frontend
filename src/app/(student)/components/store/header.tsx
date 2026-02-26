@@ -16,7 +16,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   UIManager,
-  View,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -144,12 +144,20 @@ function StoreInfoSection({
         </ThemedView>
       </ThemedView>
 
-      <TouchableOpacity style={styles.categoryRow} onPress={onReviewPress}>
+      <View style={styles.categoryRow}>
         <ThemedText style={styles.category}>{category}</ThemedText>
         <ThemedText style={styles.divider}>|</ThemedText>
-        <ThemedText style={styles.reviewCount}>리뷰 {reviewCount}개</ThemedText>
-        <Ionicons name="chevron-forward" size={rs(12)} color={Text.tertiary} />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.reviewCountRow}
+          onPress={onReviewPress}
+          activeOpacity={0.7}
+        >
+          <ThemedText style={styles.reviewCount}>리뷰 {reviewCount}개</ThemedText>
+          <Ionicons name="chevron-forward" size={rs(12)} color={Text.tertiary} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.horizontalDivider} />
 
       <ThemedView style={styles.infoRow}>
         <Ionicons name="location-outline" size={rs(14)} color={Text.secondary} />
@@ -176,7 +184,9 @@ function StoreInfoSection({
             </ThemedView>
           ))}
         </ThemedView>
+
       )}
+      <View style={styles.horizontalDivider} />
     </ThemedView>
   );
 }
@@ -197,9 +207,11 @@ function TagSection({
   return (
     <ThemedView style={styles.tagContainer}>
       <TouchableOpacity style={styles.universityTag} onPress={onUniversityPress}>
-        <Ionicons name="school-outline" size={rs(14)} color={Owner.primary} />
+        <View style={styles.universityIconBox}>
+          <Ionicons name="school" size={rs(12)} color={Gray.white} />
+        </View>
         <ThemedText style={styles.universityText}>{university}</ThemedText>
-        <Ionicons name="chevron-down" size={rs(12)} color={Text.secondary} />
+        <Ionicons name="chevron-down" size={rs(14)} color="#828282" />
       </TouchableOpacity>
 
       {isPartner ? (
@@ -273,6 +285,7 @@ export function StoreHeader({
           onUniversityPress={() => setShowUniversityModal(true)}
         />
       </ThemedView>
+      <View style={styles.thickDivider} />
 
       <SelectModal
         visible={showUniversityModal}
@@ -358,16 +371,26 @@ const styles = StyleSheet.create({
     gap: rs(4),
   },
   category: {
-    fontSize: rs(12),
-    color: Text.primary,
+    fontSize: rs(14),
+    color: Text.placeholder,
   },
   divider: {
-    fontSize: rs(12),
-    color: Gray.gray2,
+    fontSize: rs(14),
+    color: "#E6E6E6",
+  },
+  reviewCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(4),
   },
   reviewCount: {
-    fontSize: rs(12),
+    fontSize: rs(14),
     color: Text.placeholder,
+  },
+  horizontalDivider: {
+    height: 1,
+    backgroundColor: '#F5F5F5',
+    marginVertical: rs(2),
   },
   infoRow: {
     flexDirection: 'row',
@@ -415,30 +438,41 @@ const styles = StyleSheet.create({
   universityTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Owner.textBg,
-    borderRadius: 16,
-    paddingHorizontal: rs(12),
-    paddingVertical: rs(8),
-    gap: rs(4),
+    gap: rs(8),
+  },
+  universityIconBox: {
+    width: rs(24),
+    height: rs(24),
+    backgroundColor: '#309821',
+    borderRadius: rs(6),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   universityText: {
-    fontSize: rs(12),
-    color: Owner.primary,
-    fontWeight: '500',
+    fontSize: rs(14),
+    color: '#000000',
+    fontWeight: '700',
+    fontFamily: 'Pretendard',
   },
   partnerBadge: {
     backgroundColor: Owner.primary,
-    borderRadius: 16,
-    paddingHorizontal: rs(12),
-    paddingVertical: rs(8),
+    borderRadius: 8,
+    paddingHorizontal: rs(10),
+    paddingVertical: rs(4),
   },
   partnerText: {
-    fontSize: rs(12),
+    fontSize: rs(11),
     color: Gray.white,
     fontWeight: '600',
   },
   noPartnerText: {
     fontSize: rs(12),
     color: Text.tertiary,
+  },
+  thickDivider: {
+    height: rs(10),
+    backgroundColor: '#F5F5F5',
+    width: '100%',
+    marginTop: rs(16),
   },
 });

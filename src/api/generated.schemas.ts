@@ -101,6 +101,7 @@ export type CreateCouponRequestStatus = typeof CreateCouponRequestStatus[keyof t
 
 export const CreateCouponRequestStatus = {
   ACTIVE: 'ACTIVE',
+  SOLD_OUT: 'SOLD_OUT',
   EXPIRED: 'EXPIRED',
   WITHDRAWN_BY_OWNER: 'WITHDRAWN_BY_OWNER',
 } as const;
@@ -558,6 +559,7 @@ export type CouponResponseStatus = typeof CouponResponseStatus[keyof typeof Coup
 
 export const CouponResponseStatus = {
   ACTIVE: 'ACTIVE',
+  SOLD_OUT: 'SOLD_OUT',
   EXPIRED: 'EXPIRED',
   WITHDRAWN_BY_OWNER: 'WITHDRAWN_BY_OWNER',
 } as const;
@@ -723,6 +725,7 @@ export interface ReviewResponse {
   storeName?: string;
   parentReviewId?: number;
   username?: string;
+  nickname?: string;
   content?: string;
   rating?: number;
   createdAt?: string;
@@ -1072,8 +1075,8 @@ export interface PageInquiryResponse {
   content?: InquiryResponse[];
   number?: number;
   sort?: SortObject;
-  numberOfElements?: number;
   last?: boolean;
+  numberOfElements?: number;
   empty?: boolean;
 }
 
@@ -1301,8 +1304,8 @@ export interface PageStoreClaimResponse {
   content?: StoreClaimResponse[];
   number?: number;
   sort?: SortObject;
-  numberOfElements?: number;
   last?: boolean;
+  numberOfElements?: number;
   empty?: boolean;
 }
 

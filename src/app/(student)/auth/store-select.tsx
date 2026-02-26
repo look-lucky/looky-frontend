@@ -78,6 +78,7 @@ export default function StoreSelectPage() {
     const store = results.find((s) => s.id === selectedId);
     if (store) {
       setSignupFields({
+        storeId: store.id,
         storeName: store.name,
         storeAddress: store.roadAddress ?? "",
       });

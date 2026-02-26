@@ -1,5 +1,5 @@
-import { getGetStudentInfoQueryKey, useGetStudentInfo, useUpdateStudentProfile } from "@/src/api/my-page";
 import { OrganizationResponseCategory } from "@/src/api/generated.schemas";
+import { getGetStudentInfoQueryKey, useGetStudentInfo, useUpdateStudentProfile } from "@/src/api/my-page";
 import { useGetDepartmentsByCollege, useGetOrganizations } from "@/src/api/organization";
 import { AppButton } from "@/src/shared/common/app-button";
 import { AppPopup } from "@/src/shared/common/app-popup";
@@ -9,12 +9,13 @@ import { ThemedText } from "@/src/shared/common/themed-text";
 import { isNetworkError } from "@/src/shared/contexts/network-error-context";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Fonts, Gray, Text as TextColors } from "@/src/shared/theme/theme";
-import { Ionicons } from "@expo/vector-icons";
+import { getProfileImage } from "@/src/shared/utils/profile";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Image,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -246,11 +247,12 @@ export default function ProfileEditScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 프로필 아이콘 */}
+        {/* 프로필 이미지 */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={rs(48)} color={Gray.gray5} />
-          </View>
+          <Image
+            source={getProfileImage(studentInfo?.username)}
+            style={styles.avatarImage}
+          />
         </View>
 
         {/* 닉네임 */}
@@ -436,13 +438,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: rs(16),
   },
-  avatarCircle: {
+  avatarImage: {
     width: rs(96),
     height: rs(96),
     borderRadius: rs(48),
     backgroundColor: Gray.gray2,
-    justifyContent: "center",
-    alignItems: "center",
   },
   section: {
     gap: rs(8),
