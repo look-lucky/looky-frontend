@@ -6,6 +6,7 @@ import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
 import { useSignupOwner, useCompleteSocialSignup, login } from "@/src/api/auth";
 import { useAuth } from "@/src/shared/lib/auth";
+import { saveCredentials } from "@/src/shared/lib/auth/token";
 import type { UserType } from "@/src/shared/lib/auth/token";
 import { useCreateStoreClaims, useVerifyBizRegNo } from "@/src/api/store-claim";
 import * as ImagePicker from "expo-image-picker";
@@ -233,6 +234,7 @@ export default function SignupOwnerPage() {
       const loginResponse = await login({ username, password });
       const loginData = (loginResponse.data as any).data;
       await handleAuthSuccess(loginData.accessToken, loginData.expiresIn ?? 3600, "ROLE_OWNER");
+      await saveCredentials(username, password);
       console.log("✅ 자동 로그인 성공");
 
       // 3️⃣ storeId 확인 (가게 검색으로 선택한 경우 savedStoreId 사용)
