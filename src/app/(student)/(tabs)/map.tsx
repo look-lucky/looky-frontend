@@ -26,6 +26,7 @@ import { rs } from '@/src/shared/theme/scale';
 import { Gray, Owner, Text } from '@/src/shared/theme/theme';
 import type { Event, EventType } from '@/src/shared/types/event';
 import type { Store } from '@/src/shared/types/store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetFlatList, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import type { NaverMapViewRef } from '@mj-studio/react-native-naver-map';
@@ -38,6 +39,7 @@ import {
   Image,
   Keyboard,
   Linking,
+  Modal,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -52,9 +54,35 @@ type ListItem =
   | { type: 'divider' }
   | { type: 'empty' };
 
+const TUTORIAL_IMAGES = [
+  require('@/assets/images/map-tuto/1.png'),
+  require('@/assets/images/map-tuto/2.png'),
+  require('@/assets/images/map-tuto/3.png'),
+  require('@/assets/images/map-tuto/4.png'),
+  require('@/assets/images/map-tuto/5.png'),
+];
+
 export default function MapTab() {
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
+
+  // ── 튜토리얼 ──────────────────────────────────
+  const [tutorialStep, setTutorialStep] = useState(0);
+
+  useEffect(() => {
+    AsyncStorage.getItem('MAP_TUTORIAL_SHOWN')
+      .then((shown) => { if (shown !== 'true') setTutorialStep(1); })
+      .catch(() => setTutorialStep(1));
+  }, []);
+
+  const finishTutorial = useCallback(async () => {
+    try { await AsyncStorage.setItem('MAP_TUTORIAL_SHOWN', 'true'); } catch {}
+    setTutorialStep(0);
+  }, []);
+
+  const nextTutorial = useCallback(() => {
+    setTutorialStep((s) => (s < TUTORIAL_IMAGES.length ? s + 1 : s));
+  }, []);
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
   const { category, eventId: eventIdParam, centerOnEvents } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string }>();
@@ -278,8 +306,10 @@ export default function MapTab() {
   // 탭 포커스/블러 시 탭바 제어
   useFocusEffect(
     useCallback(() => {
-      // 탭 복귀 시 현재 시트 위치에 맞게 탭바 복원 (sheet가 올라가 있으면 탭바 숨김 유지)
-      setTabBarVisible(currentIndexRef.current === SNAP_INDEX.COLLAPSED);
+      // 탭 복귀 시 현재 시트 위치에 맞게 탭바/expanded 상태 복원
+      const collapsed = currentIndexRef.current === SNAP_INDEX.COLLAPSED;
+      setIsSheetExpanded(!collapsed);
+      setTabBarVisible(collapsed);
       // 빠른 탭 전환 시 NaverMap 재마운트를 debounce (200ms 안정 후 마운트)
       if (mountTimerRef.current) clearTimeout(mountTimerRef.current);
       mountTimerRef.current = setTimeout(() => setIsTabFocused(true), 200);
@@ -289,21 +319,29 @@ export default function MapTab() {
           mountTimerRef.current = null;
         }
         setIsTabFocused(false);
+        setIsSheetExpanded(false);
         setTabBarVisible(true);
       };
     }, [setTabBarVisible]),
   );
 
   // snap points
-  // bottomInset을 insets.bottom만 사용하므로, 탭바 높이(56)를 collapsedHeight에 흡수
-  const collapsedHeight = 130 + 56;
-  const snapPoints = useMemo(() => [collapsedHeight, '60%', '90%'], []);
+  // 핵심: bottomInset + collapsedHeight = 186 + insets.bottom (항상 일정)
+  // → COLLAPSED ↔ EXPANDED 전환 시 절대 위치가 유지되어 튀는 현상 없음
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const TAB_BAR_HEIGHT = 56;
+  const tabBarTotalHeight = TAB_BAR_HEIGHT + insets.bottom;
+  const sheetBottomInset = isSheetExpanded ? insets.bottom : tabBarTotalHeight;
+  const sheetCollapsedHeight = isSheetExpanded ? 130 + TAB_BAR_HEIGHT : 130;
+  const snapPoints = useMemo(() => [sheetCollapsedHeight, '50%', '90%'], [sheetCollapsedHeight]);
 
   // 바텀시트 인덱스 변경
   const handleSheetChanges = useCallback(
     (index: number) => {
       currentIndexRef.current = index;
-      setTabBarVisible(index === SNAP_INDEX.COLLAPSED);
+      const collapsed = index === SNAP_INDEX.COLLAPSED;
+      setIsSheetExpanded(!collapsed);
+      setTabBarVisible(collapsed);
     },
     [currentIndexRef, setTabBarVisible],
   );
@@ -762,8 +800,8 @@ export default function MapTab() {
   );
 
   // 컨트롤 버튼/검색버튼 위치 (바텀시트 collapsed 바로 위)
-  // collapsedHeight가 탭바 높이(56)를 흡수하므로 safe area만 더함
-  const floatingButtonBottom = insets.bottom + collapsedHeight + 12;
+  // sheetBottomInset + sheetCollapsedHeight = 186 + insets.bottom (항상 일정)
+  const floatingButtonBottom = sheetBottomInset + sheetCollapsedHeight + 12;
 
   // ────────────────────────────────────────────
   // 지도 뷰 (기본) — 검색 결과도 바텀시트로 표시
@@ -851,7 +889,7 @@ export default function MapTab() {
         handleIndicatorStyle={styles.bottomSheetHandle}
         enablePanDownToClose={false}
         enableContentPanningGesture={false}
-        bottomInset={insets.bottom}
+        bottomInset={sheetBottomInset}
         style={styles.bottomSheetContainer}
       >
         <View style={styles.bottomSheetContent}>
@@ -927,6 +965,39 @@ export default function MapTab() {
         onClose={() => setShowFilterModal(false)}
         onApply={onFilterApply}
       />
+      {/* 튜토리얼 Modal */}
+      {tutorialStep > 0 && (
+        <Modal visible animationType="fade" statusBarTranslucent>
+          <TouchableOpacity
+            style={styles.tutorialContainer}
+            activeOpacity={1}
+            onPress={tutorialStep < TUTORIAL_IMAGES.length ? nextTutorial : undefined}
+          >
+            <Image
+              source={TUTORIAL_IMAGES[tutorialStep - 1]}
+              style={styles.tutorialImage}
+              resizeMode="cover"
+            />
+            <View style={styles.tutorialFooter}>
+              <View style={styles.tutorialDots}>
+                {TUTORIAL_IMAGES.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[styles.tutorialDot, tutorialStep - 1 === i && styles.tutorialDotActive]}
+                  />
+                ))}
+              </View>
+              {tutorialStep === TUTORIAL_IMAGES.length ? (
+                <TouchableOpacity style={styles.tutorialFinishButton} onPress={finishTutorial}>
+                  <ThemedText style={styles.tutorialFinishText}>지도 보러가기 {'>'}</ThemedText>
+                </TouchableOpacity>
+              ) : (
+                <ThemedText style={styles.tutorialTapHint}>탭하여 계속</ThemedText>
+              )}
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </ThemedView>
   );
 }
@@ -1201,5 +1272,50 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: Gray.white,
+  },
+  // ── 튜토리얼 ──
+  tutorialContainer: {
+    flex: 1,
+    backgroundColor: Gray.black,
+  },
+  tutorialImage: {
+    flex: 1,
+    width: '100%',
+  },
+  tutorialFooter: {
+    position: 'absolute',
+    bottom: rs(48),
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    gap: rs(16),
+  },
+  tutorialDots: {
+    flexDirection: 'row',
+    gap: rs(8),
+  },
+  tutorialDot: {
+    width: rs(8),
+    height: rs(8),
+    borderRadius: rs(4),
+    backgroundColor: 'rgba(255,255,255,0.4)',
+  },
+  tutorialDotActive: {
+    backgroundColor: Gray.white,
+  },
+  tutorialTapHint: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: rs(13),
+  },
+  tutorialFinishButton: {
+    paddingHorizontal: rs(24),
+    paddingVertical: rs(12),
+    borderRadius: rs(24),
+    backgroundColor: Owner.primary,
+  },
+  tutorialFinishText: {
+    color: Gray.white,
+    fontSize: rs(15),
+    fontWeight: '700',
   },
 });

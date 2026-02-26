@@ -8,7 +8,7 @@ import {
   type NaverMapViewRef,
 } from '@mj-studio/react-native-naver-map';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Image as RNImage, StyleSheet, Text, View } from 'react-native';
+import { Image as RNImage, StyleSheet, View } from 'react-native';
 import { G, Svg, Image as SvgImage, Text as SvgText } from 'react-native-svg';
 
 // 클러스터 마커 아이콘 PNG
@@ -164,7 +164,6 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     const mapRef = useRef<NaverMapViewRef>(null);
     const isInitialMount = useRef(true);
     const [currentZoom, setCurrentZoom] = useState(15);
-    const [rawZoom, setRawZoom] = useState(15);
     const [isMapReady, setIsMapReady] = useState(false);
 
     useImperativeHandle(ref, () => mapRef.current!, []);
@@ -204,11 +203,6 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
 
     return (
       <View style={[styles.container, style]}>
-        {/* TODO: 클러스터링 조정 후 제거 */}
-        <View style={styles.zoomDebug} pointerEvents="none">
-          <Text style={styles.zoomDebugText}>zoom: {rawZoom.toFixed(2)} (floor: {Math.floor(rawZoom)})</Text>
-          <Text style={styles.zoomDebugText}>cluster radius: 60 / maxZoom: 16</Text>
-        </View>
         <NaverMapView
           ref={mapRef}
           style={styles.map}
@@ -224,7 +218,6 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           }}
           onCameraChanged={(params) => {
             const zoom = params.zoom ?? 15;
-            setRawZoom(zoom);
             setCurrentZoom((prev) => {
               if (Math.floor(zoom) !== Math.floor(prev)) return zoom;
               return prev;
@@ -331,21 +324,5 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-  },
-  zoomDebug: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    zIndex: 9999,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    gap: 2,
-  },
-  zoomDebugText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
   },
 });

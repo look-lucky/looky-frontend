@@ -532,12 +532,21 @@ export default function SignupTypePage() {
                   placeholder="MM"
                   placeholderTextColor={TextColors.placeholder}
                   value={birthMonth}
-                  onChangeText={setBirthMonth}
+                  onChangeText={(text) => {
+                    if (text.length === 2) {
+                      const num = parseInt(text, 10);
+                      if (!isNaN(num)) {
+                        setBirthMonth(String(Math.min(Math.max(num, 1), 12)));
+                        return;
+                      }
+                    }
+                    setBirthMonth(text);
+                  }}
                   onBlur={() => {
                     setBirthTouched(true);
                     const num = parseInt(birthMonth, 10);
                     if (birthMonth !== "" && !isNaN(num)) {
-                      setBirthMonth(String(Math.min(num, 12)).padStart(2, "0"));
+                      setBirthMonth(String(Math.min(Math.max(num, 1), 12)).padStart(2, "0"));
                     }
                   }}
                   keyboardType="number-pad"
@@ -548,12 +557,21 @@ export default function SignupTypePage() {
                   placeholder="DD"
                   placeholderTextColor={TextColors.placeholder}
                   value={birthDay}
-                  onChangeText={setBirthDay}
+                  onChangeText={(text) => {
+                    if (text.length === 2) {
+                      const num = parseInt(text, 10);
+                      if (!isNaN(num)) {
+                        setBirthDay(String(Math.min(Math.max(num, 1), 31)));
+                        return;
+                      }
+                    }
+                    setBirthDay(text);
+                  }}
                   onBlur={() => {
                     setBirthTouched(true);
                     const num = parseInt(birthDay, 10);
                     if (birthDay !== "" && !isNaN(num)) {
-                      setBirthDay(String(Math.min(num, 31)).padStart(2, "0"));
+                      setBirthDay(String(Math.min(Math.max(num, 1), 31)).padStart(2, "0"));
                     }
                   }}
                   keyboardType="number-pad"
