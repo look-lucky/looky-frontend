@@ -18,7 +18,8 @@ import {
 } from "@/src/shared/theme/theme";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useMemo, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -140,7 +141,14 @@ export default function BenefitsTab() {
   const { width: screenWidth } = useWindowDimensions();
   const tabWidth = (screenWidth - rs(40)) / TABS.length;
   const [selectedFilter, setSelectedFilter] = useState<CouponFilter>("all");
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [selectedTab, setSelectedTab] = useState<TabType>("owned");
+
+  useEffect(() => {
+    if (tab === "owned" || tab === "expiring" || tab === "used") {
+      setSelectedTab(tab);
+    }
+  }, [tab]);
   const [selectedCoupon, setSelectedCoupon] = useState<IssueCouponResponse | null>(null);
   const [couponCode, setCouponCode] = useState<string | null>(null);
 
