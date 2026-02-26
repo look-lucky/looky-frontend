@@ -1,6 +1,7 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import type { NewsItem } from '@/src/shared/types/store';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -12,13 +13,13 @@ export type { NewsItem };
 // NewsSection
 // ============================================
 
-export function NewsSection({ 
+export function NewsSection({
   news,
-  storeId, 
-}: { 
+  storeId,
+}: {
   news: NewsItem[];
   storeId: string;
- }) {
+}) {
 
   const router = useRouter();
 
@@ -34,7 +35,9 @@ export function NewsSection({
         >
           <View style={styles.newsHeader}>
             <View style={styles.typeBadge}>
-              <ThemedText style={styles.typeIcon}>📢</ThemedText>
+              <View style={styles.iconWrapper}>
+                <Ionicons name="megaphone" size={rs(16)} color="#309821" />
+              </View>
               <ThemedText style={styles.typeText}>{item.type}</ThemedText>
             </View>
             <ThemedText style={styles.newsDate}>{item.date}</ThemedText>
@@ -58,9 +61,13 @@ const styles = StyleSheet.create({
     gap: rs(12),
   },
   sectionTitle: {
+    alignSelf: 'stretch',
+    height: rs(28),
+    color: '#000000',
     fontSize: rs(20),
+    fontFamily: 'Pretendard',
     fontWeight: '700',
-    color: '#1d1b20',
+    lineHeight: rs(28),
   },
   newsCard: {
     backgroundColor: '#fff',
@@ -78,15 +85,20 @@ const styles = StyleSheet.create({
   typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: rs(4),
+    gap: rs(5),
   },
-  typeIcon: {
-    fontSize: rs(12),
+  iconWrapper: {
+    width: rs(24),
+    height: rs(24),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   typeText: {
-    fontSize: rs(12),
-    color: '#34b262',
-    fontWeight: '500',
+    color: '#309821',
+    fontSize: rs(14),
+    fontFamily: 'Pretendard',
+    fontWeight: '700',
+    lineHeight: rs(19.6),
   },
   newsDate: {
     fontSize: rs(12),
@@ -94,11 +106,12 @@ const styles = StyleSheet.create({
   },
   newsTitle: {
     fontSize: rs(16),
-    fontWeight: '600',
+    fontFamily: 'Pretendard',
+    fontWeight: '700',
     color: '#1d1b20',
   },
   newsContent: {
-    fontSize: rs(12),
+    fontSize: rs(14),
     color: '#666',
     lineHeight: rs(18),
   },

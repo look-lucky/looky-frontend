@@ -17,38 +17,50 @@ export function ReportSection({ storeId }: ReportSectionProps) {
   };
 
   return (
-    <TouchableOpacity style={styles.reportContainer} onPress={handlePress}>
-      <View style={styles.reportContent}>
-        <ThemedText style={styles.reportTitle}>잘못된 정보가 있나요?</ThemedText>
-        <ThemedText style={styles.reportDescription}>
-          수정이 필요하거나 다른 혜택을 제공한다면 알려주세요!
-        </ThemedText>
-      </View>
-      <Ionicons name="chevron-forward" size={rs(20)} color="#999" />
-    </TouchableOpacity>
+    <View style={[styles.container, { marginTop: rs(10) }]} >
+      <View style={styles.thickDivider} />
+      <TouchableOpacity style={styles.reportContainer} onPress={handlePress}>
+        <View style={styles.reportContent}>
+          <ThemedText style={styles.reportTitle}>잘못된 정보가 있나요?</ThemedText>
+          <ThemedText style={styles.reportDescription}>
+            수정이 필요하거나 다른 혜택을 제공한다면 알려주세요!
+          </ThemedText>
+        </View>
+        <Ionicons name="chevron-forward" size={rs(24)} color="#828282" />
+      </TouchableOpacity>
+      <View style={styles.thickDivider} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#fff',
+  },
+  thickDivider: {
+    height: rs(10),
+    backgroundColor: '#F5F5F5',
+    marginHorizontal: -rs(20),
+  },
   reportContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 16,
     padding: rs(16),
-    marginBottom: rs(16),
   },
   reportContent: {
     flex: 1,
     gap: rs(4),
   },
   reportTitle: {
-    fontSize: rs(16),
-    fontWeight: '600',
-    color: '#1d1b20',
+    fontSize: rs(15),
+    fontFamily: 'Pretendard',
+    fontWeight: '700',
+    color: '#000000',
   },
   reportDescription: {
     fontSize: rs(12),
-    color: '#666',
+    fontFamily: 'Pretendard',
+    color: '#828282',
+    lineHeight: rs(20),
   },
 });
