@@ -182,26 +182,38 @@ export default function MyPageTab() {
         >
           {/* 쿠폰 카드 */}
           <View style={styles.couponCard}>
-            <View style={styles.couponItem}>
+            <TouchableOpacity
+              style={styles.couponItem}
+              activeOpacity={0.7}
+              onPress={() => router.push({ pathname: '/(student)/(tabs)/benefits', params: { tab: 'owned' } } as any)}
+            >
               <ThemedText style={[styles.couponNumber, { color: Primary[500] }]}>
                 {couponCounts.owned}
               </ThemedText>
               <ThemedText style={styles.couponLabel}>보유 쿠폰</ThemedText>
-            </View>
+            </TouchableOpacity>
             <View style={styles.couponDivider} />
-            <View style={styles.couponItem}>
+            <TouchableOpacity
+              style={styles.couponItem}
+              activeOpacity={0.7}
+              onPress={() => router.push({ pathname: '/(student)/(tabs)/benefits', params: { tab: 'expiring' } } as any)}
+            >
               <ThemedText style={[styles.couponNumber, { color: System.error }]}>
                 {couponCounts.expiringSoon}
               </ThemedText>
               <ThemedText style={styles.couponLabel}>곧 만료</ThemedText>
-            </View>
+            </TouchableOpacity>
             <View style={styles.couponDivider} />
-            <View style={styles.couponItem}>
+            <TouchableOpacity
+              style={styles.couponItem}
+              activeOpacity={0.7}
+              onPress={() => router.push({ pathname: '/(student)/(tabs)/benefits', params: { tab: 'used' } } as any)}
+            >
               <ThemedText style={[styles.couponNumber, { color: TextColor.primary }]}>
                 {couponCounts.used}
               </ThemedText>
               <ThemedText style={styles.couponLabel}>사용 완료</ThemedText>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* 그룹 1: 찜한 매장 / 내가 쓴 리뷰 */}
