@@ -68,8 +68,14 @@ export default function ReviewWriteScreen() {
         setSuccessVisible(true);
       },
       onError: (error: any) => {
+        console.error('[Review] 리뷰 등록 실패 - status:', error?.status, '| data:', JSON.stringify(error?.data));
         if (error?.status === 409) {
           Alert.alert('알림', '이미 작성한 리뷰가 있습니다.');
+        } else if (error?.status === 400) {
+          const serverMsg = error?.data?.data?.message ?? error?.data?.message;
+          Alert.alert('알림', serverMsg ?? '이미지 또는 내용 형식이 올바르지 않습니다.\n지원 형식: jpg, png, gif, webp (10MB 이하)');
+        } else if (error?.status === 403) {
+          Alert.alert('알림', '리뷰를 작성할 권한이 없습니다.');
         } else {
           setErrorVisible(true);
         }
@@ -98,6 +104,8 @@ export default function ReviewWriteScreen() {
       const name = asset.fileName ?? `review_${timestamp}_${index}.${ext}`;
       return { uri: asset.uri, type, name };
     });
+
+    console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| images:', images.map(i => ({ name: i.name, type: i.type, uri: i.uri?.substring(0, 60) })));
 
     createReview({
       storeId: Number(id),
