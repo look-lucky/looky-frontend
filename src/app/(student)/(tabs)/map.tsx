@@ -306,8 +306,10 @@ export default function MapTab() {
   // 탭 포커스/블러 시 탭바 제어
   useFocusEffect(
     useCallback(() => {
-      // 탭 복귀 시 현재 시트 위치에 맞게 탭바 복원 (sheet가 올라가 있으면 탭바 숨김 유지)
-      setTabBarVisible(currentIndexRef.current === SNAP_INDEX.COLLAPSED);
+      // 탭 복귀 시 현재 시트 위치에 맞게 탭바/expanded 상태 복원
+      const collapsed = currentIndexRef.current === SNAP_INDEX.COLLAPSED;
+      setIsSheetExpanded(!collapsed);
+      setTabBarVisible(collapsed);
       // 빠른 탭 전환 시 NaverMap 재마운트를 debounce (200ms 안정 후 마운트)
       if (mountTimerRef.current) clearTimeout(mountTimerRef.current);
       mountTimerRef.current = setTimeout(() => setIsTabFocused(true), 200);
@@ -317,21 +319,29 @@ export default function MapTab() {
           mountTimerRef.current = null;
         }
         setIsTabFocused(false);
+        setIsSheetExpanded(false);
         setTabBarVisible(true);
       };
     }, [setTabBarVisible]),
   );
 
   // snap points
-  // bottomInset을 insets.bottom만 사용하므로, 탭바 높이(56)를 collapsedHeight에 흡수
-  const collapsedHeight = 130 + 56;
-  const snapPoints = useMemo(() => [collapsedHeight, '60%', '90%'], []);
+  // 핵심: bottomInset + collapsedHeight = 186 + insets.bottom (항상 일정)
+  // → COLLAPSED ↔ EXPANDED 전환 시 절대 위치가 유지되어 튀는 현상 없음
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const TAB_BAR_HEIGHT = 56;
+  const tabBarTotalHeight = TAB_BAR_HEIGHT + insets.bottom;
+  const sheetBottomInset = isSheetExpanded ? insets.bottom : tabBarTotalHeight;
+  const sheetCollapsedHeight = isSheetExpanded ? 130 + TAB_BAR_HEIGHT : 130;
+  const snapPoints = useMemo(() => [sheetCollapsedHeight, '50%', '90%'], [sheetCollapsedHeight]);
 
   // 바텀시트 인덱스 변경
   const handleSheetChanges = useCallback(
     (index: number) => {
       currentIndexRef.current = index;
-      setTabBarVisible(index === SNAP_INDEX.COLLAPSED);
+      const collapsed = index === SNAP_INDEX.COLLAPSED;
+      setIsSheetExpanded(!collapsed);
+      setTabBarVisible(collapsed);
     },
     [currentIndexRef, setTabBarVisible],
   );
@@ -790,8 +800,8 @@ export default function MapTab() {
   );
 
   // 컨트롤 버튼/검색버튼 위치 (바텀시트 collapsed 바로 위)
-  // collapsedHeight가 탭바 높이(56)를 흡수하므로 safe area만 더함
-  const floatingButtonBottom = insets.bottom + collapsedHeight + 12;
+  // sheetBottomInset + sheetCollapsedHeight = 186 + insets.bottom (항상 일정)
+  const floatingButtonBottom = sheetBottomInset + sheetCollapsedHeight + 12;
 
   // ────────────────────────────────────────────
   // 지도 뷰 (기본) — 검색 결과도 바텀시트로 표시
@@ -879,7 +889,7 @@ export default function MapTab() {
         handleIndicatorStyle={styles.bottomSheetHandle}
         enablePanDownToClose={false}
         enableContentPanningGesture={false}
-        bottomInset={insets.bottom}
+        bottomInset={sheetBottomInset}
         style={styles.bottomSheetContainer}
       >
         <View style={styles.bottomSheetContent}>
