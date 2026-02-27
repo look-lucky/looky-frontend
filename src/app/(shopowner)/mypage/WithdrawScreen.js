@@ -20,6 +20,7 @@ import {
 import { withdraw } from '@/src/api/auth';
 import { getCouponsByStore } from '@/src/api/coupon';
 import { getMyStores } from '@/src/api/store';
+import { useRouter } from 'expo-router';
 
 const REASONS = [
   "서비스를 잘 이용하지 않아요",
@@ -43,7 +44,8 @@ export default function WithdrawScreen({ navigation }) {
   // 탈퇴 확인 팝업 상태
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
 
-  const { handleLogout } = useAuth(); // Use useAuth hook
+  const { handleLogout } = useAuth();
+  const router = useRouter();
 
   // 사유 토글 핸들러
   const toggleReason = (reason) => {
@@ -134,10 +136,8 @@ export default function WithdrawScreen({ navigation }) {
 
       setWithdrawModalVisible(false);
 
-      // 로그아웃 처리 (토큰 삭제 및 상태 초기화)
       await handleLogout();
-
-      // 알림 표시 후 로그인 화면으로 이동
+      router.replace('/landing');
       Alert.alert("완료", "회원탈퇴가 완료되었습니다.");
 
     } catch (error) {

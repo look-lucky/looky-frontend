@@ -1,6 +1,6 @@
 import { useEventCluster, useMapCluster } from '@/src/shared/hooks/use-map-cluster';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray } from '@/src/shared/theme/theme';
+import { Gray, Notify } from '@/src/shared/theme/theme';
 import type { EventStatus, EventType } from '@/src/shared/types/event';
 import {
   NaverMapMarkerOverlay,
@@ -51,7 +51,7 @@ const EVENT_MARKER_ICONS_LIVE: Record<EventType, any> = {
 };
 
 // 클러스터 마커 SVG 컴포넌트 (iOS Image 렌더링 이슈 회피 — SvgImage 사용)
-function ClusterMarkerIcon({ count, size, iconUri = CLUSTER_ICON_URI }: { count: number; size: number; iconUri?: string }) {
+function ClusterMarkerIcon({ count, size, iconUri = CLUSTER_ICON_URI, textColor = Gray.white }: { count: number; size: number; iconUri?: string; textColor?: string }) {
   const fontSize = count >= 100 ? size * 0.22 : count >= 10 ? size * 0.25 : size * 0.28;
 
   return (
@@ -62,7 +62,7 @@ function ClusterMarkerIcon({ count, size, iconUri = CLUSTER_ICON_URI }: { count:
           x={size / 2}
           y={size * 0.5}
           textAnchor="middle"
-          fill={Gray.white}
+          fill={textColor}
           fontSize={fontSize}
           fontWeight="700"
         >
@@ -74,7 +74,7 @@ function ClusterMarkerIcon({ count, size, iconUri = CLUSTER_ICON_URI }: { count:
 }
 
 const MARKER_SIZE = rs(32);
-const EVENT_MARKER_SIZE = rs(40);
+const EVENT_MARKER_SIZE = rs(52);
 const CLUSTER_SIZE = rs(60);
 
 // 가게 마커 아이콘 선택 헬퍼
@@ -294,7 +294,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                   zIndex={500}
                   onTap={() => handleClusterClick(item.lat, item.lng)}
                 >
-                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} iconUri={EVENT_CLUSTER_ICON_URI} />
+                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} iconUri={EVENT_CLUSTER_ICON_URI} textColor={Notify.event} />
                 </NaverMapMarkerOverlay>
               );
             }

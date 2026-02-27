@@ -32,6 +32,7 @@ interface SignupState {
   studentEmail: string; // 학생 이메일 인증용
 
   // Step 2 (점주): sign-up-owner.tsx에서 입력
+  storeId: number | null; // 검색으로 선택한 경우 storeId 보존
   storeName: string;
   storeAddress: string;
   storePhone: string;
@@ -69,6 +70,7 @@ const initialState: Omit<SignupState, "setSignupField" | "setSignupFields" | "re
   departmentId: null,
   departmentName: "",
   studentEmail: "",
+  storeId: null,
   storeName: "",
   storeAddress: "",
   storePhone: "",
