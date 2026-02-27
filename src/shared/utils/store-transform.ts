@@ -42,9 +42,9 @@ export function getDistanceKm(
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -190,7 +190,7 @@ export function transformStoreResponse(
     benefits: (response.myPartnerships ?? []).map((p) => p.name ?? '').filter(Boolean),
     lat,
     lng,
-    isPartner: response.isPartnership ?? false,
+    isPartner: (response.myPartnerships && response.myPartnerships.length > 0) ?? false,
     hasCoupon: response.hasCoupon ?? false,
     category: formatStoreCategories(response.storeCategories),
     isFavorite: false, // 기본값, 추후 즐겨찾기 목록과 비교하여 업데이트

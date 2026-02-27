@@ -3,6 +3,7 @@ import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { ThemedView } from '@/src/shared/common/themed-view';
 import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
+import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Owner, System, Text } from '@/src/shared/theme/theme';
 import { formatOperatingHours, parseAllOperatingHours } from '@/src/shared/utils/store-transform';
@@ -26,6 +27,8 @@ const CLOVER_IMAGES: Record<string, ImageSourcePropType> = {
   THREE_LEAF: require('@/assets/images/icons/store/clover-three.png'),
 };
 
+const DEFAULT_BANNER = require('../../../../../assets/images/store/default-banner.png');
+
 // Android LayoutAnimation 활성화
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -36,7 +39,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 // ============================================
 
 interface StoreHeaderProps {
-  image: string;
+  image?: string | null;
   cloverGrade?: StoreResponseCloverGrade;
   isLiked: boolean;
   name: string;
@@ -64,7 +67,7 @@ function MainImageSection({
   onBack,
   onLike,
 }: {
-  image: string;
+  image?: string | null;
   cloverGrade?: StoreResponseCloverGrade;
   isLiked: boolean;
   onBack: () => void;
@@ -73,25 +76,34 @@ function MainImageSection({
   const insets = useSafeAreaInsets();
   const cloverImage = cloverGrade ? CLOVER_IMAGES[cloverGrade] : null;
 
+  const [hasError, setHasError] = useState(false);
+  const imageSource = (image && image.trim().length > 0 && !hasError) ? { uri: image } : DEFAULT_BANNER;
+
   return (
     <ThemedView style={styles.imageContainer}>
-      <Image source={{ uri: image }} style={styles.image} />
+      <Image
+        source={imageSource}
+        style={styles.image}
+        onError={() => setHasError(true)}
+      />
 
       <TouchableOpacity
         style={[styles.backButton, { top: insets.top + rs(8) }]}
         onPress={onBack}
+        activeOpacity={0.7}
       >
-        <Ionicons name="chevron-back" size={24} color={Gray.white} />
+        <Ionicons name="arrow-back" size={rs(20)} color="#1B1D1F" />
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.likeButton, { top: insets.top + rs(8) }]}
         onPress={onLike}
+        activeOpacity={0.7}
       >
         <Ionicons
           name={isLiked ? 'bookmark' : 'bookmark-outline'}
-          size={24}
-          color={isLiked ? Brand.primary : Gray.white}
+          size={rs(18)}
+          color={isLiked ? Brand.primary : '#1B1D1F'}
         />
       </TouchableOpacity>
 
@@ -246,11 +258,36 @@ export function StoreHeader({
   onReviewPress,
   onUniversityChange,
 }: StoreHeaderProps) {
+  const { collegeName } = useAuth();
   const [showUniversityModal, setShowUniversityModal] = useState(false);
 
   // 현재 선택된 대학의 id 찾기 (label로 매칭)
   const selectedUniversityId =
     UNIVERSITY_OPTIONS.find((opt) => opt.label === university)?.id ?? 0;
+
+  // 정렬 로직 및 하이라이트 아이디 추출
+  const sortedOptions = React.useMemo(() => {
+    return [...UNIVERSITY_OPTIONS].sort((a, b) => {
+      // 1순위: 사용자 소속 단과대
+      if (a.label === collegeName) return -1;
+      if (b.label === collegeName) return 1;
+
+      // 2순위: 총학생회
+      if (a.label === '총학생회') return -1;
+      if (b.label === '총학생회') return 1;
+
+      // 3순위: 총동아리연합회
+      if (a.label === '총동아리연합회') return -1;
+      if (b.label === '총동아리연합회') return 1;
+
+      // 4순위: 가나다순
+      return a.label.localeCompare(b.label, 'ko');
+    });
+  }, [collegeName]);
+
+  const highlightedIds = React.useMemo(() => {
+    return sortedOptions.slice(0, 3).map((opt) => opt.id);
+  }, [sortedOptions]);
 
   const handleUniversitySelect = (id: string | number) => {
     const numericId = typeof id === 'string' ? Number(id) : id;
@@ -289,11 +326,12 @@ export function StoreHeader({
 
       <SelectModal
         visible={showUniversityModal}
-        options={UNIVERSITY_OPTIONS}
+        options={sortedOptions}
         selectedId={selectedUniversityId}
         onSelect={handleUniversitySelect}
         onClose={() => setShowUniversityModal(false)}
         title="다른 제휴혜택 보기"
+        highlightedIds={highlightedIds}
       />
     </>
   );
@@ -318,20 +356,20 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: rs(16),
-    width: rs(40),
-    height: rs(40),
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    width: rs(35),
+    height: rs(35),
+    borderRadius: rs(9999),
+    backgroundColor: '#D9D9D9',
     justifyContent: 'center',
     alignItems: 'center',
   },
   likeButton: {
     position: 'absolute',
     right: rs(16),
-    width: rs(40),
-    height: rs(40),
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    width: rs(35),
+    height: rs(35),
+    borderRadius: rs(9999),
+    backgroundColor: '#D9D9D9',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -339,6 +377,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: rs(16),
     bottom: rs(16),
+    paddingHorizontal: rs(8),
+    paddingVertical: rs(2),
+    backgroundColor: Gray.white,
+    borderRadius: rs(20),
+    // shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: rs(4),
+    // shadow for Android
+    elevation: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(5),
   },
   cloverImage: {
     width: rs(25),

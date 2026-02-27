@@ -17,7 +17,7 @@ interface MenuSectionProps {
 
 function CategoryHeader({ name }: { name: string }) {
   return (
-    <ThemedText style={styles.categoryHeader}>{name}</ThemedText>
+    <ThemedText style={styles.categoryHeader} lightColor="#000000" darkColor="#000000">{name}</ThemedText>
   );
 }
 
@@ -35,7 +35,7 @@ const badgeColors: Record<BadgeVariant, string> = {
 function Badge({ variant }: { variant: BadgeVariant }) {
   return (
     <View style={[styles.badge, { backgroundColor: badgeColors[variant] }]}>
-      <ThemedText style={styles.badgeText}>{variant.toUpperCase()}</ThemedText>
+      <ThemedText style={styles.badgeText} lightColor="#ffffff" darkColor="#ffffff">{variant.toUpperCase()}</ThemedText>
     </View>
   );
 }
@@ -46,7 +46,7 @@ function Badge({ variant }: { variant: BadgeVariant }) {
 
 function SoldOutLabel() {
   return (
-    <ThemedText style={styles.soldOutLabel}>⊘ 품절됐어요</ThemedText>
+    <ThemedText style={styles.soldOutLabel} lightColor="#FF2727" darkColor="#FF2727">⊘ 품절됐어요</ThemedText>
   );
 }
 
@@ -69,16 +69,16 @@ function MenuItemCard({ item }: { item: MenuItem }) {
             </View>
           )}
           <View style={styles.menuInfoTop}>
-            <ThemedText style={styles.menuName}>{item.name}</ThemedText>
+            <ThemedText style={styles.menuName} lightColor="#000000" darkColor="#000000">{item.name}</ThemedText>
             {item.description && (
-              <ThemedText style={styles.menuDescription} numberOfLines={1}>
+              <ThemedText style={styles.menuDescription} numberOfLines={1} lightColor="#828282" darkColor="#828282">
                 {item.description}
               </ThemedText>
             )}
           </View>
 
           <View style={styles.menuInfoBottom}>
-            <ThemedText style={styles.menuPrice}>{formattedPrice}</ThemedText>
+            <ThemedText style={styles.menuPrice} lightColor="#000000" darkColor="#000000">{formattedPrice}</ThemedText>
             {item.isSoldOut && <SoldOutLabel />}
           </View>
         </View>

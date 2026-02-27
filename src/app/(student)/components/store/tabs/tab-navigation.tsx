@@ -26,6 +26,8 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
         >
           <ThemedText
             style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}
+            lightColor={activeTab === tab.id ? '#1d1b20' : '#999'}
+            darkColor={activeTab === tab.id ? '#1d1b20' : '#999'}
           >
             {tab.label}
           </ThemedText>

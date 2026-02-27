@@ -117,6 +117,8 @@ export function InfoSection({
                 styles.anchorText,
                 activeAnchor === anchor.id && styles.anchorTextActive,
               ]}
+              lightColor={activeAnchor === anchor.id ? Gray.white : TextColors.tertiary}
+              darkColor={activeAnchor === anchor.id ? Gray.white : TextColors.tertiary}
             >
               {anchor.label}
             </ThemedText>
@@ -126,15 +128,15 @@ export function InfoSection({
 
       {/* 매장소개 */}
       <View onLayout={handleSectionLayout('intro')} style={styles.section}>
-        <ThemedText type="defaultSemiBold">매장소개</ThemedText>
-        <ThemedText style={styles.body}>
+        <ThemedText type="defaultSemiBold" lightColor={Gray.black} darkColor={Gray.black}>매장소개</ThemedText>
+        <ThemedText style={styles.body} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>
           {introduction || '소개 정보가 없습니다.'}
         </ThemedText>
       </View>
 
       {/* 위치 */}
       <View onLayout={handleSectionLayout('location')} style={styles.section}>
-        <ThemedText type="defaultSemiBold">위치</ThemedText>
+        <ThemedText type="defaultSemiBold" lightColor={Gray.black} darkColor={Gray.black}>위치</ThemedText>
         {lat && lng ? (
           <View style={styles.mapContainer}>
             <NaverMapView
@@ -161,31 +163,31 @@ export function InfoSection({
         ) : (
           <View style={styles.mapPlaceholder} />
         )}
-        <ThemedText style={styles.address}>{roadAddress || '-'}</ThemedText>
+        <ThemedText style={styles.address} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>{roadAddress || '-'}</ThemedText>
       </View>
 
       {/* 상세 정보 */}
       <View onLayout={handleSectionLayout('detail')} style={styles.section}>
-        <ThemedText type="defaultSemiBold">상세 정보</ThemedText>
+        <ThemedText type="defaultSemiBold" lightColor={Gray.black} darkColor={Gray.black}>상세 정보</ThemedText>
 
         <View style={styles.detailItem}>
-          <ThemedText style={styles.detailLabel}>전화번호</ThemedText>
+          <ThemedText style={styles.detailLabel} lightColor={TextColors.primary} darkColor={TextColors.primary}>전화번호</ThemedText>
           <Pressable onPress={handlePhonePress}>
-            <ThemedText style={styles.phone}>{phone || '-'}</ThemedText>
+            <ThemedText style={styles.phone} lightColor={System.phoneNumber} darkColor={System.phoneNumber}>{phone || '-'}</ThemedText>
           </Pressable>
         </View>
 
         <View style={styles.detailItem}>
-          <ThemedText style={styles.detailLabel}>영업시간</ThemedText>
+          <ThemedText style={styles.detailLabel} lightColor={TextColors.primary} darkColor={TextColors.primary}>영업시간</ThemedText>
           {parseAllOperatingHours(operatingHours).length > 0 ? (
             parseAllOperatingHours(operatingHours).map(({ day, hours }) => (
               <View key={day} style={styles.hoursRow}>
-                <ThemedText style={styles.dayLabel}>{day}</ThemedText>
-                <ThemedText style={styles.hoursText}>{hours}</ThemedText>
+                <ThemedText style={styles.dayLabel} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>{day}</ThemedText>
+                <ThemedText style={styles.hoursText} lightColor={TextColors.primary} darkColor={TextColors.primary}>{hours}</ThemedText>
               </View>
             ))
           ) : (
-            <ThemedText style={styles.body}>{formatOperatingHours(operatingHours) || '-'}</ThemedText>
+            <ThemedText style={styles.body} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>{formatOperatingHours(operatingHours) || '-'}</ThemedText>
           )}
         </View>
       </View>
