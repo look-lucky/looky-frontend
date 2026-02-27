@@ -503,6 +503,9 @@ export default function MapTab() {
 
   const handleSortSelect = (sortId: string | number) => {
     setSelectedSort(String(sortId));
+    if (currentIndexRef.current === SNAP_INDEX.COLLAPSED) {
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+    }
   };
 
   const handleDistanceSelect = (distanceId: string | number) => {
