@@ -160,6 +160,15 @@ export default function BenefitsTab() {
     setCouponCode(null);
   };
 
+  const handleOpenCoupon = (coupon: IssueCouponResponse) => {
+    setSelectedCoupon(coupon);
+    if (coupon.status === "ACTIVATED" && coupon.couponCode) {
+      setCouponCode(coupon.couponCode);
+    } else {
+      setCouponCode(null);
+    }
+  };
+
   const handleUseCoupon = () => {
     if (!selectedCoupon?.studentCouponId) return;
     activateCoupon(
@@ -170,6 +179,12 @@ export default function BenefitsTab() {
           if (code) {
             setCouponCode(code);
             queryClient.invalidateQueries({ queryKey: getGetMyCouponsQueryKey() });
+          }
+        },
+        onError: () => {
+          // 이미 ACTIVATED 상태일 때 (409 등) 기존 코드가 있으면 표시
+          if (selectedCoupon?.couponCode) {
+            setCouponCode(selectedCoupon.couponCode);
           }
         },
       },
@@ -333,7 +348,7 @@ export default function BenefitsTab() {
               <TouchableOpacity
                 key={coupon.studentCouponId}
                 style={[styles.couponCard, isUsed && styles.couponCardUsed]}
-                onPress={() => setSelectedCoupon(coupon)}
+                onPress={() => handleOpenCoupon(coupon)}
                 activeOpacity={0.8}
               >
                 <View

@@ -41,8 +41,11 @@ export function WelcomeBanner({
           <ThemedText type="subtitle" lightColor={Gray.white}>
             안녕하세요 {userName}님!
           </ThemedText>
-          <ThemedText type="caption" lightColor={Gray.white}>
-            {university} {department}
+          <ThemedText type="caption" lightColor={Gray.white} style={{ marginTop: rs(4) }}>
+            {university}
+          </ThemedText>
+          <ThemedText type="caption" lightColor={Gray.white} style={{ marginTop: rs(4) }}>
+            {department}
           </ThemedText>
           <ThemedText type="caption" lightColor={Gray.white} style={{ marginTop: rs(8) }}>
             학교 앞에서 바로 쓸 수 있는 혜택이 있어요.
