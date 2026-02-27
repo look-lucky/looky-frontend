@@ -36,7 +36,7 @@ const WORLD_BBOX: [number, number, number, number] = [-180, -85, 180, 85];
 export function useMapCluster(markers: MarkerInput[], zoom: number): ClusterPoint[] {
   // markers가 바뀔 때만 인덱스를 재빌드
   const index = useMemo(() => {
-    const sc = new Supercluster<MarkerProperties>({ radius: 60, maxZoom: 15 });
+    const sc = new Supercluster<MarkerProperties>({ radius: 80, maxZoom: 15 });
     sc.load(
       markers.map((m) => ({
         type: 'Feature',
@@ -74,7 +74,7 @@ export function useMapCluster(markers: MarkerInput[], zoom: number): ClusterPoin
 
 export function useEventCluster(markers: EventMarkerInput[], zoom: number): EventClusterPoint[] {
   const index = useMemo(() => {
-    const sc = new Supercluster<EventMarkerProperties>({ radius: 60, maxZoom: 15 });
+    const sc = new Supercluster<EventMarkerProperties>({ radius: 80, maxZoom: 15 });
     sc.load(
       markers.map((m) => ({
         type: 'Feature',

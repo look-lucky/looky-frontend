@@ -1,4 +1,4 @@
-import { useEventCluster, useMapCluster } from '@/src/shared/hooks/use-map-cluster';
+import { useEventCluster, useMapCluster, type EventClusterPoint } from '@/src/shared/hooks/use-map-cluster';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Notify } from '@/src/shared/theme/theme';
 import type { EventStatus, EventType } from '@/src/shared/types/event';
@@ -8,16 +8,13 @@ import {
   type NaverMapViewRef,
 } from '@mj-studio/react-native-naver-map';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Image as RNImage, StyleSheet, View } from 'react-native';
-import { G, Svg, Image as SvgImage, Text as SvgText } from 'react-native-svg';
+import { Image as RNImage, StyleSheet, Text, View } from 'react-native';
 
 // 클러스터 마커 아이콘 PNG
 const CLUSTER_ICON = require('@/assets/images/icons/map/clover-cluster.png');
-const CLUSTER_ICON_URI = RNImage.resolveAssetSource(CLUSTER_ICON).uri;
 
 // 이벤트 클러스터 마커 아이콘 PNG
 const EVENT_CLUSTER_ICON = require('@/assets/images/icons/map/event-cluster.png');
-const EVENT_CLUSTER_ICON_URI = RNImage.resolveAssetSource(EVENT_CLUSTER_ICON).uri;
 
 // 가게 마커 아이콘 PNG
 const STORE_MARKER_ICONS = {
@@ -50,31 +47,23 @@ const EVENT_MARKER_ICONS_LIVE: Record<EventType, any> = {
   COMMUNITY: require('@/assets/images/icons/map/event-student-live.png'),
 };
 
-// 클러스터 마커 SVG 컴포넌트 (iOS Image 렌더링 이슈 회피 — SvgImage 사용)
-function ClusterMarkerIcon({ count, size, iconUri = CLUSTER_ICON_URI, textColor = Gray.white }: { count: number; size: number; iconUri?: string; textColor?: string }) {
+// 클러스터 마커 컴포넌트 (RN Image + Text 오버레이 — iOS SvgImage href 미지원 이슈 회피)
+function ClusterMarkerIcon({ count, size, icon = CLUSTER_ICON, textColor = Gray.white }: { count: number; size: number; icon?: number; textColor?: string }) {
   const fontSize = count >= 100 ? size * 0.22 : count >= 10 ? size * 0.25 : size * 0.28;
 
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <G>
-        <SvgImage href={iconUri} x={0} y={0} width={size} height={size} />
-        <SvgText
-          x={size / 2}
-          y={size * 0.5}
-          textAnchor="middle"
-          fill={textColor}
-          fontSize={fontSize}
-          fontWeight="700"
-        >
-          {count}
-        </SvgText>
-      </G>
-    </Svg>
+    <View style={{ width: size, height: size }}>
+      <RNImage source={icon} style={{ width: size, height: size }} resizeMode="contain" />
+      {/* paddingBottom으로 핀 꼬리 영역 제외 — 원형 헤드 중심(~42%)에 텍스트 배치 */}
+      <View style={[StyleSheet.absoluteFillObject, { paddingBottom: size * 0.17, alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ color: textColor, fontSize, fontWeight: '700' }}>{count}</Text>
+      </View>
+    </View>
   );
 }
 
 const MARKER_SIZE = rs(32);
-const EVENT_MARKER_SIZE = rs(52);
+const EVENT_MARKER_SIZE = rs(60);
 const CLUSTER_SIZE = rs(60);
 
 // 가게 마커 아이콘 선택 헬퍼
@@ -201,6 +190,20 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     // 이벤트 마커를 클러스터/개별 마커로 변환
     const clusteredEventMarkers = useEventCluster(eventMarkers, currentZoom);
 
+    // 가게 마커와 겹치는 이벤트 마커를 위로 살짝 이동
+    const adjustedEventMarkers = useMemo((): EventClusterPoint[] => {
+      const OVERLAP_THRESHOLD = 0.0015;
+      const OFFSET = 0.001;
+      return clusteredEventMarkers.map((ev) => {
+        const overlaps = clusteredMarkers.some(
+          (st) =>
+            Math.abs(st.lat - ev.lat) < OVERLAP_THRESHOLD &&
+            Math.abs(st.lng - ev.lng) < OVERLAP_THRESHOLD,
+        );
+        return overlaps ? { ...ev, lat: ev.lat + OFFSET } : ev;
+      });
+    }, [clusteredEventMarkers, clusteredMarkers]);
+
     return (
       <View style={[styles.container, style]}>
         <NaverMapView
@@ -281,7 +284,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           })}
 
           {/* 이벤트 마커 (클러스터 or 개별) */}
-          {isMapReady && clusteredEventMarkers.map((item) => {
+          {isMapReady && adjustedEventMarkers.map((item) => {
             if (item.type === 'cluster') {
               return (
                 <NaverMapMarkerOverlay
@@ -294,7 +297,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                   zIndex={500}
                   onTap={() => handleClusterClick(item.lat, item.lng)}
                 >
-                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} iconUri={EVENT_CLUSTER_ICON_URI} textColor={Notify.event} />
+                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} icon={EVENT_CLUSTER_ICON} textColor={Notify.event} />
                 </NaverMapMarkerOverlay>
               );
             }
