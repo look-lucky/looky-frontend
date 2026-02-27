@@ -226,7 +226,15 @@ export default function SignupOwnerPage() {
       });
 
       console.log("✅ 회원가입 성공:", signupResponse);
-      const userId = (signupResponse.data as any).data; // userId
+      const signupData = (signupResponse.data as any).data; // {accessToken, expiresIn}
+      let userId: number | null = null;
+      try {
+        const signupPayload = JSON.parse(atob((signupData?.accessToken ?? "").split(".")[1]));
+        userId = signupPayload?.sub ? parseInt(signupPayload.sub, 10) : null;
+      } catch {}
+      if (!userId) {
+        throw new Error("사용자 정보를 확인할 수 없습니다.");
+      }
 
       // 2️⃣ 로그인하여 토큰 발급
       const loginResponse = await login({ username, password });
