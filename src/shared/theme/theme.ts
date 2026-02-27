@@ -52,6 +52,7 @@ export const Notify = {
   bgInfo: "#FEE2E2",
   bgReview: "#DBEAFE",
   bgCoupon: "#FFEABC",
+  event: "#FF6259",
 } as const;
 
 // 쿠폰 색상
