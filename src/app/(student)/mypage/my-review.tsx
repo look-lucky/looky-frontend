@@ -12,11 +12,11 @@ import { useMemo, useState } from 'react';
 import {
   Image,
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -101,9 +101,9 @@ export default function MyReview() {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={closeMenu}>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
 
+      <Pressable onPress={closeMenu}>
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -129,11 +129,13 @@ export default function MyReview() {
             의 소중한 기록을{'\n'}남겨주셨어요! ✍🏻
           </Text>
         </View>
+      </Pressable>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={closeMenu}
+      >
           {allReviews.length === 0 && (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>작성한 리뷰가 없습니다</Text>
@@ -296,8 +298,7 @@ export default function MyReview() {
           subtitle="다시 시도해주세요"
           onClose={() => setDeleteApiErrorVisible(false)}
         />
-      </View>
-    </TouchableWithoutFeedback>
+    </View>
   );
 }
 
