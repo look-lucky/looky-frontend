@@ -6,10 +6,11 @@ import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
 import { useSignupOwner, useCompleteSocialSignup, login } from "@/src/api/auth";
 import { useAuth } from "@/src/shared/lib/auth";
+import { saveCredentials, saveToken } from "@/src/shared/lib/auth/token";
 import type { UserType } from "@/src/shared/lib/auth/token";
-import { useCreateStoreClaims, useVerifyBizRegNo } from "@/src/api/store-claim";
+import { useVerifyBizRegNo } from "@/src/api/store-claim";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
+import { customFetch } from "@/src/api/mutator";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -73,7 +74,6 @@ export default function SignupOwnerPage() {
     birthMonth,
     birthDay,
     socialUserId,
-    setSignupFields,
   } = useSignupStore();
 
   // Auth
@@ -82,7 +82,6 @@ export default function SignupOwnerPage() {
   // API 훅
   const signupOwnerMutation = useSignupOwner();
   const completeSocialSignupMutation = useCompleteSocialSignup();
-  const createStoreClaimMutation = useCreateStoreClaims();
   const verifyBizRegNoMutation = useVerifyBizRegNo();
 
   // 로딩 상태
@@ -126,7 +125,6 @@ export default function SignupOwnerPage() {
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
       quality: 0.8,
     });
 
@@ -190,16 +188,17 @@ export default function SignupOwnerPage() {
         const socialResponse = await completeSocialSignupMutation.mutateAsync({
           params: {
             userId: parseInt(socialUserId, 10),
+          },
+          data: {
             role: "ROLE_OWNER",
-            gender: apiGender,
+            gender: apiGender as "MALE" | "FEMALE",
             birthDate,
-            name: representativeName,
-            email: ownerEmail,
           },
         });
 
-        if (socialResponse.status === 200 && socialResponse.data?.data?.accessToken) {
-          const { accessToken, expiresIn } = socialResponse.data.data;
+        const socialData = (socialResponse as any)?.data?.data;
+        if (socialData?.accessToken) {
+          const { accessToken, expiresIn } = socialData;
           const jwtPayload = (() => {
             try { return JSON.parse(atob(accessToken.split(".")[1])); } catch { return null; }
           })();
@@ -227,12 +226,23 @@ export default function SignupOwnerPage() {
       });
 
       console.log("✅ 회원가입 성공:", signupResponse);
-      const userId = (signupResponse.data as any).data; // userId
+      const signupData = (signupResponse.data as any).data; // {accessToken, expiresIn}
+      let userId: number | null = null;
+      try {
+        const signupPayload = JSON.parse(atob((signupData?.accessToken ?? "").split(".")[1]));
+        userId = signupPayload?.sub ? parseInt(signupPayload.sub, 10) : null;
+      } catch {}
+      if (!userId) {
+        throw new Error("사용자 정보를 확인할 수 없습니다.");
+      }
 
       // 2️⃣ 로그인하여 토큰 발급
       const loginResponse = await login({ username, password });
       const loginData = (loginResponse.data as any).data;
-      await handleAuthSuccess(loginData.accessToken, loginData.expiresIn ?? 3600, "ROLE_OWNER");
+      // handleAuthSuccess 대신 saveToken만 먼저 호출: setState를 아직 바꾸지 않아
+      // _layout의 isOwner 조건이 true가 되지 않으므로 화면 전환이 일어나지 않는다.
+      await saveToken(loginData.accessToken, loginData.expiresIn ?? 3600, "ROLE_OWNER");
+      await saveCredentials(username, password);
       console.log("✅ 자동 로그인 성공");
 
       // 3️⃣ storeId 확인 (가게 검색으로 선택한 경우 savedStoreId 사용)
@@ -243,43 +253,31 @@ export default function SignupOwnerPage() {
 
       // 4️⃣ 상점 소유 요청 (사업자등록증 업로드)
       if (businessImageUri) {
-        // 이미지를 base64로 변환
-        const base64Image = await FileSystem.readAsStringAsync(
-          businessImageUri,
-          {
-            encoding: FileSystem.EncodingType.Base64,
-          }
-        );
+        const formData = new FormData();
+        formData.append("request", JSON.stringify({
+          storeId,
+          userId,
+          bizRegNo: businessNumber,
+          representativeName,
+          storeName,
+          storePhone,
+        }));
+        formData.append("image", {
+          uri: businessImageUri,
+          type: "image/jpeg",
+          name: "business-registration.jpg",
+        } as any);
 
-        await createStoreClaimMutation.mutateAsync({
-          data: {
-            request: {
-              storeId,
-              userId,
-              bizRegNo: businessNumber,
-              representativeName,
-              storeName,
-              storePhone,
-            },
-            image: `data:image/jpeg;base64,${base64Image}`,
-          },
+        await customFetch("/api/store-claims", {
+          method: "POST",
+          body: formData,
         });
         console.log("✅ 사업자등록증 업로드 성공");
       }
 
-      // 5️⃣ Store 초기화 및 승인 대기 화면으로 이동
-      setSignupFields({
-        storeName,
-        storePhone,
-        representativeName,
-        businessNumber,
-        openDate: openDate ? formatDate(openDate) : "",
-        businessImageUri: businessImageUri ?? "",
-      });
-
-      // 승인 대기 화면으로 이동
-      Alert.alert("회원가입 완료", "관리자 승인 후 서비스를 이용하실 수 있습니다.");
-      router.replace("/(shopowner)/auth/pending-approval");
+      // 5️⃣ handleAuthSuccess 호출 → isAuthenticated = true → _layout에서 화면 전환
+      // (store claim 생성 완료 후에 호출해야 중간에 언마운트되지 않음)
+      await handleAuthSuccess(loginData.accessToken, loginData.expiresIn ?? 3600, "ROLE_OWNER");
     } catch (error: any) {
       console.error("❌ 회원가입 실패:", error);
       Alert.alert(

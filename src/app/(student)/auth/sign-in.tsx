@@ -104,7 +104,10 @@ export default function LoginPage() {
             await saveCredentials(username, password);
             console.log("[Login] handleAuthSuccess completed - token should be stored");
 
-            router.replace("/(student)/(tabs)");
+            // ROLE_OWNER는 _layout.tsx에서 PendingApprovalScreen/ShopOwnerApp을 직접 렌더링
+            if (role !== "ROLE_OWNER") {
+              router.replace("/(student)/(tabs)");
+            }
           } else {
             console.log("[Login] Failed - invalid response");
             Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인해주세요.");
