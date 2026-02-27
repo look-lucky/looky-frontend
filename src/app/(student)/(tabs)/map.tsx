@@ -331,8 +331,12 @@ export default function MapTab() {
     (index: number) => {
       currentIndexRef.current = index;
       setTabBarVisible(index === SNAP_INDEX.COLLAPSED);
+      if (index === SNAP_INDEX.COLLAPSED) {
+        if (selectedStore) handleBack();
+        if (selectedEventId) setSelectedEventId(null);
+      }
     },
-    [currentIndexRef, setTabBarVisible],
+    [currentIndexRef, setTabBarVisible, selectedStore, selectedEventId, handleBack],
   );
 
   // 뒤로가기
@@ -876,7 +880,6 @@ export default function MapTab() {
         backgroundStyle={styles.bottomSheetBackground}
         handleIndicatorStyle={styles.bottomSheetHandle}
         enablePanDownToClose={false}
-        enableContentPanningGesture={false}
         bottomInset={insets.bottom}
         style={styles.bottomSheetContainer}
       >
