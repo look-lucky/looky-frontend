@@ -268,6 +268,7 @@ export default function StoreScreen() {
   const [editingCategoryId, setEditingCategoryId] = useState(null); // ID of category being renamed
   const [editingCategoryName, setEditingCategoryName] = useState(''); // Temp name for rename
   const [isDeleteErrorVisible, setIsDeleteErrorVisible] = useState(false); // Custom error modal
+  const [isCategoryRequiredVisible, setIsCategoryRequiredVisible] = useState(false); // [추가] 카테고리 선행 필요 안내
 
   // Handle Create Category
   const handleCreateCategory = () => {
@@ -337,8 +338,22 @@ export default function StoreScreen() {
   const handleDeleteCategory = (categoryToDelete) => {
     // Check if items exist in this category
     const hasItems = menuListArray && menuListArray.some(item => {
-      const catId = item.itemCategoryId ?? item.categoryId ?? item.item_category_id ?? item.category_id;
-      return Number(catId) === categoryToDelete.id;
+      // [Robust Category Resolution]
+      let rid = item.itemCategoryId ?? item.categoryId ?? item.item_category_id ?? item.category_id;
+      if (rid === undefined || rid === null) {
+        if (item.itemCategory && typeof item.itemCategory === 'object') rid = item.itemCategory.id;
+        else if (item.category && typeof item.category === 'object') rid = item.category.id;
+      }
+      if (rid === undefined || rid === null) {
+        const cName = (typeof item.category === 'string') ? item.category :
+          (item.itemCategory && typeof item.itemCategory === 'object' ? item.itemCategory.name :
+            (item.category && typeof item.category === 'object' ? item.category.name : null));
+        if (cName) {
+          const matched = categories.find(c => c.name === cName);
+          if (matched) rid = matched.id;
+        }
+      }
+      return rid !== undefined && rid !== null && Number(rid) === categoryToDelete.id;
     });
 
     if (hasItems) {
@@ -1398,6 +1413,12 @@ export default function StoreScreen() {
 
   // # Menu Modal Logic
   const openAddMenuModal = () => {
+    // [추가] 카테고리가 하나도 없으면 안내 팝업 표시
+    if (categories.length === 0) {
+      setIsCategoryRequiredVisible(true);
+      return;
+    }
+
     setIsEditMode(false);
     setTargetItemId(null);
     setMenuForm({
@@ -1957,6 +1978,23 @@ export default function StoreScreen() {
                   <TouchableOpacity
                     style={styles.deleteErrorConfirmBtn}
                     onPress={() => setIsDeleteErrorVisible(false)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.deleteErrorConfirmText}>확인</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+
+            {/* [추가] 메뉴 추가 시 카테고리 없음 안내 팝업 */}
+            <Modal transparent={true} visible={isCategoryRequiredVisible} animationType="fade" onRequestClose={() => setIsCategoryRequiredVisible(false)}>
+              <View style={styles.deleteErrorModalOverlay}>
+                <View style={styles.deleteErrorModalContainer}>
+                  <Text style={styles.deleteErrorTitle}>카테고리를 생성해 주세요</Text>
+                  <Text style={styles.deleteErrorDesc}>메뉴를 추가하려면 먼저 카테고리가 필요해요</Text>
+                  <TouchableOpacity
+                    style={styles.deleteErrorConfirmBtn}
+                    onPress={() => setIsCategoryRequiredVisible(false)}
                     activeOpacity={0.8}
                   >
                     <Text style={styles.deleteErrorConfirmText}>확인</Text>
