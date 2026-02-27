@@ -1,4 +1,4 @@
-import { useLogout } from "@/src/api/auth";
+import { useLogout, withdraw } from "@/src/api/auth";
 import { getGetMyStoreClaimsQueryKey } from "@/src/api/store-claim";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ThemedText } from "@/src/shared/common/themed-text";
@@ -6,8 +6,9 @@ import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
@@ -30,9 +31,11 @@ function PendingIcon() {
 export default function PendingApprovalScreen() {
   const { handleLogout } = useAuth();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [isChecking, setIsChecking] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const logoutMutation = useLogout();
 
@@ -102,6 +105,35 @@ export default function PendingApprovalScreen() {
     );
   };
 
+  // 회원탈퇴 (승인 대기 중 - 쿠폰 없으므로 바로 처리)
+  const handleWithdraw = () => {
+    Alert.alert(
+      '회원탈퇴',
+      '탈퇴하시면 가입 정보가 모두 삭제됩니다. 계속하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '탈퇴하기',
+          style: 'destructive',
+          onPress: async () => {
+            setIsWithdrawing(true);
+            try {
+              await withdraw({ reasons: ['NOT_NEEDED'] });
+              await handleLogout();
+              router.replace('/landing');
+              Alert.alert('완료', '회원탈퇴가 완료되었습니다.');
+            } catch (error) {
+              console.error('회원탈퇴 실패:', error);
+              Alert.alert('오류', '회원탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            } finally {
+              setIsWithdrawing(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       {/* 아이콘 */}
@@ -148,6 +180,15 @@ export default function PendingApprovalScreen() {
           disabled={isLoggingOut}
           style={{ marginTop: rs(12) }}
         />
+        <TouchableOpacity
+          onPress={handleWithdraw}
+          disabled={isWithdrawing}
+          style={styles.withdrawLink}
+        >
+          <ThemedText style={styles.withdrawLinkText}>
+            {isWithdrawing ? "처리 중..." : "회원탈퇴"}
+          </ThemedText>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -203,5 +244,14 @@ const styles = StyleSheet.create({
   },
   bottomContent: {
     marginTop: "auto",
+  },
+  withdrawLink: {
+    alignItems: "center",
+    paddingVertical: rs(16),
+  },
+  withdrawLinkText: {
+    fontSize: rs(13),
+    color: TextColors.tertiary,
+    textDecorationLine: "underline",
   },
 });
