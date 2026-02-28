@@ -151,22 +151,45 @@ export default function BenefitsTab() {
   }, [tab]);
   const [selectedCoupon, setSelectedCoupon] = useState<IssueCouponResponse | null>(null);
   const [couponCode, setCouponCode] = useState<string | null>(null);
+  const [codeActivatedAt, setCodeActivatedAt] = useState<number | null>(null);
+  const [codeExpired, setCodeExpired] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(30 * 60);
 
   const queryClient = useQueryClient();
   const { mutate: activateCoupon, isPending: isActivating } = useActivateCoupon();
 
+  // 30분 카운트다운 타이머
+  useEffect(() => {
+    if (!codeActivatedAt || codeExpired) return;
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - codeActivatedAt;
+      const remaining = 30 * 60 * 1000 - elapsed;
+      if (remaining <= 0) {
+        setCouponCode(null);
+        setCodeExpired(true);
+        setRemainingSeconds(0);
+      } else {
+        setRemainingSeconds(Math.ceil(remaining / 1000));
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [codeActivatedAt, codeExpired]);
+
   const closeModal = () => {
     setSelectedCoupon(null);
     setCouponCode(null);
+    setCodeActivatedAt(null);
+    setCodeExpired(false);
+    setRemainingSeconds(30 * 60);
   };
 
   const handleOpenCoupon = (coupon: IssueCouponResponse) => {
     setSelectedCoupon(coupon);
-    if (coupon.status === "ACTIVATED" && coupon.couponCode) {
-      setCouponCode(coupon.couponCode);
-    } else {
-      setCouponCode(null);
-    }
+    // 항상 버튼부터 시작 — 30분 타이머를 추적하기 위해
+    setCouponCode(null);
+    setCodeActivatedAt(null);
+    setCodeExpired(false);
+    setRemainingSeconds(30 * 60);
   };
 
   const handleUseCoupon = () => {
@@ -178,6 +201,9 @@ export default function BenefitsTab() {
           const code = (res as any)?.data?.data as string;
           if (code) {
             setCouponCode(code);
+            setCodeActivatedAt(Date.now());
+            setCodeExpired(false);
+            setRemainingSeconds(30 * 60);
             queryClient.invalidateQueries({ queryKey: getGetMyCouponsQueryKey() });
           }
         },
@@ -185,6 +211,9 @@ export default function BenefitsTab() {
           // 이미 ACTIVATED 상태일 때 (409 등) 기존 코드가 있으면 표시
           if (selectedCoupon?.couponCode) {
             setCouponCode(selectedCoupon.couponCode);
+            setCodeActivatedAt(Date.now());
+            setCodeExpired(false);
+            setRemainingSeconds(30 * 60);
           }
         },
       },
@@ -456,17 +485,22 @@ export default function BenefitsTab() {
 
               {/* 하단: 버튼 or 코드 */}
               <View style={styles.ticketBottom}>
-                {couponCode ? (
-                  <View style={styles.codeContainer}>
-                    {couponCode.split("").map((digit, i) => (
-                      <View key={i} style={styles.codeDigitBox}>
-                        <ThemedText style={styles.codeDigit}>{digit}</ThemedText>
-                      </View>
-                    ))}
+                {couponCode && !codeExpired ? (
+                  <View style={styles.codeSection}>
+                    <View style={styles.codeContainer}>
+                      {couponCode.split("").map((digit, i) => (
+                        <View key={i} style={styles.codeDigitBox}>
+                          <ThemedText style={styles.codeDigit}>{digit}</ThemedText>
+                        </View>
+                      ))}
+                    </View>
+                    <ThemedText style={styles.codeExpireText}>
+                      {`${String(Math.floor(remainingSeconds / 60)).padStart(2, "0")}:${String(remainingSeconds % 60).padStart(2, "0")} 후 만료`}
+                    </ThemedText>
                   </View>
                 ) : (
                   <AppButton
-                    label="사용하기"
+                    label={codeExpired ? "다시 사용하기" : "사용하기"}
                     onPress={handleUseCoupon}
                     disabled={isActivating}
                   />
@@ -818,11 +852,20 @@ const styles = StyleSheet.create({
     color: TextColor.primary,
     flex: 1,
   },
+  codeSection: {
+    gap: rs(8),
+    alignItems: "center",
+  },
   codeContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: rs(12),
+  },
+  codeExpireText: {
+    fontFamily: Fonts.medium,
+    fontSize: rs(12),
+    color: TextColor.secondary,
   },
   codeDigitBox: {
     width: rs(48),
