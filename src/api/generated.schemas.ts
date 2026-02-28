@@ -960,6 +960,7 @@ export interface MyStoreClaimResponse {
   storeName?: string;
   representativeName?: string;
   status?: MyStoreClaimResponseStatus;
+  rejectReason?: string;
   createdAt?: string;
 }
 
@@ -1075,8 +1076,8 @@ export interface PageInquiryResponse {
   content?: InquiryResponse[];
   number?: number;
   sort?: SortObject;
-  last?: boolean;
   numberOfElements?: number;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1152,6 +1153,7 @@ export const EventResponseStatus = {
 
 export interface EventResponse {
   id?: number;
+  universityId?: number;
   title?: string;
   description?: string;
   subtitle?: string;
@@ -1304,8 +1306,8 @@ export interface PageStoreClaimResponse {
   content?: StoreClaimResponse[];
   number?: number;
   sort?: SortObject;
-  last?: boolean;
   numberOfElements?: number;
+  last?: boolean;
   empty?: boolean;
 }
 
