@@ -113,6 +113,7 @@ export default function StudentVerificationPage() {
   const [isErrorMessage, setIsErrorMessage] = useState(false);
   const [verifyFailCount, setVerifyFailCount] = useState(0);
   const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSendingRef = useRef(false);
 
   // 동아리 가입 여부
   const [isClubMember, setIsClubMember] = useState<boolean | null>(null);
@@ -249,7 +250,8 @@ export default function StudentVerificationPage() {
 
   // 인증번호 발송
   const handleSendCode = async () => {
-    if (!email || !selectedUniversityId) return;
+    if (!email || !selectedUniversityId || isSendingRef.current) return;
+    isSendingRef.current = true;
 
     try {
       await sendEmailMutation.mutateAsync({
@@ -268,6 +270,8 @@ export default function StudentVerificationPage() {
       console.error("이메일 발송 실패:", error);
       const serverMessage = error?.data?.data?.message ?? error?.data?.message ?? error?.message;
       showSendCodeMessage(serverMessage || "해당 학교의 이메일을 입력해주세요.", true);
+    } finally {
+      isSendingRef.current = false;
     }
   };
 
@@ -330,10 +334,13 @@ export default function StudentVerificationPage() {
         {
           params: {
             userId: parseInt(socialUserId, 10),
+          },
+          data: {
             role: "ROLE_STUDENT",
             gender: apiGender,
             birthDate,
             nickname,
+            email,
             universityId: selectedUniversityId,
             collegeId: selectedCollegeId,
             departmentId: selectedDepartmentId,
@@ -388,6 +395,7 @@ export default function StudentVerificationPage() {
         data: {
           username,
           password,
+          email,
           nickname,
           gender: apiGender,
           birthDate,
