@@ -39,11 +39,7 @@ export function CategorySection() {
   const router = useRouter();
 
   const handleCategoryPress = (categoryId: string) => {
-    if (categoryId === 'ALL') {
-      router.push('/map');
-    } else {
-      router.push(`/map?category=${categoryId}`);
-    }
+    router.push(`/map?category=${categoryId}`);
   };
 
   return (
