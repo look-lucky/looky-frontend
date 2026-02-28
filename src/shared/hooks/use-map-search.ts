@@ -17,7 +17,7 @@ function getViewportRadiusKm(zoom: number): number {
 // -------------------------------------------------------------------
 // Hook
 // -------------------------------------------------------------------
-export function useMapSearch() {
+export function useMapSearch(permissionReady = true) {
   const { collegeId } = useAuth();
   // 검색
   const [keyword, setKeyword] = useState('');
@@ -58,21 +58,24 @@ export function useMapSearch() {
   // 바텀시트 인덱스 추적
   const currentIndexRef = useRef(0);
 
-  // 위치 권한 요청
+  // 위치 권한 요청 (튜토리얼 완료 후에 요청 - Modal과 시스템 다이얼로그 충돌 방지)
   useEffect(() => {
+    if (!permissionReady) return;
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         const location = await Location.getCurrentPositionAsync({});
-        setMyLocation({
+        const userLoc = {
           lat: location.coords.latitude,
           lng: location.coords.longitude,
-        });
+        };
+        setMyLocation(userLoc);
+        setMapCenter(userLoc); // 최초 위치 획득 시 지도 중심도 현재 위치로 이동
       } else {
         setLocationPermissionDenied(true);
       }
     })();
-  }, []);
+  }, [permissionReady]);
 
   // ------ API 호출 (/api/stores/map) ------
   const {

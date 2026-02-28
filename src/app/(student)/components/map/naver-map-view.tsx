@@ -7,7 +7,7 @@ import {
   NaverMapView,
   type NaverMapViewRef,
 } from '@mj-studio/react-native-naver-map';
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Image as RNImage, StyleSheet, Text, View } from 'react-native';
 
 // 클러스터 마커 아이콘 PNG
