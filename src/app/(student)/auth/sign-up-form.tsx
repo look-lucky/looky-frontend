@@ -161,6 +161,7 @@ export default function SignupTypePage() {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
+  const isSendingRef = useRef(false);
 
   const EMAIL_VERIFY_EXPIRY_KEY = "signup_email_verify_expiry";
 
@@ -348,7 +349,8 @@ export default function SignupTypePage() {
   };
 
   const handleRequestEmailCode = async () => {
-    if (!email) return;
+    if (!email || isSendingRef.current) return;
+    isSendingRef.current = true;
 
     try {
       await sendEmailMutation.mutateAsync({
@@ -367,6 +369,8 @@ export default function SignupTypePage() {
     } catch (error: any) {
       console.error("이메일 발송 실패:", error);
       showSendCodeMessage(error?.data?.data?.message || error?.data?.message || error?.message || "인증번호 발송에 실패했습니다.");
+    } finally {
+      isSendingRef.current = false;
     }
   };
 
