@@ -7,6 +7,7 @@ const USER_TYPE_KEY = "auth_user_type";
 const COLLEGE_ID_KEY = "user_college_id";
 const COLLEGE_NAME_KEY = "user_college_name";
 const USERNAME_KEY = "auth_username";
+const LOGIN_PROVIDER_KEY = "auth_login_provider";
 
 export interface TokenData {
   accessToken: string;
@@ -91,6 +92,16 @@ export async function clearCredentials(): Promise<void> {
   await SecureStore.deleteItemAsync("auth_credentials");
 }
 
+export type LoginProvider = "email" | "google" | "kakao" | "apple";
+
+export async function saveLoginProvider(provider: LoginProvider): Promise<void> {
+  await AsyncStorage.setItem(LOGIN_PROVIDER_KEY, provider);
+}
+
+export async function getLoginProvider(): Promise<LoginProvider | null> {
+  return (await AsyncStorage.getItem(LOGIN_PROVIDER_KEY)) as LoginProvider | null;
+}
+
 export async function clearToken(): Promise<void> {
   await AsyncStorage.multiRemove([
     ACCESS_TOKEN_KEY,
@@ -99,6 +110,7 @@ export async function clearToken(): Promise<void> {
     COLLEGE_ID_KEY,
     COLLEGE_NAME_KEY,
     USERNAME_KEY,
+    LOGIN_PROVIDER_KEY,
     "SELECTED_STORE_ID",
   ]);
 }

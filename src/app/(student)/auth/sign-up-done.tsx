@@ -3,7 +3,7 @@ import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { useRouter } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { InteractionManager, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type SummaryRow = {
@@ -85,9 +85,8 @@ export default function SignupCompletePage() {
         <TouchableOpacity
           style={styles.ctaBtn}
           onPress={() => {
-            // Store 초기화 후 홈으로 이동
-            reset();
             router.replace("/(student)/(tabs)");
+            InteractionManager.runAfterInteractions(() => reset());
           }}
           activeOpacity={0.9}
         >

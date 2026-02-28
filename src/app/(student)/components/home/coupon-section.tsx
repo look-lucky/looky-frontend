@@ -1,4 +1,5 @@
 import LightingIcon from '@/assets/images/icons/home/lighting.svg';
+import { useDownloadCoupon } from '@/src/api/coupon';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Coupon, Gray, Text as TextColor } from '@/src/shared/theme/theme';
@@ -23,13 +24,15 @@ interface CouponSectionProps {
 
 export function CouponSection({ coupons }: CouponSectionProps) {
   const router = useRouter();
+  const downloadCouponMutation = useDownloadCoupon();
 
   const handleMorePress = () => {
-    router.push('/map');
+    router.push('/today-coupons' as any);
   };
 
-  const handleCouponPress = (storeId: number) => {
-    router.push(`/store/${storeId}`);
+  const handleCouponPress = (coupon: CouponItem) => {
+    downloadCouponMutation.mutate({ couponId: coupon.id });
+    router.push(`/store/${coupon.storeId}`);
   };
 
   const getTimeAgo = (dateString?: string) => {
@@ -121,7 +124,7 @@ export function CouponSection({ coupons }: CouponSectionProps) {
           <TouchableOpacity
             key={coupon.id}
             style={styles.couponCard}
-            onPress={() => handleCouponPress(coupon.storeId)}
+            onPress={() => handleCouponPress(coupon)}
             activeOpacity={0.8}
           >
             <View

@@ -8,7 +8,7 @@ import {
 } from "react";
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { clearToken, getCollegeId, getCollegeName, getUsername, getUserType, isTokenValid, saveCollegeId, saveCollegeName, saveToken, UserType, getCredentials, clearCredentials } from "./token";
+import { clearToken, getCollegeId, getCollegeName, getUsername, getUserType, isTokenValid, saveCollegeId, saveCollegeName, saveToken, UserType, getCredentials, clearCredentials, getLoginProvider, LoginProvider } from "./token";
 import { authEvents } from "./auth-events";
 
 interface AuthState {
@@ -18,6 +18,7 @@ interface AuthState {
   collegeId: number | null;
   collegeName: string | null;
   username: string | null;
+  loginProvider: LoginProvider | null;
 }
 
 interface AuthContextValue extends AuthState {
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     collegeId: null,
     collegeName: null,
     username: null,
+    loginProvider: null,
   });
 
   // 앱 시작 시 토큰 확인
@@ -50,7 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const collegeId = await getCollegeId();
       const collegeName = await getCollegeName();
       const username = await getUsername();
-      setState({ isAuthenticated: valid, isLoading: false, userType, collegeId, collegeName, username });
+      const loginProvider = await getLoginProvider();
+      setState({ isAuthenticated: valid, isLoading: false, userType, collegeId, collegeName, username, loginProvider });
     })();
   }, []);
 
@@ -85,7 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const collegeId = await getCollegeId();
             const collegeName = await getCollegeName();
             const username = await getUsername();
-            setState({ isAuthenticated: true, isLoading: false, userType: role, collegeId, collegeName, username });
+            const loginProvider = await getLoginProvider();
+            setState({ isAuthenticated: true, isLoading: false, userType: role, collegeId, collegeName, username, loginProvider });
             console.log("[AuthContext] Auto-login succeeded");
             return;
           }
@@ -128,7 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const collegeId = await getCollegeId();
       const collegeName = await getCollegeName();
       const username = await getUsername();
-      setState({ isAuthenticated: true, isLoading: false, userType, collegeId, collegeName, username });
+      const loginProvider = await getLoginProvider();
+      setState({ isAuthenticated: true, isLoading: false, userType, collegeId, collegeName, username, loginProvider });
     },
     []
   );
@@ -136,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleLogout = useCallback(async () => {
     await clearToken();
     await clearCredentials();
-    setState({ isAuthenticated: false, isLoading: false, userType: null, collegeId: null, collegeName: null, username: null });
+    setState({ isAuthenticated: false, isLoading: false, userType: null, collegeId: null, collegeName: null, username: null, loginProvider: null });
   }, []);
 
   const saveUserCollegeId = useCallback(async (collegeId: number) => {

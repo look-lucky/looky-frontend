@@ -4,6 +4,7 @@ import {
   useGetMyFavorites,
   useRemoveFavorite,
 } from '@/src/api/favorite';
+import { useGetHotStores } from '@/src/api/store';
 import { EventCard } from '@/src/app/(student)/components/event/event-card';
 import { SelectedEventDetail } from '@/src/app/(student)/components/event/selected-event-detail';
 import { NaverMap } from '@/src/app/(student)/components/map/naver-map-view';
@@ -23,13 +24,13 @@ import { useTabBar } from '@/src/shared/contexts/tab-bar-context';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { useMapSearch } from '@/src/shared/hooks/use-map-search';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray, Owner, Text } from '@/src/shared/theme/theme';
+import { Brand, Gray, Owner, Text } from '@/src/shared/theme/theme';
 import type { Event, EventType } from '@/src/shared/types/event';
 import type { Store } from '@/src/shared/types/store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetFlatList, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import type { NaverMapViewRef } from '@mj-studio/react-native-naver-map';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -68,16 +69,25 @@ export default function MapTab() {
 
   // ── 튜토리얼 ──────────────────────────────────
   const [tutorialStep, setTutorialStep] = useState(0);
+  // 튜토리얼 완료 후 위치 권한 요청 (Modal과 시스템 다이얼로그 충돌 방지)
+  const [permissionReady, setPermissionReady] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('MAP_TUTORIAL_SHOWN')
-      .then((shown) => { if (shown !== 'true') setTutorialStep(1); })
+      .then((shown) => {
+        if (shown !== 'true') {
+          setTutorialStep(1);
+        } else {
+          setPermissionReady(true); // 튜토리얼 이미 완료 → 바로 권한 요청
+        }
+      })
       .catch(() => setTutorialStep(1));
   }, []);
 
   const finishTutorial = useCallback(async () => {
     try { await AsyncStorage.setItem('MAP_TUTORIAL_SHOWN', 'true'); } catch {}
     setTutorialStep(0);
+    setPermissionReady(true); // 튜토리얼 완료 → 이제 권한 요청
   }, []);
 
   const nextTutorial = useCallback(() => {
@@ -85,9 +95,24 @@ export default function MapTab() {
   }, []);
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
-  const { category, eventId: eventIdParam, centerOnEvents } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string }>();
+  const { category, eventId: eventIdParam, centerOnEvents, hotPlaces: hotPlacesParam } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string; hotPlaces?: string }>();
   const initialEventHandled = useRef(false);
   const centerOnEventsHandledRef = useRef(false);
+
+  // 인기있는 곳 모드
+  const [hotPlacesMode, setHotPlacesMode] = useState(false);
+  const hotPlacesHandledRef = useRef(false);
+  const { data: hotStoresRes } = useGetHotStores({ query: { staleTime: 5 * 60 * 1000 } });
+  const hotStoresList = ((hotStoresRes as any)?.data?.data ?? []).slice(0, 15).map(
+    (s: any, index: number) => ({
+      id: s.storeId as number,
+      rank: index + 1,
+      name: s.name as string,
+      category: (s.categories?.[0] ?? '') as string,
+      organization: (s.benefitContent ?? '') as string,
+      weeklyFavoriteCount: (s.favoriteGain ?? 0) as number,
+    }),
+  );
 
   const {
     keyword,
@@ -108,6 +133,7 @@ export default function MapTab() {
     markers,
     selectedStore,
     isLoading,
+    isError,
     refetchStores,
     myLocation,
     locationPermissionDenied,
@@ -126,7 +152,7 @@ export default function MapTab() {
     handleStoreTypeToggle,
     handleMoodToggle,
     handleEventToggle,
-  } = useMapSearch();
+  } = useMapSearch(permissionReady);
 
   // 홈에서 카테고리 선택 후 진입 시 해당 카테고리 활성화
   useEffect(() => {
@@ -146,6 +172,7 @@ export default function MapTab() {
     events,
     eventMarkers,
     isLoading: isEventsLoading,
+    isError: isEventsError,
     refetchEvents,
   } = useEvents({
     myLocation,
@@ -154,6 +181,19 @@ export default function MapTab() {
     selectedEventTypes: selectedEvents as EventType[],
     viewportSearch,
   });
+
+  // 네트워크 오류 Alert (중복 표시 방지용 ref)
+  const networkErrorShownRef = useRef(false);
+  useEffect(() => {
+    if ((isError || isEventsError) && !networkErrorShownRef.current) {
+      networkErrorShownRef.current = true;
+      Alert.alert(
+        '네트워크 오류',
+        '인터넷 연결을 확인해주세요.',
+        [{ text: '확인', onPress: () => { networkErrorShownRef.current = false; } }],
+      );
+    }
+  }, [isError, isEventsError]);
 
   // 즐겨찾기 훅
   const { data: favoritesData, refetch: refetchFavorites } = useGetMyFavorites(
@@ -220,24 +260,23 @@ export default function MapTab() {
   }, [eventIdParam]);
 
   // 홈에서 이벤트 카드 눌러서 진입 시 해당 이벤트 선택 + 지도 중심 이동 + 바텀시트 열기
+  // → 이벤트 마커 클릭(onEventMarkerClick)과 동일한 효과로 처리
   useEffect(() => {
     if (!eventIdParam || initialEventHandled.current || events.length === 0) return;
     const event = events.find((e) => e.id === eventIdParam);
     if (event) {
       initialEventHandled.current = true;
-      // 카메라 이동과 바텀시트 오픈을 분리 (동시 실행 시 Naver Map 리사이즈 crash 방지)
-      const timer1 = setTimeout(() => {
-        handleMapClick();
-        setSelectedEventId(eventIdParam);
-        setMapCenter({ lat: event.lat, lng: event.lng });
-      }, 300);
-      const timer2 = setTimeout(() => {
+      // 이벤트 선택 + 카메라 이동 즉시 처리 (마커 클릭과 동일)
+      handleMapClick();
+      setSelectedEventId(event.id);
+      setMapCenter({ lat: event.lat, lng: event.lng });
+      // 바텀시트 오픈은 딜레이 (동시 실행 시 NaverMap 리사이즈 crash 방지)
+      // 파라미터 초기화도 타이머 안에서 처리 (타이머 취소 방지)
+      const timer = setTimeout(() => {
         bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
-      }, 800);
-      return () => {
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-      };
+        router.setParams({ eventId: undefined });
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [eventIdParam, events, handleMapClick, setMapCenter]);
 
@@ -245,6 +284,22 @@ export default function MapTab() {
   useEffect(() => {
     centerOnEventsHandledRef.current = false;
   }, [centerOnEvents]);
+
+  // hotPlaces 파라미터 변경 시 플래그 리셋
+  useEffect(() => {
+    hotPlacesHandledRef.current = false;
+  }, [hotPlacesParam]);
+
+  // 홈 '지금 인기있는 곳 더보기' 진입 시 → 핫플레이스 모드 활성화 + 바텀시트 열기
+  useEffect(() => {
+    if (hotPlacesParam !== 'true' || hotPlacesHandledRef.current) return;
+    hotPlacesHandledRef.current = true;
+    setHotPlacesMode(true);
+    const timer = setTimeout(() => {
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [hotPlacesParam]);
 
   // '이벤트 N개' 배너 클릭 시 → 첫 번째 이벤트 위치로 카메라 이동
   useEffect(() => {
@@ -265,6 +320,8 @@ export default function MapTab() {
 
   // 카테고리가 'EVENT'인지 확인 (이벤트만 보기 모드)
   const isEventOnlyMode = selectedCategory === 'EVENT';
+  // 이벤트를 표시할지 여부 (전체 or 이벤트 카테고리일 때만)
+  const showEvents = selectedCategory === 'all' || selectedCategory === 'EVENT';
 
   // 이 지역에서 검색 버튼 / 토스트
   const [showSearchHereButton, setShowSearchHereButton] = useState(false);
@@ -334,9 +391,10 @@ export default function MapTab() {
       if (index === SNAP_INDEX.COLLAPSED) {
         if (selectedStore) handleBack();
         if (selectedEventId) setSelectedEventId(null);
+        if (hotPlacesMode) setHotPlacesMode(false);
       }
     },
-    [currentIndexRef, setTabBarVisible, selectedStore, selectedEventId, handleBack],
+    [currentIndexRef, setTabBarVisible, selectedStore, selectedEventId, handleBack, hotPlacesMode],
   );
 
   // 뒤로가기
@@ -370,6 +428,7 @@ export default function MapTab() {
 
   // 지도 클릭
   const onMapClick = useCallback(() => {
+    Keyboard.dismiss();
     handleMapClick();
     setSelectedEventId(null);
     bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
@@ -472,11 +531,13 @@ export default function MapTab() {
   // 검색 실행
   const onSearchSubmit = useCallback(() => {
     if (!keyword.trim()) return;
+    handleMapClick(); // 선택된 마커/가게 초기화
+    setSelectedEventId(null);
     handleSearch();
     Keyboard.dismiss();
     // 검색 결과를 바텀시트(절반)로 표시
     bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
-  }, [handleSearch, keyword]);
+  }, [handleSearch, handleMapClick, keyword]);
 
   // stores 최신값을 ref로 유지 (검색 카메라 이동에서 stale closure 방지)
   const storesRef = useRef(stores);
@@ -564,18 +625,27 @@ export default function MapTab() {
     if (!isEventOnlyMode) {
       storesWithFavorite.forEach((store) => items.push({ type: 'store', data: store }));
     }
-    // 검색 중에는 가게만 표시 (이벤트 숨김)
-    if (!submittedKeyword) {
-      if (!isEventOnlyMode && storesWithFavorite.length > 0 && events.length > 0) {
+    // 이벤트 키워드 필터링 (검색 중이면 제목/설명으로 필터, 아니면 전체)
+    const filteredEvents = submittedKeyword
+      ? events.filter((event) => {
+          const kw = submittedKeyword.toLowerCase();
+          return (
+            event.title.toLowerCase().includes(kw) ||
+            (event.description?.toLowerCase().includes(kw) ?? false)
+          );
+        })
+      : events;
+    if (showEvents) {
+      if (!isEventOnlyMode && storesWithFavorite.length > 0 && filteredEvents.length > 0) {
         items.push({ type: 'divider' });
       }
-      events.forEach((event) => items.push({ type: 'event', data: event }));
+      filteredEvents.forEach((event) => items.push({ type: 'event', data: event }));
     }
     if (items.length === 0) {
       items.push({ type: 'empty' });
     }
     return items;
-  }, [selectedStoreWithFavorite, selectedEvent, isLoading, isEventsLoading, isEventOnlyMode, storesWithFavorite, events, submittedKeyword]);
+  }, [selectedStoreWithFavorite, selectedEvent, isLoading, isEventsLoading, isEventOnlyMode, showEvents, storesWithFavorite, events, submittedKeyword]);
 
   const renderBottomSheetHeader = useCallback(() => {
     if (selectedStoreWithFavorite) {
@@ -810,7 +880,15 @@ export default function MapTab() {
           center={mapCenter}
           markers={markers}
           hideStoreMarkers={isEventOnlyMode}
-          eventMarkers={eventMarkers}
+          eventMarkers={
+            selectedStoreWithFavorite
+              ? [] // 가게 선택 시 이벤트 마커 전체 숨김
+              : selectedEventId
+              ? eventMarkers.filter((m) => m.id === `event-${selectedEventId}`) // 선택된 이벤트 마커만 표시
+              : showEvents
+              ? eventMarkers
+              : []
+          }
           myLocation={myLocation}
           onMapClick={onMapClick}
           onMarkerClick={onMarkerClick}
@@ -888,22 +966,59 @@ export default function MapTab() {
       >
         <View style={styles.bottomSheetContent}>
           {/* 바텀시트 헤더 */}
-          <View style={styles.bottomSheetHeader}>
-            <TouchableOpacity
-              style={styles.bottomSheetTriggerContent}
-              onPress={() => setShowDistanceModal(true)}
-            >
-              <ThemedText type="subtitle" lightColor={Text.primary}>
-                주변 {DISTANCE_OPTIONS.find((o) => o.id === selectedDistance)?.label}
-              </ThemedText>
-              <Ionicons name="chevron-down" size={20} color={Text.primary} />
-            </TouchableOpacity>
+          {hotPlacesMode ? (
+            <View style={styles.bottomSheetHeader}>
+              <View style={styles.hotPlacesHeader}>
+                <ThemedText type="subtitle" lightColor={Text.primary}>🔥 지금 인기있는 곳</ThemedText>
+                <ThemedText style={styles.hotPlacesSubtitle}>이번 주 찜이 가장 많이 늘어난 가게</ThemedText>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.bottomSheetHeader}>
+              <TouchableOpacity
+                style={styles.bottomSheetTriggerContent}
+                onPress={() => setShowDistanceModal(true)}
+              >
+                <ThemedText type="subtitle" lightColor={Text.primary}>
+                  주변 {DISTANCE_OPTIONS.find((o) => o.id === selectedDistance)?.label}
+                </ThemedText>
+                <Ionicons name="chevron-down" size={20} color={Text.primary} />
+              </TouchableOpacity>
 
-            {renderFilterChips()}
-          </View>
+              {renderFilterChips()}
+            </View>
+          )}
 
           {/* 가게/이벤트 목록 또는 선택된 상세 */}
-          {(selectedStoreWithFavorite || selectedEvent || isLoading || isEventsLoading) ? (
+          {hotPlacesMode ? (
+            <BottomSheetScrollView
+              style={styles.scrollView}
+              contentContainerStyle={[styles.storeListContent, { paddingBottom: rs(20) }]}
+            >
+              {hotStoresList.map((place: typeof hotStoresList[number], index: number) => (
+                <TouchableOpacity
+                  key={place.id}
+                  style={[styles.hotPlaceItem, index < hotStoresList.length - 1 && styles.hotPlaceItemBorder]}
+                  onPress={() => handleViewStoreDetail(String(place.id))}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.hotPlaceRankCircle, { backgroundColor: index < 3 ? ['#34B262', '#3B82F6', '#F59E0B'][index] : Gray.gray5 }]}>
+                    <ThemedText style={styles.hotPlaceRankNumber}>{place.rank}</ThemedText>
+                  </View>
+                  <View style={styles.hotPlaceInfo}>
+                    <View style={styles.hotPlaceNameRow}>
+                      <ThemedText type="defaultSemiBold">{place.name}</ThemedText>
+                      <ThemedText type="caption" lightColor={Gray.gray9}>{place.category}</ThemedText>
+                    </View>
+                    <ThemedText style={styles.hotPlaceOrganization}>{place.organization}</ThemedText>
+                  </View>
+                  <View style={styles.hotPlaceFavorite}>
+                    <ThemedText style={styles.hotPlaceFavoriteCount}>+{place.weeklyFavoriteCount}회</ThemedText>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </BottomSheetScrollView>
+          ) : (selectedStoreWithFavorite || selectedEvent || isLoading || isEventsLoading) ? (
             <BottomSheetScrollView
               style={styles.scrollView}
               contentContainerStyle={[styles.storeListContent, { paddingBottom: rs(20) }]}
@@ -1311,5 +1426,57 @@ const styles = StyleSheet.create({
     color: Gray.white,
     fontSize: rs(15),
     fontWeight: '700',
+  },
+  // ── 핫플레이스 모드 ──
+  hotPlacesHeader: {
+    paddingVertical: rs(4),
+    gap: rs(2),
+  },
+  hotPlacesSubtitle: {
+    fontSize: rs(12),
+    color: Text.secondary,
+  },
+  hotPlaceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: rs(4),
+    paddingVertical: rs(12),
+  },
+  hotPlaceItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Gray.gray3,
+  },
+  hotPlaceRankCircle: {
+    width: rs(28),
+    height: rs(28),
+    borderRadius: rs(14),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hotPlaceRankNumber: {
+    fontSize: rs(14),
+    fontWeight: '700',
+    color: Gray.white,
+  },
+  hotPlaceInfo: {
+    flex: 1,
+    paddingHorizontal: rs(12),
+  },
+  hotPlaceNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(8),
+  },
+  hotPlaceOrganization: {
+    fontSize: rs(11),
+    color: Brand.primary,
+  },
+  hotPlaceFavorite: {
+    alignItems: 'flex-end',
+  },
+  hotPlaceFavoriteCount: {
+    fontSize: rs(12),
+    fontWeight: '600',
+    color: Brand.primary,
   },
 });

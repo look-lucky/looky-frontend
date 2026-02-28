@@ -25,7 +25,7 @@ export function HotPlaceSection({ places }: HotPlaceSectionProps) {
   const router = useRouter();
 
   const handleMorePress = () => {
-    router.push('/map');
+    router.push('/map?hotPlaces=true' as any);
   };
 
   const handlePlacePress = (placeId: number) => {

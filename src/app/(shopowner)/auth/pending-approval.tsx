@@ -53,7 +53,7 @@ export default function PendingApprovalScreen() {
         return;
       }
 
-      const status = claims[0].status;
+      const { status, rejectReason } = claims[0];
 
       if (status === 'APPROVED') {
         // _layout에서 자동으로 ShopOwnerApp으로 전환됨
@@ -61,10 +61,10 @@ export default function PendingApprovalScreen() {
           queryKey: getGetMyStoreClaimsQueryKey(),
         });
       } else if (status === 'REJECTED') {
-        Alert.alert(
-          '승인 거부',
-          '승인이 거부되었습니다. 고객센터로 문의해주세요.',
-        );
+        const message = rejectReason
+          ? `승인이 거부되었습니다.\n\n거절 사유: ${rejectReason}`
+          : '승인이 거부되었습니다. 고객센터로 문의해주세요.';
+        Alert.alert('승인 거부', message);
       } else {
         Alert.alert('알림', '아직 승인 대기 중입니다.');
       }

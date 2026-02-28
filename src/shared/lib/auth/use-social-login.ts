@@ -3,7 +3,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "./auth-context";
-import type { UserType } from "./token";
+import { saveLoginProvider, type UserType } from "./token";
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
@@ -114,6 +114,7 @@ export function useSocialLogin() {
             }
 
             console.log("로그인 성공 - 토큰 수신");
+            await saveLoginProvider(provider);
             await handleAuthSuccess(
               accessToken,
               expiresIn ? parseInt(expiresIn, 10) : 3600,

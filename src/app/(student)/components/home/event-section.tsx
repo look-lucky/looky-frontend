@@ -73,17 +73,24 @@ export function EventSection({ events }: EventSectionProps) {
   };
 
   const getDDayInfo = (event: EventItem) => {
-    const start = new Date(event.startDateTime);
-    const today = new Date();
-    const diffTime = start.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const now = new Date();
 
-    if (event.status === 'LIVE' || diffDays <= 0) {
-      return { text: 'D-DAY', style: DDAY_STYLES.TODAY };
+    if (event.status === 'LIVE') {
+      // 진행중 이벤트는 종료일까지 카운트다운
+      const end = new Date(event.endDateTime);
+      const diffTime = end.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays <= 0) return { text: 'D-DAY', style: DDAY_STYLES.TODAY };
+      if (diffDays === 1) return { text: 'D-1', style: DDAY_STYLES.ONE };
+      return { text: `D-${diffDays}`, style: DDAY_STYLES.FUTURE };
     }
-    if (diffDays === 1) {
-      return { text: 'D-1', style: DDAY_STYLES.ONE };
-    }
+
+    // UPCOMING 이벤트는 시작일까지 카운트다운
+    const start = new Date(event.startDateTime);
+    const diffTime = start.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return { text: 'D-DAY', style: DDAY_STYLES.TODAY };
+    if (diffDays === 1) return { text: 'D-1', style: DDAY_STYLES.ONE };
     return { text: `D-${diffDays}`, style: DDAY_STYLES.FUTURE };
   };
 

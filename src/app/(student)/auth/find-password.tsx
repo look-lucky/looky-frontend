@@ -2,7 +2,7 @@ import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useSendCodeForFindPassword, useVerifyCodeForFindPassword } from "@/src/api/auth";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AppState,
   StyleSheet,
@@ -25,6 +25,7 @@ export default function FindPasswordPage() {
 
   const sendCodeMutation = useSendCodeForFindPassword();
   const verifyCodeMutation = useVerifyCodeForFindPassword();
+  const isSendingRef = useRef(false);
 
   useEffect(() => {
     if (!showVerification || !expiryTime) return;
@@ -58,7 +59,8 @@ export default function FindPasswordPage() {
   };
 
   const handleGetVerificationCode = async () => {
-    if (!username || !email) return;
+    if (!username || !email || isSendingRef.current) return;
+    isSendingRef.current = true;
     setEmailError("");
     try {
       await sendCodeMutation.mutateAsync({ data: { username, email } });
@@ -71,6 +73,8 @@ export default function FindPasswordPage() {
     } catch {
       setShowVerification(false);
       setEmailError("가입되지 않은 이메일입니다");
+    } finally {
+      isSendingRef.current = false;
     }
   };
 
