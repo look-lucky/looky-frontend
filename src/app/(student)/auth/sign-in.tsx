@@ -19,7 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import type { UserType } from "@/src/shared/lib/auth/token";
-import { saveCredentials, saveUsername } from "@/src/shared/lib/auth/token";
+import { saveCredentials, saveLoginProvider, saveUsername } from "@/src/shared/lib/auth/token";
 
 // JWT payload 디코딩 함수
 function decodeJwtPayload(token: string): { role?: string } | null {
@@ -100,6 +100,7 @@ export default function LoginPage() {
             console.log("[Login] Role from JWT:", role);
 
             await saveUsername(username);
+            await saveLoginProvider('email');
             await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
             await saveCredentials(username, password);
             console.log("[Login] handleAuthSuccess completed - token should be stored");
