@@ -10,6 +10,7 @@ import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/the
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   AppState,
   ScrollView,
   StyleSheet,
@@ -269,15 +270,28 @@ export default function SocialSignupFormPage() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <ArrowLeft onPress={async () => {
-          if (userType === "ROLE_GUEST") {
-            await handleLogout();
-          }
-          if (router.canGoBack()) {
-            router.back();
-          } else {
-            router.replace("/auth");
-          }
+        <ArrowLeft onPress={() => {
+          Alert.alert(
+            "회원가입 취소",
+            "회원가입을 그만두시겠습니까?",
+            [
+              { text: "계속하기", style: "cancel" },
+              {
+                text: "그만두기",
+                style: "destructive",
+                onPress: async () => {
+                  if (userType === "ROLE_GUEST") {
+                    await handleLogout();
+                    router.replace("/auth");
+                  } else if (router.canGoBack()) {
+                    router.back();
+                  } else {
+                    router.replace("/auth");
+                  }
+                },
+              },
+            ]
+          );
         }} />
       </View>
 

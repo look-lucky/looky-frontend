@@ -1,3 +1,4 @@
+import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -13,6 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function EditProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { loginProvider } = useAuth();
+  const isSocialLogin = loginProvider !== null && loginProvider !== 'email';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -27,10 +30,12 @@ export default function EditProfileScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View>
-          <MenuRow label="아이디" onPress={() => router.push('/mypage/change-id' as any)} />
-          <MenuRow label="비밀번호" onPress={() => router.push('/mypage/change-password' as any)} />
-        </View>
+        {!isSocialLogin && (
+          <View>
+            <MenuRow label="아이디" onPress={() => router.push('/mypage/change-id' as any)} />
+            <MenuRow label="비밀번호" onPress={() => router.push('/mypage/change-password' as any)} />
+          </View>
+        )}
 
         <View style={styles.divider} />
 
