@@ -7,12 +7,12 @@ import { rs } from '@/src/shared/theme/scale';
 import type { ReviewItem, ReviewRating } from '@/src/shared/types/store';
 import React, { useCallback, useState } from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    StyleSheet,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 
 // Re-export types for convenience
@@ -41,12 +41,12 @@ function ReviewRatingBlock({ rating }: { rating: ReviewRating }) {
   return (
     <View style={styles.ratingBlock}>
       <View style={styles.ratingLeft}>
-        <ThemedText style={styles.ratingLabel}>
+        <ThemedText style={styles.ratingLabel} lightColor="#666" darkColor="#666">
           {rating.totalCount}개 리뷰 별점 평균
         </ThemedText>
         <View style={styles.ratingScoreRow}>
           <StarIcon width={rs(16)} height={rs(16)} color="#FFCC00" />
-          <ThemedText style={styles.ratingScore}>
+          <ThemedText style={styles.ratingScore} lightColor="#1d1b20" darkColor="#1d1b20">
             {rating.averageRating.toFixed(1)}
           </ThemedText>
         </View>
@@ -55,7 +55,7 @@ function ReviewRatingBlock({ rating }: { rating: ReviewRating }) {
       <View style={styles.ratingRight}>
         {[5, 4, 3, 2, 1].map((star) => (
           <View key={star} style={styles.distributionRow}>
-            <ThemedText style={styles.distributionLabel}>{star}점</ThemedText>
+            <ThemedText style={styles.distributionLabel} lightColor="#666" darkColor="#666">{star}점</ThemedText>
             <View style={styles.distributionBarBg}>
               <View
                 style={[
@@ -103,6 +103,8 @@ function ReviewFilter({
               styles.filterButtonText,
               activeFilter === 'recent' && styles.filterButtonTextActive,
             ]}
+            lightColor={activeFilter === 'recent' ? '#1d1b20' : '#666'}
+            darkColor={activeFilter === 'recent' ? '#1d1b20' : '#666'}
           >
             최근순
           </ThemedText>
@@ -120,6 +122,8 @@ function ReviewFilter({
               styles.filterButtonText,
               activeFilter === 'best' && styles.filterButtonTextActive,
             ]}
+            lightColor={activeFilter === 'best' ? '#1d1b20' : '#666'}
+            darkColor={activeFilter === 'best' ? '#1d1b20' : '#666'}
           >
             베스트순
           </ThemedText>
@@ -127,7 +131,7 @@ function ReviewFilter({
       </View>
 
       <TouchableOpacity style={styles.writeButton} onPress={onWriteReview}>
-        <ThemedText style={styles.writeButtonText}>✏️ 리뷰 쓰기</ThemedText>
+        <ThemedText style={styles.writeButtonText} lightColor="#1d1b20" darkColor="#1d1b20">✏️ 리뷰 쓰기</ThemedText>
       </TouchableOpacity>
     </View>
   );
@@ -174,7 +178,7 @@ function ReviewItemCard({
               <View style={styles.profileImagePlaceholder} />
             )}
           </View>
-          <ThemedText style={styles.nickname}>{review.nickname}</ThemedText>
+          <ThemedText style={styles.nickname} lightColor="#1d1b20" darkColor="#1d1b20">{review.nickname}</ThemedText>
         </View>
 
         <View style={styles.menuWrapper}>
@@ -183,7 +187,7 @@ function ReviewItemCard({
             onPress={onMenuToggle}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <ThemedText style={styles.menuDots}>⋯</ThemedText>
+            <ThemedText style={styles.menuDots} lightColor="#999" darkColor="#999">⋯</ThemedText>
           </TouchableOpacity>
           {menuOpen && (
             <View style={styles.menuPopup}>
@@ -228,8 +232,8 @@ function ReviewItemCard({
 
       <View style={styles.reviewMeta}>
         <StarIcon width={rs(12)} height={rs(12)} color="#FFCC00" />
-        <ThemedText style={styles.ratingText}>{review.rating}</ThemedText>
-        <ThemedText style={styles.reviewDate}>{review.date}</ThemedText>
+        <ThemedText style={styles.ratingText} lightColor="#1d1b20" darkColor="#1d1b20">{review.rating}</ThemedText>
+        <ThemedText style={styles.reviewDate} lightColor="#999" darkColor="#999">{review.date}</ThemedText>
       </View>
 
       {/* Review Images */}
@@ -247,6 +251,8 @@ function ReviewItemCard({
         <ThemedText
           style={styles.reviewContent}
           numberOfLines={expanded ? undefined : 4}
+          lightColor="#1d1b20"
+          darkColor="#1d1b20"
         >
           {review.content}
         </ThemedText>
@@ -264,11 +270,11 @@ function ReviewItemCard({
           ) : (
             <FavoriteIcon width={rs(20)} height={rs(20)} color="#999" />
           )}
-          <ThemedText style={styles.actionCount}>{review.likeCount}</ThemedText>
+          <ThemedText style={styles.actionCount} lightColor="#999" darkColor="#999">{review.likeCount}</ThemedText>
         </TouchableOpacity>
         <View style={styles.actionItem}>
           <SpeechBubbleIcon width={rs(20)} height={rs(20)} color="#999" />
-          <ThemedText style={styles.actionCount}>{review.commentCount}</ThemedText>
+          <ThemedText style={styles.actionCount} lightColor="#999" darkColor="#999">{review.commentCount}</ThemedText>
         </View>
       </View>
     </View>

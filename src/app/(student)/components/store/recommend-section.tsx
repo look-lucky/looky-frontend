@@ -13,7 +13,7 @@ export function RecommendSection({ stores }: RecommendSectionProps) {
 
   return (
     <View style={styles.recommendContainer}>
-      <ThemedText style={styles.sectionTitle}>방문자들이 함께 찾은</ThemedText>
+      <ThemedText style={styles.sectionTitle} lightColor="#1d1b20" darkColor="#1d1b20">방문자들이 함께 찾은</ThemedText>
 
       <ScrollView
         horizontal

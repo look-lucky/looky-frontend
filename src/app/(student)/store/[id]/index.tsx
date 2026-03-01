@@ -265,7 +265,7 @@ export default function StoreDetailScreen() {
   // TODO: 백엔드 필드 추가 후 API 연동 (현재 API에 없는 필드)
   const storeCloverGrade = apiStore?.cloverGrade;
   const storeUniversity = '';  // TODO: StoreResponse에 university 필드 추가 후 연동
-  const storeIsPartner = apiStore?.isPartnership ?? false;
+  const storeIsPartner = (apiStore?.myPartnerships && apiStore.myPartnerships.length > 0) ?? false;
   const storeBenefits: string[] = []; // TODO: 혜택 API 추가 후 연동
 
   // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 필터링 포함)
@@ -471,11 +471,11 @@ export default function StoreDetailScreen() {
   if (isError) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ThemedText style={styles.errorText}>
+        <ThemedText style={styles.errorText} lightColor="#666" darkColor="#666">
           가게 정보를 불러오지 못했습니다.
         </ThemedText>
         <TouchableOpacity onPress={handleBack} style={styles.errorButton}>
-          <ThemedText style={styles.errorButtonText}>돌아가기</ThemedText>
+          <ThemedText style={styles.errorButtonText} lightColor="#fff" darkColor="#fff">돌아가기</ThemedText>
         </TouchableOpacity>
       </View>
     );
@@ -500,7 +500,7 @@ export default function StoreDetailScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: rs(80) + insets.bottom },
+          { paddingBottom: rs(60) + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
       >
