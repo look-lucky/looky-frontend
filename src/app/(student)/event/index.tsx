@@ -2,6 +2,7 @@ import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { rs } from '@/src/shared/theme/scale';
+import { useMapNavigationStore } from '@/src/shared/stores/map-navigation-store';
 import { Fonts, Gray, Primary } from '@/src/shared/theme/theme';
 import type { Event, EventType } from '@/src/shared/types/event';
 import { getDDay } from '@/src/shared/types/event';
@@ -44,15 +45,21 @@ const formatDate = (date: Date) =>
 
 const EventCard = ({ event }: { event: Event }) => {
     const router = useRouter();
+    const setPendingEventId = useMapNavigationStore((s) => s.setPendingEventId);
     const dDay = getDDay(event);
     const theme = getEventTheme(dDay);
     const icon = EVENT_TYPE_IMAGES[event.eventTypes[0]] ?? EVENT_TYPE_IMAGES.COMMUNITY;
+
+    const handlePress = () => {
+        setPendingEventId(event.id);
+        router.push('/(student)/(tabs)/map' as any);
+    };
 
     return (
         <TouchableOpacity
             activeOpacity={0.9}
             style={styles.cardContainer}
-            onPress={() => router.push(`/(student)/(tabs)/map?eventId=${event.id}` as any)}
+            onPress={handlePress}
         >
             <LinearGradient
                 colors={theme.gradient}
