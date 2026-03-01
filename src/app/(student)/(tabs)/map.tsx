@@ -24,6 +24,7 @@ import { useTabBar } from '@/src/shared/contexts/tab-bar-context';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { useMapSearch } from '@/src/shared/hooks/use-map-search';
 import { rs } from '@/src/shared/theme/scale';
+import { useMapNavigationStore } from '@/src/shared/stores/map-navigation-store';
 import { Brand, Gray, Owner, Text } from '@/src/shared/theme/theme';
 import type { Event, EventType } from '@/src/shared/types/event';
 import type { Store } from '@/src/shared/types/store';
@@ -355,6 +356,36 @@ export default function MapTab() {
     });
     return unsubscribe;
   }, [navigation, myLocation]);
+
+  // 이벤트 목록 페이지에서 이벤트 선택 후 지도로 넘어올 때 (크로스-네비게이터 파라미터 전달용)
+  const pendingEventId = useMapNavigationStore((s) => s.pendingEventId);
+  const setPendingEventId = useMapNavigationStore((s) => s.setPendingEventId);
+  const [activePendingEventId, setActivePendingEventId] = useState<string | null>(null);
+
+  // 포커스 시 store에서 pending 이벤트 ID를 꺼내 로컬 state에 저장
+  useFocusEffect(
+    useCallback(() => {
+      if (!pendingEventId) return;
+      setActivePendingEventId(pendingEventId);
+      setPendingEventId(null);
+    }, [pendingEventId, setPendingEventId]),
+  );
+
+  // activePendingEventId가 세팅되면 events 로딩 완료 후 이벤트 선택 처리
+  useEffect(() => {
+    if (!activePendingEventId || events.length === 0) return;
+    const event = events.find((e) => e.id === activePendingEventId);
+    if (event) {
+      setActivePendingEventId(null);
+      handleMapClick();
+      setSelectedEventId(activePendingEventId);
+      setMapCenter({ lat: event.lat, lng: event.lng });
+      const timer = setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [activePendingEventId, events, handleMapClick, setMapCenter]);
 
   // 지도 탭 포커스 상태 (NaverMap 크래시 방지용 - 탭 이탈 시 clean unmount)
   const [isTabFocused, setIsTabFocused] = useState(true);
