@@ -1,4 +1,3 @@
-import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useSendCodeForFindPassword, useVerifyCodeForFindPassword } from "@/src/api/auth";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useRouter } from "expo-router";
@@ -106,7 +105,11 @@ export default function FindPasswordPage() {
       </View>
 
       <View style={styles.content}>
-        <LookyLogo width={169} height={57} />
+        {/* Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.titleText}>비밀번호를 잊어버리셨나요?{"\n"}가입시 등록한 이메일을 입력해주세요</Text>
+          <Text style={styles.subtitleText}>비밀번호를 다시 설정할 수 있게 메일을 보내드릴게요</Text>
+        </View>
 
         <View style={styles.tabsContainer}>
           <TouchableOpacity onPress={() => router.replace("/auth/find-id")}>
@@ -122,7 +125,7 @@ export default function FindPasswordPage() {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="아이디를 입력해주세요"
+              placeholder="아이디"
               placeholderTextColor="#828282"
               value={username}
               onChangeText={(v) => { setUsername(v); setEmailError(""); }}
@@ -135,7 +138,7 @@ export default function FindPasswordPage() {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="가입하신 이메일을 입력해주세요"
+              placeholder="example@looky.com"
               placeholderTextColor="#828282"
               value={email}
               onChangeText={(v) => { setEmail(v); setEmailError(""); }}
@@ -199,13 +202,11 @@ export default function FindPasswordPage() {
       </View>
 
       <TouchableOpacity
-        style={[styles.mainButton, { backgroundColor: username && email && !sendCodeMutation.isPending ? "#40ce2b" : "#d5d5d5" }]}
-        onPress={handleGetVerificationCode}
-        disabled={!username || !email || sendCodeMutation.isPending}
+        style={[styles.mainButton, { backgroundColor: showVerification ? (verificationCode ? "#40ce2b" : "#d5d5d5") : (username && email && !sendCodeMutation.isPending ? "#40ce2b" : "#d5d5d5") }]}
+        onPress={showVerification ? handleVerifyCode : handleGetVerificationCode}
+        disabled={showVerification ? !verificationCode || timeLeft <= 0 : !username || !email || sendCodeMutation.isPending}
       >
-        <Text style={styles.mainButtonText}>
-          {sendCodeMutation.isPending ? "발송 중..." : "비밀번호 찾기"}
-        </Text>
+        <Text style={styles.mainButtonText}>다음으로</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -225,6 +226,24 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingHorizontal: 24,
+  },
+  titleContainer: {
+    width: "100%",
+    gap: 8,
+    marginTop: 60,
+    marginBottom: 32,
+  },
+  titleText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#272828",
+    lineHeight: 28,
+    fontFamily: "Pretendard",
+  },
+  subtitleText: {
+    fontSize: 13,
+    color: "#828282",
+    fontFamily: "Pretendard",
   },
   tabsContainer: {
     flexDirection: "row",

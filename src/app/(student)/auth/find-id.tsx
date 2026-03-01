@@ -1,4 +1,3 @@
-import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useSendCodeForFindId, useVerifyCodeForFindId } from "@/src/api/auth";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useRouter } from "expo-router";
@@ -192,8 +191,11 @@ export default function SigninEmailPage() {
       </View>
 
       <View style={styles.content}>
-        {/* Logo */}
-        <LookyLogo width={169} height={57} />
+        {/* Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.titleText}>아이디를 잊어버리셨나요?{"\n"}가입시 등록한 이메일을 입력해주세요</Text>
+          <Text style={styles.subtitleText}>아이디를 다시 설정할 수 있게 메일을 보내드릴게요</Text>
+        </View>
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>
@@ -211,7 +213,7 @@ export default function SigninEmailPage() {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="가입하신 ID 이메일을 입력해주세요"
+              placeholder="example@looky.com"
               placeholderTextColor="#828282"
               value={email}
               onChangeText={(v) => { setEmail(v); setEmailError(""); }}
@@ -278,9 +280,13 @@ export default function SigninEmailPage() {
         )}
       </View>
 
-      {/* Find ID Button */}
-      <TouchableOpacity style={styles.mainButton} onPress={handleGetVerificationCode} disabled={!email || sendCodeMutation.isPending}>
-        <Text style={styles.mainButtonText}>아이디 찾기</Text>
+      {/* Next Button */}
+      <TouchableOpacity
+        style={styles.mainButton}
+        onPress={showVerification ? handleVerifyCode : handleGetVerificationCode}
+        disabled={showVerification ? !verificationCode || sendCodeMutation.isPending : !email || sendCodeMutation.isPending}
+      >
+        <Text style={styles.mainButtonText}>다음으로</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -300,6 +306,24 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingHorizontal: 24,
+  },
+  titleContainer: {
+    width: "100%",
+    gap: 8,
+    marginTop: 60,
+    marginBottom: 32,
+  },
+  titleText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#272828",
+    lineHeight: 28,
+    fontFamily: "Pretendard",
+  },
+  subtitleText: {
+    fontSize: 13,
+    color: "#828282",
+    fontFamily: "Pretendard",
   },
   tabsContainer: {
     flexDirection: "row",
