@@ -44,7 +44,7 @@ function BenefitBanner({ benefits }: { benefits: string[] }) {
 
   return (
     <View style={styles.bannerContainer}>
-      <ThemedText style={styles.bannerText} numberOfLines={2}>
+      <ThemedText style={styles.bannerText} numberOfLines={2} lightColor={TextColor.primary} darkColor={TextColor.primary}>
         {benefits.join('\n')}
       </ThemedText>
     </View>
@@ -85,23 +85,23 @@ function CouponSection({
             )}
           </View>
           <View style={styles.couponTextContainer}>
-            <ThemedText style={styles.couponDiscount}>
+            <ThemedText style={styles.couponDiscount} lightColor={TextColor.primary} darkColor={TextColor.primary}>
               {coupon.discount}
             </ThemedText>
-            <ThemedText style={styles.couponTitle} numberOfLines={1}>
+            <ThemedText style={styles.couponTitle} numberOfLines={1} lightColor={TextColor.primary} darkColor={TextColor.primary}>
               {coupon.title}
             </ThemedText>
             {coupon.description !== '' && (
-              <ThemedText style={styles.couponMinOrder}>
+              <ThemedText style={styles.couponMinOrder} lightColor={TextColor.secondary} darkColor={TextColor.secondary}>
                 {coupon.description}
               </ThemedText>
             )}
-            <ThemedText style={styles.couponExpiry}>
+            <ThemedText style={styles.couponExpiry} lightColor={TextColor.secondary} darkColor={TextColor.secondary}>
               {coupon.expiryDate}
             </ThemedText>
             {coupon.remainingCount != null && (
               <View style={styles.remainingBadge}>
-                <ThemedText style={styles.remainingText}>
+                <ThemedText style={styles.remainingText} lightColor={Brand.primary} darkColor={Brand.primary}>
                   {coupon.remainingCount}장 남음
                 </ThemedText>
               </View>
@@ -118,7 +118,7 @@ function CouponSection({
           onPress={onCouponPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <ThemedText style={styles.couponViewText}>쿠폰{'\n'}보기</ThemedText>
+          <ThemedText style={styles.couponViewText} lightColor={Brand.primary} darkColor={Brand.primary}>쿠폰{'\n'}보기</ThemedText>
         </TouchableOpacity>
       </View>
     </View>

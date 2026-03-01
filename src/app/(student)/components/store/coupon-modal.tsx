@@ -1,8 +1,8 @@
-import DownloadDoneIcon from '@/assets/images/icons/store/download-done.svg';
-import DownloadIcon from '@/assets/images/icons/store/download.svg';
 import GiftIcon from '@/assets/images/icons/coupon/gift.svg';
 import HotPriceIcon from '@/assets/images/icons/coupon/hot-price.svg';
 import PriceTagDollarIcon from '@/assets/images/icons/coupon/price-tag-dollar.svg';
+import DownloadDoneIcon from '@/assets/images/icons/store/download-done.svg';
+import DownloadIcon from '@/assets/images/icons/store/download.svg';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import {
@@ -63,10 +63,10 @@ export function CouponModal({
           {/* Banner */}
           <View style={styles.banner}>
             <View style={styles.bannerTextContent}>
-              <ThemedText type="subtitle" lightColor={Gray.white}>
+              <ThemedText type="subtitle" lightColor={Gray.white} darkColor={Gray.white}>
                 {storeName} 쿠폰함
               </ThemedText>
-              <ThemedText type="caption" lightColor={Gray.white} style={styles.bannerSubtitle}>
+              <ThemedText type="caption" lightColor={Gray.white} darkColor={Gray.white} style={styles.bannerSubtitle}>
                 매장 내 모든 쿠폰 혜택을 모았어요.{'\n'}얼른 혜택을 사용해주세요!
               </ThemedText>
             </View>
@@ -85,7 +85,7 @@ export function CouponModal({
           >
             {coupons.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <ThemedText type="caption" lightColor={TextColor.tertiary}>
+                <ThemedText type="caption" lightColor={TextColor.tertiary} darkColor={TextColor.tertiary}>
                   발급 가능한 쿠폰이 없습니다
                 </ThemedText>
               </View>
@@ -110,23 +110,23 @@ export function CouponModal({
                         )}
                       </View>
                       <View style={styles.couponTextContainer}>
-                        <ThemedText style={styles.couponDiscount}>
+                        <ThemedText style={styles.couponDiscount} lightColor={TextColor.primary} darkColor={TextColor.primary}>
                           {coupon.discount}
                         </ThemedText>
-                        <ThemedText style={styles.couponTitle} numberOfLines={1}>
+                        <ThemedText style={styles.couponTitle} numberOfLines={1} lightColor={TextColor.primary} darkColor={TextColor.primary}>
                           {coupon.title}
                         </ThemedText>
                         {coupon.description !== '' && (
-                          <ThemedText style={styles.couponMinOrder}>
+                          <ThemedText style={styles.couponMinOrder} lightColor={TextColor.secondary} darkColor={TextColor.secondary}>
                             {coupon.description}
                           </ThemedText>
                         )}
-                        <ThemedText style={styles.couponExpiry}>
+                        <ThemedText style={styles.couponExpiry} lightColor={TextColor.secondary} darkColor={TextColor.secondary}>
                           {coupon.expiryDate}
                         </ThemedText>
                         {coupon.remainingCount != null && (
                           <View style={styles.remainingBadge}>
-                            <ThemedText style={styles.remainingText}>
+                            <ThemedText style={styles.remainingText} lightColor={Brand.primary} darkColor={Brand.primary}>
                               {coupon.remainingCount}장 남음
                             </ThemedText>
                           </View>
@@ -158,7 +158,7 @@ export function CouponModal({
 
           {/* Close Button */}
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <ThemedText type="defaultSemiBold" lightColor={TextColor.primary}>닫기</ThemedText>
+            <ThemedText type="defaultSemiBold" lightColor={TextColor.primary} darkColor={TextColor.primary}>닫기</ThemedText>
           </TouchableOpacity>
         </View>
       </View>

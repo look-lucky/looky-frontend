@@ -25,7 +25,7 @@ export function NewsSection({
 
   return (
     <View style={styles.container}>
-      <ThemedText style={styles.sectionTitle}>소식</ThemedText>
+      <ThemedText style={styles.sectionTitle} lightColor="#000000" darkColor="#000000">소식</ThemedText>
 
       {news.map((item) => (
         <Pressable
@@ -38,12 +38,12 @@ export function NewsSection({
               <View style={styles.iconWrapper}>
                 <Ionicons name="megaphone" size={rs(16)} color="#309821" />
               </View>
-              <ThemedText style={styles.typeText}>{item.type}</ThemedText>
+              <ThemedText style={styles.typeText} lightColor="#309821" darkColor="#309821">{item.type}</ThemedText>
             </View>
-            <ThemedText style={styles.newsDate}>{item.date}</ThemedText>
+            <ThemedText style={styles.newsDate} lightColor="#999" darkColor="#999">{item.date}</ThemedText>
           </View>
-          <ThemedText style={styles.newsTitle}>{item.title}</ThemedText>
-          <ThemedText style={styles.newsContent} numberOfLines={3}>
+          <ThemedText style={styles.newsTitle} lightColor="#1d1b20" darkColor="#1d1b20">{item.title}</ThemedText>
+          <ThemedText style={styles.newsContent} numberOfLines={3} lightColor="#666" darkColor="#666">
             {item.content}
           </ThemedText>
         </Pressable>

@@ -21,8 +21,8 @@ export function ReportSection({ storeId }: ReportSectionProps) {
       <View style={styles.thickDivider} />
       <TouchableOpacity style={styles.reportContainer} onPress={handlePress}>
         <View style={styles.reportContent}>
-          <ThemedText style={styles.reportTitle}>잘못된 정보가 있나요?</ThemedText>
-          <ThemedText style={styles.reportDescription}>
+          <ThemedText style={styles.reportTitle} lightColor="#000000" darkColor="#000000">잘못된 정보가 있나요?</ThemedText>
+          <ThemedText style={styles.reportDescription} lightColor="#828282" darkColor="#828282">
             수정이 필요하거나 다른 혜택을 제공한다면 알려주세요!
           </ThemedText>
         </View>
