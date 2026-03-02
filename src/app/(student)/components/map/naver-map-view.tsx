@@ -310,9 +310,13 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                 height={EVENT_MARKER_SIZE}
                 onTap={() => onEventMarkerClick?.(item.id)}
                 anchor={{ x: 0.5, y: 0.5 }}
-                image={getEventMarkerIcon(item.eventType, item.status)}
-                alpha={getEventMarkerOpacity(item.status)}
-              />
+              >
+                <RNImage
+                  source={getEventMarkerIcon(item.eventType, item.status)}
+                  style={{ width: EVENT_MARKER_SIZE, height: EVENT_MARKER_SIZE, opacity: getEventMarkerOpacity(item.status) }}
+                  resizeMode="stretch"
+                />
+              </NaverMapMarkerOverlay>
             );
           })}
         </NaverMapView>

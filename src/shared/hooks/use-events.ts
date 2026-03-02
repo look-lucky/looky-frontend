@@ -231,6 +231,7 @@ export function useEvents({
 
   return {
     events: filteredEvents,
+    allEvents: visibleEvents,
     eventMarkers,
     isLoading,
     isError,
