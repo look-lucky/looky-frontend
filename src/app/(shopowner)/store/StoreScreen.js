@@ -687,10 +687,7 @@ export default function StoreScreen() {
       return;
     }
 
-    if (!editBasicData.branch || editBasicData.branch.trim().length === 0) {
-      Alert.alert("알림", "가게 지점명을 입력해주세요.");
-      return;
-    }
+    // [수정] 가게 지점명은 선택사항으로 변경 (필수 체크 제거)
 
     // 필수 선택 검증 (가게 종류, 가게 분위기)
     if (!editBasicData.categories || editBasicData.categories.length === 0) {
@@ -773,8 +770,12 @@ export default function StoreScreen() {
 
       console.log("🚀 [handleBasicSave] Request Payload:", JSON.stringify(requestData, null, 2));
 
-      // [핵심] JSON 포장 (표준 전송 방식 - Blob 사용하여 Content-Type 지정)
-      formData.append("request", new Blob([JSON.stringify(requestData)], { type: 'application/json' }));
+      // [핵심] JSON 포장 (표준 전송 방식 - React Native FormData 호환성 준수)
+      formData.append("request", {
+        string: JSON.stringify(requestData),
+        type: 'application/json',
+        name: 'request'
+      });
 
       // 4. 이미지 파일이 있다면 formData에 추가 (키: images) - 다중 이미지 처리
       if (editBasicData.bannerImages && editBasicData.bannerImages.length > 0) {
