@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SectionHeader } from './section-header';
 
-type EventType = 'FOOD_EVENT' | 'POPUP_STORE' | 'SCHOOL_EVENT' | 'PROMOTION' | 'COMMUNITY';
+type EventType = 'FOOD_EVENT' | 'POPUP_STORE' | 'SCHOOL_EVENT' | 'PROMOTION' | 'COMMUNITY' | 'FLEA_MARKET' | 'PERFORMANCE';
 
 interface EventItem {
   id: number;
@@ -36,8 +36,10 @@ const EVENT_TYPE_ICONS: Record<EventType, ImageSourcePropType> = {
   FOOD_EVENT: require('@/assets/images/icons/home/event-burger.png'),
   SCHOOL_EVENT: require('@/assets/images/icons/home/event-alarm.png'),
   POPUP_STORE: require('@/assets/images/icons/home/event-alarm.png'),
-  PROMOTION: require('@/assets/images/icons/home/event-alarm.png'),
-  COMMUNITY: require('@/assets/images/icons/home/event-alarm.png'),
+  FLEA_MARKET: require('@/assets/images/icons/map/event-market.png'),
+  PERFORMANCE: require('@/assets/images/icons/map/event-student.png'),
+  PROMOTION: require('@/assets/images/icons/map/event-student.png'),
+  COMMUNITY: require('@/assets/images/icons/map/event-student.png'),
 };
 
 // D-day 값 기준 스타일 (D-DAY=파란, D-1=분홍, D-N=노란)
