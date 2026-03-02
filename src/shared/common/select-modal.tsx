@@ -4,11 +4,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
+  Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { rs } from '../theme/scale';
 
@@ -36,7 +39,9 @@ export function SelectModal({
   title,
   highlightedIds = [],
 }: SelectModalProps) {
-  const translateY = useSharedValue(0);
+  const { bottom: bottomInset } = useSafeAreaInsets();
+  const modalHeight = rs(350) + bottomInset + rs(20);
+  const translateY = useSharedValue(modalHeight);
   const buttonScale = useSharedValue(1);
 
   // 드래그 제스처 설정
@@ -71,20 +76,23 @@ export function SelectModal({
   };
 
   React.useEffect(() => {
-    if (!visible) {
-      translateY.value = 0;
+    if (visible) {
+      translateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
+    } else {
+      translateY.value = modalHeight;
     }
   }, [visible]);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <View style={styles.modalOverlay} pointerEvents="box-none">
+        <TouchableOpacity style={styles.overlayBackground} activeOpacity={1} onPress={onClose} />
         <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.modalContentWrapper, animatedContentStyle]}>
+          <Animated.View style={[styles.modalContentWrapper, animatedContentStyle]} onStartShouldSetResponder={() => true}>
             <LinearGradient
               colors={['#FFFFFF', '#FFFFFF', '#EDEDED']}
               locations={[0, 0.48, 1]}
-              style={styles.modalContent}
+              style={[styles.modalContent, { paddingBottom: rs(20) + bottomInset }]}
             >
               <View style={styles.handleBarContainer}>
                 <View style={styles.handleBar} />
@@ -150,8 +158,11 @@ export function SelectModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  overlayBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContentWrapper: {
     width: '100%',
@@ -162,7 +173,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: rs(24),
     width: '100%',
     height: rs(350),
-    paddingBottom: rs(20),
   },
   handleBarContainer: {
     width: '100%',

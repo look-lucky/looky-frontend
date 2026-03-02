@@ -96,6 +96,16 @@ function MenuItemCard({ item }: { item: MenuItem }) {
 // ============================================
 
 export function MenuSection({ categories }: MenuSectionProps) {
+  if (categories.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <ThemedText style={styles.emptyText} lightColor="#999" darkColor="#999">
+          등록된 메뉴가 없습니다.
+        </ThemedText>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {categories.map((category) => (
@@ -121,6 +131,14 @@ export function MenuSection({ categories }: MenuSectionProps) {
 const styles = StyleSheet.create({
   container: {
     gap: rs(12),
+  },
+  emptyContainer: {
+    paddingVertical: rs(40),
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: rs(14),
+    color: '#999',
   },
   categoryContainer: {
     gap: rs(12),

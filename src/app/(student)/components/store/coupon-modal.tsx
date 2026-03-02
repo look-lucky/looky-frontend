@@ -6,7 +6,6 @@ import DownloadIcon from '@/assets/images/icons/store/download.svg';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import {
-  Brand,
   Coupon as CouponColor,
   Fonts,
   Gray,
@@ -92,9 +91,10 @@ export function CouponModal({
             ) : (
               coupons.map((coupon) => {
                 const isIssued = issuedCouponTitles.includes(coupon.title);
+                const isSoldOut = coupon.remainingCount != null && coupon.remainingCount === 0;
                 const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ''];
                 return (
-                  <View key={coupon.id} style={[styles.couponCard, isIssued && styles.couponCardIssued]}>
+                  <View key={coupon.id} style={[styles.couponCard, (isIssued || isSoldOut) && styles.couponCardIssued]}>
                     {/* Left: Icon + Info */}
                     <View style={styles.couponMain}>
                       <View
@@ -126,7 +126,7 @@ export function CouponModal({
                         </ThemedText>
                         {coupon.remainingCount != null && (
                           <View style={styles.remainingBadge}>
-                            <ThemedText style={styles.remainingText} lightColor={Brand.primary} darkColor={Brand.primary}>
+                            <ThemedText style={styles.remainingText}>
                               {coupon.remainingCount}장 남음
                             </ThemedText>
                           </View>
@@ -141,7 +141,7 @@ export function CouponModal({
                     <TouchableOpacity
                       style={styles.downloadArea}
                       onPress={() => onIssueCoupon(coupon.id)}
-                      disabled={isIssued || isIssuing}
+                      disabled={isIssued || isSoldOut || isIssuing}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       {isIssued ? (
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   remainingBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#FFDDDE',
     borderRadius: rs(4),
     paddingHorizontal: rs(6),
     paddingVertical: rs(2),
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.medium,
     fontSize: rs(10),
     lineHeight: rs(12),
-    color: Brand.primary,
+    color: '#E53935',
   },
   dashedDivider: {
     width: 0,
