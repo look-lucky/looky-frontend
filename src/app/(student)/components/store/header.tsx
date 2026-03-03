@@ -4,7 +4,7 @@ import { ThemedText } from '@/src/shared/common/themed-text';
 import { ThemedView } from '@/src/shared/common/themed-view';
 import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import { rs } from '@/src/shared/theme/scale';
-import { Brand, Gray, Owner, System, Text } from '@/src/shared/theme/theme';
+import { Brand, Gray, System, Text } from '@/src/shared/theme/theme';
 import { formatOperatingHours, parseAllOperatingHours } from '@/src/shared/utils/store-transform';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
@@ -178,7 +178,9 @@ function StoreInfoSection({
 
       <TouchableOpacity style={styles.infoRow} onPress={handleToggleHours}>
         <Ionicons name="time-outline" size={rs(14)} color={Text.secondary} />
-        <ThemedText style={styles.infoText}>{formatOperatingHours(openHours)}</ThemedText>
+        <ThemedText style={styles.infoText}>
+          {formatOperatingHours(openHours) || '정보없음'}
+        </ThemedText>
         <Ionicons
           name={isHoursExpanded ? "chevron-up" : "chevron-down"}
           size={rs(14)}
@@ -226,13 +228,9 @@ function TagSection({
         <Ionicons name="chevron-down" size={rs(14)} color="#828282" />
       </TouchableOpacity>
 
-      {isPartner ? (
-        <ThemedView style={styles.partnerBadge}>
-          <ThemedText style={styles.partnerText}>내 제휴</ThemedText>
-        </ThemedView>
-      ) : (
-        <ThemedText style={styles.noPartnerText}>제휴를 제공하지 않는 매장입니다</ThemedText>
-      )}
+      <ThemedView style={[styles.partnerBadge, !isPartner && styles.noPartnerBadge]}>
+        <ThemedText style={styles.partnerText}>내 제휴</ThemedText>
+      </ThemedView>
     </ThemedView>
   );
 }
@@ -274,16 +272,22 @@ export function StoreHeader({
   const sortedOptions = React.useMemo(() => {
     return [...partnershipOptions].sort((a, b) => {
       // 1순위: 사용자 소속 단과대
-      if (a.label === collegeName) return -1;
-      if (b.label === collegeName) return 1;
+      const isAUserCollege = a.label === collegeName;
+      const isBUserCollege = b.label === collegeName;
+      if (isAUserCollege && !isBUserCollege) return -1;
+      if (!isAUserCollege && isBUserCollege) return 1;
 
-      // 2순위: 총학생회
-      if (a.label === '총학생회') return -1;
-      if (b.label === '총학생회') return 1;
+      // 2순위: 총학생회 (키워드 포함)
+      const isAStudentUnion = a.label.includes('총학생회');
+      const isBStudentUnion = b.label.includes('총학생회');
+      if (isAStudentUnion && !isBStudentUnion) return -1;
+      if (!isAStudentUnion && isBStudentUnion) return 1;
 
-      // 3순위: 총동아리연합회
-      if (a.label === '총동아리연합회') return -1;
-      if (b.label === '총동아리연합회') return 1;
+      // 3순위: 총동아리연합회 (키워드 포함)
+      const isAAlumni = a.label.includes('총동아리연합회') || a.label.includes('총동연');
+      const isBAlumni = b.label.includes('총동아리연합회') || b.label.includes('총동연');
+      if (isAAlumni && !isBAlumni) return -1;
+      if (!isAAlumni && isBAlumni) return 1;
 
       // 4순위: 가나다순
       return a.label.localeCompare(b.label, 'ko');
@@ -326,7 +330,6 @@ export function StoreHeader({
           onUniversityPress={() => setShowUniversityModal(true)}
         />
       </ThemedView>
-      <View style={styles.thickDivider} />
 
       <SelectModal
         visible={showUniversityModal}
@@ -511,24 +514,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard',
   },
   partnerBadge: {
-    backgroundColor: Owner.primary,
-    borderRadius: 8,
+    backgroundColor: '#309821',
+    borderRadius: 20,
     paddingHorizontal: rs(10),
-    paddingVertical: rs(4),
+    height: rs(28),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noPartnerBadge: {
+    backgroundColor: '#D5D5D5',
   },
   partnerText: {
     fontSize: rs(11),
     color: Gray.white,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'Pretendard',
+    lineHeight: 16.8,
   },
-  noPartnerText: {
-    fontSize: rs(12),
-    color: Text.tertiary,
-  },
-  thickDivider: {
-    height: rs(10),
-    backgroundColor: '#F5F5F5',
-    width: '100%',
-    marginTop: rs(16),
-  },
-});
+},);
