@@ -70,7 +70,13 @@ export function StoreContent({
       <TabNavigation activeTab={activeTab} onTabChange={onTabChange} />
 
       {activeTab === 'news' && <NewsSection news={news} storeId={storeId} />}
-      {activeTab === 'menu' && <MenuSection categories={menu} />}
+      {activeTab === 'menu' && (
+        <MenuSection
+          categories={menu}
+          scrollViewRef={scrollViewRef}
+          scrollOffsetY={scrollOffsetY}
+        />
+      )}
       {activeTab === 'review' && (
         <ReviewSection
           rating={reviewRating}

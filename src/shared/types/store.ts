@@ -54,6 +54,7 @@ export interface MenuItem {
   isHot?: boolean;
   isSoldOut?: boolean;
   hasNotification?: boolean;
+  badge?: string;
 }
 
 export interface MenuCategory {

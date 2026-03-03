@@ -187,7 +187,9 @@ export function InfoSection({
               </View>
             ))
           ) : (
-            <ThemedText style={styles.body} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>{formatOperatingHours(operatingHours) || '-'}</ThemedText>
+            <ThemedText style={styles.body} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>
+              {formatOperatingHours(operatingHours) || '정보없음'}
+            </ThemedText>
           )}
         </View>
       </View>
