@@ -79,7 +79,7 @@ function AppContent() {
         <Stack.Screen name="signin" />
         <Stack.Screen name="(tabs)" />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
     </TabBarProvider>
   );
 }
