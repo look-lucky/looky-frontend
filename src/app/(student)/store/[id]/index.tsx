@@ -266,7 +266,9 @@ export default function StoreDetailScreen() {
   const storeCloverGrade = apiStore?.cloverGrade;
   const storeUniversity = '';  // TODO: StoreResponse에 university 필드 추가 후 연동
   const storeIsPartner = (apiStore?.myPartnerships && apiStore.myPartnerships.length > 0) ?? false;
-  const storeBenefits: string[] = []; // TODO: 혜택 API 추가 후 연동
+  const storeBenefits: string[] = (apiStore?.myPartnerships ?? [])
+    .map((p) => p.name ?? '')
+    .filter(Boolean);
 
   // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 필터링 포함)
   const storeCoupons = useMemo(() => {
