@@ -87,69 +87,69 @@ export function SelectModal({
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.modalOverlay} pointerEvents="box-none">
         <TouchableOpacity style={styles.overlayBackground} activeOpacity={1} onPress={onClose} />
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.modalContentWrapper, animatedContentStyle]} onStartShouldSetResponder={() => true}>
-            <LinearGradient
-              colors={['#FFFFFF', '#FFFFFF', '#EDEDED']}
-              locations={[0, 0.48, 1]}
-              style={[styles.modalContent, { paddingBottom: rs(20) + bottomInset }]}
-            >
+        <Animated.View style={[styles.modalContentWrapper, animatedContentStyle]}>
+          <LinearGradient
+            colors={['#FFFFFF', '#FFFFFF', '#EDEDED']}
+            locations={[0, 0.48, 1]}
+            style={[styles.modalContent, { paddingBottom: rs(20) + bottomInset }]}
+          >
+            <GestureDetector gesture={panGesture}>
               <View style={styles.handleBarContainer}>
                 <View style={styles.handleBar} />
               </View>
+            </GestureDetector>
 
-              {title && (
-                <View style={styles.modalHeader}>
-                  <ThemedText style={styles.modalTitle}>{title}</ThemedText>
-                </View>
-              )}
+            {title && (
+              <View style={styles.modalHeader}>
+                <ThemedText style={styles.modalTitle}>{title}</ThemedText>
+              </View>
+            )}
 
-              <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.optionsContainer}
-                showsVerticalScrollIndicator={false}
-              >
-                {options.map((option) => {
-                  const isSelected = selectedId === option.id;
-                  const isHighlighted = highlightedIds.includes(option.id);
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.optionsContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {options.map((option) => {
+                const isSelected = selectedId === option.id;
+                const isHighlighted = highlightedIds.includes(option.id);
 
-                  return (
-                    <TouchableOpacity
-                      key={option.id}
-                      style={styles.modalOption}
-                      onPress={() => {
-                        onSelect(option.id);
-                        onClose();
-                      }}
-                      activeOpacity={0.7}
+                return (
+                  <TouchableOpacity
+                    key={option.id}
+                    style={styles.modalOption}
+                    onPress={() => {
+                      onSelect(option.id);
+                      onClose();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.modalOptionText,
+                        isHighlighted && styles.modalOptionTextHighlighted,
+                        isSelected && styles.modalOptionTextSelected,
+                      ]}
                     >
-                      <ThemedText
-                        style={[
-                          styles.modalOptionText,
-                          isHighlighted && styles.modalOptionTextHighlighted,
-                          isSelected && styles.modalOptionTextSelected,
-                        ]}
-                      >
-                        {option.label}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+                      {option.label}
+                    </ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
-              <TouchableOpacity
-                onPress={onClose}
-                activeOpacity={1}
-                onPressIn={handleButtonPressIn}
-                onPressOut={handleButtonPressOut}
-              >
-                <Animated.View style={[styles.modalCloseButton, animatedButtonStyle]}>
-                  <ThemedText style={styles.modalCloseText}>닫기</ThemedText>
-                </Animated.View>
-              </TouchableOpacity>
-            </LinearGradient>
-          </Animated.View>
-        </GestureDetector>
+            <TouchableOpacity
+              onPress={onClose}
+              activeOpacity={1}
+              onPressIn={handleButtonPressIn}
+              onPressOut={handleButtonPressOut}
+            >
+              <Animated.View style={[styles.modalCloseButton, animatedButtonStyle]}>
+                <ThemedText style={styles.modalCloseText}>닫기</ThemedText>
+              </Animated.View>
+            </TouchableOpacity>
+          </LinearGradient>
+        </Animated.View>
       </View>
     </Modal>
   );

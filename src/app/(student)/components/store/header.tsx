@@ -1,8 +1,7 @@
-import type { StoreResponseCloverGrade } from '@/src/api/generated.schemas';
+import type { StorePartnershipResponse, StoreResponseCloverGrade } from '@/src/api/generated.schemas';
 import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { ThemedView } from '@/src/shared/common/themed-view';
-import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
 import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Owner, System, Text } from '@/src/shared/theme/theme';
@@ -50,10 +49,11 @@ interface StoreHeaderProps {
   openHours: string;
   university: string;
   isPartner: boolean;
+  partnerships: StorePartnershipResponse[];
   onBack: () => void;
   onLike: () => void;
   onReviewPress?: () => void;
-  onUniversityChange?: (universityId: number) => void;
+  onUniversityChange?: (orgName: string) => void;
 }
 
 // ============================================
@@ -253,6 +253,7 @@ export function StoreHeader({
   openHours,
   university,
   isPartner,
+  partnerships,
   onBack,
   onLike,
   onReviewPress,
@@ -261,13 +262,17 @@ export function StoreHeader({
   const { collegeName } = useAuth();
   const [showUniversityModal, setShowUniversityModal] = useState(false);
 
-  // 현재 선택된 대학의 id 찾기 (label로 매칭)
-  const selectedUniversityId =
-    UNIVERSITY_OPTIONS.find((opt) => opt.label === university)?.id ?? 0;
+  // partnership 목록 → SelectModal 옵션 (organizationName을 id/label로 사용)
+  const partnershipOptions = React.useMemo(() =>
+    partnerships
+      .filter((p) => p.organizationName)
+      .map((p) => ({ id: p.organizationName!, label: p.organizationName! })),
+    [partnerships],
+  );
 
-  // 정렬 로직 및 하이라이트 아이디 추출
+  // 정렬 로직 및 하이라이트 id 추출
   const sortedOptions = React.useMemo(() => {
-    return [...UNIVERSITY_OPTIONS].sort((a, b) => {
+    return [...partnershipOptions].sort((a, b) => {
       // 1순위: 사용자 소속 단과대
       if (a.label === collegeName) return -1;
       if (b.label === collegeName) return 1;
@@ -283,17 +288,16 @@ export function StoreHeader({
       // 4순위: 가나다순
       return a.label.localeCompare(b.label, 'ko');
     });
-  }, [collegeName]);
+  }, [partnershipOptions, collegeName]);
 
   const highlightedIds = React.useMemo(() => {
     return sortedOptions.slice(0, 3).map((opt) => opt.id);
   }, [sortedOptions]);
 
   const handleUniversitySelect = (id: string | number) => {
-    const numericId = typeof id === 'string' ? Number(id) : id;
-    const selected = UNIVERSITY_OPTIONS.find((opt) => opt.id === numericId);
-    if (selected && onUniversityChange) {
-      onUniversityChange(numericId);
+    const orgName = String(id);
+    if (onUniversityChange) {
+      onUniversityChange(orgName);
     }
   };
 
@@ -327,7 +331,7 @@ export function StoreHeader({
       <SelectModal
         visible={showUniversityModal}
         options={sortedOptions}
-        selectedId={selectedUniversityId}
+        selectedId={university}
         onSelect={handleUniversitySelect}
         onClose={() => setShowUniversityModal(false)}
         title="다른 제휴혜택 보기"

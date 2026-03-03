@@ -345,6 +345,24 @@ export interface LoginRequest {
   password?: string;
 }
 
+/**
+ * 카카오 소셜 로그인 요청 (앱 네이티브)
+ */
+export interface KakaoLoginRequest {
+  /** Kakao SDK를 통해 발급받은 Access Token */
+  accessToken: string;
+  /** Kakao SDK를 통해 발급받은 ID Token (선택) */
+  idToken?: string;
+}
+
+/**
+ * 구글 소셜 로그인 요청 (앱 네이티브)
+ */
+export interface GoogleLoginRequest {
+  /** Google 인증 후 발급받은 JWT 형식의 id_token */
+  idToken: string;
+}
+
 export interface VerifyEmailCodeRequest {
   email: string;
   code: string;
@@ -396,6 +414,16 @@ export interface CompleteSocialSignupRequest {
   isClubMember?: boolean;
   name?: string;
   email?: string;
+}
+
+/**
+ * 애플 소셜 로그인 요청 (앱 네이티브)
+ */
+export interface AppleLoginRequest {
+  /** Apple 인증 후 발급받은 JWT 형식의 id_token */
+  idToken: string;
+  /** 유저의 이름 (Apple 로그인 최초 1회에만 제공됨. 없을 경우 null) */
+  name?: string;
 }
 
 export interface CreatePartnershipRequest {
@@ -646,6 +674,7 @@ export const PartnershipInfoCategory = {
 } as const;
 
 export interface PartnershipInfo {
+  organizationId?: number;
   category?: PartnershipInfoCategory;
   name?: string;
 }
@@ -1134,12 +1163,12 @@ export type EventResponseEventTypesItem = typeof EventResponseEventTypesItem[key
 
 
 export const EventResponseEventTypesItem = {
-  FOOD_EVENT: 'FOOD_EVENT',
-  POPUP_STORE: 'POPUP_STORE',
   SCHOOL_EVENT: 'SCHOOL_EVENT',
+  STUDENT_EVENT: 'STUDENT_EVENT',
+  FOOD_EVENT: 'FOOD_EVENT',
   FLEA_MARKET: 'FLEA_MARKET',
   PERFORMANCE: 'PERFORMANCE',
-  COMMUNITY: 'COMMUNITY',
+  BRAND_POPUP: 'BRAND_POPUP',
 } as const;
 
 export type EventResponseStatus = typeof EventResponseStatus[keyof typeof EventResponseStatus];
@@ -1164,6 +1193,7 @@ export interface EventResponse {
   endDateTime?: string;
   place?: string;
   status?: EventResponseStatus;
+  bannerImageUrl?: string;
   imageUrls?: string[];
   createdAt?: string;
 }
@@ -1253,6 +1283,8 @@ export interface PartnershipResponse {
   universityName?: string;
   category?: PartnershipResponseCategory;
   benefit?: string;
+  startsAt?: string;
+  endsAt?: string;
   storeId?: number;
   storeName?: string;
 }
@@ -1498,7 +1530,9 @@ export type UploadPartnershipDataBody = {
 
 export type CreateEventBody = {
   request: string;
-  /** 이벤트 이미지 */
+  /** 배너 이미지 (최대 1장) */
+  bannerImage?: Blob;
+  /** 일반 이미지 */
   images?: string[];
 };
 
@@ -1529,7 +1563,9 @@ export type UpdateItemBody = {
 
 export type UpdateEventBody = {
   request: string;
-  /** 이벤트 이미지 */
+  /** 배너 이미지 (최대 1장) */
+  bannerImage?: Blob;
+  /** 일반 이미지 */
   images?: string[];
 };
 
@@ -1613,12 +1649,12 @@ export type GetEventsEventTypesItem = typeof GetEventsEventTypesItem[keyof typeo
 
 
 export const GetEventsEventTypesItem = {
-  FOOD_EVENT: 'FOOD_EVENT',
-  POPUP_STORE: 'POPUP_STORE',
   SCHOOL_EVENT: 'SCHOOL_EVENT',
+  STUDENT_EVENT: 'STUDENT_EVENT',
+  FOOD_EVENT: 'FOOD_EVENT',
   FLEA_MARKET: 'FLEA_MARKET',
   PERFORMANCE: 'PERFORMANCE',
-  COMMUNITY: 'COMMUNITY',
+  BRAND_POPUP: 'BRAND_POPUP',
 } as const;
 
 export type GetEventsStatus = typeof GetEventsStatus[keyof typeof GetEventsStatus];

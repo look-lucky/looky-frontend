@@ -46,9 +46,9 @@ export function SelectedEventDetail({
       <TouchableOpacity onPress={onViewDetail} activeOpacity={0.8}>
         {/* 배너 이미지 */}
         <View style={styles.imageWrapper}>
-          {event.imageUrls.length > 0 ? (
+          {event.bannerImageUrl ? (
             <Image
-              source={{ uri: event.imageUrls[0] }}
+              source={{ uri: event.bannerImageUrl }}
               style={styles.image}
             />
           ) : (

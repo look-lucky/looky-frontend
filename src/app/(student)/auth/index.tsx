@@ -4,8 +4,10 @@ import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Text } from "@/src/shared/theme/theme";
 import { SignupIcons } from "@/assets/images/icons/signup";
 import LookyLogo from "@/assets/images/logo/looky-logo.svg";
-import { useSocialLogin } from "@/src/shared/lib/auth/use-social-login";
+import { useGoogleLogin } from "@/src/shared/lib/auth/use-google-login";
+import { useKakaoLogin } from "@/src/shared/lib/auth/use-kakao-login";
 import { useRouter } from "expo-router";
+import * as Updates from "expo-updates";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,15 +21,16 @@ const SocialColors = {
 
 export default function SignInPage() {
   const router = useRouter();
-  const { loginWithGoogle, loginWithKakao, loginWithApple, isLoading, loadingProvider } = useSocialLogin();
+  const { login: googleLogin, isLoading: googleLoading } = useGoogleLogin();
+  const { login: kakaoLogin, isLoading: kakaoLoading } = useKakaoLogin();
+  const isLoading = googleLoading || kakaoLoading;
 
-  const handleGoogleLogin = async () => {
-    const result = await loginWithGoogle();
+  const handleSocialResult = (result: { success: boolean; needsSignup?: boolean; userId?: number; error?: string }, provider: string) => {
     if (result.success) {
       if (result.needsSignup && result.userId != null) {
         router.push({
           pathname: "/auth/sign-up-social-form",
-          params: { userId: result.userId, provider: "google" },
+          params: { userId: result.userId, provider },
         });
       } else {
         router.replace("/(student)/(tabs)");
@@ -35,38 +38,16 @@ export default function SignInPage() {
     } else if (result.error !== "cancelled") {
       Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
     }
+  };
+
+  const handleGoogleLogin = async () => {
+    const result = await googleLogin();
+    handleSocialResult(result, "google");
   };
 
   const handleKakaoLogin = async () => {
-    const result = await loginWithKakao();
-    if (result.success) {
-      if (result.needsSignup && result.userId != null) {
-        router.push({
-          pathname: "/auth/sign-up-social-form",
-          params: { userId: result.userId, provider: "kakao" },
-        });
-      } else {
-        router.replace("/(student)/(tabs)");
-      }
-    } else if (result.error !== "cancelled") {
-      Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    const result = await loginWithApple();
-    if (result.success) {
-      if (result.needsSignup && result.userId != null) {
-        router.push({
-          pathname: "/auth/sign-up-social-form",
-          params: { userId: result.userId, provider: "apple" },
-        });
-      } else {
-        router.replace("/(student)/(tabs)");
-      }
-    } else if (result.error !== "cancelled") {
-      Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
-    }
+    const result = await kakaoLogin();
+    handleSocialResult(result, "kakao");
   };
 
   return (
@@ -110,7 +91,7 @@ export default function SignInPage() {
 
         {/* 소셜 로그인 버튼 */}
         <Pressable
-          style={[styles.socialButton, styles.kakaoButton, loadingProvider === "kakao" && styles.disabledButton]}
+          style={[styles.socialButton, styles.kakaoButton, kakaoLoading && styles.disabledButton]}
           onPress={handleKakaoLogin}
           disabled={isLoading}
         >
@@ -121,7 +102,7 @@ export default function SignInPage() {
         </Pressable>
 
         <Pressable
-          style={[styles.socialButton, styles.googleButton, loadingProvider === "google" && styles.disabledButton]}
+          style={[styles.socialButton, styles.googleButton, googleLoading && styles.disabledButton]}
           onPress={handleGoogleLogin}
           disabled={isLoading}
         >
@@ -132,8 +113,7 @@ export default function SignInPage() {
         </Pressable>
 
         <Pressable
-          style={[styles.socialButton, styles.appleButton, loadingProvider === "apple" && styles.disabledButton]}
-          onPress={handleAppleLogin}
+          style={[styles.socialButton, styles.appleButton]}
           disabled={isLoading}
         >
           <SignupIcons.apple width={20} height={20} />
@@ -153,6 +133,10 @@ export default function SignInPage() {
             개인정보 처리방침
           </ThemedText>
           에 동의하는 것으로 간주됩니다.
+        </ThemedText>
+
+        <ThemedText lightColor={Gray.gray4} style={styles.updateIdText}>
+          {Updates.updateId ? `upd: ${Updates.updateId.slice(-8)}` : "upd: dev"}
         </ThemedText>
       </View>
     </SafeAreaView>
@@ -244,5 +228,9 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  updateIdText: {
+    fontSize: rs(10),
+    textAlign: "center",
   },
 });
