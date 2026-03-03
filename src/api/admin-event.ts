@@ -67,6 +67,9 @@ export const getCreateEventUrl = () => {
 export const createEvent = async (createEventBody: CreateEventBody, options?: RequestInit): Promise<createEventResponse> => {
     const formData = new FormData();
 formData.append(`request`, createEventBody.request);
+if(createEventBody.bannerImage !== undefined) {
+ formData.append(`bannerImage`, createEventBody.bannerImage);
+ }
 if(createEventBody.images !== undefined) {
  createEventBody.images.forEach(value => formData.append(`images`, value));
  }
@@ -262,6 +265,9 @@ export const updateEvent = async (eventId: number,
     updateEventBody: UpdateEventBody, options?: RequestInit): Promise<updateEventResponse> => {
     const formData = new FormData();
 formData.append(`request`, updateEventBody.request);
+if(updateEventBody.bannerImage !== undefined) {
+ formData.append(`bannerImage`, updateEventBody.bannerImage);
+ }
 if(updateEventBody.images !== undefined) {
  updateEventBody.images.forEach(value => formData.append(`images`, value));
  }

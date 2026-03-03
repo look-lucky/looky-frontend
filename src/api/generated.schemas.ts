@@ -1134,12 +1134,12 @@ export type EventResponseEventTypesItem = typeof EventResponseEventTypesItem[key
 
 
 export const EventResponseEventTypesItem = {
-  FOOD_EVENT: 'FOOD_EVENT',
-  POPUP_STORE: 'POPUP_STORE',
   SCHOOL_EVENT: 'SCHOOL_EVENT',
+  STUDENT_EVENT: 'STUDENT_EVENT',
+  FOOD_EVENT: 'FOOD_EVENT',
   FLEA_MARKET: 'FLEA_MARKET',
   PERFORMANCE: 'PERFORMANCE',
-  COMMUNITY: 'COMMUNITY',
+  BRAND_POPUP: 'BRAND_POPUP',
 } as const;
 
 export type EventResponseStatus = typeof EventResponseStatus[keyof typeof EventResponseStatus];
@@ -1164,6 +1164,7 @@ export interface EventResponse {
   endDateTime?: string;
   place?: string;
   status?: EventResponseStatus;
+  bannerImageUrl?: string;
   imageUrls?: string[];
   createdAt?: string;
 }
@@ -1253,6 +1254,8 @@ export interface PartnershipResponse {
   universityName?: string;
   category?: PartnershipResponseCategory;
   benefit?: string;
+  startsAt?: string;
+  endsAt?: string;
   storeId?: number;
   storeName?: string;
 }
@@ -1498,7 +1501,9 @@ export type UploadPartnershipDataBody = {
 
 export type CreateEventBody = {
   request: string;
-  /** 이벤트 이미지 */
+  /** 배너 이미지 (최대 1장) */
+  bannerImage?: Blob;
+  /** 일반 이미지 */
   images?: string[];
 };
 
@@ -1529,7 +1534,9 @@ export type UpdateItemBody = {
 
 export type UpdateEventBody = {
   request: string;
-  /** 이벤트 이미지 */
+  /** 배너 이미지 (최대 1장) */
+  bannerImage?: Blob;
+  /** 일반 이미지 */
   images?: string[];
 };
 
@@ -1613,12 +1620,12 @@ export type GetEventsEventTypesItem = typeof GetEventsEventTypesItem[keyof typeo
 
 
 export const GetEventsEventTypesItem = {
-  FOOD_EVENT: 'FOOD_EVENT',
-  POPUP_STORE: 'POPUP_STORE',
   SCHOOL_EVENT: 'SCHOOL_EVENT',
+  STUDENT_EVENT: 'STUDENT_EVENT',
+  FOOD_EVENT: 'FOOD_EVENT',
   FLEA_MARKET: 'FLEA_MARKET',
   PERFORMANCE: 'PERFORMANCE',
-  COMMUNITY: 'COMMUNITY',
+  BRAND_POPUP: 'BRAND_POPUP',
 } as const;
 
 export type GetEventsStatus = typeof GetEventsStatus[keyof typeof GetEventsStatus];
