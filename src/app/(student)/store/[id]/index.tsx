@@ -6,10 +6,12 @@ import type {
   PageResponseReviewResponse,
   PageResponseStoreNewsResponse,
   ReviewStatsResponse,
+  StorePartnershipResponse,
   StoreResponse,
 } from '@/src/api/generated.schemas';
 import { useGetItems } from '@/src/api/item';
 import { useGetStudentInfo } from '@/src/api/my-page';
+import { useGetStorePartnerships } from '@/src/api/partnership';
 import { useAddLike, useDeleteReview, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
 import { useGetStore } from '@/src/api/store';
 import { useGetStoreNewsList } from '@/src/api/store-news';
@@ -19,7 +21,6 @@ import { StoreContent } from '@/src/app/(student)/components/store/content';
 import { CouponModal } from '@/src/app/(student)/components/store/coupon-modal';
 import { StoreHeader } from '@/src/app/(student)/components/store/header';
 import { ThemedText } from '@/src/shared/common/themed-text';
-import { UNIVERSITY_OPTIONS } from '@/src/shared/constants/store';
 import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
 import { useQueryClient } from '@tanstack/react-query';
@@ -66,20 +67,11 @@ export default function StoreDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const { collegeId: userCollegeId, collegeName: userCollegeName, username: currentUsername, saveUserCollegeName } = useAuth();
+  const { collegeName: userCollegeName, username: currentUsername, saveUserCollegeName } = useAuth();
   const [activeTab, setActiveTab] = useState(tab ?? 'news');
   const [isLiked, setIsLiked] = useState(false);
   const [isLikeInitialized, setIsLikeInitialized] = useState(false);
-  const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(userCollegeId);
-  const [hasInitializedUniversity, setHasInitializedUniversity] = useState(false);
-
-  // auth 로딩 완료 후 사용자 대학 기본값 설정
-  React.useEffect(() => {
-    if (!hasInitializedUniversity && userCollegeId !== null) {
-      setSelectedUniversityId(userCollegeId);
-      setHasInitializedUniversity(true);
-    }
-  }, [userCollegeId, hasInitializedUniversity]);
+  const [selectedOrgName, setSelectedOrgName] = useState<string | null>(null);
   const [isCouponModalVisible, setIsCouponModalVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollOffsetY = useRef(0);
@@ -127,6 +119,10 @@ export default function StoreDetailScreen() {
     const list = (myFavoritesRes as any)?.data?.data?.content ?? [];
     return (list as any[]).map((f: any) => f.storeId as number);
   }, [myFavoritesRes]);
+
+  // 제휴 혜택 목록
+  const { data: partnershipsRes } = useGetStorePartnerships(storeId);
+  const apiPartnerships = ((partnershipsRes as any)?.data?.data ?? []) as StorePartnershipResponse[];
 
   // 쿠폰 목록
   const { data: couponsRes } = useGetCouponsByStore(storeId);
@@ -262,13 +258,16 @@ export default function StoreDetailScreen() {
   // 즐겨찾기 수
   const storeLikeCount = favoriteCount ?? 0;
 
-  // TODO: 백엔드 필드 추가 후 API 연동 (현재 API에 없는 필드)
   const storeCloverGrade = apiStore?.cloverGrade;
-  const storeUniversity = '';  // TODO: StoreResponse에 university 필드 추가 후 연동
-  const storeIsPartner = (apiStore?.myPartnerships && apiStore.myPartnerships.length > 0) ?? false;
-  const storeBenefits: string[] = (apiStore?.myPartnerships ?? [])
-    .map((p) => p.name ?? '')
-    .filter(Boolean);
+
+  // 선택된 단체 기준으로 제휴 여부 및 혜택 내용 계산
+  const currentPartnership = selectedOrgName
+    ? apiPartnerships.find((p) => p.organizationName === selectedOrgName)
+    : apiPartnerships.find((p) => p.isMyBenefit);
+  const storeIsPartner = currentPartnership?.isMyBenefit ?? false;
+  const storeBenefits: string[] = currentPartnership?.benefit
+    ? [currentPartnership.benefit]
+    : [];
 
   // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 필터링 포함)
   const storeCoupons = useMemo(() => {
@@ -371,10 +370,8 @@ export default function StoreDetailScreen() {
 
   // ── 대학 필터 & 쿠폰 필터 ──────────────────────────────────
 
-  const resolvedCollegeName = userCollegeName ?? profileCollegeName ?? storeUniversity;
-  const selectedUniversity = selectedUniversityId
-    ? UNIVERSITY_OPTIONS.find((opt) => opt.id === selectedUniversityId)?.label ?? resolvedCollegeName
-    : resolvedCollegeName;
+  const resolvedCollegeName = userCollegeName ?? profileCollegeName ?? '';
+  const selectedUniversity = selectedOrgName ?? resolvedCollegeName;
 
   const filteredCoupons = storeCoupons;
 
@@ -518,10 +515,11 @@ export default function StoreDetailScreen() {
           openHours={storeOpenHours}
           university={selectedUniversity}
           isPartner={storeIsPartner}
+          partnerships={apiPartnerships}
           onBack={handleBack}
           onLike={handleLike}
           onReviewPress={handleReviewPress}
-          onUniversityChange={setSelectedUniversityId}
+          onUniversityChange={setSelectedOrgName}
         />
 
         {isStoreLoading || isTabContentLoading ? (
