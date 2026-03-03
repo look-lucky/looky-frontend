@@ -9,13 +9,17 @@ import LocationIcon from '@/assets/images/icons/event/location.svg';
 import CalendarIcon from '@/assets/images/icons/event/calendar.svg';
 import ClockIcon from '@/assets/images/icons/event/clock.svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   Image,
+  Modal,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,6 +37,7 @@ interface EventResponse {
   endDateTime: string;
   place?: string;
   status: 'UPCOMING' | 'LIVE' | 'ENDED';
+  bannerImageUrl?: string;
   imageUrls: string[];
   createdAt: string;
 }
@@ -65,6 +70,7 @@ function transformEventResponse(response: EventResponse): Event {
     endDateTime,
     place: response.place,
     status: getEventStatus({ startDateTime, endDateTime } as Event),
+    bannerImageUrl: response.bannerImageUrl,
     imageUrls: response.imageUrls ?? [],
     createdAt: new Date(response.createdAt),
   };
@@ -86,10 +92,13 @@ function formatTime(date: Date) {
   });
 }
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const eventId = Number(id);
 
@@ -140,8 +149,8 @@ export default function EventDetailScreen() {
       >
         {/* 배너 이미지 */}
         <View style={styles.bannerContainer}>
-          {event.imageUrls.length > 0 ? (
-            <Image source={{ uri: event.imageUrls[0] }} style={styles.bannerImage} />
+          {event.bannerImageUrl ? (
+            <Image source={{ uri: event.bannerImageUrl }} style={styles.bannerImage} />
           ) : (
             <View style={[styles.bannerImage, styles.bannerPlaceholder]} />
           )}
@@ -199,27 +208,54 @@ export default function EventDetailScreen() {
             </View>
           </View>
 
-          {/* 갤러리 (첫 번째 이미지 제외) */}
-          {event.imageUrls.length > 1 && (
+          {/* 구분선 */}
+          <View style={styles.divider} />
+
+          {/* 갤러리 */}
+          {event.imageUrls.length > 0 && (
             <View style={styles.galleryRow}>
-              {event.imageUrls.slice(1).map((url, index) => (
-                <Image
+              {event.imageUrls.map((url, index) => (
+                <TouchableOpacity
                   key={index}
-                  source={{ uri: url }}
-                  style={styles.galleryImage}
-                  resizeMode="cover"
-                />
+                  onPress={() => setSelectedImageUrl(url)}
+                  activeOpacity={0.8}
+                >
+                  <Image
+                    source={{ uri: url }}
+                    style={styles.galleryImage}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
               ))}
             </View>
           )}
-
-          {/* 구분선 */}
-          <View style={styles.divider} />
 
           {/* 본문 설명 */}
           <ThemedText style={styles.description}>{event.description}</ThemedText>
         </View>
       </ScrollView>
+
+      {/* 이미지 전체화면 뷰어 */}
+      <Modal
+        visible={selectedImageUrl !== null}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setSelectedImageUrl(null)}
+      >
+        <StatusBar backgroundColor="black" barStyle="light-content" />
+        <TouchableWithoutFeedback onPress={() => setSelectedImageUrl(null)}>
+          <View style={styles.imageViewerOverlay}>
+            {selectedImageUrl && (
+              <Image
+                source={{ uri: selectedImageUrl }}
+                style={styles.imageViewerImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* 하단 바 */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + rs(16) }]}>
@@ -371,6 +407,17 @@ const styles = StyleSheet.create({
     fontSize: rs(16),
     fontWeight: '700',
     color: Gray.white,
+  },
+  // 이미지 뷰어
+  imageViewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageViewerImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
   },
   // 에러
   errorText: {
