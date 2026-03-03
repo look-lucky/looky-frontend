@@ -7,6 +7,7 @@ import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useGoogleLogin } from "@/src/shared/lib/auth/use-google-login";
 import { useKakaoLogin } from "@/src/shared/lib/auth/use-kakao-login";
 import { useRouter } from "expo-router";
+import * as Updates from "expo-updates";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -133,6 +134,10 @@ export default function SignInPage() {
           </ThemedText>
           에 동의하는 것으로 간주됩니다.
         </ThemedText>
+
+        <ThemedText lightColor={Gray.gray4} style={styles.updateIdText}>
+          {Updates.updateId ? `upd: ${Updates.updateId.slice(-8)}` : "upd: dev"}
+        </ThemedText>
       </View>
     </SafeAreaView>
   );
@@ -223,5 +228,9 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  updateIdText: {
+    fontSize: rs(10),
+    textAlign: "center",
   },
 });
