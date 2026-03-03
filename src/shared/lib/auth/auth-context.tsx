@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -10,6 +11,7 @@ import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { clearToken, getCollegeId, getCollegeName, getUsername, getUserType, isTokenValid, saveCollegeId, saveCollegeName, saveToken, UserType, getCredentials, clearCredentials, getLoginProvider, LoginProvider } from "./token";
 import { authEvents } from "./auth-events";
+import { setLoggingOut } from "@/src/api/mutator";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username: null,
     loginProvider: null,
   });
+  const isAuthenticatedRef = useRef(false);
 
   // 앱 시작 시 토큰 확인
   useEffect(() => {
@@ -53,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const collegeName = await getCollegeName();
       const username = await getUsername();
       const loginProvider = await getLoginProvider();
+      isAuthenticatedRef.current = valid;
       setState({ isAuthenticated: valid, isLoading: false, userType, collegeId, collegeName, username, loginProvider });
     })();
   }, []);
@@ -60,6 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ✅ 이벤트 리스너: 토큰 리프레시 실패 → 자동 재로그인 시도 후 실패 시 로그아웃
   useEffect(() => {
     const handleRefreshFailed = async (payload: { reason?: string }) => {
+      // 이미 로그아웃 처리 중이면 무시 (로그아웃 후 남은 API 요청의 401 때문에 세션 만료 Alert이 뜨는 것 방지)
+      if (!isAuthenticatedRef.current) return;
+
       console.log("[AuthContext] Token refresh failed, trying auto-login...", payload);
 
       const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
@@ -99,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // 자동 재로그인 실패 → 자격증명 삭제 후 로그아웃
+      isAuthenticatedRef.current = false;
       await clearToken();
       await clearCredentials();
       setState({
@@ -133,15 +141,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const collegeName = await getCollegeName();
       const username = await getUsername();
       const loginProvider = await getLoginProvider();
+      isAuthenticatedRef.current = true;
       setState({ isAuthenticated: true, isLoading: false, userType, collegeId, collegeName, username, loginProvider });
     },
     []
   );
 
   const handleLogout = useCallback(async () => {
+    isAuthenticatedRef.current = false;
+    setLoggingOut(true);
     await clearToken();
     await clearCredentials();
     setState({ isAuthenticated: false, isLoading: false, userType: null, collegeId: null, collegeName: null, username: null, loginProvider: null });
+    setLoggingOut(false);
   }, []);
 
   const saveUserCollegeId = useCallback(async (collegeId: number) => {

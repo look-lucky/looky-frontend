@@ -17,8 +17,10 @@ function getViewportRadiusKm(zoom: number): number {
 // -------------------------------------------------------------------
 // Hook
 // -------------------------------------------------------------------
-export function useMapSearch(permissionReady = true) {
+export function useMapSearch(permissionReady = true, skipInitialCenterMove = false) {
   const { collegeId } = useAuth();
+  const skipInitialCenterMoveRef = useRef(skipInitialCenterMove);
+  skipInitialCenterMoveRef.current = skipInitialCenterMove;
   // 검색
   const [keyword, setKeyword] = useState('');
   const [submittedKeyword, setSubmittedKeyword] = useState('');
@@ -70,7 +72,9 @@ export function useMapSearch(permissionReady = true) {
           lng: location.coords.longitude,
         };
         setMyLocation(userLoc);
-        setMapCenter(userLoc); // 최초 위치 획득 시 지도 중심도 현재 위치로 이동
+        if (!skipInitialCenterMoveRef.current) {
+          setMapCenter(userLoc); // 최초 위치 획득 시 지도 중심도 현재 위치로 이동
+        }
       } else {
         setLocationPermissionDenied(true);
       }

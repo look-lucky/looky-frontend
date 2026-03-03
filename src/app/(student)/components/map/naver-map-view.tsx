@@ -52,7 +52,7 @@ function ClusterMarkerIcon({ count, size, icon = CLUSTER_ICON, textColor = Gray.
   const fontSize = count >= 100 ? size * 0.22 : count >= 10 ? size * 0.25 : size * 0.28;
 
   return (
-    <View style={{ width: size, height: size }}>
+    <View collapsable={false} style={{ width: size, height: size }}>
       <RNImage source={icon} style={{ width: size, height: size }} resizeMode="contain" />
       {/* paddingBottom으로 핀 꼬리 영역 제외 — 원형 헤드 중심(~42%)에 텍스트 배치 */}
       <View style={[StyleSheet.absoluteFillObject, { paddingBottom: size * 0.17, alignItems: 'center', justifyContent: 'center' }]}>

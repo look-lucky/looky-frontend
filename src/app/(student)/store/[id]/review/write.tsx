@@ -244,6 +244,11 @@ export default function ReviewWriteScreen() {
             textAlignVertical="top"
             maxLength={MAX_REVIEW_LENGTH}
           />
+          {reviewContent.length > 0 && reviewContent.trim().length < MIN_REVIEW_LENGTH && (
+            <ThemedText lightColor={COLORS.warning} style={styles.minLengthHint}>
+              최소 {MIN_REVIEW_LENGTH}자 이상 작성해주세요. ({reviewContent.trim().length}/{MIN_REVIEW_LENGTH})
+            </ThemedText>
+          )}
         </View>
 
         <Divider />
@@ -380,6 +385,10 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: rs(8),
+  },
+  minLengthHint: {
+    fontSize: rs(12),
+    color: COLORS.warning,
   },
   labelRow: {
     flexDirection: 'row',

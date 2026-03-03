@@ -68,7 +68,7 @@ export default function SignupCompletePage() {
       {/* Title */}
       <View style={styles.titleWrap}>
         <Text style={styles.title}>
-          {`(${displayName})님,\n루키를 시작해보세요!`}
+          {`${displayName}님,\n루키를 시작해보세요!`}
         </Text>
         <Text style={styles.subtitle}>
           우리학교의 숨겨진 행운을 찾아보세요!
@@ -133,7 +133,6 @@ const styles = StyleSheet.create({
   // ✅ 스샷 스펙 그대로: width 327, height 251, radius 15, bg #F6F6F6, padding 15
   card: {
     width: rs(327),
-    height: rs(251),
     borderRadius: rs(15),
     backgroundColor: "#F6F6F6",
     padding: rs(15),

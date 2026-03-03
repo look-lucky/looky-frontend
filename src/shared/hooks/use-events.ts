@@ -21,6 +21,7 @@ interface EventResponse {
   startDateTime: string;
   endDateTime: string;
   status: 'UPCOMING' | 'LIVE' | 'ENDED';
+  bannerImageUrl?: string;
   imageUrls: string[];
   place?: string;
   createdAt: string;
@@ -100,6 +101,7 @@ function transformEventResponse(
     startDateTime,
     endDateTime,
     status: getEventStatus({ startDateTime, endDateTime } as Event),
+    bannerImageUrl: response.bannerImageUrl,
     imageUrls: response.imageUrls ?? [],
     place: response.place,
     distance,
@@ -231,6 +233,7 @@ export function useEvents({
 
   return {
     events: filteredEvents,
+    allEvents: visibleEvents,
     eventMarkers,
     isLoading,
     isError,

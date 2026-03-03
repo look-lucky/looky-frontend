@@ -25,11 +25,14 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AppleLoginRequest,
   CheckUsernameAvailabilityParams,
   CompleteSocialSignupParams,
   CompleteSocialSignupRequest,
   CouncilSignupRequest,
   FindPasswordSendCodeRequest,
+  GoogleLoginRequest,
+  KakaoLoginRequest,
   LoginRequest,
   OwnerSignupRequest,
   ResetPasswordRequest,
@@ -566,6 +569,196 @@ export const useLogin = <TError = Blob,
         TContext
       > => {
       return useMutation(getLoginMutationOptions(options), queryClient);
+    }
+    /**
+ * 카카오 인증 후 발급받은 access_token을 통해 로그인/회원가입을 진행합니다.
+ * @summary [공통] 카카오 로그인 (네이티브)
+ */
+export type kakaoLoginResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type kakaoLoginResponse400 = {
+  data: Blob
+  status: 400
+}
+
+export type kakaoLoginResponse401 = {
+  data: Blob
+  status: 401
+}
+    
+export type kakaoLoginResponseSuccess = (kakaoLoginResponse200) & {
+  headers: Headers;
+};
+export type kakaoLoginResponseError = (kakaoLoginResponse400 | kakaoLoginResponse401) & {
+  headers: Headers;
+};
+
+export type kakaoLoginResponse = (kakaoLoginResponseSuccess | kakaoLoginResponseError)
+
+export const getKakaoLoginUrl = () => {
+
+
+  
+
+  return `/api/auth/kakao/login`
+}
+
+export const kakaoLogin = async (kakaoLoginRequest: KakaoLoginRequest, options?: RequestInit): Promise<kakaoLoginResponse> => {
+  
+  return customFetch<kakaoLoginResponse>(getKakaoLoginUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kakaoLoginRequest,)
+  }
+);}
+
+
+
+
+export const getKakaoLoginMutationOptions = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof kakaoLogin>>, TError,{data: KakaoLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof kakaoLogin>>, TError,{data: KakaoLoginRequest}, TContext> => {
+
+const mutationKey = ['kakaoLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof kakaoLogin>>, {data: KakaoLoginRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  kakaoLogin(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type KakaoLoginMutationResult = NonNullable<Awaited<ReturnType<typeof kakaoLogin>>>
+    export type KakaoLoginMutationBody = KakaoLoginRequest
+    export type KakaoLoginMutationError = Blob
+
+    /**
+ * @summary [공통] 카카오 로그인 (네이티브)
+ */
+export const useKakaoLogin = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof kakaoLogin>>, TError,{data: KakaoLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof kakaoLogin>>,
+        TError,
+        {data: KakaoLoginRequest},
+        TContext
+      > => {
+      return useMutation(getKakaoLoginMutationOptions(options), queryClient);
+    }
+    /**
+ * 구글 인증 후 발급받은 id_token을 통해 로그인/회원가입을 진행합니다.
+ * @summary [공통] 구글 로그인 (네이티브)
+ */
+export type googleLoginResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type googleLoginResponse400 = {
+  data: Blob
+  status: 400
+}
+
+export type googleLoginResponse401 = {
+  data: Blob
+  status: 401
+}
+    
+export type googleLoginResponseSuccess = (googleLoginResponse200) & {
+  headers: Headers;
+};
+export type googleLoginResponseError = (googleLoginResponse400 | googleLoginResponse401) & {
+  headers: Headers;
+};
+
+export type googleLoginResponse = (googleLoginResponseSuccess | googleLoginResponseError)
+
+export const getGoogleLoginUrl = () => {
+
+
+  
+
+  return `/api/auth/google/login`
+}
+
+export const googleLogin = async (googleLoginRequest: GoogleLoginRequest, options?: RequestInit): Promise<googleLoginResponse> => {
+  
+  return customFetch<googleLoginResponse>(getGoogleLoginUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      googleLoginRequest,)
+  }
+);}
+
+
+
+
+export const getGoogleLoginMutationOptions = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof googleLogin>>, TError,{data: GoogleLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof googleLogin>>, TError,{data: GoogleLoginRequest}, TContext> => {
+
+const mutationKey = ['googleLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof googleLogin>>, {data: GoogleLoginRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  googleLogin(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GoogleLoginMutationResult = NonNullable<Awaited<ReturnType<typeof googleLogin>>>
+    export type GoogleLoginMutationBody = GoogleLoginRequest
+    export type GoogleLoginMutationError = Blob
+
+    /**
+ * @summary [공통] 구글 로그인 (네이티브)
+ */
+export const useGoogleLogin = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof googleLogin>>, TError,{data: GoogleLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof googleLogin>>,
+        TError,
+        {data: GoogleLoginRequest},
+        TContext
+      > => {
+      return useMutation(getGoogleLoginMutationOptions(options), queryClient);
     }
     /**
  * 인증번호 검증 후 비밀번호 재설정을 위한 임시 토큰을 반환합니다.
@@ -1255,6 +1448,101 @@ export const useCompleteSocialSignup = <TError = Blob,
         TContext
       > => {
       return useMutation(getCompleteSocialSignupMutationOptions(options), queryClient);
+    }
+    /**
+ * 애플 인증 후 발급받은 id_token을 통해 로그인/회원가입을 진행합니다.
+ * @summary [공통] 애플 로그인 (네이티브)
+ */
+export type appleLoginResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type appleLoginResponse400 = {
+  data: Blob
+  status: 400
+}
+
+export type appleLoginResponse401 = {
+  data: Blob
+  status: 401
+}
+    
+export type appleLoginResponseSuccess = (appleLoginResponse200) & {
+  headers: Headers;
+};
+export type appleLoginResponseError = (appleLoginResponse400 | appleLoginResponse401) & {
+  headers: Headers;
+};
+
+export type appleLoginResponse = (appleLoginResponseSuccess | appleLoginResponseError)
+
+export const getAppleLoginUrl = () => {
+
+
+  
+
+  return `/api/auth/apple/login`
+}
+
+export const appleLogin = async (appleLoginRequest: AppleLoginRequest, options?: RequestInit): Promise<appleLoginResponse> => {
+  
+  return customFetch<appleLoginResponse>(getAppleLoginUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      appleLoginRequest,)
+  }
+);}
+
+
+
+
+export const getAppleLoginMutationOptions = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof appleLogin>>, TError,{data: AppleLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof appleLogin>>, TError,{data: AppleLoginRequest}, TContext> => {
+
+const mutationKey = ['appleLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof appleLogin>>, {data: AppleLoginRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  appleLogin(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AppleLoginMutationResult = NonNullable<Awaited<ReturnType<typeof appleLogin>>>
+    export type AppleLoginMutationBody = AppleLoginRequest
+    export type AppleLoginMutationError = Blob
+
+    /**
+ * @summary [공통] 애플 로그인 (네이티브)
+ */
+export const useAppleLogin = <TError = Blob,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof appleLogin>>, TError,{data: AppleLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof appleLogin>>,
+        TError,
+        {data: AppleLoginRequest},
+        TContext
+      > => {
+      return useMutation(getAppleLoginMutationOptions(options), queryClient);
     }
     /**
  * 아이디 사용 가능 여부를 확인합니다. (true: 사용 가능, false: 중복)

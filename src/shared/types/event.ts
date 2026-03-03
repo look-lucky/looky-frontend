@@ -23,6 +23,7 @@ export interface Event {
   endDateTime: Date;
   place?: string;
   status: EventStatus;
+  bannerImageUrl?: string;
   imageUrls: string[];
   distance?: string;
   createdAt: Date;
