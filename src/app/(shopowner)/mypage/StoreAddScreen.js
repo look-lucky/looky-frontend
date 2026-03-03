@@ -23,6 +23,7 @@ import { verifyBizRegNo } from '@/src/api/store-claim';
 import { ErrorPopup } from '@/src/shared/common/error-popup';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 export default function StoreAddScreen({ navigation, route }) {
   const { mode, storeData } = route.params || { mode: 'add', storeData: null };
@@ -32,14 +33,16 @@ export default function StoreAddScreen({ navigation, route }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false); // 사업자 확인 로딩
 
-  // 입력 폼 상태
   const [form, setForm] = useState({
     name: '',
     branch: '',
     phone: '',
     owner: '',
+    openingDate: '',
     bizNum: '',
   });
+
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
 
   const [isBizNumVerified, setIsBizNumVerified] = useState(false);
   const [isBizNumFailed, setIsBizNumFailed] = useState(false);
@@ -63,6 +66,7 @@ export default function StoreAddScreen({ navigation, route }) {
         branch: storeData.branch || '',
         phone: storeData.phone || '',
         owner: storeData.representativeName || '',
+        openingDate: storeData.openingDate || '',
         bizNum: storeData.businessNumber || '',
       });
       // 수정 모드일 땐 이미 인증된 것으로 간주
@@ -94,6 +98,7 @@ export default function StoreAddScreen({ navigation, route }) {
       name.trim().length > 0 &&
       isPhoneValid &&
       owner.trim().length > 0 &&
+      form.openingDate.trim().length > 0 &&
       bizNum.trim().length > 0 &&
       isBizNumVerified &&
       bizLicenseImage !== null;
@@ -144,6 +149,13 @@ export default function StoreAddScreen({ navigation, route }) {
     return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 5)}-${cleaned.slice(5, 10)}`;
   };
 
+  const formatDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   const handleChange = (key, text) => {
     let formattedText = text;
     if (key === 'phone') {
@@ -164,6 +176,11 @@ export default function StoreAddScreen({ navigation, route }) {
     setForm({ ...form, [key]: formattedText });
   };
 
+  const handleDateConfirm = (date) => {
+    setForm({ ...form, openingDate: formatDate(date) });
+    setDatePickerVisible(false);
+  };
+
   // --- [API 연결] 사업자 번호 실제 검증 ---
   const handleBizNumCheck = async () => {
     const pureBizNum = form.bizNum.replace(/-/g, '');
@@ -177,7 +194,14 @@ export default function StoreAddScreen({ navigation, route }) {
     setIsBizNumFailed(false);
 
     try {
-      await verifyBizRegNo({ businessNumber: pureBizNum });
+      // API 명세에 맞춰 데이터 구성 (p_nm, start_dt 포함)
+      await verifyBizRegNo({
+        bizs: [{
+          b_no: pureBizNum,
+          p_nm: form.owner,
+          start_dt: form.openingDate.replace(/-/g, ''),
+        }]
+      });
       setIsBizNumVerified(true);
     } catch (error) {
       console.error("사업자 인증 실패:", error);
@@ -286,6 +310,7 @@ export default function StoreAddScreen({ navigation, route }) {
       branch: form.branch || null,
       storePhone: form.phone.replace(/-/g, ''),
       representativeName: form.owner,
+      openingDate: form.openingDate,
       bizRegNo: form.bizNum.replace(/-/g, ''),
       roadAddress: isEditMode ? (storeData.roadAddress || '') : '', // 기존 로직 유지용 (필수값일 경우 대비)
       storeCategories: isEditMode ? (storeData.storeCategories || []) : [],
@@ -293,7 +318,7 @@ export default function StoreAddScreen({ navigation, route }) {
 
     // FormData 구성 (파일 포함)
     const formData = {
-      request: requestPayload,
+      request: JSON.stringify(requestPayload),
       images: bizLicenseImage && bizLicenseImage.uri && typeof bizLicenseImage.uri === 'string' ? [bizLicenseImage] : []
     };
 
@@ -354,6 +379,18 @@ export default function StoreAddScreen({ navigation, route }) {
             {phoneError ? <Text style={styles.phoneErrorText}>{phoneError}</Text> : null}
           </View>
           <InputGroup label="대표자명" value={form.owner} onChangeText={(t) => handleChange('owner', t)} placeholder="대표자명을 입력해주세요" />
+
+          {/* 개업일자 입력 필드 */}
+          <TouchableOpacity onPress={() => !isBizNumVerified && setDatePickerVisible(true)} activeOpacity={0.7}>
+            <View pointerEvents="none">
+              <InputGroup
+                label="개업일자"
+                value={form.openingDate}
+                placeholder="YYYY-MM-DD"
+                editable={false}
+              />
+            </View>
+          </TouchableOpacity>
 
           {/* 사업자 번호 입력 필드 */}
           <View>
@@ -441,6 +478,14 @@ export default function StoreAddScreen({ navigation, route }) {
           </View>
         </Animated.View>
       ) : null}
+
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="date"
+        onConfirm={handleDateConfirm}
+        onCancel={() => setDatePickerVisible(false)}
+        locale="ko"
+      />
 
     </SafeAreaView>
   );

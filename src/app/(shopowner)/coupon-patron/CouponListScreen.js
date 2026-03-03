@@ -505,9 +505,9 @@ const styles = StyleSheet.create({
     indicatorActive: { position: 'absolute', top: 0, width: rs(100), height: '100%', backgroundColor: 'black', },
 
     // 필터
-    filterContainer: { marginBottom: rs(15) },
-    filterScroll: { paddingHorizontal: rs(20), gap: rs(8) },
-    filterChip: { paddingHorizontal: rs(12), paddingVertical: rs(6), borderRadius: rs(20), borderWidth: 1, justifyContent: 'center', alignItems: 'center', height: rs(28), },
+    filterContainer: { marginBottom: rs(10), paddingVertical: rs(2) },
+    filterScroll: { paddingHorizontal: rs(20), paddingVertical: rs(2), gap: rs(8) },
+    filterChip: { paddingHorizontal: rs(14), paddingVertical: rs(4), borderRadius: rs(20), borderWidth: 1, justifyContent: 'center', alignItems: 'center', minHeight: rs(30) },
     filterChipSelected: { backgroundColor: 'black', borderColor: 'black' },
     filterChipUnselected: { backgroundColor: 'white', borderColor: 'transparent', shadowColor: "#000", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
     filterText: { fontSize: rs(12), fontFamily: 'Pretendard', fontWeight: '700' },

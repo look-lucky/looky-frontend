@@ -1,3 +1,4 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
@@ -189,7 +190,98 @@ export function useSocialLogin() {
 
   const loginWithGoogle = useCallback(() => login("google"), [login]);
   const loginWithKakao = useCallback(() => login("kakao"), [login]);
-  const loginWithApple = useCallback(() => login("apple"), [login]);
+  const loginWithApple = useCallback(async (): Promise<SocialLoginResult> => {
+    try {
+      setIsLoading(true);
+      setLoadingProvider("apple");
+
+      console.log("=== Apple 소셜 로그인(Native) 시작 ===");
+
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      console.log("Apple Credential 수신 성공");
+
+      if (!credential.identityToken) {
+        throw new Error("identityToken을 받지 못했습니다.");
+      }
+
+      // 백엔드로 토큰 전송 (POST /api/auth/apple/login)
+      const fullName = credential.fullName
+        ? `${credential.fullName.familyName || ""}${credential.fullName.givenName || ""}`
+        : null;
+
+      const response = await fetch(`${BASE_URL}/api/auth/apple/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          idToken: credential.identityToken,
+          name: fullName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Apple Backend 로그인 실패:", errorText);
+        return { success: false, error: "서버 로그인 실패" };
+      }
+
+      const data = await response.json();
+      console.log("Apple Backend 응답:", data);
+
+      if (data.status === "SUCCESS" && data.data.accessToken) {
+        const accessToken = data.data.accessToken;
+        const expiresIn = data.data.expiresIn || 3600;
+        const jwtPayload = decodeJwtPayload(accessToken);
+        const role = jwtPayload?.role;
+
+        if (role === "ROLE_GUEST") {
+          console.log("신규 소셜 회원 - 추가 정보 입력 필요");
+          await handleAuthSuccess(accessToken, expiresIn, "ROLE_GUEST");
+          const userId = jwtPayload?.sub ? parseInt(jwtPayload.sub, 10) : null;
+          return {
+            success: true,
+            needsSignup: true,
+            userId: userId ?? undefined,
+          };
+        }
+
+        console.log("로그인 성공 - 토큰 수신");
+        await saveLoginProvider("apple");
+        await handleAuthSuccess(
+          accessToken,
+          expiresIn,
+          (role as UserType) ?? "ROLE_GUEST",
+        );
+
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: data.message || "로그인 처리 중 오류가 발생했습니다.",
+      };
+    } catch (error: any) {
+      if (error.code === "ERR_REQUEST_CANCELED") {
+        console.log("Apple Login cancelled by user");
+        return { success: false, error: "cancelled" };
+      }
+      console.error("Apple 로그인 에러:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "알 수 없는 오류",
+      };
+    } finally {
+      setIsLoading(false);
+      setLoadingProvider(null);
+    }
+  }, [handleAuthSuccess]);
 
   return {
     login,
