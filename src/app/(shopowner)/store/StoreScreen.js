@@ -208,16 +208,23 @@ export default function StoreScreen() {
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false); // 카테고리 추가 입력 모드
 
-  // [추가] 매장 정보 등록 상태 확인 (소개, 전화번호, 주소, 이미지, 영업시간)
-  const isProfileComplete = useMemo(() => {
-    const hasIntro = !!storeInfo.intro;
-    const hasPhone = !!storeInfo.phone;
-    const hasAddress = !!storeInfo.address;
-    const hasBanners = storeInfo.bannerImages && storeInfo.bannerImages.length > 0;
-    const hasHours = operatingHours.some(h => !h.isClosed && h.open && h.close);
+  // [추가] 매장 정보 등록 상태 확인 (이름, 카테고리, 분위기, 소개, 전화번호, 주소, 영업시간)
+  const hasBasicInfo = useMemo(() => {
+    return (
+      !!storeInfo.name &&
+      storeInfo.categories && storeInfo.categories.length > 0 &&
+      storeInfo.vibes && storeInfo.vibes.length > 0 &&
+      !!storeInfo.intro &&
+      !!storeInfo.phone &&
+      !!storeInfo.address
+    );
+  }, [storeInfo]);
 
-    return hasIntro && hasPhone && hasAddress && hasBanners && hasHours;
-  }, [storeInfo, operatingHours]);
+  const hasHoursInfo = useMemo(() => {
+    return operatingHours.some(h => !h.isClosed && h.open && h.close);
+  }, [operatingHours]);
+
+  const isProfileComplete = useMemo(() => hasBasicInfo && hasHoursInfo, [hasBasicInfo, hasHoursInfo]);
 
   // [추가] 메뉴 등록 상태 확인 (모든 카테고리 합산 메뉴 수)
   const isMenusEmpty = useMemo(() => {
@@ -511,6 +518,7 @@ export default function StoreScreen() {
         // 영업시간 파싱
         let parsedHours = initialHours;
         if (myStore.operatingHours) {
+          console.log("🏪 [StoreScreen] Raw operatingHours from server:", myStore.operatingHours);
           try {
             const hoursObj = typeof myStore.operatingHours === 'string'
               ? JSON.parse(myStore.operatingHours)
@@ -520,11 +528,11 @@ export default function StoreScreen() {
               const key = idx.toString();
               const dayData = hoursObj[key];
 
-              if (dayData && Array.isArray(dayData) && dayData.length > 0 && dayData[0] && dayData[0][0]) {
+              if (dayData && Array.isArray(dayData) && dayData.length > 0) {
                 return {
                   ...item,
-                  open: dayData[0][0],
-                  close: dayData[0][1],
+                  open: dayData[0] && dayData[0][0] ? dayData[0][0] : null,
+                  close: dayData[0] && dayData[0][1] ? dayData[0][1] : null,
                   breakStart: dayData[1] && dayData[1][0] ? dayData[1][0] : null,
                   breakEnd: dayData[1] && dayData[1][1] ? dayData[1][1] : null,
                   isClosed: false
@@ -1105,7 +1113,12 @@ export default function StoreScreen() {
   };
 
   const openHoursEditModal = () => {
-    const currentHours = JSON.parse(JSON.stringify(operatingHours));
+    // 2번 방식: 모달 열 때만 기본값(10:00~22:00)을 채워서 보여줌
+    const currentHours = operatingHours.map(h => ({
+      ...h,
+      open: h.open || '10:00',
+      close: h.close || '22:00'
+    }));
 
     // 모달 열 때 현재 데이터 기준으로 브레이크타임 설정이 하나라도 있는지 체크
     const exists = currentHours.some(h => !h.isClosed && h.breakStart && h.breakEnd);
@@ -1168,7 +1181,8 @@ export default function StoreScreen() {
         if (item.isClosed) {
           hoursJson[key] = [];
         } else {
-          const openTimes = [item.open, item.close];
+          // open, close가 null인 경우 기본값 부여하여 전송 (null 전송 방지)
+          const openTimes = [item.open || '10:00', item.close || '22:00'];
           // hasBreakTime이 true이고, 브레이크 시작/종료 시간이 있을 때만 전송
           const breakTimes = (hasBreakTime && item.breakStart && item.breakEnd) ? [item.breakStart, item.breakEnd] : null;
           hoursJson[key] = [openTimes, breakTimes];
@@ -1211,8 +1225,10 @@ export default function StoreScreen() {
           breakEnd: hasBreakTime ? item.breakEnd : null
         }));
 
+        console.log("✅ [Hours Save] Updated operatingHours state:", updatedHours);
         setOperatingHours(updatedHours);
         setHoursModalVisible(false);
+        refetchStore(); // 서버 데이터와 동기화 강제
         Alert.alert("성공", "영업시간이 저장되었습니다.");
       } else {
         const errText = await response.text();
@@ -1581,7 +1597,9 @@ export default function StoreScreen() {
         {/* [추가] 매장 정보 등록 안내 (탭별 분리 및 상단 고정) */}
         {activeTab === 'info' && !isProfileComplete && (
           <Animated.View style={[styles.registrationAlertContainer, { opacity: pulseAnim }]}>
-            <Text style={styles.registrationAlertText}>매장 정보를 등록해주세요!</Text>
+            <Text style={styles.registrationAlertText}>
+              {!hasBasicInfo ? "매장 정보를 등록해주세요!" : "영업시간을 등록해주세요!"}
+            </Text>
           </Animated.View>
         )}
         {activeTab === 'management' && isMenusEmpty && (
@@ -1859,7 +1877,11 @@ export default function StoreScreen() {
                 }}
               >
                 <View style={[styles.catModalContent, { width: rs(230) }]}>
-                  <ScrollView style={{ maxHeight: rs(300) }} nestedScrollEnabled={true}>
+                  <ScrollView
+                    style={{ maxHeight: rs(300), overflow: 'visible', zIndex: 1 }}
+                    contentContainerStyle={{ overflow: 'visible' }}
+                    nestedScrollEnabled={true}
+                  >
                     {categories.map((cat, idx) => {
                       const isActive = selectedCategoryId === cat.id;
                       const isEditing = editingCategoryId === cat.id;
@@ -2338,7 +2360,7 @@ export default function StoreScreen() {
                     <View style={styles.inputWrapper}>
                       <TextInput
                         style={styles.textInput}
-                        placeholder="가게 지점명을 입력해주세요"
+                        placeholder="가게 지점명을 입력해주세요(선택)"
                         placeholderTextColor="#666"
                         value={editBasicData.branch}
                         onChangeText={(text) => {
@@ -2867,7 +2889,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: rs(8),
     padding: rs(5),
-    zIndex: 100,
+    zIndex: 1000,
     flexDirection: 'column',
     elevation: 8,
     shadowColor: "#000",
@@ -2888,7 +2910,7 @@ const styles = StyleSheet.create({
   inlineDoneText: { color: 'white', fontSize: rs(11), fontWeight: '700' },
 
   // New Category Input (Cleaned Up)
-  newCatInputArea: { marginTop: rs(10), paddingTop: rs(5) },
+  newCatInputArea: { marginTop: rs(10), paddingTop: rs(5), zIndex: 0 },
   newCatInputBox: { height: rs(32), flexDirection: 'row', alignItems: 'center', paddingHorizontal: rs(5) },
 
   // Custom Delete Error Modal
@@ -2898,7 +2920,7 @@ const styles = StyleSheet.create({
   deleteErrorDesc: { fontSize: rs(13), color: '#666', textAlign: 'center', marginBottom: rs(24), fontFamily: 'Pretendard', lineHeight: rs(20) },
   deleteErrorConfirmBtn: { backgroundColor: '#34B262', borderRadius: rs(12), paddingVertical: rs(12), paddingHorizontal: rs(40) },
   deleteErrorConfirmText: { color: 'white', fontSize: rs(14), fontWeight: '700', fontFamily: 'Pretendard' },
-  completeBtn: { width: rs(58), height: rs(23), backgroundColor: '#34B262', borderRadius: rs(12), justifyContent: 'center', alignItems: 'center' },
+  completeBtn: { width: rs(41), height: rs(23), backgroundColor: '#34B262', borderRadius: rs(12), justifyContent: 'center', alignItems: 'center' },
   completeBtnText: { color: 'white', fontSize: rs(11), fontWeight: '700', fontFamily: 'Pretendard' },
   breakTimeCheckRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: rs(20), paddingLeft: rs(5) },
   breakTimeCheckLabel: { fontSize: rs(13), fontWeight: '700', color: 'black', fontFamily: 'Pretendard' },
