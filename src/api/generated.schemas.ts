@@ -345,6 +345,24 @@ export interface LoginRequest {
   password?: string;
 }
 
+/**
+ * 카카오 소셜 로그인 요청 (앱 네이티브)
+ */
+export interface KakaoLoginRequest {
+  /** Kakao SDK를 통해 발급받은 Access Token */
+  accessToken: string;
+  /** Kakao SDK를 통해 발급받은 ID Token (선택) */
+  idToken?: string;
+}
+
+/**
+ * 구글 소셜 로그인 요청 (앱 네이티브)
+ */
+export interface GoogleLoginRequest {
+  /** Google 인증 후 발급받은 JWT 형식의 id_token */
+  idToken: string;
+}
+
 export interface VerifyEmailCodeRequest {
   email: string;
   code: string;
@@ -396,6 +414,16 @@ export interface CompleteSocialSignupRequest {
   isClubMember?: boolean;
   name?: string;
   email?: string;
+}
+
+/**
+ * 애플 소셜 로그인 요청 (앱 네이티브)
+ */
+export interface AppleLoginRequest {
+  /** Apple 인증 후 발급받은 JWT 형식의 id_token */
+  idToken: string;
+  /** 유저의 이름 (Apple 로그인 최초 1회에만 제공됨. 없을 경우 null) */
+  name?: string;
 }
 
 export interface CreatePartnershipRequest {
@@ -646,6 +674,7 @@ export const PartnershipInfoCategory = {
 } as const;
 
 export interface PartnershipInfo {
+  organizationId?: number;
   category?: PartnershipInfoCategory;
   name?: string;
 }
