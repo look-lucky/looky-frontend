@@ -320,6 +320,8 @@ export function ReviewSection({
 }: ReviewSectionProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('recent');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  // 낙관적 좋아요 상태: reviewId → liked 여부
+  const [optimisticLikes, setOptimisticLikes] = useState<Record<string, boolean>>({});
 
   const sortedReviews = [...reviews].sort((a, b) => {
     if (activeFilter === 'best') {
@@ -328,6 +330,11 @@ export function ReviewSection({
     // recent: 날짜 내림차순
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
+
+  const handleLike = useCallback((reviewId: string, currentLiked: boolean) => {
+    setOptimisticLikes((prev) => ({ ...prev, [reviewId]: !currentLiked }));
+    onLikeReview?.(reviewId);
+  }, [onLikeReview]);
 
   const handleLoadMore = useCallback(() => {
     if (hasMore && !isLoadingMore && onLoadMore) {
@@ -347,22 +354,35 @@ export function ReviewSection({
         />
 
         <View style={styles.reviewList}>
-          {sortedReviews.map((review, index) => (
-            <ReviewItemCard
-              key={review.id}
-              review={review}
-              isLast={index === sortedReviews.length - 1 && !hasMore}
-              onEdit={() => onEditReview?.(review.id)}
-              onDelete={() => onDeleteReview?.(review.id)}
-              onReport={() => onReportReview?.(review.id)}
-              onLike={() => onLikeReview?.(review.id)}
-              menuOpen={activeMenuId === review.id}
-              onMenuToggle={() =>
-                setActiveMenuId((prev) => (prev === review.id ? null : review.id))
-              }
-              onMenuClose={() => setActiveMenuId(null)}
-            />
-          ))}
+          {sortedReviews.length === 0 ? (
+            <View style={styles.emptyReview}>
+              <ThemedText style={styles.emptyReviewText} lightColor="#999" darkColor="#999">
+                아직 리뷰가 없습니다.
+              </ThemedText>
+            </View>
+          ) : (
+            sortedReviews.map((review, index) => {
+              const isLiked = optimisticLikes[review.id] !== undefined
+                ? optimisticLikes[review.id]
+                : review.isLiked;
+              return (
+                <ReviewItemCard
+                  key={review.id}
+                  review={{ ...review, isLiked }}
+                  isLast={index === sortedReviews.length - 1 && !hasMore}
+                  onEdit={() => onEditReview?.(review.id)}
+                  onDelete={() => onDeleteReview?.(review.id)}
+                  onReport={() => onReportReview?.(review.id)}
+                  onLike={() => handleLike(review.id, isLiked)}
+                  menuOpen={activeMenuId === review.id}
+                  onMenuToggle={() =>
+                    setActiveMenuId((prev) => (prev === review.id ? null : review.id))
+                  }
+                  onMenuClose={() => setActiveMenuId(null)}
+                />
+              );
+            })
+          )}
 
           {/* 무한 스크롤 트리거 */}
           {hasMore && (
@@ -385,6 +405,14 @@ const styles = StyleSheet.create({
 
   // Review List
   reviewList: {},
+  emptyReview: {
+    paddingVertical: rs(40),
+    alignItems: 'center',
+  },
+  emptyReviewText: {
+    fontSize: rs(14),
+    color: '#999',
+  },
 
   // Load More Trigger
   loadMoreTrigger: {

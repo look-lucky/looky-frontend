@@ -153,7 +153,7 @@ export default function MapTab() {
     handleStoreTypeToggle,
     handleMoodToggle,
     handleEventToggle,
-  } = useMapSearch(permissionReady);
+  } = useMapSearch(permissionReady, !!eventIdParam);
 
   // 홈에서 카테고리 선택 후 진입 시 해당 카테고리 활성화
   useEffect(() => {
@@ -171,6 +171,7 @@ export default function MapTab() {
   // 이벤트 훅
   const {
     events,
+    allEvents,
     eventMarkers,
     isLoading: isEventsLoading,
     isError: isEventsError,
@@ -252,8 +253,9 @@ export default function MapTab() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const selectedEvent = useMemo(() => {
     if (!selectedEventId) return null;
-    return events.find((e) => e.id === selectedEventId) ?? null;
-  }, [selectedEventId, events]);
+    // allEvents에서 먼저 찾음 (뷰포트/필터로 events에서 제외된 이벤트도 선택 가능하도록)
+    return allEvents.find((e) => e.id === selectedEventId) ?? null;
+  }, [selectedEventId, allEvents]);
 
   // eventIdParam이 바뀔 때마다 처리 플래그 리셋 (같은 이벤트 재진입 or 다른 이벤트 진입 모두 대응)
   useEffect(() => {
@@ -263,8 +265,8 @@ export default function MapTab() {
   // 홈에서 이벤트 카드 눌러서 진입 시 해당 이벤트 선택 + 지도 중심 이동 + 바텀시트 열기
   // → 이벤트 마커 클릭(onEventMarkerClick)과 동일한 효과로 처리
   useEffect(() => {
-    if (!eventIdParam || initialEventHandled.current || events.length === 0) return;
-    const event = events.find((e) => e.id === eventIdParam);
+    if (!eventIdParam || initialEventHandled.current || allEvents.length === 0) return;
+    const event = allEvents.find((e) => e.id === eventIdParam);
     if (event) {
       initialEventHandled.current = true;
       // 이벤트 선택 + 카메라 이동 즉시 처리 (마커 클릭과 동일)
@@ -279,7 +281,7 @@ export default function MapTab() {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [eventIdParam, events, handleMapClick, setMapCenter]);
+  }, [eventIdParam, allEvents, handleMapClick, setMapCenter]);
 
   // centerOnEvents 파라미터 변경 시 플래그 리셋
   useEffect(() => {
@@ -373,8 +375,8 @@ export default function MapTab() {
 
   // activePendingEventId가 세팅되면 events 로딩 완료 후 이벤트 선택 처리
   useEffect(() => {
-    if (!activePendingEventId || events.length === 0) return;
-    const event = events.find((e) => e.id === activePendingEventId);
+    if (!activePendingEventId || allEvents.length === 0) return;
+    const event = allEvents.find((e) => e.id === activePendingEventId);
     if (event) {
       setActivePendingEventId(null);
       handleMapClick();
@@ -385,7 +387,7 @@ export default function MapTab() {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [activePendingEventId, events, handleMapClick, setMapCenter]);
+  }, [activePendingEventId, allEvents, handleMapClick, setMapCenter]);
 
   // 지도 탭 포커스 상태 (NaverMap 크래시 방지용 - 탭 이탈 시 clean unmount)
   const [isTabFocused, setIsTabFocused] = useState(true);

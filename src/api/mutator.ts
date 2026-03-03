@@ -24,6 +24,11 @@ const PUBLIC_ENDPOINTS = [
 ];
 
 let refreshPromise: Promise<boolean> | null = null;
+let isLoggingOut = false;
+
+export function setLoggingOut(value: boolean) {
+  isLoggingOut = value;
+}
 
 async function refreshAccessToken(): Promise<boolean> {
   try {
@@ -85,7 +90,7 @@ export async function customFetch<T>(
   }
 
   // ✅ Proactive Refresh: 인증 필요한 엔드포인트이고, 토큰이 곧 만료될 예정이면 사전 갱신
-  if (!isPublic && !url.includes("/refresh")) {
+  if (!isPublic && !url.includes("/refresh") && !isLoggingOut) {
     const expiring = await isTokenExpiringSoon(2); // 2분 내 만료?
 
     if (expiring) {
@@ -113,8 +118,8 @@ export async function customFetch<T>(
   try {
     let res = await fetch(fullUrl, { ...options, headers });
 
-    // 401 Unauthorized → 토큰 리프레시 시도 (public 엔드포인트 제외)
-    if (res.status === 401 && !url.includes("/refresh") && !isPublic) {
+    // 401 Unauthorized → 토큰 리프레시 시도 (public 엔드포인트, 로그아웃 중 제외)
+    if (res.status === 401 && !url.includes("/refresh") && !isPublic && !isLoggingOut) {
       if (!refreshPromise) {
         refreshPromise = refreshAccessToken().finally(() => {
           refreshPromise = null;
