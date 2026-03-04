@@ -2,6 +2,7 @@ import { SignupIcons } from "@/assets/images/icons/signup";
 import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { ThemedText } from "@/src/shared/common/themed-text";
+import { useAppleLogin } from "@/src/shared/lib/auth/use-apple-login";
 import { useGoogleLogin } from "@/src/shared/lib/auth/use-google-login";
 import { useKakaoLogin } from "@/src/shared/lib/auth/use-kakao-login";
 import { rs } from "@/src/shared/theme/scale";
@@ -23,7 +24,8 @@ export default function SignInPage() {
   const router = useRouter();
   const { login: googleLogin, isLoading: googleLoading } = useGoogleLogin();
   const { login: kakaoLogin, isLoading: kakaoLoading } = useKakaoLogin();
-  const isLoading = googleLoading || kakaoLoading;
+  const { login: appleLogin, isLoading: appleLoading } = useAppleLogin();
+  const isLoading = googleLoading || kakaoLoading || appleLoading;
 
   const handleSocialResult = (result: { success: boolean; needsSignup?: boolean; userId?: number; error?: string }, provider: string) => {
     if (result.success) {
@@ -48,6 +50,11 @@ export default function SignInPage() {
   const handleKakaoLogin = async () => {
     const result = await kakaoLogin();
     handleSocialResult(result, "kakao");
+  };
+
+  const handleAppleLogin = async () => {
+    const result = await appleLogin();
+    handleSocialResult(result, "apple");
   };
 
   return (
@@ -113,7 +120,8 @@ export default function SignInPage() {
         </Pressable>
 
         <Pressable
-          style={[styles.socialButton, styles.appleButton]}
+          style={[styles.socialButton, styles.appleButton, appleLoading && styles.disabledButton]}
+          onPress={handleAppleLogin}
           disabled={isLoading}
         >
           <SignupIcons.apple width={20} height={20} />

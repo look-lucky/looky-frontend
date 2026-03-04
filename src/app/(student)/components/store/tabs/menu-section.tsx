@@ -296,15 +296,15 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   categoryContainer: {
-    gap: rs(6),
-    paddingTop: rs(12),
+    gap: rs(3),
+    paddingTop: rs(8),
   },
   categoryHeader: {
     fontFamily: Fonts.semiBold,
-    fontSize: rs(18),
-    lineHeight: rs(25.2),
+    fontSize: rs(20),
+    lineHeight: rs(28),
     color: '#000000',
-    paddingVertical: rs(4),
+    paddingVertical: rs(2),
   },
   menuList: {
     gap: rs(12),
@@ -327,14 +327,14 @@ const styles = StyleSheet.create({
     gap: rs(11),
   },
   menuImage: {
-    width: rs(100),
-    height: rs(100),
+    width: rs(95),
+    height: rs(95),
     borderRadius: rs(10),
     backgroundColor: '#f0f0f0',
   },
   menuInfo: {
     flex: 1,
-    height: rs(100),
+    height: rs(95),
     justifyContent: 'space-between',
     paddingBottom: rs(2),
   },
@@ -417,6 +417,6 @@ const styles = StyleSheet.create({
   sectionDivider: {
     height: 1,
     backgroundColor: '#E6E6E6',
-    marginBottom: rs(15),
+    marginBottom: rs(5),
   },
 });
