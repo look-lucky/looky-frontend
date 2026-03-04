@@ -11,6 +11,7 @@ import type {
 } from '@/src/api/generated.schemas';
 import { useGetItems } from '@/src/api/item';
 import { useGetStudentInfo } from '@/src/api/my-page';
+import { useGetOrganizations } from '@/src/api/organization';
 import { useGetStorePartnerships } from '@/src/api/partnership';
 import { useAddLike, useDeleteReview, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
 import { useGetStore } from '@/src/api/store';
@@ -86,11 +87,19 @@ export default function StoreDetailScreen() {
 
   // ── API hooks ──────────────────────────────────────────────
 
-  // 학생 프로필 (collegeName 없는 기존 유저용 fallback)
+  // 학생 프로필 (universityId 획득용)
   const { data: studentInfoRes } = useGetStudentInfo({
-    query: { enabled: userCollegeName === null, staleTime: 10 * 60 * 1000 },
+    query: { staleTime: 10 * 60 * 1000 },
   });
-  const profileCollegeName = (studentInfoRes as any)?.data?.data?.collegeName as string | undefined;
+  const studentInfo = (studentInfoRes as any)?.data?.data;
+  const profileCollegeName = studentInfo?.collegeName as string | undefined;
+  const universityId = studentInfo?.universityId as number | undefined;
+
+  // 대학 전체 소속 목록 (목록 누락 방지용)
+  const { data: orgsRes } = useGetOrganizations(universityId as number, {
+    query: { enabled: !!universityId, staleTime: 10 * 60 * 1000 }
+  });
+  const apiOrganizations = ((orgsRes as any)?.data?.data ?? []) as any[];
 
   // profileCollegeName이 로드되면 auth에 저장 (이후 API 호출 불필요)
   React.useEffect(() => {
@@ -120,9 +129,38 @@ export default function StoreDetailScreen() {
     return (list as any[]).map((f: any) => f.storeId as number);
   }, [myFavoritesRes]);
 
-  // 제휴 혜택 목록
+  // 제휴 혜택 목록 + 대학 전체 소속 목록 병합
   const { data: partnershipsRes } = useGetStorePartnerships(storeId);
-  const apiPartnerships = ((partnershipsRes as any)?.data?.data ?? []) as StorePartnershipResponse[];
+  const apiPartnerships = useMemo(() => {
+    const detailPartnerships = ((partnershipsRes as any)?.data?.data ?? []) as StorePartnershipResponse[];
+
+    // 현재 표시할 전체 단체 목록 생성
+    const mergedMap = new Map<string, StorePartnershipResponse>();
+
+    // 1. 대학 전체 소속 (기본) - 학과(DEPARTMENT)는 제외
+    apiOrganizations.forEach(org => {
+      // organizationCategory가 DEPARTMENT이거나 이름에 '학과'가 포함된 경우 제외
+      if (org.name && org.category !== 'DEPARTMENT' && !org.name.endsWith('학과')) {
+        mergedMap.set(org.name, {
+          organizationName: org.name,
+          organizationCategory: org.category,
+          isMyBenefit: false
+        });
+      }
+    });
+
+    // 2. 상점 보유 제휴 (우선순위 높음, 혜택 정보 포함) - 학과는 동일하게 제외
+    detailPartnerships.forEach(p => {
+      if (p.organizationName && p.organizationCategory !== 'DEPARTMENT' && !p.organizationName.endsWith('학과')) {
+        mergedMap.set(p.organizationName, {
+          ...p,
+          isMyBenefit: p.isMyBenefit || p.organizationName === (userCollegeName ?? profileCollegeName)
+        });
+      }
+    });
+
+    return Array.from(mergedMap.values());
+  }, [partnershipsRes, apiOrganizations, userCollegeName, profileCollegeName]);
 
   // 쿠폰 목록
   const { data: couponsRes } = useGetCouponsByStore(storeId);
@@ -302,14 +340,26 @@ export default function StoreDetailScreen() {
     [apiNewsPage],
   );
 
-  // 메뉴: API ItemResponse[] → 컴포넌트 MenuCategory[] (flat → 단일 카테고리)
+  // 메뉴: API ItemResponse[] → 컴포넌트 MenuCategory[] (카테고리별 그룹화)
   const storeMenu = useMemo(() => {
     const visibleItems = apiItems.filter((item) => !item.hidden);
     if (visibleItems.length === 0) return [];
-    return [{
-      id: '1',
-      name: '전체 메뉴',
-      items: visibleItems.map((item) => ({
+
+    const categoryMap = new Map<number, MenuCategory>();
+
+    visibleItems.forEach((item) => {
+      const catId = item.categoryId ?? 0;
+      const catName = item.categoryName ?? '기타';
+
+      if (!categoryMap.has(catId)) {
+        categoryMap.set(catId, {
+          id: String(catId),
+          name: catName,
+          items: [],
+        });
+      }
+
+      categoryMap.get(catId)?.items.push({
         id: String(item.id),
         name: item.name ?? '',
         description: item.description,
@@ -318,8 +368,22 @@ export default function StoreDetailScreen() {
         isBest: item.badge === 'BEST',
         isHot: item.badge === 'HOT' || item.badge === 'NEW',
         isSoldOut: item.soldOut,
-      })),
-    }];
+        badge: item.badge,
+      });
+    });
+
+    // 카테고리 내에서 itemOrder 기준으로 정렬 (필요 시)
+    const result = Array.from(categoryMap.values()).map(cat => ({
+      ...cat,
+      items: cat.items.sort((a, b) => {
+        const itemA = apiItems.find(i => String(i.id) === a.id);
+        const itemB = apiItems.find(i => String(i.id) === b.id);
+        return (itemA?.itemOrder ?? 0) - (itemB?.itemOrder ?? 0);
+      })
+    }));
+
+    // 카테고리 간 정렬 (id 기준이나 첫 번째 아이템의 order 기준)
+    return result.sort((a, b) => Number(a.id) - Number(b.id));
   }, [apiItems]);
 
   // 리뷰: API ReviewResponse → 컴포넌트 ReviewItem 타입

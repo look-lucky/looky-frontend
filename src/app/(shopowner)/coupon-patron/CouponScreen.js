@@ -249,10 +249,15 @@ export default function CouponScreen({ navigation, route }) {
         benefitValue.trim() !== '' &&
         (benefitValueNum < 1 || benefitValueNum > 100);
 
+    const isAmountZeroError = selectedType === 'FIXED_AMOUNT' &&
+        benefitValue.trim() !== '' &&
+        benefitValueNum <= 0;
+
     const isStep2Valid = couponName.trim() !== '' &&
         benefitValue.trim() !== '' &&
         !isMinAmountError &&
-        !isPercentError;
+        !isPercentError &&
+        !isAmountZeroError;
     const totalQuantityNum = Number(totalQuantity.replace(/,/g, '')) || 0;
     const isQuantityError = !isUnlimited && totalQuantity.trim() !== '' && totalQuantityNum <= 0;
 
@@ -894,6 +899,9 @@ export default function CouponScreen({ navigation, route }) {
                                                 </View>
                                                 {isPercentError && (
                                                     <Text style={[styles.errorText, { marginTop: rs(4) }]}>할인율은 1%에서 100% 사이여야 합니다</Text>
+                                                )}
+                                                {isAmountZeroError && (
+                                                    <Text style={[styles.errorText, { marginTop: rs(4) }]}>할인 금액은 0원보다 커야 합니다</Text>
                                                 )}
                                             </View>
 

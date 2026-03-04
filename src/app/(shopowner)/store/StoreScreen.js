@@ -365,6 +365,7 @@ export default function StoreScreen() {
 
     if (hasItems) {
       // Show custom error modal instead of Alert
+      setCategoryModalVisible(false); // Close category modal to prevent freeze
       setIsDeleteErrorVisible(true);
       setCategoryOptionsId(null);
     } else {
@@ -1432,6 +1433,7 @@ export default function StoreScreen() {
   const openAddMenuModal = () => {
     // [추가] 카테고리가 하나도 없으면 안내 팝업 표시
     if (categories.length === 0) {
+      setCategoryModalVisible(false); // Close category modal if open
       setIsCategoryRequiredVisible(true);
       return;
     }
@@ -1992,39 +1994,6 @@ export default function StoreScreen() {
               </TouchableOpacity>
             </Modal>
 
-            {/* 카테고리에 메뉴가 있어요 (Delete Blocked Popover) */}
-            <Modal transparent={true} visible={isDeleteErrorVisible} animationType="fade" onRequestClose={() => setIsDeleteErrorVisible(false)}>
-              <View style={styles.deleteErrorModalOverlay}>
-                <View style={styles.deleteErrorModalContainer}>
-                  <Text style={styles.deleteErrorTitle}>카테고리에 메뉴가 있어요</Text>
-                  <Text style={styles.deleteErrorDesc}>해당 카테고리에 메뉴가 있어 삭제할 수 없어요</Text>
-                  <TouchableOpacity
-                    style={styles.deleteErrorConfirmBtn}
-                    onPress={() => setIsDeleteErrorVisible(false)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.deleteErrorConfirmText}>확인</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
-
-            {/* [추가] 메뉴 추가 시 카테고리 없음 안내 팝업 */}
-            <Modal transparent={true} visible={isCategoryRequiredVisible} animationType="fade" onRequestClose={() => setIsCategoryRequiredVisible(false)}>
-              <View style={styles.deleteErrorModalOverlay}>
-                <View style={styles.deleteErrorModalContainer}>
-                  <Text style={styles.deleteErrorTitle}>카테고리를 생성해 주세요</Text>
-                  <Text style={styles.deleteErrorDesc}>메뉴를 추가하려면 먼저 카테고리가 필요해요</Text>
-                  <TouchableOpacity
-                    style={styles.deleteErrorConfirmBtn}
-                    onPress={() => setIsCategoryRequiredVisible(false)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.deleteErrorConfirmText}>확인</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
           </View >
         )}
 
@@ -2782,6 +2751,39 @@ export default function StoreScreen() {
             </TouchableOpacity>
           </View>
         )}
+        {/* 카테고리에 메뉴가 있어요 (Delete Blocked Popover) */}
+        <Modal transparent={true} visible={isDeleteErrorVisible} animationType="fade" onRequestClose={() => setIsDeleteErrorVisible(false)}>
+          <View style={styles.deleteErrorModalOverlay}>
+            <View style={styles.deleteErrorModalContainer}>
+              <Text style={styles.deleteErrorTitle}>카테고리에 메뉴가 있어요</Text>
+              <Text style={styles.deleteErrorDesc}>해당 카테고리에 메뉴가 있어 삭제할 수 없어요</Text>
+              <TouchableOpacity
+                style={styles.deleteErrorConfirmBtn}
+                onPress={() => setIsDeleteErrorVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.deleteErrorConfirmText}>확인</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* [추가] 메뉴 추가 시 카테고리 없음 안내 팝업 */}
+        <Modal transparent={true} visible={isCategoryRequiredVisible} animationType="fade" onRequestClose={() => setIsCategoryRequiredVisible(false)}>
+          <View style={styles.deleteErrorModalOverlay}>
+            <View style={styles.deleteErrorModalContainer}>
+              <Text style={styles.deleteErrorTitle}>카테고리를 먼저 등록해주세요</Text>
+              <Text style={styles.deleteErrorDesc}>메뉴를 추가하려면 하나 이상의 카테고리가 필요해요</Text>
+              <TouchableOpacity
+                style={styles.deleteErrorConfirmBtn}
+                onPress={() => setIsCategoryRequiredVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.deleteErrorConfirmText}>확인</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -2915,11 +2917,11 @@ const styles = StyleSheet.create({
 
   // Custom Delete Error Modal
   deleteErrorModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  deleteErrorModalContainer: { width: rs(280), backgroundColor: 'white', borderRadius: rs(16), padding: rs(24), alignItems: 'center' },
-  deleteErrorTitle: { fontSize: rs(16), fontWeight: '700', color: 'black', marginBottom: rs(10), fontFamily: 'Pretendard' },
-  deleteErrorDesc: { fontSize: rs(13), color: '#666', textAlign: 'center', marginBottom: rs(24), fontFamily: 'Pretendard', lineHeight: rs(20) },
-  deleteErrorConfirmBtn: { backgroundColor: '#34B262', borderRadius: rs(12), paddingVertical: rs(12), paddingHorizontal: rs(40) },
-  deleteErrorConfirmText: { color: 'white', fontSize: rs(14), fontWeight: '700', fontFamily: 'Pretendard' },
+  deleteErrorModalContainer: { width: rs(300), height: rs(160), backgroundColor: 'white', borderRadius: rs(12), padding: rs(20), alignItems: 'center', justifyContent: 'center', elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  deleteErrorTitle: { fontSize: rs(17), fontWeight: '700', color: 'black', textAlign: 'center', fontFamily: 'Pretendard', lineHeight: rs(26), marginBottom: rs(4) },
+  deleteErrorDesc: { fontSize: rs(14), color: '#828282', textAlign: 'center', fontWeight: '600', fontFamily: 'Pretendard', lineHeight: rs(22), marginBottom: rs(18) },
+  deleteErrorConfirmBtn: { backgroundColor: '#F6A823', borderRadius: rs(8), paddingVertical: rs(10), width: rs(240), justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
+  deleteErrorConfirmText: { color: 'white', fontSize: rs(13), fontWeight: '700', fontFamily: 'Inter' },
   completeBtn: { width: rs(41), height: rs(23), backgroundColor: '#34B262', borderRadius: rs(12), justifyContent: 'center', alignItems: 'center' },
   completeBtnText: { color: 'white', fontSize: rs(11), fontWeight: '700', fontFamily: 'Pretendard' },
   breakTimeCheckRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: rs(20), paddingLeft: rs(5) },

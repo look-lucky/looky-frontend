@@ -1,16 +1,32 @@
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useCallback, useEffect, useState } from "react";
 
 import { googleLogin } from "@/src/api/auth";
 import { ENV } from "@/src/shared/constants/env";
 import { useAuth } from "./auth-context";
-import { saveLoginProvider } from "./token";
 import type { UserType } from "./token";
+import { saveLoginProvider } from "./token";
+
+// Expo Go 여부 체크
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+// 네이티브 모듈 안전 로드
+let GoogleSignin: any;
+let statusCodes: any;
+let isErrorWithCode: any;
+let isSuccessResponse: any;
+
+if (!isExpoGo) {
+  try {
+    const GoogleModule = require("@react-native-google-signin/google-signin");
+    GoogleSignin = GoogleModule.GoogleSignin;
+    statusCodes = GoogleModule.statusCodes;
+    isErrorWithCode = GoogleModule.isErrorWithCode;
+    isSuccessResponse = GoogleModule.isSuccessResponse;
+  } catch (e) {
+    console.warn("GoogleSignin module load failed", e);
+  }
+}
 
 interface SocialLoginResult {
   success: boolean;
@@ -35,15 +51,21 @@ export function useGoogleLogin() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: ENV.GOOGLE_WEB_CLIENT_ID,
-    });
+    if (!isExpoGo && GoogleSignin) {
+      GoogleSignin.configure({
+        webClientId: ENV.GOOGLE_WEB_CLIENT_ID,
+      });
+    }
     setIsReady(true);
   }, []);
 
   const login = useCallback(async (): Promise<SocialLoginResult> => {
     try {
       setIsLoading(true);
+
+      if (isExpoGo || !GoogleSignin) {
+        return { success: false, error: "Expo Go에서는 구글 로그인을 지원하지 않습니다. 빌드된 앱에서 확인해주세요." };
+      }
 
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
@@ -79,8 +101,8 @@ export function useGoogleLogin() {
       await saveLoginProvider("google");
       await handleAuthSuccess(accessToken, expiresIn, role ?? "ROLE_CUSTOMER");
       return { success: true };
-    } catch (error) {
-      if (isErrorWithCode(error)) {
+    } catch (error: any) {
+      if (!isExpoGo && isErrorWithCode && isErrorWithCode(error)) {
         switch (error.code) {
           case statusCodes.SIGN_IN_CANCELLED:
             return { success: false, error: "cancelled" };

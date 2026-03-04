@@ -40,12 +40,12 @@ const COUPON_ICONS: Record<string, any> = {
 // ============================================
 
 function BenefitBanner({ benefits }: { benefits: string[] }) {
-  if (benefits.length === 0) return null;
+  const displayText = benefits.length > 0 ? benefits.join('\n') : '제휴를 제공하지 않는 매장입니다.\n사장님의 행운을 기다려주세요.';
 
   return (
     <View style={styles.bannerContainer}>
       <ThemedText style={styles.bannerText} numberOfLines={2} lightColor={TextColor.primary} darkColor={TextColor.primary}>
-        {benefits.join('\n')}
+        {displayText}
       </ThemedText>
     </View>
   );
@@ -79,7 +79,7 @@ function CouponSection({
             ]}
           >
             {CouponIcon ? (
-              <CouponIcon width={rs(40)} height={rs(40)} />
+              <CouponIcon width={rs(48)} height={rs(48)} />
             ) : (
               <View style={styles.couponIconPlaceholder} />
             )}
@@ -134,11 +134,10 @@ export function StoreBenefits({
   coupons,
   onCouponPress,
 }: StoreBenefitsProps) {
-  if (benefits.length === 0 && coupons.length === 0) return null;
-
   return (
     <View style={styles.container}>
       <BenefitBanner benefits={benefits} />
+      {coupons.length > 0 && <View style={styles.thickDivider} />}
       <CouponSection
         coupons={coupons}
         onCouponPress={onCouponPress}
@@ -160,21 +159,23 @@ const styles = StyleSheet.create({
   // BenefitBanner
   bannerContainer: {
     backgroundColor: Gray.gray2,
-    borderRadius: rs(16),
+    borderRadius: rs(8),
     paddingHorizontal: rs(16),
     paddingVertical: rs(12),
+    marginTop: rs(12),
   },
   bannerText: {
     fontFamily: Fonts.regular,
     fontSize: rs(12),
     color: TextColor.primary,
     lineHeight: rs(18),
+    textAlign: 'center',
   },
 
   // CouponSection
   couponContainer: {
     gap: rs(12),
-    marginTop: rs(15),
+    marginTop: 0,
   },
   couponCard: {
     flexDirection: 'row',
@@ -197,14 +198,14 @@ const styles = StyleSheet.create({
     gap: rs(12),
   },
   couponIconContainer: {
-    borderRadius: rs(12),
+    borderRadius: rs(16),
     alignItems: 'center',
     justifyContent: 'center',
-    padding: rs(12),
+    padding: rs(14),
   },
   couponIconPlaceholder: {
-    width: rs(40),
-    height: rs(40),
+    width: rs(48),
+    height: rs(48),
     backgroundColor: 'rgba(0,0,0,0.1)',
     borderRadius: rs(8),
   },
@@ -274,6 +275,6 @@ const styles = StyleSheet.create({
     height: rs(10),
     backgroundColor: '#F5F5F5',
     marginHorizontal: -rs(20),
-    marginTop: rs(3),
+    marginTop: 0,
   },
 });

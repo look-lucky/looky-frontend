@@ -74,7 +74,7 @@ export function SelectedStoreDetail({
               style={[
                 styles.openStatus,
                 (openStatus === '휴무' || openStatus === '영업종료') &&
-                  styles.closedStatus,
+                styles.closedStatus,
               ]}
             >
               {openStatus || '정보없음'}

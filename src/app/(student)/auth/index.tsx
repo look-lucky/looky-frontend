@@ -1,11 +1,11 @@
-import { ArrowLeft } from "@/src/shared/common/arrow-left";
-import { ThemedText } from "@/src/shared/common/themed-text";
-import { rs } from "@/src/shared/theme/scale";
-import { Brand, Gray, Text } from "@/src/shared/theme/theme";
 import { SignupIcons } from "@/assets/images/icons/signup";
 import LookyLogo from "@/assets/images/logo/looky-logo.svg";
+import { ArrowLeft } from "@/src/shared/common/arrow-left";
+import { ThemedText } from "@/src/shared/common/themed-text";
 import { useGoogleLogin } from "@/src/shared/lib/auth/use-google-login";
 import { useKakaoLogin } from "@/src/shared/lib/auth/use-kakao-login";
+import { rs } from "@/src/shared/theme/scale";
+import { Brand, Gray, Text } from "@/src/shared/theme/theme";
 import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
 import { Alert, Pressable, StyleSheet, View } from "react-native";

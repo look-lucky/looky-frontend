@@ -1,10 +1,24 @@
-import * as KakaoLogin from "@react-native-seoul/kakao-login";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useCallback, useState } from "react";
 
 import { kakaoLogin } from "@/src/api/auth";
 import { useAuth } from "./auth-context";
-import { saveLoginProvider } from "./token";
 import type { UserType } from "./token";
+import { saveLoginProvider } from "./token";
+
+// Expo Go 여부 체크
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+// 네이티브 모듈 안전 로드
+let KakaoLogin: any;
+
+if (!isExpoGo) {
+  try {
+    KakaoLogin = require("@react-native-seoul/kakao-login");
+  } catch (e) {
+    console.warn("KakaoLogin module load failed", e);
+  }
+}
 
 interface SocialLoginResult {
   success: boolean;
@@ -30,6 +44,10 @@ export function useKakaoLogin() {
   const login = useCallback(async (): Promise<SocialLoginResult> => {
     try {
       setIsLoading(true);
+
+      if (isExpoGo || !KakaoLogin) {
+        return { success: false, error: "Expo Go에서는 카카오 로그인을 지원하지 않습니다. 빌드된 앱에서 확인해주세요." };
+      }
 
       const result = await KakaoLogin.login();
       const res = await kakaoLogin({
