@@ -18,6 +18,7 @@ interface TabNavigationProps {
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   return (
     <View style={styles.tabContainer}>
+      <View style={styles.fullWidthDivider} />
       {TABS.map((tab) => (
         <TouchableOpacity
           key={tab.id}
@@ -40,8 +41,15 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
 const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    position: 'relative',
+  },
+  fullWidthDivider: {
+    position: 'absolute',
+    bottom: 0,
+    left: -rs(20),
+    right: -rs(20),
+    height: 2,
+    backgroundColor: '#F5F5F5',
   },
   tab: {
     flex: 1,
