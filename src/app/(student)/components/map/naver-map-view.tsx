@@ -1,6 +1,6 @@
 import { useEventCluster, useMapCluster, type EventClusterPoint } from '@/src/shared/hooks/use-map-cluster';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray, Notify } from '@/src/shared/theme/theme';
+import { Gray, Notify, Text as TextColor } from '@/src/shared/theme/theme';
 import type { EventStatus, EventType } from '@/src/shared/types/event';
 import {
   NaverMapMarkerOverlay,
@@ -63,8 +63,78 @@ function ClusterMarkerIcon({ count, size, icon = CLUSTER_ICON, textColor = Gray.
 }
 
 const MARKER_SIZE = rs(32);
-const EVENT_MARKER_SIZE = rs(60);
+const EVENT_MARKER_SIZE = rs(40);
+const EVENT_MARKER_SIZE_LIVE = rs(60);
 const CLUSTER_SIZE = rs(60);
+
+// 라벨 표시 최소 줌 레벨
+const LABEL_MIN_ZOOM = 16;
+// 라벨 최대 너비
+const LABEL_MAX_WIDTH = rs(72);
+// 라벨 최대 줄수
+const LABEL_MAX_LINES = 2;
+// 라벨 높이 (height 계산용 근사값, 2줄 기준)
+const LABEL_HEIGHT = rs(30);
+
+function MarkerLabel({ title }: { title: string }) {
+  return (
+    <Text style={markerLabelStyles.text} numberOfLines={LABEL_MAX_LINES}>
+      {title}
+    </Text>
+  );
+}
+
+const markerLabelStyles = StyleSheet.create({
+  text: {
+    fontSize: rs(11),
+    fontWeight: '700',
+    color: TextColor.primary,
+    textAlign: 'center',
+    lineHeight: rs(14),
+    textShadowColor: Gray.white,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+  },
+});
+
+function StoreMarkerWithLabel({
+  icon,
+  title,
+  showLabel,
+}: {
+  icon: number;
+  title?: string;
+  showLabel: boolean;
+}) {
+  return (
+    <View collapsable={false} style={storeMarkerStyles.wrapper}>
+      <RNImage source={icon} style={{ width: MARKER_SIZE, height: MARKER_SIZE }} resizeMode="contain" />
+      {showLabel && title ? (
+        <View style={storeMarkerStyles.labelGap}>
+          <MarkerLabel title={title} />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const storeMarkerStyles = StyleSheet.create({
+  wrapper: {
+    alignItems: 'center',
+  },
+  labelGap: {
+    marginTop: rs(2),
+  },
+});
+
+const eventMarkerStyles = StyleSheet.create({
+  wrapper: {
+    alignItems: 'center',
+  },
+  labelGap: {
+    marginTop: rs(2),
+  },
+});
 
 // 가게 마커 아이콘 선택 헬퍼
 function getStoreMarkerIcon(isPartner: boolean, hasCoupon: boolean) {
@@ -252,69 +322,103 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           )}
 
           {/* 가게 마커 (클러스터 or 개별) */}
-          {isMapReady && !hideStoreMarkers && clusteredMarkers.map((item) => {
-            if (item.type === 'cluster') {
+          {isMapReady && !hideStoreMarkers && (() => {
+            const showLabel = currentZoom >= LABEL_MIN_ZOOM;
+            return clusteredMarkers.map((item) => {
+              if (item.type === 'cluster') {
+                return (
+                  <NaverMapMarkerOverlay
+                    key={`cluster-${item.clusterId}`}
+                    latitude={item.lat}
+                    longitude={item.lng}
+                    width={CLUSTER_SIZE}
+                    height={CLUSTER_SIZE}
+                    anchor={{ x: 0.5, y: 1.0 }}
+                    zIndex={500}
+                    onTap={() => handleClusterClick(item.lat, item.lng)}
+                  >
+                    <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} />
+                  </NaverMapMarkerOverlay>
+                );
+              }
+              const hasLabel = showLabel && !!item.title;
+              const totalHeight = hasLabel ? MARKER_SIZE + rs(2) + LABEL_HEIGHT : MARKER_SIZE;
+              const totalWidth = hasLabel ? LABEL_MAX_WIDTH : MARKER_SIZE;
+              // anchor y: 아이콘 중심(MARKER_SIZE/2)이 좌표에 오도록
+              const anchorY = MARKER_SIZE / 2 / totalHeight;
               return (
                 <NaverMapMarkerOverlay
-                  key={`cluster-${item.clusterId}`}
+                  key={item.id}
                   latitude={item.lat}
                   longitude={item.lng}
-                  width={CLUSTER_SIZE}
-                  height={CLUSTER_SIZE}
-                  anchor={{ x: 0.5, y: 1.0 }}
-                  zIndex={500}
-                  onTap={() => handleClusterClick(item.lat, item.lng)}
+                  width={totalWidth}
+                  height={totalHeight}
+                  onTap={() => onMarkerClick?.(item.id)}
+                  anchor={{ x: 0.5, y: anchorY }}
                 >
-                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} />
+                  <StoreMarkerWithLabel
+                    icon={getStoreMarkerIcon(item.isPartner, item.hasCoupon)}
+                    title={item.title}
+                    showLabel={showLabel}
+                  />
                 </NaverMapMarkerOverlay>
               );
-            }
-            return (
-              <NaverMapMarkerOverlay
-                key={item.id}
-                latitude={item.lat}
-                longitude={item.lng}
-                width={MARKER_SIZE}
-                height={MARKER_SIZE}
-                onTap={() => onMarkerClick?.(item.id)}
-                anchor={{ x: 0.5, y: 0.5 }}
-                image={getStoreMarkerIcon(item.isPartner, item.hasCoupon)}
-              />
-            );
-          })}
+            });
+          })()}
 
           {/* 이벤트 마커 (클러스터 or 개별) */}
-          {isMapReady && adjustedEventMarkers.map((item) => {
-            if (item.type === 'cluster') {
+          {isMapReady && (() => {
+            const showLabel = currentZoom >= LABEL_MIN_ZOOM;
+            return adjustedEventMarkers.map((item) => {
+              if (item.type === 'cluster') {
+                return (
+                  <NaverMapMarkerOverlay
+                    key={`event-cluster-${item.clusterId}`}
+                    latitude={item.lat}
+                    longitude={item.lng}
+                    width={CLUSTER_SIZE}
+                    height={CLUSTER_SIZE}
+                    anchor={{ x: 0.5, y: 1.0 }}
+                    zIndex={500}
+                    onTap={() => handleClusterClick(item.lat, item.lng)}
+                  >
+                    <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} icon={EVENT_CLUSTER_ICON} textColor={Notify.event} />
+                  </NaverMapMarkerOverlay>
+                );
+              }
+              const hasLabel = showLabel && !!item.title;
+              const markerSize = item.status === 'live' ? EVENT_MARKER_SIZE_LIVE : EVENT_MARKER_SIZE;
+              const totalHeight = hasLabel ? markerSize + rs(2) + LABEL_HEIGHT : markerSize;
+              const totalWidth = hasLabel ? Math.max(LABEL_MAX_WIDTH, markerSize) : markerSize;
+              const anchorY = markerSize / totalHeight;
+              const opacity = getEventMarkerOpacity(item.status);
               return (
                 <NaverMapMarkerOverlay
-                  key={`event-cluster-${item.clusterId}`}
+                  key={item.id}
                   latitude={item.lat}
                   longitude={item.lng}
-                  width={CLUSTER_SIZE}
-                  height={CLUSTER_SIZE}
-                  anchor={{ x: 0.5, y: 1.0 }}
-                  zIndex={500}
-                  onTap={() => handleClusterClick(item.lat, item.lng)}
+                  width={totalWidth}
+                  height={totalHeight}
+                  onTap={() => onEventMarkerClick?.(item.id)}
+                  anchor={{ x: 0.5, y: anchorY }}
+                  alpha={opacity}
                 >
-                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} icon={EVENT_CLUSTER_ICON} textColor={Notify.event} />
+                  <View collapsable={false} style={eventMarkerStyles.wrapper}>
+                    <RNImage
+                      source={getEventMarkerIcon(item.eventType, item.status)}
+                      style={{ width: markerSize, height: markerSize }}
+                      resizeMode="contain"
+                    />
+                    {hasLabel ? (
+                      <View style={eventMarkerStyles.labelGap}>
+                        <MarkerLabel title={item.title!} />
+                      </View>
+                    ) : null}
+                  </View>
                 </NaverMapMarkerOverlay>
               );
-            }
-            return (
-              <NaverMapMarkerOverlay
-                key={item.id}
-                latitude={item.lat}
-                longitude={item.lng}
-                width={EVENT_MARKER_SIZE}
-                height={EVENT_MARKER_SIZE}
-                onTap={() => onEventMarkerClick?.(item.id)}
-                anchor={{ x: 0.5, y: 0.5 }}
-                image={getEventMarkerIcon(item.eventType, item.status)}
-                alpha={getEventMarkerOpacity(item.status)}
-              />
-            );
-          })}
+            });
+          })()}
         </NaverMapView>
       </View>
     );
