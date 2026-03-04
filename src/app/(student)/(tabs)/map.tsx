@@ -64,6 +64,7 @@ const TUTORIAL_IMAGES = [
   require('@/assets/images/map-tuto/5.png'),
 ];
 
+
 export default function MapTab() {
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
@@ -472,9 +473,19 @@ export default function MapTab() {
     (markerId: string) => {
       setSelectedEventId(null);
       handleMarkerClick(markerId);
+      const store = stores.find((s) => s.id === markerId);
+      if (store?.lat && store?.lng) {
+        naverMapRef.current?.animateCameraTo({
+          latitude: store.lat,
+          longitude: store.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      }
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
     },
-    [handleMarkerClick],
+    [handleMarkerClick, stores],
   );
 
   // 이벤트 마커 클릭
@@ -486,11 +497,17 @@ export default function MapTab() {
       setSelectedEventId(eventId);
       const event = events.find((e) => e.id === eventId);
       if (event) {
-        setMapCenter({ lat: event.lat, lng: event.lng });
+        naverMapRef.current?.animateCameraTo({
+          latitude: event.lat,
+          longitude: event.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
       }
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
     },
-    [events, handleMapClick, setMapCenter],
+    [events, handleMapClick],
   );
 
   // 가게 상세 보기
