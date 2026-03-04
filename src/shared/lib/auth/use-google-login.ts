@@ -45,7 +45,7 @@ export function useGoogleLogin() {
     try {
       setIsLoading(true);
 
-      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
 
       if (!isSuccessResponse(response) || !response.data.idToken) {
