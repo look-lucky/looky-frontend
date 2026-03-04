@@ -6,30 +6,32 @@ interface MarkerInput {
   id: string;
   lat: number;
   lng: number;
+  title?: string;
   isPartner: boolean;
   hasCoupon: boolean;
 }
 
 export type ClusterPoint =
   | { type: 'cluster'; lat: number; lng: number; count: number; clusterId: number }
-  | { type: 'single'; lat: number; lng: number; id: string; isPartner: boolean; hasCoupon: boolean };
+  | { type: 'single'; lat: number; lng: number; id: string; title?: string; isPartner: boolean; hasCoupon: boolean };
 
-type MarkerProperties = { id: string; isPartner: boolean; hasCoupon: boolean };
+type MarkerProperties = { id: string; title?: string; isPartner: boolean; hasCoupon: boolean };
 
 // 이벤트 마커
 interface EventMarkerInput {
   id: string;
   lat: number;
   lng: number;
+  title?: string;
   eventType: EventType;
   status: EventStatus;
 }
 
 export type EventClusterPoint =
   | { type: 'cluster'; lat: number; lng: number; count: number; clusterId: number }
-  | { type: 'single'; lat: number; lng: number; id: string; eventType: EventType; status: EventStatus };
+  | { type: 'single'; lat: number; lng: number; id: string; title?: string; eventType: EventType; status: EventStatus };
 
-type EventMarkerProperties = { id: string; eventType: EventType; status: EventStatus };
+type EventMarkerProperties = { id: string; title?: string; eventType: EventType; status: EventStatus };
 
 const WORLD_BBOX: [number, number, number, number] = [-180, -85, 180, 85];
 
@@ -41,7 +43,7 @@ export function useMapCluster(markers: MarkerInput[], zoom: number): ClusterPoin
       markers.map((m) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [m.lng, m.lat] },
-        properties: { id: m.id, isPartner: m.isPartner, hasCoupon: m.hasCoupon },
+        properties: { id: m.id, title: m.title, isPartner: m.isPartner, hasCoupon: m.hasCoupon },
       })),
     );
     return sc;
@@ -65,6 +67,7 @@ export function useMapCluster(markers: MarkerInput[], zoom: number): ClusterPoin
         lat,
         lng,
         id: c.properties.id,
+        title: c.properties.title,
         isPartner: c.properties.isPartner,
         hasCoupon: c.properties.hasCoupon,
       };
@@ -79,7 +82,7 @@ export function useEventCluster(markers: EventMarkerInput[], zoom: number): Even
       markers.map((m) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [m.lng, m.lat] },
-        properties: { id: m.id, eventType: m.eventType, status: m.status },
+        properties: { id: m.id, title: m.title, eventType: m.eventType, status: m.status },
       })),
     );
     return sc;
@@ -104,6 +107,7 @@ export function useEventCluster(markers: EventMarkerInput[], zoom: number): Even
         lat,
         lng,
         id: p.id,
+        title: p.title,
         eventType: p.eventType,
         status: p.status,
       };

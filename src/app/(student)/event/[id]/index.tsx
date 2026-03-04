@@ -1,4 +1,5 @@
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
+import { LinkableText } from '@/src/shared/common/linkable-text';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { ThemedView } from '@/src/shared/common/themed-view';
 import { rs } from '@/src/shared/theme/scale';
@@ -231,7 +232,7 @@ export default function EventDetailScreen() {
           )}
 
           {/* 본문 설명 */}
-          <ThemedText style={styles.description}>{event.description}</ThemedText>
+          <LinkableText style={styles.description}>{event.description}</LinkableText>
         </View>
       </ScrollView>
 

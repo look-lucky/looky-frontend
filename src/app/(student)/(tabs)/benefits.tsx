@@ -151,19 +151,18 @@ export default function BenefitsTab() {
   }, [tab]);
   const [selectedCoupon, setSelectedCoupon] = useState<IssueCouponResponse | null>(null);
   const [couponCode, setCouponCode] = useState<string | null>(null);
-  const [codeActivatedAt, setCodeActivatedAt] = useState<number | null>(null);
+  const [activationExpiresAt, setActivationExpiresAt] = useState<string | null>(null);
   const [codeExpired, setCodeExpired] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(30 * 60);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
 
   const queryClient = useQueryClient();
   const { mutate: activateCoupon, isPending: isActivating } = useActivateCoupon();
 
-  // 30분 카운트다운 타이머
+  // activationExpiresAt 기반 카운트다운 타이머
   useEffect(() => {
-    if (!codeActivatedAt || codeExpired) return;
+    if (!activationExpiresAt || codeExpired) return;
     const interval = setInterval(() => {
-      const elapsed = Date.now() - codeActivatedAt;
-      const remaining = 30 * 60 * 1000 - elapsed;
+      const remaining = new Date(activationExpiresAt).getTime() - Date.now();
       if (remaining <= 0) {
         setCouponCode(null);
         setCodeExpired(true);
@@ -173,23 +172,22 @@ export default function BenefitsTab() {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [codeActivatedAt, codeExpired]);
+  }, [activationExpiresAt, codeExpired]);
 
   const closeModal = () => {
     setSelectedCoupon(null);
     setCouponCode(null);
-    setCodeActivatedAt(null);
+    setActivationExpiresAt(null);
     setCodeExpired(false);
-    setRemainingSeconds(30 * 60);
+    setRemainingSeconds(0);
   };
 
   const handleOpenCoupon = (coupon: IssueCouponResponse) => {
     setSelectedCoupon(coupon);
-    // 항상 버튼부터 시작 — 30분 타이머를 추적하기 위해
     setCouponCode(null);
-    setCodeActivatedAt(null);
+    setActivationExpiresAt(null);
     setCodeExpired(false);
-    setRemainingSeconds(30 * 60);
+    setRemainingSeconds(0);
   };
 
   const handleUseCoupon = () => {
@@ -198,12 +196,15 @@ export default function BenefitsTab() {
       { studentCouponId: selectedCoupon.studentCouponId },
       {
         onSuccess: (res) => {
-          const code = (res as any)?.data?.data as string;
-          if (code) {
+          const responseData = (res as any)?.data?.data;
+          const code = responseData?.couponCode as string | undefined;
+          const expiresAt = responseData?.activationExpiresAt as string | undefined;
+          if (code && expiresAt) {
+            const remaining = new Date(expiresAt).getTime() - Date.now();
             setCouponCode(code);
-            setCodeActivatedAt(Date.now());
-            setCodeExpired(false);
-            setRemainingSeconds(30 * 60);
+            setActivationExpiresAt(expiresAt);
+            setCodeExpired(remaining <= 0);
+            setRemainingSeconds(remaining > 0 ? Math.ceil(remaining / 1000) : 0);
             queryClient.invalidateQueries({ queryKey: getGetMyCouponsQueryKey() });
           }
         },
@@ -211,9 +212,9 @@ export default function BenefitsTab() {
           // 이미 ACTIVATED 상태일 때 (409 등) 기존 코드가 있으면 표시
           if (selectedCoupon?.couponCode) {
             setCouponCode(selectedCoupon.couponCode);
-            setCodeActivatedAt(Date.now());
+            setActivationExpiresAt(null);
             setCodeExpired(false);
-            setRemainingSeconds(30 * 60);
+            setRemainingSeconds(0);
           }
         },
       },

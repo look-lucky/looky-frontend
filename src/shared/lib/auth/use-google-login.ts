@@ -67,7 +67,7 @@ export function useGoogleLogin() {
         return { success: false, error: "Expo Go에서는 구글 로그인을 지원하지 않습니다. 빌드된 앱에서 확인해주세요." };
       }
 
-      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
 
       if (!isSuccessResponse(response) || !response.data.idToken) {
