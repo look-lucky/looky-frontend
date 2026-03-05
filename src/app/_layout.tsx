@@ -77,9 +77,7 @@ function AppContent() {
         <Stack.Screen name="index" />
         <Stack.Screen name="landing" />
         <Stack.Screen name="onboarding" />
-        <Stack.Screen name="signin" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="auth/sign-up-social-form" />
+        <Stack.Screen name="(student)" />
       </Stack>
       <StatusBar style="dark" />
     </TabBarProvider>

@@ -31,6 +31,7 @@ export default function ChangePasswordScreen() {
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [pwErrorMsg, setPwErrorMsg] = useState('');
+  const [currentPwErrorMsg, setCurrentPwErrorMsg] = useState('');
   const [isMatch, setIsMatch] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
@@ -84,13 +85,16 @@ export default function ChangePasswordScreen() {
 
   const handleSubmit = async () => {
     if (currentPw.trim() === '') return;
+    setCurrentPwErrorMsg('');
     setIsLoading(true);
     try {
       await changePassword({ currentPassword: currentPw, newPassword: newPw });
       setSuccessVisible(true);
-    } catch (error) {
+    } catch (error: any) {
       if (isNetworkError(error)) {
         showNetworkError();
+      } else if (error?.status === 400 || error?.status === 401) {
+        setCurrentPwErrorMsg('현재 비밀번호와 동일한 비밀번호를 입력하세요');
       } else {
         setErrorVisible(true);
       }
@@ -133,7 +137,7 @@ export default function ChangePasswordScreen() {
               <TextInput
                 style={styles.textInput}
                 value={currentPw}
-                onChangeText={setCurrentPw}
+                onChangeText={(text) => { setCurrentPw(text); setCurrentPwErrorMsg(''); }}
                 placeholder="현재 비밀번호"
                 placeholderTextColor="#BDBDBD"
                 secureTextEntry={!showCurrentPw}
@@ -143,6 +147,9 @@ export default function ChangePasswordScreen() {
                 <Ionicons name={showCurrentPw ? 'eye' : 'eye-off'} size={rs(20)} color="#9D9D9D" />
               </TouchableOpacity>
             </View>
+            {currentPwErrorMsg !== '' && (
+              <Text style={styles.currentPwErrorText}>{currentPwErrorMsg}</Text>
+            )}
           </View>
 
           <View style={{ marginTop: rs(10) }}>
@@ -194,7 +201,7 @@ export default function ChangePasswordScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { paddingBottom: insets.bottom || rs(20) }]}>
         <TouchableOpacity
           style={[styles.submitBtn, isMatch ? styles.submitBtnActive : styles.submitBtnDisabled]}
           onPress={handleSubmit}
@@ -263,9 +270,10 @@ const styles = StyleSheet.create({
   textInput: { flex: 1, height: '100%', fontSize: rs(14), fontFamily: 'Pretendard', color: 'black', paddingVertical: 0 },
   eyeIcon: { padding: rs(5) },
   errorText: { fontSize: rs(10), color: '#FF6200', fontFamily: 'Pretendard', marginTop: rs(5), marginLeft: rs(5) },
+  currentPwErrorText: { fontSize: rs(10), color: '#FF6200', fontFamily: 'Pretendard', marginTop: rs(5), marginLeft: rs(5) },
   guideContainer: { marginTop: rs(5), gap: rs(2) },
   guideText: { fontSize: rs(10), color: '#BDBDBD', fontFamily: 'Pretendard', marginLeft: rs(5), lineHeight: rs(14) },
-  bottomContainer: { position: 'absolute', bottom: rs(30), left: 0, right: 0, paddingHorizontal: rs(20) },
+  bottomContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: rs(20), paddingTop: rs(12), backgroundColor: '#FAFAFA' },
   submitBtn: { height: rs(48), borderRadius: rs(8), justifyContent: 'center', alignItems: 'center' },
   submitBtnActive: { backgroundColor: '#34B262' },
   submitBtnDisabled: { backgroundColor: '#D5D5D5' },
