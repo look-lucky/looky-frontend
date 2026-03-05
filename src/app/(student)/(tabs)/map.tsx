@@ -64,6 +64,7 @@ const TUTORIAL_IMAGES = [
   require('@/assets/images/map-tuto/5.png'),
 ];
 
+
 export default function MapTab() {
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
@@ -102,7 +103,6 @@ export default function MapTab() {
 
   // 인기있는 곳 모드
   const [hotPlacesMode, setHotPlacesMode] = useState(false);
-  const hotPlacesHandledRef = useRef(false);
   const { data: hotStoresRes } = useGetHotStores({ query: { staleTime: 5 * 60 * 1000 } });
   const hotStoresList = ((hotStoresRes as any)?.data?.data ?? []).slice(0, 15).map(
     (s: any, index: number) => ({
@@ -288,21 +288,17 @@ export default function MapTab() {
     centerOnEventsHandledRef.current = false;
   }, [centerOnEvents]);
 
-  // hotPlaces 파라미터 변경 시 플래그 리셋
-  useEffect(() => {
-    hotPlacesHandledRef.current = false;
-  }, [hotPlacesParam]);
-
   // 홈 '지금 인기있는 곳 더보기' 진입 시 → 핫플레이스 모드 활성화 + 바텀시트 열기
-  useEffect(() => {
-    if (hotPlacesParam !== 'true' || hotPlacesHandledRef.current) return;
-    hotPlacesHandledRef.current = true;
-    setHotPlacesMode(true);
-    const timer = setTimeout(() => {
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [hotPlacesParam]);
+  useFocusEffect(
+    useCallback(() => {
+      if (hotPlacesParam !== 'true') return;
+      setHotPlacesMode(true);
+      const timer = setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      }, 300);
+      return () => clearTimeout(timer);
+    }, [hotPlacesParam]),
+  );
 
   // '이벤트 N개' 배너 클릭 시 → 첫 번째 이벤트 위치로 카메라 이동
   useEffect(() => {
@@ -472,9 +468,19 @@ export default function MapTab() {
     (markerId: string) => {
       setSelectedEventId(null);
       handleMarkerClick(markerId);
+      const store = stores.find((s) => s.id === markerId);
+      if (store?.lat && store?.lng) {
+        naverMapRef.current?.animateCameraTo({
+          latitude: store.lat,
+          longitude: store.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      }
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
     },
-    [handleMarkerClick],
+    [handleMarkerClick, stores],
   );
 
   // 이벤트 마커 클릭
@@ -486,11 +492,17 @@ export default function MapTab() {
       setSelectedEventId(eventId);
       const event = events.find((e) => e.id === eventId);
       if (event) {
-        setMapCenter({ lat: event.lat, lng: event.lng });
+        naverMapRef.current?.animateCameraTo({
+          latitude: event.lat,
+          longitude: event.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
       }
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
     },
-    [events, handleMapClick, setMapCenter],
+    [events, handleMapClick],
   );
 
   // 가게 상세 보기

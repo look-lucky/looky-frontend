@@ -1,12 +1,12 @@
 import { checkUsernameAvailability } from '@/src/api/auth';
 import { changeUsername } from '@/src/api/my-page';
 import { useAuth } from '@/src/shared/lib/auth';
-import { getUsername, saveUsername } from '@/src/shared/lib/auth/token';
+import { saveUsername } from '@/src/shared/lib/auth/token';
 import { isNetworkError, useNetworkError } from '@/src/shared/contexts/network-error-context';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -31,7 +31,6 @@ export default function ChangeIdScreen() {
   const { handleLogout } = useAuth();
   const { showNetworkError } = useNetworkError();
 
-  const [initialId, setInitialId] = useState('');
   const [userId, setUserId] = useState('');
   const [isChecked, setIsChecked] = useState(false);
   const [checkMessage, setCheckMessage] = useState('');
@@ -57,18 +56,7 @@ export default function ChangeIdScreen() {
     }, 2000);
   };
 
-  useEffect(() => {
-    const loadCurrentUsername = async () => {
-      const currentUsername = await getUsername();
-      if (currentUsername) {
-        setInitialId(currentUsername);
-        setUserId(currentUsername);
-      }
-    };
-    loadCurrentUsername();
-  }, []);
-
-  const isIdChanged = userId !== initialId && userId.length > 0;
+  const isIdChanged = userId.length > 0;
 
   const handleIdChange = (text: string) => {
     const filteredText = text.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -175,7 +163,7 @@ export default function ChangeIdScreen() {
 
         <View style={styles.formContainer}>
           <View style={styles.inputLabelContainer}>
-            <Text style={styles.inputLabel}>아이디</Text>
+            <Text style={styles.inputLabel}>새 아이디</Text>
           </View>
 
           <View style={styles.inputWrapper}>
@@ -183,7 +171,7 @@ export default function ChangeIdScreen() {
               style={userId.length > 0 ? styles.textInput : styles.textinfoInput}
               value={userId}
               onChangeText={handleIdChange}
-              placeholder="영문 소문자, 숫자를 포함한 6~16자 이내로 입력해주세요"
+              placeholder="영문 소문자+숫자 6~16자"
               placeholderTextColor="#BDBDBD"
               autoCapitalize="none"
               maxLength={16}
@@ -209,7 +197,7 @@ export default function ChangeIdScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { paddingBottom: insets.bottom || rs(20) }]}>
         <TouchableOpacity
           style={[styles.submitBtn, isChecked ? styles.submitBtnActive : styles.submitBtnDisabled]}
           onPress={handleSubmit}
@@ -288,7 +276,7 @@ const styles = StyleSheet.create({
   messageText: { fontSize: rs(10), fontFamily: 'Pretendard', fontWeight: '400', marginTop: rs(5), marginLeft: rs(5) },
   successText: { color: '#828282' },
   errorText: { color: '#FF6200', fontSize: rs(10), fontFamily: 'Pretendard', fontWeight: '400', marginTop: rs(5), marginLeft: rs(5) },
-  bottomContainer: { position: 'absolute', bottom: rs(30), left: 0, right: 0, paddingHorizontal: rs(20) },
+  bottomContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: rs(20), paddingTop: rs(12), backgroundColor: '#FAFAFA' },
   submitBtn: { height: rs(48), borderRadius: rs(8), justifyContent: 'center', alignItems: 'center' },
   submitBtnActive: { backgroundColor: '#34B262' },
   submitBtnDisabled: { backgroundColor: '#D5D5D5' },

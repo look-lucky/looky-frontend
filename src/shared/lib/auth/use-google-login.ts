@@ -54,6 +54,7 @@ export function useGoogleLogin() {
     if (!isExpoGo && GoogleSignin) {
       GoogleSignin.configure({
         webClientId: ENV.GOOGLE_WEB_CLIENT_ID,
+        iosClientId: ENV.GOOGLE_IOS_CLIENT_ID || undefined,
       });
     }
     setIsReady(true);

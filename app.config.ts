@@ -30,7 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       package: bundleId,
       adaptiveIcon: {
         backgroundColor: "#FEF5E5",
-        foregroundImage: "./assets/images/logo/ios-looky.png",
+        foregroundImage: "./assets/images/logo/android-looky.png",
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,

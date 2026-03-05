@@ -9,13 +9,14 @@ interface MarkerInput {
   title?: string;
   isPartner: boolean;
   hasCoupon: boolean;
+  favoriteCount?: number;
 }
 
 export type ClusterPoint =
   | { type: 'cluster'; lat: number; lng: number; count: number; clusterId: number }
-  | { type: 'single'; lat: number; lng: number; id: string; title?: string; isPartner: boolean; hasCoupon: boolean };
+  | { type: 'single'; lat: number; lng: number; id: string; title?: string; isPartner: boolean; hasCoupon: boolean; favoriteCount?: number };
 
-type MarkerProperties = { id: string; title?: string; isPartner: boolean; hasCoupon: boolean };
+type MarkerProperties = { id: string; title?: string; isPartner: boolean; hasCoupon: boolean; favoriteCount?: number };
 
 // 이벤트 마커
 interface EventMarkerInput {
@@ -43,7 +44,7 @@ export function useMapCluster(markers: MarkerInput[], zoom: number): ClusterPoin
       markers.map((m) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [m.lng, m.lat] },
-        properties: { id: m.id, title: m.title, isPartner: m.isPartner, hasCoupon: m.hasCoupon },
+        properties: { id: m.id, title: m.title, isPartner: m.isPartner, hasCoupon: m.hasCoupon, favoriteCount: m.favoriteCount },
       })),
     );
     return sc;
@@ -53,23 +54,26 @@ export function useMapCluster(markers: MarkerInput[], zoom: number): ClusterPoin
   return useMemo(() => {
     return index.getClusters(WORLD_BBOX, Math.floor(zoom)).map((c): ClusterPoint => {
       const [lng, lat] = c.geometry.coordinates;
-      if (c.properties.cluster) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const p = c.properties as any;
+      if (p.cluster) {
         return {
           type: 'cluster',
           lat,
           lng,
-          count: c.properties.point_count,
-          clusterId: c.properties.cluster_id as number,
+          count: p.point_count,
+          clusterId: p.cluster_id as number,
         };
       }
       return {
         type: 'single',
         lat,
         lng,
-        id: c.properties.id,
-        title: c.properties.title,
-        isPartner: c.properties.isPartner,
-        hasCoupon: c.properties.hasCoupon,
+        id: p.id,
+        title: p.title,
+        isPartner: p.isPartner,
+        hasCoupon: p.hasCoupon,
+        favoriteCount: p.favoriteCount,
       };
     });
   }, [index, zoom]);

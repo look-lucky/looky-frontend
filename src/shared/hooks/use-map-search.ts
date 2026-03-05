@@ -213,7 +213,7 @@ export function useMapSearch(permissionReady = true, skipInitialCenterMove = fal
     if (selectedStoreId) {
       const store = filteredStores.find((s) => s.id === selectedStoreId);
       if (store && store.lat && store.lng) {
-        return [{ id: store.id, lat: store.lat, lng: store.lng, title: store.name, isPartner: store.isPartner, hasCoupon: store.hasCoupon }];
+        return [{ id: store.id, lat: store.lat, lng: store.lng, title: store.name, isPartner: store.isPartner, hasCoupon: store.hasCoupon, favoriteCount: store.favoriteCount ?? 0 }];
       }
       return [];
     }
@@ -233,6 +233,7 @@ export function useMapSearch(permissionReady = true, skipInitialCenterMove = fal
       title: store.name,
       isPartner: store.isPartner,
       hasCoupon: store.hasCoupon,
+      favoriteCount: store.favoriteCount ?? 0,
     }));
   }, [filteredStores, selectedStoreId, viewportSearch, myLocation, mapCenter]);
 
