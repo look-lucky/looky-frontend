@@ -21,10 +21,14 @@ interface SocialLoginResult {
 // JWT payload 디코딩
 function decodeJwtPayload(token: string): { role?: string; sub?: string } | null {
   try {
-    const payload = token.split(".")[1];
-    const decoded = atob(payload);
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = base64.length % 4;
+    const padded = pad ? base64 + "=".repeat(4 - pad) : base64;
+    const decoded = atob(padded);
     return JSON.parse(decoded);
-  } catch {
+  } catch (e) {
+    console.error("JWT Decode Error:", e);
     return null;
   }
 }
@@ -88,11 +92,17 @@ export function useSocialLogin() {
             expiresIn ? parseInt(expiresIn, 10) : 3600,
             "ROLE_GUEST",
           );
-          const sub = jwtPayload?.sub ? parseInt(jwtPayload.sub, 10) : null;
+          const userId = jwtPayload?.sub ? parseInt(jwtPayload.sub, 10) : null;
+          if (!userId) {
+            return {
+              success: false,
+              error: "사용자 정보를 가져올 수 없습니다. (ID 누락)",
+            };
+          }
           return {
             success: true,
             needsSignup: true,
-            userId: sub ?? undefined,
+            userId: userId,
           };
         }
 
@@ -233,22 +243,35 @@ export function useSocialLogin() {
       }
 
       const data = await response.json();
-      console.log("Apple Backend 응답:", data);
+      console.log("Apple Backend 응답(Raw):", JSON.stringify(data, null, 2));
 
-      if (data.status === "SUCCESS" && data.data.accessToken) {
+      if (data.isSuccess && data.data.accessToken) {
         const accessToken = data.data.accessToken;
         const expiresIn = data.data.expiresIn || 3600;
         const jwtPayload = decodeJwtPayload(accessToken);
         const role = jwtPayload?.role;
 
+        console.log("디코딩된 JWT Payload:", JSON.stringify(jwtPayload, null, 2));
+        console.log("추출된 Role:", role);
+        console.log("추출된 sub(UserId):", jwtPayload?.sub);
+
         if (role === "ROLE_GUEST") {
           console.log("신규 소셜 회원 - 추가 정보 입력 필요");
           await handleAuthSuccess(accessToken, expiresIn, "ROLE_GUEST");
-          const userId = jwtPayload?.sub ? parseInt(jwtPayload.sub, 10) : null;
+          const subValue = jwtPayload?.sub;
+          const userId = subValue ? parseInt(subValue, 10) : null;
+
+          if (!userId) {
+            console.error("UserId 파싱 실패. subValue:", subValue);
+            return {
+              success: false,
+              error: `사용자 정보를 가져올 수 없습니다. (ID: ${subValue})`,
+            };
+          }
           return {
             success: true,
             needsSignup: true,
-            userId: userId ?? undefined,
+            userId: userId,
           };
         }
 
