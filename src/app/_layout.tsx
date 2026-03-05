@@ -2,7 +2,7 @@ import { NetworkErrorProvider } from "@/src/shared/contexts/network-error-contex
 import { TabBarProvider } from "@/src/shared/contexts/tab-bar-context";
 import { AuthProvider } from "@/src/shared/lib/auth";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, usePathname, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -72,6 +72,7 @@ function AppContent() {
   // 👇 학생 또는 미로그인 시 기존 Expo Router 흐름
   return (
     <TabBarProvider>
+      <AuthRedirectGuard />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="landing" />
@@ -81,6 +82,25 @@ function AppContent() {
       <StatusBar style="dark" />
     </TabBarProvider>
   );
+}
+
+// 별도 컴포넌트로 분리하여 useSegments 등을 안전하게 사용
+function AuthRedirectGuard() {
+  const { userType, isAuthenticated } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated && userType === 'ROLE_GUEST') {
+      const isSocialSignupPage = pathname.includes('sign-up-social-form');
+      if (!isSocialSignupPage) {
+        console.log("[AuthRedirectGuard] Redirecting ROLE_GUEST to signup form. Current path:", pathname);
+        router.replace("/auth/sign-up-social-form");
+      }
+    }
+  }, [isAuthenticated, userType, pathname]);
+
+  return null;
 }
 
 export default function RootLayout() {

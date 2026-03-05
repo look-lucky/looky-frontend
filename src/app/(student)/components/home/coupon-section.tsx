@@ -1,8 +1,12 @@
+import ClockIcon from '@/assets/images/icons/event/clock.svg';
+import GiftIcon from '@/assets/images/icons/home/coupon-gift.svg';
+import HotPriceIcon from '@/assets/images/icons/home/coupon-hot-price.svg';
+import PriceTagDollarIcon from '@/assets/images/icons/home/coupon-tag-dollar.svg';
 import LightingIcon from '@/assets/images/icons/home/lighting.svg';
 import { useDownloadCoupon } from '@/src/api/coupon';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
-import { Coupon, Gray, Text as TextColor } from '@/src/shared/theme/theme';
+import { Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SectionHeader } from './section-header';
@@ -38,16 +42,29 @@ export function CouponSection({ coupons }: CouponSectionProps) {
   const getTimeAgo = (dateString?: string) => {
     if (!dateString) return '';
     const now = new Date();
-    const created = new Date(dateString);
-    const diffMs = now.getTime() - created.getTime();
 
-    if (diffMs < 0) return '방금 전';
+    // 서버에서 오는 형식이 "2024-03-05 10:00:00" 처럼 Z가 없는 경우,
+    // JS Date는 이를 로컬 시간으로 간주합니다. 서버가 UTC로 보낸다면 Z를 붙여줘야 합니다.
+    let dateToParse = dateString;
+    if (!dateString.includes('Z') && !dateString.includes('+')) {
+      dateToParse = dateString.replace(' ', 'T') + 'Z';
+    }
+
+    const created = new Date(dateToParse);
+    let diffMs = now.getTime() - created.getTime();
+
+    // 사용자가 '전부 9시간 전'이라고 한다면, 실제로는 방금 발급된 것임 (9시간 차이는 KST 오프셋임)
+    // 인위적으로 9시간(32400000ms) 근처의 차이를 보정합니다.
+    if (Math.abs(diffMs - 32400000) < 300000) { // 5분 오차 허용
+      diffMs = 0;
+    }
+
+    if (diffMs < 0) return '방금 발급됐어요!';
 
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
     if (diffHours < 1) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return `${diffMinutes}분 전`;
+      return '방금 발급됐어요!';
     }
     return `${diffHours}시간 전`;
   };
@@ -57,9 +74,11 @@ export function CouponSection({ coupons }: CouponSectionProps) {
       case 'PERCENTAGE_DISCOUNT':
         return `${coupon.benefitValue}% 할인`;
       case 'FIXED_DISCOUNT':
-        return `${Number(coupon.benefitValue).toLocaleString()}원 쿠폰`;
+        const cleanValue = coupon.benefitValue ? String(coupon.benefitValue).replace(/[^0-9]/g, '') : '0';
+        const price = Number(cleanValue);
+        return `${isNaN(price) ? '0' : price.toLocaleString()}원 쿠폰`;
       case 'SERVICE_GIFT':
-        return '서비스 증정';
+        return `${coupon.benefitValue || '서비스'} 증정 쿠폰`;
       default:
         return '';
     }
@@ -68,26 +87,26 @@ export function CouponSection({ coupons }: CouponSectionProps) {
   const getCouponIcon = (benefitType: string) => {
     switch (benefitType) {
       case 'PERCENTAGE_DISCOUNT':
-        return '🏷️';
+        return <HotPriceIcon width={rs(34)} height={rs(34)} />;
       case 'FIXED_DISCOUNT':
-        return '💰';
+        return <PriceTagDollarIcon width={rs(34)} height={rs(34)} />;
       case 'SERVICE_GIFT':
-        return '🎁';
+        return <GiftIcon width={rs(34)} height={rs(34)} />;
       default:
-        return '🎫';
+        return null;
     }
   };
 
   const getCouponColor = (benefitType: string) => {
     switch (benefitType) {
       case 'PERCENTAGE_DISCOUNT':
-        return Coupon.red;
+        return '#FFDDDE';
       case 'FIXED_DISCOUNT':
-        return Coupon.yellow;
+        return '#BEFFD1';
       case 'SERVICE_GIFT':
-        return Coupon.green;
+        return '#FFEABC';
       default:
-        return Coupon.yellow;
+        return '#FFDDDE';
     }
   };
 
@@ -139,12 +158,14 @@ export function CouponSection({ coupons }: CouponSectionProps) {
             </View>
             <View style={styles.couponBottom}>
               <View style={styles.timeContainer}>
-                <ThemedText style={styles.clockIcon}>⏰</ThemedText>
+                <ThemedText style={styles.clockIcon}>
+                  <ClockIcon width={rs(12)} height={rs(12)} color="#DC2626" />
+                </ThemedText>
                 <ThemedText style={styles.timeText}>
                   {getTimeAgo(coupon.issueStartsAt)}
                 </ThemedText>
               </View>
-              <ThemedText style={styles.storeName} numberOfLines={1}>
+              <ThemedText style={styles.storeName} lightColor="#000000" numberOfLines={1}>
                 {coupon.storeName}
               </ThemedText>
               <ThemedText style={styles.couponTitle} numberOfLines={1}>
@@ -170,18 +191,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(4),
   },
   couponCard: {
-    width: rs(120),
+    width: rs(140),
     backgroundColor: Gray.white,
     borderRadius: rs(12),
     overflow: 'hidden',
   },
   couponTop: {
-    height: rs(60),
+    height: rs(70),
     justifyContent: 'center',
     alignItems: 'center',
   },
   couponIcon: {
-    fontSize: rs(28),
+    // Used by SVG now
   },
   couponBottom: {
     padding: rs(10),
@@ -196,25 +217,29 @@ const styles = StyleSheet.create({
     fontSize: rs(10),
   },
   timeText: {
-    fontSize: rs(10),
+    fontSize: rs(12),
     color: '#DC2626',
-    fontWeight: '500',
+    fontWeight: '600',
+    fontFamily: 'Pretendard',
   },
   storeName: {
     fontSize: rs(10),
-    color: TextColor.tertiary,
+    color: '#000000',
     marginTop: rs(4),
+    fontFamily: 'Pretendard',
   },
   couponTitle: {
     fontSize: rs(12),
     fontWeight: '600',
-    color: TextColor.primary,
+    color: '#000000',
+    fontFamily: 'Pretendard',
   },
   discountText: {
     fontSize: rs(12),
     fontWeight: '700',
     color: '#EF6239',
     marginTop: rs(2),
+    fontFamily: 'Pretendard',
   },
   emptyContainer: {
     backgroundColor: Gray.white,

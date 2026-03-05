@@ -124,8 +124,13 @@ export async function isTokenValid(): Promise<boolean> {
 
 export function decodeJwtPayload(token: string): { role?: string; sub?: string } | null {
   try {
-    return JSON.parse(atob(token.split(".")[1]));
-  } catch {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = base64.length % 4;
+    const padded = pad ? base64 + "=".repeat(4 - pad) : base64;
+    return JSON.parse(atob(padded));
+  } catch (e) {
+    console.error("JWT Decode Error:", e);
     return null;
   }
 }
