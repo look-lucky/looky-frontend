@@ -84,7 +84,7 @@ export default function HomePage() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <LookyLogo width={rs(92)} height={rs(28)} />
+          <LookyLogo width={rs(120)} height={rs(37)} />
         </View>
 
         {/* Welcome Banner */}
@@ -136,7 +136,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: rs(12),
+    paddingTop: rs(12),
+    paddingBottom: rs(4),
+    marginLeft: rs(-5),
   },
   section: {
     marginTop: rs(16),
