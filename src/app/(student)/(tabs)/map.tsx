@@ -97,6 +97,7 @@ export default function MapTab() {
   }, []);
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
+  const pendingCameraMove = useRef<{ lat: number; lng: number } | null>(null);
   const { category, eventId: eventIdParam, centerOnEvents, hotPlaces: hotPlacesParam } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string; hotPlaces?: string }>();
   const initialEventHandled = useRef(false);
   const centerOnEventsHandledRef = useRef(false);
@@ -269,19 +270,27 @@ export default function MapTab() {
     const event = allEvents.find((e) => e.id === eventIdParam);
     if (event) {
       initialEventHandled.current = true;
-      // 이벤트 선택 + 카메라 이동 즉시 처리 (마커 클릭과 동일)
       handleMapClick();
       setSelectedEventId(event.id);
-      setMapCenter({ lat: event.lat, lng: event.lng });
-      // 바텀시트 오픈은 딜레이 (동시 실행 시 NaverMap 리사이즈 crash 방지)
-      // 파라미터 초기화도 타이머 안에서 처리 (타이머 취소 방지)
+      if (naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: event.lat,
+          longitude: event.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      } else {
+        // NaverMap이 아직 마운트되지 않은 경우 onMapReady 시점에 실행
+        pendingCameraMove.current = { lat: event.lat, lng: event.lng };
+      }
       const timer = setTimeout(() => {
         bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
         router.setParams({ eventId: undefined });
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [eventIdParam, allEvents, handleMapClick, setMapCenter]);
+  }, [eventIdParam, allEvents, handleMapClick]);
 
   // centerOnEvents 파라미터 변경 시 플래그 리셋
   useEffect(() => {
@@ -377,13 +386,23 @@ export default function MapTab() {
       setActivePendingEventId(null);
       handleMapClick();
       setSelectedEventId(activePendingEventId);
-      setMapCenter({ lat: event.lat, lng: event.lng });
+      if (naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: event.lat,
+          longitude: event.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      } else {
+        pendingCameraMove.current = { lat: event.lat, lng: event.lng };
+      }
       const timer = setTimeout(() => {
         bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [activePendingEventId, allEvents, handleMapClick, setMapCenter]);
+  }, [activePendingEventId, allEvents, handleMapClick]);
 
   // 지도 탭 포커스 상태 (NaverMap 크래시 방지용 - 탭 이탈 시 clean unmount)
   const [isTabFocused, setIsTabFocused] = useState(true);
@@ -542,11 +561,17 @@ export default function MapTab() {
       handleMapClick(); // 가게 선택 해제
       const event = events.find((e) => e.id === eventId);
       if (event) {
-        setMapCenter({ lat: event.lat, lng: event.lng });
+        naverMapRef.current?.animateCameraTo({
+          latitude: event.lat,
+          longitude: event.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
       }
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
     },
-    [events, handleMapClick, setMapCenter],
+    [events, handleMapClick],
   );
 
   // 리스트에서 가게 카드 클릭
@@ -939,7 +964,19 @@ export default function MapTab() {
           onMarkerClick={onMarkerClick}
           onEventMarkerClick={onEventMarkerClick}
           onCameraChanged={handleCameraChanged}
-          onMapReady={() => {}}
+          onMapReady={() => {
+            if (pendingCameraMove.current) {
+              const { lat, lng } = pendingCameraMove.current;
+              pendingCameraMove.current = null;
+              naverMapRef.current?.animateCameraTo({
+                latitude: lat,
+                longitude: lng,
+                zoom: 17,
+                duration: 400,
+                pivot: { x: 0.5, y: 0.35 },
+              });
+            }
+          }}
           style={styles.map}
           isShowZoomControls={false}
         />
