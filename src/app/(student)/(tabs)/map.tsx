@@ -46,6 +46,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,6 +69,7 @@ const TUTORIAL_IMAGES = [
 export default function MapTab() {
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
+  const { height: screenHeight } = useWindowDimensions();
 
   // ── 튜토리얼 ──────────────────────────────────
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -97,6 +99,7 @@ export default function MapTab() {
   }, []);
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
+  const pendingCameraMove = useRef<{ lat: number; lng: number } | null>(null);
   const { category, eventId: eventIdParam, centerOnEvents, hotPlaces: hotPlacesParam } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string; hotPlaces?: string }>();
   const initialEventHandled = useRef(false);
   const centerOnEventsHandledRef = useRef(false);
@@ -269,19 +272,27 @@ export default function MapTab() {
     const event = allEvents.find((e) => e.id === eventIdParam);
     if (event) {
       initialEventHandled.current = true;
-      // 이벤트 선택 + 카메라 이동 즉시 처리 (마커 클릭과 동일)
       handleMapClick();
       setSelectedEventId(event.id);
-      setMapCenter({ lat: event.lat, lng: event.lng });
-      // 바텀시트 오픈은 딜레이 (동시 실행 시 NaverMap 리사이즈 crash 방지)
-      // 파라미터 초기화도 타이머 안에서 처리 (타이머 취소 방지)
+      if (naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: event.lat,
+          longitude: event.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      } else {
+        // NaverMap이 아직 마운트되지 않은 경우 onMapReady 시점에 실행
+        pendingCameraMove.current = { lat: event.lat, lng: event.lng };
+      }
       const timer = setTimeout(() => {
         bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
         router.setParams({ eventId: undefined });
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [eventIdParam, allEvents, handleMapClick, setMapCenter]);
+  }, [eventIdParam, allEvents, handleMapClick]);
 
   // centerOnEvents 파라미터 변경 시 플래그 리셋
   useEffect(() => {
@@ -377,13 +388,23 @@ export default function MapTab() {
       setActivePendingEventId(null);
       handleMapClick();
       setSelectedEventId(activePendingEventId);
-      setMapCenter({ lat: event.lat, lng: event.lng });
+      if (naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: event.lat,
+          longitude: event.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      } else {
+        pendingCameraMove.current = { lat: event.lat, lng: event.lng };
+      }
       const timer = setTimeout(() => {
         bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [activePendingEventId, allEvents, handleMapClick, setMapCenter]);
+  }, [activePendingEventId, allEvents, handleMapClick]);
 
   // 지도 탭 포커스 상태 (NaverMap 크래시 방지용 - 탭 이탈 시 clean unmount)
   const [isTabFocused, setIsTabFocused] = useState(true);
@@ -408,15 +429,21 @@ export default function MapTab() {
     }, [setTabBarVisible]),
   );
 
-  // snap points
+  // snap points (퍼센트 대신 고정 픽셀값 → 레이아웃 재계산 영향 없음)
   const collapsedHeight = 130 + 56;
-  const snapPoints = useMemo(() => [collapsedHeight, '50%', '90%'], []);
+  const snapPoints = useMemo(
+    () => [collapsedHeight, Math.round(screenHeight * 0.6), Math.round(screenHeight * 0.8)],
+    [screenHeight],
+  );
 
   // 바텀시트 인덱스 변경
   const handleSheetChanges = useCallback(
     (index: number) => {
       currentIndexRef.current = index;
-      setTabBarVisible(index === SNAP_INDEX.COLLAPSED);
+      // 탭바 토글을 다음 프레임으로 지연 → 바텀시트 snap 애니메이션과 충돌 방지
+      requestAnimationFrame(() => {
+        setTabBarVisible(index === SNAP_INDEX.COLLAPSED);
+      });
       if (index === SNAP_INDEX.COLLAPSED) {
         if (selectedStore) handleBack();
         if (selectedEventId) setSelectedEventId(null);
@@ -478,9 +505,13 @@ export default function MapTab() {
           pivot: { x: 0.5, y: 0.35 },
         });
       }
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      // 탭바를 먼저 숨긴 후(250ms 애니메이션) 스냅 → 레이아웃 안정 후 snap
+      setTabBarVisible(false);
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      }, 260);
     },
-    [handleMarkerClick, stores],
+    [handleMarkerClick, stores, setTabBarVisible],
   );
 
   // 이벤트 마커 클릭
@@ -500,9 +531,13 @@ export default function MapTab() {
           pivot: { x: 0.5, y: 0.35 },
         });
       }
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      // 탭바를 먼저 숨긴 후(250ms 애니메이션) 스냅 → 레이아웃 안정 후 snap
+      setTabBarVisible(false);
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      }, 260);
     },
-    [events, handleMapClick],
+    [events, handleMapClick, setTabBarVisible],
   );
 
   // 가게 상세 보기
@@ -542,11 +577,17 @@ export default function MapTab() {
       handleMapClick(); // 가게 선택 해제
       const event = events.find((e) => e.id === eventId);
       if (event) {
-        setMapCenter({ lat: event.lat, lng: event.lng });
+        naverMapRef.current?.animateCameraTo({
+          latitude: event.lat,
+          longitude: event.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
       }
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
     },
-    [events, handleMapClick, setMapCenter],
+    [events, handleMapClick],
   );
 
   // 리스트에서 가게 카드 클릭
@@ -580,8 +621,12 @@ export default function MapTab() {
     setSelectedEventId(null);
     handleSearch();
     Keyboard.dismiss();
-    // 검색 결과를 바텀시트(절반)로 표시
-    bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+    // 검색 결과를 바텀시트(전체)로 표시
+    // 현재 인덱스와 상관없이 강제로 FULL로 snap
+    bottomSheetRef.current?.snapToIndex(SNAP_INDEX.FULL);
+    setTimeout(() => {
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.FULL);
+    }, 300);
   }, [handleSearch, handleMapClick, keyword]);
 
   // stores 최신값을 ref로 유지 (검색 카메라 이동에서 stale closure 방지)
@@ -939,7 +984,19 @@ export default function MapTab() {
           onMarkerClick={onMarkerClick}
           onEventMarkerClick={onEventMarkerClick}
           onCameraChanged={handleCameraChanged}
-          onMapReady={() => {}}
+          onMapReady={() => {
+            if (pendingCameraMove.current) {
+              const { lat, lng } = pendingCameraMove.current;
+              pendingCameraMove.current = null;
+              naverMapRef.current?.animateCameraTo({
+                latitude: lat,
+                longitude: lng,
+                zoom: 17,
+                duration: 400,
+                pivot: { x: 0.5, y: 0.35 },
+              });
+            }
+          }}
           style={styles.map}
           isShowZoomControls={false}
         />
