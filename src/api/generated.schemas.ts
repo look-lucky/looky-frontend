@@ -142,7 +142,7 @@ export interface VerifyCouponResponse {
   couponTitle?: string;
   benefitType?: VerifyCouponResponseBenefitType;
   benefitValue?: string;
-  issuedAt?: string;
+  downloadedAt?: string;
   expiresAt?: string;
   isExpired?: boolean;
 }
@@ -200,46 +200,52 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
-export interface CommonResponseString {
-  isSuccess?: boolean;
-  data?: string;
+export interface ActivateCouponResponse {
+  verificationCode?: string;
+  activationExpiresAt?: string;
 }
 
-export type IssueCouponResponseStatus = typeof IssueCouponResponseStatus[keyof typeof IssueCouponResponseStatus];
+export interface CommonResponseActivateCouponResponse {
+  isSuccess?: boolean;
+  data?: ActivateCouponResponse;
+}
+
+export type DownloadCouponResponseStatus = typeof DownloadCouponResponseStatus[keyof typeof DownloadCouponResponseStatus];
 
 
-export const IssueCouponResponseStatus = {
+export const DownloadCouponResponseStatus = {
   UNUSED: 'UNUSED',
   ACTIVATED: 'ACTIVATED',
   USED: 'USED',
   EXPIRED: 'EXPIRED',
 } as const;
 
-export type IssueCouponResponseBenefitType = typeof IssueCouponResponseBenefitType[keyof typeof IssueCouponResponseBenefitType];
+export type DownloadCouponResponseBenefitType = typeof DownloadCouponResponseBenefitType[keyof typeof DownloadCouponResponseBenefitType];
 
 
-export const IssueCouponResponseBenefitType = {
+export const DownloadCouponResponseBenefitType = {
   FIXED_DISCOUNT: 'FIXED_DISCOUNT',
   PERCENTAGE_DISCOUNT: 'PERCENTAGE_DISCOUNT',
   SERVICE_GIFT: 'SERVICE_GIFT',
 } as const;
 
-export interface IssueCouponResponse {
+export interface DownloadCouponResponse {
   studentCouponId?: number;
   couponCode?: string;
-  status?: IssueCouponResponseStatus;
-  issuedAt?: string;
+  status?: DownloadCouponResponseStatus;
+  downloadedAt?: string;
   expiresAt?: string;
   title?: string;
-  benefitType?: IssueCouponResponseBenefitType;
+  benefitType?: DownloadCouponResponseBenefitType;
   benefitValue?: string;
   minOrderAmount?: number;
   storeName?: string;
+  activationExpiresAt?: string;
 }
 
-export interface CommonResponseIssueCouponResponse {
+export interface CommonResponseDownloadCouponResponse {
   isSuccess?: boolean;
-  data?: IssueCouponResponse;
+  data?: DownloadCouponResponse;
 }
 
 export interface BizInfo {
@@ -366,6 +372,11 @@ export interface GoogleLoginRequest {
 export interface VerifyEmailCodeRequest {
   email: string;
   code: string;
+}
+
+export interface CommonResponseString {
+  isSuccess?: boolean;
+  data?: string;
 }
 
 export interface FindPasswordSendCodeRequest {
@@ -604,6 +615,7 @@ export const CouponResponseBenefitType = {
 export interface CouponResponse {
   id?: number;
   storeId?: number;
+  storeName?: string;
   title?: string;
   issueStartsAt?: string;
   issueEndsAt?: string;
@@ -711,7 +723,6 @@ export interface StoreResponse {
   isSuspended?: boolean;
   storeStatus?: StoreResponseStoreStatus;
   myPartnerships?: PartnershipInfo[];
-  hasCoupon?: boolean;
   cloverGrade?: StoreResponseCloverGrade;
 }
 
@@ -860,6 +871,7 @@ export const ItemResponseBadge = {
   BEST: 'BEST',
   NEW: 'NEW',
   HOT: 'HOT',
+  VEGAN: 'VEGAN',
 } as const;
 
 export interface ItemResponse {
@@ -1048,9 +1060,9 @@ export interface CommonResponseOwnerInfoResponse {
   data?: OwnerInfoResponse;
 }
 
-export interface CommonResponseListIssueCouponResponse {
+export interface CommonResponseListDownloadCouponResponse {
   isSuccess?: boolean;
-  data?: IssueCouponResponse[];
+  data?: DownloadCouponResponse[];
 }
 
 export interface CommonResponseItemResponse {
