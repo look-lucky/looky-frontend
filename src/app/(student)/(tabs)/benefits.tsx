@@ -48,6 +48,8 @@ const TABS: { type: TabType; label: string }[] = [
   { type: "used", label: "사용완료" },
 ];
 
+const ACTIVATION_DURATION_MS = 5 * 60 * 1000; // 5분
+
 const BENEFIT_ICON_BG: Record<string, string> = {
   PERCENTAGE_DISCOUNT: CouponColor.red,
   FIXED_DISCOUNT: CouponColor.green,
@@ -87,12 +89,17 @@ const formatExpiryDateTime = (dateStr?: string) => {
   return `${y}.${m}.${day}까지`;
 };
 
+const parseAmount = (value?: string) => {
+  if (!value) return NaN;
+  return Number(value.replace(/,/g, ""));
+};
+
 const formatBenefit = (type?: string, value?: string) => {
   switch (type) {
     case "PERCENTAGE_DISCOUNT":
       return `${value}% 할인`;
     case "FIXED_DISCOUNT":
-      return `${Number(value).toLocaleString()}원 할인`;
+      return `${parseAmount(value).toLocaleString()}원 할인`;
     case "SERVICE_GIFT":
       return "서비스 증정";
     default:
@@ -101,12 +108,13 @@ const formatBenefit = (type?: string, value?: string) => {
 };
 
 const formatDiscount = (benefitType?: string, benefitValue?: string) => {
-  if (!benefitValue) return "";
   switch (benefitType) {
     case "PERCENTAGE_DISCOUNT":
-      return `${benefitValue}%`;
-    case "FIXED_DISCOUNT":
-      return `${Number(benefitValue).toLocaleString()}원`;
+      return benefitValue ? `${benefitValue}%` : "";
+    case "FIXED_DISCOUNT": {
+      const num = parseAmount(benefitValue);
+      return !isNaN(num) && benefitValue ? `${num.toLocaleString()}원` : "";
+    }
     case "SERVICE_GIFT":
       return "서비스 증정";
     default:
@@ -184,6 +192,18 @@ export default function BenefitsTab() {
 
   const handleOpenCoupon = (coupon: IssueCouponResponse) => {
     setSelectedCoupon(coupon);
+    // ACTIVATED 상태면 목록 데이터의 코드/만료시간 바로 사용
+    const activationExpiresAt = (coupon as any).activationExpiresAt as string | null;
+    if (coupon.status === "ACTIVATED" && coupon.couponCode && activationExpiresAt) {
+      const remaining = new Date(activationExpiresAt).getTime() - Date.now();
+      if (remaining > 0) {
+        setCouponCode(coupon.couponCode);
+        setActivationExpiresAt(activationExpiresAt);
+        setCodeExpired(false);
+        setRemainingSeconds(Math.ceil(remaining / 1000));
+        return;
+      }
+    }
     setCouponCode(null);
     setActivationExpiresAt(null);
     setCodeExpired(false);
@@ -192,14 +212,17 @@ export default function BenefitsTab() {
 
   const handleUseCoupon = () => {
     if (!selectedCoupon?.studentCouponId) return;
+    if (couponCode && !codeExpired) return;
     activateCoupon(
       { studentCouponId: selectedCoupon.studentCouponId },
       {
         onSuccess: (res) => {
           const responseData = (res as any)?.data?.data;
-          const code = responseData?.couponCode as string | undefined;
-          const expiresAt = responseData?.activationExpiresAt as string | undefined;
-          if (code && expiresAt) {
+          const code = (responseData?.verificationCode ?? responseData?.couponCode) as string | undefined;
+          const serverExpiresAt = responseData?.activationExpiresAt as string | undefined;
+          if (code) {
+            // 서버 만료시간이 있으면 사용, 없으면 5분
+            const expiresAt = serverExpiresAt ?? new Date(Date.now() + ACTIVATION_DURATION_MS).toISOString();
             const remaining = new Date(expiresAt).getTime() - Date.now();
             setCouponCode(code);
             setActivationExpiresAt(expiresAt);
@@ -208,13 +231,11 @@ export default function BenefitsTab() {
             queryClient.invalidateQueries({ queryKey: getGetMyCouponsQueryKey() });
           }
         },
-        onError: () => {
-          // 이미 ACTIVATED 상태일 때 (409 등) 기존 코드가 있으면 표시
-          if (selectedCoupon?.couponCode) {
-            setCouponCode(selectedCoupon.couponCode);
-            setActivationExpiresAt(null);
-            setCodeExpired(false);
-            setRemainingSeconds(0);
+        onError: (err: any) => {
+          const errCode = err?.data?.data?.code;
+          if (errCode === "STATE_CONFLICT") {
+            // 서버에서 이미 activate → 목록 새로고침해서 코드 가져옴
+            queryClient.invalidateQueries({ queryKey: getGetMyCouponsQueryKey() });
           }
         },
       },
@@ -225,6 +246,22 @@ export default function BenefitsTab() {
   const { data: myCouponsRes, isLoading } = useGetMyCoupons();
   const rawCoupons = (myCouponsRes as any)?.data?.data;
   const coupons = (Array.isArray(rawCoupons) ? rawCoupons : []) as IssueCouponResponse[];
+
+  // STATE_CONFLICT 후 invalidate 시 selectedCoupon을 최신 데이터로 동기화
+  useEffect(() => {
+    if (!selectedCoupon || couponCode) return;
+    const updated = coupons.find((c) => c.studentCouponId === selectedCoupon.studentCouponId);
+    if (updated?.status === "ACTIVATED" && updated.couponCode) {
+      const updatedExpiresAt = (updated as any).activationExpiresAt as string | null;
+      const remaining = updatedExpiresAt ? new Date(updatedExpiresAt).getTime() - Date.now() : 0;
+      if (remaining > 0) {
+        setCouponCode(updated.couponCode);
+        setActivationExpiresAt(updatedExpiresAt);
+        setCodeExpired(false);
+        setRemainingSeconds(Math.ceil(remaining / 1000));
+      }
+    }
+  }, [coupons]);
 
   // 탭별 필터링
   const tabFilteredCoupons = useMemo(() => {
