@@ -52,11 +52,16 @@ function ClusterMarkerIcon({ count, size, icon = CLUSTER_ICON, textColor = Gray.
   const fontSize = count >= 100 ? size * 0.22 : count >= 10 ? size * 0.25 : size * 0.28;
 
   return (
-    <View collapsable={false} style={{ width: size, height: size }}>
-      <RNImage source={icon} style={{ width: size, height: size }} resizeMode="contain" />
+    <View collapsable={false} style={{ width: size, height: size, backgroundColor: 'transparent' }}>
+      <RNImage
+        source={icon}
+        style={[StyleSheet.absoluteFillObject, { width: size, height: size }]}
+        resizeMode="contain"
+        fadeDuration={0}
+      />
       {/* paddingBottom으로 핀 꼬리 영역 제외 — 원형 헤드 중심(~42%)에 텍스트 배치 */}
       <View style={[StyleSheet.absoluteFillObject, { paddingBottom: size * 0.17, alignItems: 'center', justifyContent: 'center' }]}>
-        <Text style={{ color: textColor, fontSize, fontWeight: '700' }}>{count}</Text>
+        <Text style={{ color: textColor, fontSize, fontWeight: '700', includeFontPadding: false }}>{count}</Text>
       </View>
     </View>
   );
@@ -116,6 +121,15 @@ interface StoreMarkerData {
   title?: string;
   isPartner: boolean;
   hasCoupon: boolean;
+  favoriteCount?: number;
+}
+
+// 마커 우선순위 zIndex 계산 (제휴 > 쿠폰 > 찜 많은 순)
+function getStoreMarkerZIndex(isPartner: boolean, hasCoupon: boolean, favoriteCount: number): number {
+  let z = favoriteCount; // 찜 수를 기본값으로
+  if (hasCoupon) z += 10000;
+  if (isPartner) z += 100000;
+  return z;
 }
 
 // 이벤트 마커 데이터
@@ -292,6 +306,8 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                 height={MARKER_SIZE}
                 onTap={() => onMarkerClick?.(item.id)}
                 anchor={{ x: 0.5, y: 0.5 }}
+                zIndex={getStoreMarkerZIndex(item.isPartner, item.hasCoupon, item.favoriteCount ?? 0)}
+                isHideCollidedCaptions
                 image={getStoreMarkerIcon(item.isPartner, item.hasCoupon)}
                 caption={showLabel && item.title ? {
                   text: truncateLabel(item.title),
@@ -333,6 +349,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                 height={markerSize}
                 onTap={() => onEventMarkerClick?.(item.id)}
                 anchor={{ x: 0.5, y: 0.5 }}
+                isHideCollidedCaptions
                 image={getEventMarkerIcon(item.eventType, item.status)}
                 alpha={getEventMarkerOpacity(item.status)}
                 caption={showLabel && item.title ? {
