@@ -133,11 +133,19 @@ export default function SignInPage() {
         {/* 약관 텍스트 */}
         <ThemedText lightColor={Text.placeholder} style={styles.termsText}>
           가입 시 당사의{" "}
-          <ThemedText lightColor={Text.primary} style={styles.termsLink}>
+          <ThemedText
+            lightColor={Text.primary}
+            style={styles.termsLink}
+            onPress={() => router.push("/mypage/terms")}
+          >
             서비스 이용 약관
           </ThemedText>
           {" "}및{" "}
-          <ThemedText lightColor={Text.primary} style={styles.termsLink}>
+          <ThemedText
+            lightColor={Text.primary}
+            style={styles.termsLink}
+            onPress={() => router.push("/mypage/terms")}
+          >
             개인정보 처리방침
           </ThemedText>
           에 동의하는 것으로 간주됩니다.

@@ -103,7 +103,6 @@ export default function MapTab() {
 
   // 인기있는 곳 모드
   const [hotPlacesMode, setHotPlacesMode] = useState(false);
-  const hotPlacesHandledRef = useRef(false);
   const { data: hotStoresRes } = useGetHotStores({ query: { staleTime: 5 * 60 * 1000 } });
   const hotStoresList = ((hotStoresRes as any)?.data?.data ?? []).slice(0, 15).map(
     (s: any, index: number) => ({
@@ -289,21 +288,17 @@ export default function MapTab() {
     centerOnEventsHandledRef.current = false;
   }, [centerOnEvents]);
 
-  // hotPlaces 파라미터 변경 시 플래그 리셋
-  useEffect(() => {
-    hotPlacesHandledRef.current = false;
-  }, [hotPlacesParam]);
-
   // 홈 '지금 인기있는 곳 더보기' 진입 시 → 핫플레이스 모드 활성화 + 바텀시트 열기
-  useEffect(() => {
-    if (hotPlacesParam !== 'true' || hotPlacesHandledRef.current) return;
-    hotPlacesHandledRef.current = true;
-    setHotPlacesMode(true);
-    const timer = setTimeout(() => {
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [hotPlacesParam]);
+  useFocusEffect(
+    useCallback(() => {
+      if (hotPlacesParam !== 'true') return;
+      setHotPlacesMode(true);
+      const timer = setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      }, 300);
+      return () => clearTimeout(timer);
+    }, [hotPlacesParam]),
+  );
 
   // '이벤트 N개' 배너 클릭 시 → 첫 번째 이벤트 위치로 카메라 이동
   useEffect(() => {

@@ -5,7 +5,6 @@ import LocationIcon from "@/assets/images/icons/home/location-icon.svg";
 import { getGetMyCouponsQueryKey, useActivateCoupon, useGetMyCoupons } from "@/src/api/coupon";
 import type { IssueCouponResponse } from "@/src/api/generated.schemas";
 import { AppButton } from "@/src/shared/common/app-button";
-import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { rs } from "@/src/shared/theme/scale";
 import {
@@ -295,10 +294,7 @@ export default function BenefitsTab() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header + Banner */}
-      <View style={styles.header}>
-        <ArrowLeft size={rs(24)} />
-      </View>
+      {/* Banner */}
       <View style={styles.bannerPadding}>
         <View style={styles.banner}>
           <View style={styles.bannerTextContent}>
@@ -557,15 +553,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Gray.white,
   },
-  header: {
-    paddingHorizontal: rs(16),
-    height: rs(44),
-    justifyContent: "center",
-    alignItems: "flex-start",
-    backgroundColor: Gray.white,
-  },
   bannerPadding: {
     paddingHorizontal: rs(16),
+    paddingTop: rs(44),
     paddingBottom: rs(16),
     backgroundColor: Gray.white,
   },

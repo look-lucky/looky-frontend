@@ -15,8 +15,8 @@ import { Gray } from '@/src/shared/theme/theme';
 import { useScrollToTop } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useRef } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Alert, BackHandler, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import LookyLogo from '@/assets/images/logo/looky-logo.svg';
@@ -25,6 +25,17 @@ export default function HomePage() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      Alert.alert("앱 종료", "앱을 종료하시겠습니까?", [
+        { text: "취소", style: "cancel" },
+        { text: "종료", style: "destructive", onPress: () => BackHandler.exitApp() },
+      ]);
+      return true;
+    });
+    return () => subscription.remove();
+  }, []);
 
   const { data: studentInfoRes } = useGetStudentInfo();
   const studentInfo = (studentInfoRes as any)?.data?.data;

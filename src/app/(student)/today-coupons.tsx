@@ -111,7 +111,7 @@ export default function TodayCouponsPage() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <ArrowLeft size={rs(24)} />
+        <ArrowLeft size={rs(24)} onPress={() => router.back()} />
       </View>
 
       {/* Banner */}
@@ -209,11 +209,9 @@ export default function TodayCouponsPage() {
                     <ThemedText style={styles.couponMeta}>
                       최소 주문 {Number(coupon.minOrderAmount).toLocaleString()}원
                     </ThemedText>
-                  ) : coupon.description ? (
-                    <ThemedText style={styles.couponMeta} numberOfLines={1}>
-                      {coupon.description}
-                    </ThemedText>
-                  ) : null}
+                  ) : (
+                    <ThemedText style={styles.couponMeta}>최소주문금액 없음</ThemedText>
+                  )}
                   {issueEndText ? (
                     <ThemedText style={styles.couponMeta}>{issueEndText}</ThemedText>
                   ) : null}
@@ -322,18 +320,19 @@ const styles = StyleSheet.create({
     backgroundColor: Gray.white,
     borderRadius: rs(16),
     paddingHorizontal: rs(12),
-    paddingVertical: rs(16),
+    paddingVertical: rs(4),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: rs(16),
+    gap: rs(12),
     borderWidth: 1,
     borderColor: Gray.gray3,
   },
   couponIconContainer: {
+    width: rs(72),
+    height: rs(72),
     borderRadius: rs(12),
     alignItems: 'center',
     justifyContent: 'center',
-    padding: rs(12),
   },
   couponIconPlaceholder: {
     width: rs(40),
@@ -343,7 +342,7 @@ const styles = StyleSheet.create({
   },
   couponTextContainer: {
     flex: 1,
-    gap: rs(2),
+    gap: rs(1),
   },
   couponDiscount: {
     fontFamily: Fonts.bold,
@@ -353,13 +352,13 @@ const styles = StyleSheet.create({
   },
   couponTitle: {
     fontFamily: Fonts.medium,
-    fontSize: rs(13),
-    lineHeight: rs(18),
+    fontSize: rs(12),
+    lineHeight: rs(16),
     color: TextColor.primary,
   },
   couponMeta: {
     fontFamily: Fonts.regular,
-    fontSize: rs(11),
+    fontSize: rs(12),
     lineHeight: rs(16),
     color: TextColor.secondary,
   },
@@ -367,14 +366,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(4),
-    marginTop: rs(2),
   },
   timeAgoIcon: {
     fontSize: rs(10),
   },
   timeAgoText: {
     fontFamily: Fonts.medium,
-    fontSize: rs(11),
+    fontSize: rs(12),
     lineHeight: rs(16),
     color: '#DC2626',
   },
@@ -385,7 +383,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontFamily: Fonts.regular,
-    fontSize: rs(14),
+    fontSize: rs(12),
     color: TextColor.tertiary,
   },
 });

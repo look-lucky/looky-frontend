@@ -211,8 +211,9 @@ export default function StoreDetailScreen() {
     mutation: {
       onSuccess: () => {
         Alert.alert('쿠폰 발급 완료', '내 쿠폰함에서 확인하세요');
-        // 내 쿠폰 목록 갱신
+        // 내 쿠폰 목록 갱신 + 지도 마커 hasCoupon 반영
         queryClient.invalidateQueries({ queryKey: ['/api/my-coupons'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/stores/map'] });
       },
       onError: (error: any) => {
         const errorMessage =
