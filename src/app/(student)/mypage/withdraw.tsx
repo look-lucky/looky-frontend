@@ -143,7 +143,7 @@ export default function WithdrawScreen() {
         <View style={styles.divider} />
       </ScrollView>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { paddingBottom: insets.bottom || rs(20) }]}>
         <TouchableOpacity
           style={[styles.withdrawBtn, canSubmit ? styles.withdrawBtnActive : styles.withdrawBtnDisabled]}
           onPress={handleWithdrawBtnPress}
@@ -166,11 +166,11 @@ export default function WithdrawScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.popupBox}>
             <View style={styles.popupTextContainer}>
-              <Text style={styles.popupTitle}>탈퇴하시겠습니까?</Text>
+              <Text style={styles.popupTitle}>정말 루키를 떠나시겠어요?</Text>
               <Text style={styles.popupSubtitle}>
-                탈퇴하시면 루키와 함께 찾은{'\n'}
-                소중한 행운들이 모두 사라지게 됩니다.{'\n'}
-                이대로 떠나시기엔 아쉬운 혜택들이 남아있어요.
+                잠깐! 지금 탈퇴하면 찾아둔 혜택과 쿠폰이{'\n'}
+                모두 사라지고, 14일간 재가입이 불가능해요.{'\n'}
+                14일 뒤에나 재가입이 가능한데, 정말 괜찮으세요?
               </Text>
             </View>
             <View style={styles.popupBtnGroup}>
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   textAreaDisabled: { backgroundColor: '#F5F5F5' },
   textArea: { flex: 1, fontSize: rs(12), fontFamily: 'Pretendard', color: 'black' },
   errorText: { fontSize: rs(10), color: '#FF6200', fontFamily: 'Pretendard', marginLeft: rs(5) },
-  bottomContainer: { position: 'absolute', bottom: rs(30), left: 0, right: 0, paddingHorizontal: rs(20) },
+  bottomContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: rs(20), paddingTop: rs(12), backgroundColor: '#FAFAFA' },
   withdrawBtn: { height: rs(48), borderRadius: rs(8), justifyContent: 'center', alignItems: 'center' },
   withdrawBtnActive: { backgroundColor: '#FF6200' },
   withdrawBtnDisabled: { backgroundColor: '#D5D5D5' },
