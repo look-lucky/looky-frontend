@@ -171,8 +171,7 @@ export function EventSection({ events }: EventSectionProps) {
   return (
     <View style={styles.container}>
       <SectionHeader
-        icon="🎉"
-        title="지금 바로 진행중인 이벤트!"
+        title="  지금 바로 진행중인 이벤트!"
         onMorePress={handleMorePress}
       />
       <FlatList

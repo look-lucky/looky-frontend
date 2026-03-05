@@ -1,11 +1,12 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray, Text as TextColor } from '@/src/shared/theme/theme';
+import { Fonts, Text as TextColor } from '@/src/shared/theme/theme';
+import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface SectionHeaderProps {
-  icon: ReactNode;
+  icon?: ReactNode;
   title: string;
   subtitle?: string;
   onMorePress?: () => void;
@@ -35,7 +36,7 @@ export function SectionHeader({
       {onMorePress && (
         <TouchableOpacity style={styles.moreButton} onPress={onMorePress}>
           <ThemedText style={styles.moreText}>더 보기</ThemedText>
-          <ThemedText style={styles.moreArrow}>{'>'}</ThemedText>
+          <Ionicons name="chevron-forward" size={rs(12)} color={TextColor.tertiary} />
         </TouchableOpacity>
       )}
     </View>
@@ -61,8 +62,8 @@ const styles = StyleSheet.create({
     fontSize: rs(18),
   },
   title: {
+    fontFamily: Fonts.bold,
     fontSize: rs(16),
-    fontWeight: '700',
     color: TextColor.primary,
   },
   subtitle: {
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
   moreButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: rs(2),
+    marginRight: rs(8),
   },
   moreText: {
     fontSize: rs(12),
