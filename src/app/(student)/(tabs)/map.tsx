@@ -46,6 +46,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,6 +69,7 @@ const TUTORIAL_IMAGES = [
 export default function MapTab() {
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
+  const { height: screenHeight } = useWindowDimensions();
 
   // ── 튜토리얼 ──────────────────────────────────
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -427,15 +429,21 @@ export default function MapTab() {
     }, [setTabBarVisible]),
   );
 
-  // snap points
+  // snap points (퍼센트 대신 고정 픽셀값 → 레이아웃 재계산 영향 없음)
   const collapsedHeight = 130 + 56;
-  const snapPoints = useMemo(() => [collapsedHeight, '50%', '90%'], []);
+  const snapPoints = useMemo(
+    () => [collapsedHeight, Math.round(screenHeight * 0.6), Math.round(screenHeight * 0.8)],
+    [screenHeight],
+  );
 
   // 바텀시트 인덱스 변경
   const handleSheetChanges = useCallback(
     (index: number) => {
       currentIndexRef.current = index;
-      setTabBarVisible(index === SNAP_INDEX.COLLAPSED);
+      // 탭바 토글을 다음 프레임으로 지연 → 바텀시트 snap 애니메이션과 충돌 방지
+      requestAnimationFrame(() => {
+        setTabBarVisible(index === SNAP_INDEX.COLLAPSED);
+      });
       if (index === SNAP_INDEX.COLLAPSED) {
         if (selectedStore) handleBack();
         if (selectedEventId) setSelectedEventId(null);
@@ -497,9 +505,13 @@ export default function MapTab() {
           pivot: { x: 0.5, y: 0.35 },
         });
       }
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      // 탭바를 먼저 숨긴 후(250ms 애니메이션) 스냅 → 레이아웃 안정 후 snap
+      setTabBarVisible(false);
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      }, 260);
     },
-    [handleMarkerClick, stores],
+    [handleMarkerClick, stores, setTabBarVisible],
   );
 
   // 이벤트 마커 클릭
@@ -519,9 +531,13 @@ export default function MapTab() {
           pivot: { x: 0.5, y: 0.35 },
         });
       }
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      // 탭바를 먼저 숨긴 후(250ms 애니메이션) 스냅 → 레이아웃 안정 후 snap
+      setTabBarVisible(false);
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      }, 260);
     },
-    [events, handleMapClick],
+    [events, handleMapClick, setTabBarVisible],
   );
 
   // 가게 상세 보기
@@ -605,8 +621,12 @@ export default function MapTab() {
     setSelectedEventId(null);
     handleSearch();
     Keyboard.dismiss();
-    // 검색 결과를 바텀시트(절반)로 표시
-    bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+    // 검색 결과를 바텀시트(전체)로 표시
+    // 현재 인덱스와 상관없이 강제로 FULL로 snap
+    bottomSheetRef.current?.snapToIndex(SNAP_INDEX.FULL);
+    setTimeout(() => {
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.FULL);
+    }, 300);
   }, [handleSearch, handleMapClick, keyword]);
 
   // stores 최신값을 ref로 유지 (검색 카메라 이동에서 stale closure 방지)
