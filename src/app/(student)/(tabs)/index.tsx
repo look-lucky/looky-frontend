@@ -1,5 +1,4 @@
 import { useGetMyCoupons, useGetTodayCoupons } from '@/src/api/coupon';
-import { customFetch } from '@/src/api/mutator';
 import { useGetStudentInfo } from '@/src/api/my-page';
 import { useGetHotStores } from '@/src/api/store';
 import { CategorySection } from '@/src/app/(student)/components/home/category-section';
@@ -10,12 +9,12 @@ import {
   HotPlaceSection,
 } from '@/src/app/(student)/components/home/hot-place-section';
 import { WelcomeBanner } from '@/src/app/(student)/components/home/welcome-banner';
+import { useEvents } from '@/src/shared/hooks/use-events';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray } from '@/src/shared/theme/theme';
 import { useScrollToTop } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useRef } from 'react';
 import { Alert, BackHandler, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,16 +25,18 @@ export default function HomePage() {
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      Alert.alert("앱 종료", "앱을 종료하시겠습니까?", [
-        { text: "취소", style: "cancel" },
-        { text: "종료", style: "destructive", onPress: () => BackHandler.exitApp() },
-      ]);
-      return true;
-    });
-    return () => subscription.remove();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+        Alert.alert("앱 종료", "앱을 종료하시겠습니까?", [
+          { text: "취소", style: "cancel" },
+          { text: "종료", style: "destructive", onPress: () => BackHandler.exitApp() },
+        ]);
+        return true;
+      });
+      return () => subscription.remove();
+    }, []),
+  );
 
   const { data: studentInfoRes } = useGetStudentInfo();
   const studentInfo = (studentInfoRes as any)?.data?.data;
@@ -73,17 +74,18 @@ export default function HomePage() {
     }),
   );
 
-  const { data: eventsRes } = useQuery({
-    queryKey: ['home-events'],
-    queryFn: () =>
-      customFetch<{ data: { data: { content: any[] } }; status: number; headers: Headers }>(
-        '/api/events?status=UPCOMING&status=LIVE&size=10',
-        { method: 'GET' },
-      ),
-    staleTime: 3 * 60 * 1000,
-  });
-  const events = eventsRes?.data?.data?.content ?? [];
-  const eventCount = events.length;
+  const { events: allEvents } = useEvents({ myLocation: null, selectedDistance: '0' });
+  const events = allEvents.slice(0, 10).map((e) => ({
+    id: Number(e.id),
+    title: e.title,
+    description: e.description,
+    eventTypes: e.eventTypes,
+    startDateTime: e.startDateTime.toISOString(),
+    endDateTime: e.endDateTime.toISOString(),
+    status: e.status === 'live' ? 'LIVE' as const : e.status === 'upcoming' ? 'UPCOMING' as const : 'ENDED' as const,
+    imageUrls: e.imageUrls,
+  }));
+  const eventCount = allEvents.length;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
