@@ -123,6 +123,7 @@ export default function StoreScreen() {
   const [hoursModalVisible, setHoursModalVisible] = useState(false);
   const [holidayModalVisible, setHolidayModalVisible] = useState(false); // 휴무일 모달 상태
   const [isFullScreenBannerVisible, setIsFullScreenBannerVisible] = useState(false); // 배너 전체화면 모달 상태
+  const [fullScreenImages, setFullScreenImages] = useState([]); // 전체화면으로 보여줄 이미지 리스트
   const [postcodeVisible, setPostcodeVisible] = useState(false); // 주소 검색 모달 상태
 
   // Temp Data for Modals
@@ -567,7 +568,7 @@ export default function StoreScreen() {
           address: myStore.roadAddress || myStore.jibunAddress || '', // roadAddress 우선 사용
           detailAddress: '', // 상세주소는 분리되어 있지 않아 보임, 필요하면 jibunAddress 등 활용
           phone: myStore.phone || '', // phoneNumber -> phone 수정
-          // 로고 제거됨, 배너는 배열 전체 사용 (최대 3장)
+          logoImage: myStore.profileImageUrl || null,
           bannerImages: (myStore.imageUrls && Array.isArray(myStore.imageUrls))
             ? myStore.imageUrls.slice(0, 3)
             : []
@@ -771,6 +772,7 @@ export default function StoreScreen() {
           };
           return VIBE_KR_TO_EN[v] || v;
         }),
+        profileImageUrl: editBasicData.logoImage && editBasicData.logoImage.startsWith('http') ? editBasicData.logoImage : null,
         images: editBasicData.bannerImages
           .map((img, index) => ({ uri: img, index }))
           .filter(item => item.uri.startsWith('http'))
@@ -787,6 +789,17 @@ export default function StoreScreen() {
       });
 
       // 4. 이미지 파일이 있다면 formData에 추가 (키: images) - 다중 이미지 처리
+      // 프로필 이미지 (logoImage)
+      if (editBasicData.logoImage && !editBasicData.logoImage.startsWith('http')) {
+        const localUri = editBasicData.logoImage;
+        const filename = localUri.split('/').pop();
+        const ext = filename.split('.').pop().toLowerCase();
+        const type = (ext === 'png') ? 'image/png' : 'image/jpeg';
+        formData.append('profileImage', { uri: localUri, name: filename, type });
+        console.log("📸 [매장 수정] 프로필 이미지 추가됨 (key: profileImage):", filename);
+      }
+
+      // 배너 이미지 (images)
       if (editBasicData.bannerImages && editBasicData.bannerImages.length > 0) {
         editBasicData.bannerImages.forEach((imgUri) => {
           if (!imgUri.startsWith('http')) {
@@ -832,6 +845,7 @@ export default function StoreScreen() {
           phone: editBasicData.phone,
           categories: editBasicData.categories,
           vibes: editBasicData.vibes,
+          logoImage: editBasicData.logoImage, // Update logo image
           bannerImages: editBasicData.bannerImages // Update banner images
         }));
         setBasicModalVisible(false);
@@ -1522,6 +1536,45 @@ export default function StoreScreen() {
     }
   };
 
+  const pickProfileImage = async () => {
+    // 1. 권한 요청
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 부족', '사진 라이브러리 접근 권한이 필요합니다.');
+      return;
+    }
+
+    // 2. 이미지 선택
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1], // 프로필 비율 1:1
+      quality: 0.8, // 용량 최적화
+      maxWidth: 1024,
+    });
+
+    if (!result.canceled) {
+      const asset = result.assets[0];
+
+      // 3. 형식 제한 확인
+      const filename = asset.uri.split('/').pop();
+      const ext = filename.split('.').pop().toLowerCase();
+      const isAllowedFormat = ['jpg', 'jpeg', 'png'].includes(ext);
+
+      if (!isAllowedFormat) {
+        Alert.alert('알림', 'JPG, PNG 형식만 가능합니다');
+        return;
+      }
+
+      // 4. 상태 업데이트
+      setEditBasicData(prev => ({
+        ...prev,
+        logoImage: asset.uri
+      }));
+    }
+  };
+
+
   const pickMenuImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -1636,6 +1689,29 @@ export default function StoreScreen() {
                 <InfoRow icon="sparkles" label="가게 분위기" content={<View style={styles.tagContainer}>{storeInfo.vibes.length > 0 ? storeInfo.vibes.map((v, i) => <Tag key={i} text={v} />) : <Text style={styles.placeholderText}>정보 없음</Text>}</View>} />
                 <InfoRow icon="information-circle" label="가게 소개" content={storeInfo.intro ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{storeInfo.intro}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} />
                 <View style={[styles.rowSection, { flexDirection: 'column', alignItems: 'flex-start' }]}>
+                  <View style={[styles.fixedLabel, { width: 'auto' }]}>
+                    <Ionicons name="image" size={rs(12)} color="#828282" />
+                    <Text style={styles.labelText}>가게 프로필 이미지</Text>
+                  </View>
+                  <View style={{ marginTop: rs(10) }}>
+                    {storeInfo.logoImage ? (
+                      <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => {
+                          setFullScreenImages([storeInfo.logoImage]);
+                          setIsFullScreenBannerVisible(true);
+                        }}
+                      >
+                        <Image source={{ uri: storeInfo.logoImage }} style={{ width: rs(120), height: rs(120), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }} resizeMode="cover" />
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={{ width: rs(120), height: rs(120), backgroundColor: '#F5F5F5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EEEEEE', borderStyle: 'dashed' }}>
+                        <Text style={{ color: '#AAAAAA', fontSize: rs(11), fontFamily: 'Pretendard', textAlign: 'center' }}>프로필을{"\n"}추가해주세요</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+                <View style={[styles.rowSection, { flexDirection: 'column', alignItems: 'flex-start' }]}>
                   <View style={styles.fixedLabel}>
                     <Ionicons name="image" size={rs(12)} color="#828282" />
                     <Text style={styles.labelText}>가게 배너 이미지</Text>
@@ -1649,23 +1725,30 @@ export default function StoreScreen() {
                         contentContainerStyle={{ gap: rs(10), paddingRight: rs(10) }}
                       >
                         {storeInfo.bannerImages.map((imgUri, index) => (
-                          <TouchableOpacity key={index} onPress={() => setIsFullScreenBannerVisible(true)} activeOpacity={0.9}>
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() => {
+                              setFullScreenImages(storeInfo.bannerImages);
+                              setIsFullScreenBannerVisible(true);
+                            }}
+                            activeOpacity={0.9}
+                          >
                             <Image
                               source={{ uri: imgUri }}
-                              style={{ width: rs(153), height: rs(90), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }}
+                              style={{ width: rs(204), height: rs(120), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }}
                               resizeMode="cover"
                             />
                           </TouchableOpacity>
                         ))}
                       </ScrollView>
                     ) : (
-                      <View style={{ width: rs(153), height: rs(90), backgroundColor: '#F5F5F5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EEEEEE', borderStyle: 'dashed' }}>
+                      <View style={{ width: rs(204), height: rs(120), backgroundColor: '#F5F5F5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EEEEEE', borderStyle: 'dashed' }}>
                         <Text style={{ color: '#AAAAAA', fontSize: rs(11), fontFamily: 'Pretendard' }}>배너를 추가해주세요</Text>
                       </View>
                     )}
                   </View>
                 </View>
-                <InfoRow icon="location" label="주소" content={<View style={{ marginTop: rs(2) }}>{storeInfo.address ? (<><Text style={styles.bodyText}>{storeInfo.address}</Text>{storeInfo.detailAddress ? <Text style={[styles.bodyText, { color: '#828282', marginTop: rs(2) }]}>{storeInfo.detailAddress}</Text> : null}</>) : <Text style={[styles.placeholderText, { marginTop: 0 }]}>정보 없음</Text>}</View>} />
+                <InfoRow icon="location" label="주소" labelStyle={{ width: rs(60) }} content={<View style={{ marginTop: rs(2) }}>{storeInfo.address ? (<><Text style={styles.bodyText}>{storeInfo.address}</Text>{storeInfo.detailAddress ? <Text style={[styles.bodyText, { color: '#828282', marginTop: rs(2) }]}>{storeInfo.detailAddress}</Text> : null}</>) : <Text style={[styles.placeholderText, { marginTop: 0 }]}>정보 없음</Text>}</View>} />
                 <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{formatPhoneNumber(storeInfo.phone)}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} style={{ marginBottom: 0 }} />
               </View>
 
@@ -2366,6 +2449,27 @@ export default function StoreScreen() {
                     <Text style={styles.charCount}>{editBasicData.intro.length}/50</Text>
                   </View>
                 </EditSection>
+                <EditSection icon="image" label="가게 프로필 이미지(1:1 비율)">
+                  <View style={{ gap: rs(10), width: '100%' }}>
+                    {editBasicData.logoImage ? (
+                      <View style={{ width: rs(90), height: rs(90) }}>
+                        <Image source={{ uri: editBasicData.logoImage }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
+                        <TouchableOpacity
+                          style={{ position: 'absolute', top: rs(-8), right: rs(-8), backgroundColor: 'white', borderRadius: rs(10) }}
+                          onPress={() => setEditBasicData({ ...editBasicData, logoImage: null })}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons name="close-circle" size={rs(20)} color="#FF3E41" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity style={[styles.uploadBox, { width: rs(90), height: rs(90) }]} onPress={pickProfileImage}>
+                        <Ionicons name="camera" size={rs(24)} color="#aaa" />
+                        <Text style={styles.uploadPlaceholder}>프로필 업로드</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </EditSection>
                 <EditSection icon="image" label="가게 배너 이미지(최대 3장)">
                   <View style={{ gap: rs(10), width: '100%' }}>
                     {/* 1. 이미지 슬라이더 (1.7:1 비율) */}
@@ -2730,9 +2834,9 @@ export default function StoreScreen() {
               <Ionicons name="close" size={rs(30)} color="white" />
             </TouchableOpacity>
 
-            {storeInfo.bannerImages && storeInfo.bannerImages.length > 0 ? (
+            {fullScreenImages && fullScreenImages.length > 0 ? (
               <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ width: Dimensions.get('window').width, height: '100%' }}>
-                {storeInfo.bannerImages.map((imgUri, index) => (
+                {fullScreenImages.map((imgUri, index) => (
                   <View key={index} style={{ width: Dimensions.get('window').width, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
                     <Image source={{ uri: imgUri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
                   </View>
@@ -2790,7 +2894,7 @@ export default function StoreScreen() {
 }
 
 // Sub-Components
-const InfoRow = ({ icon, label, content, style }) => (<View style={[styles.rowSection, style]}><View style={styles.fixedLabel}><Ionicons name={icon} size={rs(12)} color="#828282" /><Text style={styles.labelText}>{label}</Text></View><View style={styles.contentArea}>{content}</View></View>);
+const InfoRow = ({ icon, label, content, style, labelStyle }) => (<View style={[styles.rowSection, style]}><View style={[styles.fixedLabel, labelStyle]}><Ionicons name={icon} size={rs(12)} color="#828282" /><Text style={styles.labelText}>{label}</Text></View><View style={styles.contentArea}>{content}</View></View>);
 const EditSection = ({ icon, label, children }) => (<View style={styles.editSection}><View style={styles.labelRow}><Ionicons name={icon} size={rs(12)} color="#828282" /><Text style={styles.labelText}>{label}</Text></View>{children}</View>);
 const Tag = ({ text }) => <View style={styles.tagBox}><Text style={styles.tagText}>{text}</Text></View>;
 const ImagePlaceholder = ({ label, size = 90 }) => (<View style={styles.uploadBoxWrapper}><Text style={styles.uploadLabel}>{label}</Text><View style={[styles.uploadBox, { width: rs(size), height: rs(size) }]}><Ionicons name={label === '로고' ? 'camera' : 'image'} size={rs(24)} color="#aaa" /><Text style={styles.uploadPlaceholder}>{label} 업로드</Text></View></View>);
