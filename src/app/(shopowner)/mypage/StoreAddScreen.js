@@ -17,7 +17,6 @@ import {
   View
 } from 'react-native';
 
-import { getOwnerInfo } from '@/src/api/my-page';
 import { createStore, updateStore } from '@/src/api/store';
 import { verifyBizRegNo } from '@/src/api/store-claim';
 import { ErrorPopup } from '@/src/shared/common/error-popup';
@@ -73,20 +72,6 @@ export default function StoreAddScreen({ navigation, route }) {
       setIsBizNumVerified(true);
       // 이미지는 id나 url이 있을 수 있음 (여기서는 첨부 여부만 체크)
       setBizLicenseImage(storeData.imageUrl || true);
-    } else if (!isEditMode) {
-      // [추가 모드] 계정 대표자명 미리 가져오기
-      const fetchDefaultOwner = async () => {
-        try {
-          const response = await getOwnerInfo();
-          const data = response.data?.data || response.data;
-          if (data && data.name) {
-            setForm(prev => ({ ...prev, owner: data.name }));
-          }
-        } catch (error) {
-          console.error('대표자 정보 가져오기 실패:', error);
-        }
-      };
-      fetchDefaultOwner();
     }
   }, [isEditMode, storeData]);
 

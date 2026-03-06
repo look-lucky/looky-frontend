@@ -1,9 +1,9 @@
 import { ErrorPopup } from '@/src/shared/common/error-popup';
 import { getToken } from '@/src/shared/lib/auth/token';
+import { processAndUploadImages, validateImage } from '@/src/shared/lib/upload/image-upload';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
@@ -54,9 +54,7 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsMultipleSelection: true,
-                quality: 0.3,  // 압축률 대폭 강화 (0.5 -> 0.3)
-                allowsEditing: true, // 크기 조절을 위해 편집 허용 (사용자가 크롭하게 됨, 혹은 resize 옵션 사용 고려)
-                aspect: [4, 3],
+                quality: 0.8,  // S3 direct upload can handle higher quality
             });
 
             if (!result.canceled && result.assets) {
@@ -68,42 +66,21 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
                     return;
                 }
 
-                // [추가] 이미지 용량 및 형식 검증
+                // 이미지 용량 및 형식 검증
                 for (const asset of result.assets) {
-                    const filename = asset.uri.split('/').pop();
-                    const ext = filename.split('.').pop().toLowerCase();
-                    const isAllowedFormat = ['jpg', 'jpeg', 'png'].includes(ext);
-                    const isOverSize = asset.fileSize && asset.fileSize > 10 * 1024 * 1024;
-
-                    if (!isAllowedFormat || isOverSize) {
-                        Alert.alert('알림', '10MB 이하 JPG/PNG만 가능');
+                    const validation = validateImage(asset.uri, asset.fileSize, 'STORE_NEWS');
+                    if (!validation.valid) {
+                        Alert.alert('알림', validation.reason);
                         return;
                     }
                 }
 
-                // 이미지 압축 및 리사이징 처리
-                const processedImages = await Promise.all(result.assets.map(async (asset) => {
-                    try {
-                        const manipResult = await manipulateAsync(
-                            asset.uri,
-                            [{ resize: { width: 800 } }], // 가로 800px로 리사이징 (비율 유지)
-                            { compress: 0.7, format: SaveFormat.JPEG } // 압축률 0.7, JPEG 포맷
-                        );
-                        return {
-                            uri: manipResult.uri,
-                            isExisting: false
-                        };
-                    } catch (error) {
-                        console.error('[ImageManipulator] Error:', error);
-                        // 변환 실패 시 원본 사용 (혹은 에러 처리)
-                        return {
-                            uri: asset.uri,
-                            isExisting: false
-                        };
-                    }
+                const newImages = result.assets.map(asset => ({
+                    uri: asset.uri,
+                    isExisting: false
                 }));
 
-                setSelectedImages([...selectedImages, ...processedImages]);
+                setSelectedImages([...selectedImages, ...newImages]);
             }
         } catch (error) {
             console.error('[ImagePicker] Error:', error);
@@ -130,42 +107,16 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
             const tokenData = await getToken();
             const token = tokenData?.accessToken;
 
-            // 2. FormData 생성
-            const formData = new FormData();
+            // 1.5. S3 직접 업로드
+            const localUris = selectedImages.map(img => img.uri);
+            const finalImageUrls = await processAndUploadImages(localUris);
 
-            // 3. JSON 데이터를 문자열로 변환하여 'request' 파트에 담기
-            // 3. JSON 데이터를 문자열로 변환하여 'request' 파트에 담기
-            const existingImageUrls = selectedImages
-                .filter(img => img.isExisting)
-                .map(img => img.uri);
-
+            // 2. JSON 데이터 준비
             const requestData = {
                 title: title,
                 content: content,
-                images: selectedImages
-                    .filter(img => img.isExisting)
-                    .map(img => ({ url: img.uri })) // 객체 형태로 전송 시도
+                imageUrls: finalImageUrls.length > 0 ? finalImageUrls : (selectedImages.length === 0 ? [] : finalImageUrls)
             };
-
-            formData.append("request", {
-                string: JSON.stringify(requestData),
-                type: "application/json",
-                name: "request"
-            });
-
-            // 4. 이미지 처리
-            selectedImages.forEach((image, index) => {
-                if (!image.isExisting) {
-                    // 새로 선택한 이미지만 업로드
-                    const uriParts = image.uri.split('/');
-                    const fileName = uriParts[uriParts.length - 1];
-                    formData.append('images', {
-                        uri: image.uri,
-                        type: 'image/jpeg',
-                        name: fileName
-                    });
-                }
-            });
 
             const url = isEdit && newsItem?.id
                 ? `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/store-news/${newsItem.id}` // 수정 API 경로 수정 (/api/store-news/{id})
@@ -173,15 +124,15 @@ export default function StoreNewsWriteScreen({ navigation, route }) {
 
             const method = isEdit ? "PATCH" : "POST";
 
-            console.log(`[StoreNews] ${method} Request to ${url}`);
+            console.log(`[StoreNews] ${method} Request to ${url}`, JSON.stringify(requestData, null, 2));
 
             const response = await fetch(url, {
                 method: method,
                 headers: {
                     "Authorization": `Bearer ${token}`,
-                    // Content-Type은 설정하지 않음 (FormData가 자동 설정)
+                    "Content-Type": "application/json"
                 },
-                body: formData
+                body: JSON.stringify(requestData)
             });
 
             const responseText = await response.text();

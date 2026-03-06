@@ -2,13 +2,14 @@ import { useCreateReview } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
+import { processAndUploadImages, validateImage } from '@/src/shared/lib/upload/image-upload';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Colors, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Image,
@@ -59,6 +60,7 @@ export default function ReviewWriteScreen() {
   const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { mutate: createReview, isPending } = useCreateReview({
     mutation: {
@@ -84,7 +86,7 @@ export default function ReviewWriteScreen() {
   });
 
   const isSubmitDisabled =
-    rating === 0 || reviewContent.trim().length < MIN_REVIEW_LENGTH || isPending;
+    rating === 0 || reviewContent.trim().length < MIN_REVIEW_LENGTH || isPending || isUploading;
 
   const handleBack = () => router.back();
   const handleStarPress = (star: number) => setRating(star);
@@ -92,31 +94,33 @@ export default function ReviewWriteScreen() {
   const handleRemovePhoto = (index: number) =>
     setPhotos((prev) => prev.filter((_, i) => i !== index));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (isSubmitDisabled) return;
 
-    const timestamp = Date.now();
-    const images = photos.map((asset, index) => {
-      const rawType = asset.mimeType ?? 'image/jpeg';
-      // HEIC/HEIF는 서버에서 지원하지 않을 수 있으므로 JPEG로 처리
-      const type = rawType === 'image/heic' || rawType === 'image/heif' ? 'image/jpeg' : rawType;
-      const ext = type.split('/')[1] ?? 'jpg';
-      const name = asset.fileName ?? `review_${timestamp}_${index}.${ext}`;
-      return { uri: asset.uri, type, name };
-    });
+    try {
+      setIsUploading(true);
 
-    console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| images:', images.map(i => ({ name: i.name, type: i.type, uri: i.uri?.substring(0, 60) })));
+      const localUris = photos.map(photo => photo.uri);
+      const finalImageUrls = await processAndUploadImages(localUris);
 
-    createReview({
-      storeId: Number(id),
-      data: {
-        request: JSON.stringify({
-          content: reviewContent.trim(),
-          rating,
-        }),
-        images: images.length > 0 ? (images as any) : undefined,
-      },
-    });
+      console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| imageUrls:', finalImageUrls);
+
+      createReview({
+        storeId: Number(id),
+        data: {
+          request: JSON.stringify({
+            content: reviewContent.trim(),
+            rating,
+          }),
+          images: finalImageUrls.length > 0 ? finalImageUrls : undefined,
+        },
+      });
+    } catch (error) {
+      console.error('[Review] 이미지 업로드 중 오류:', error);
+      Alert.alert('알림', '이미지 스토리지 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleAddPhoto = async () => {
@@ -139,17 +143,17 @@ export default function ReviewWriteScreen() {
     });
 
     if (!result.canceled) {
-      const oversized = result.assets.find(
-        (a) => a.fileSize && a.fileSize > 10 * 1024 * 1024,
-      );
-      if (oversized) {
-        Alert.alert('알림', '10MB 이하의 사진만 업로드할 수 있습니다.');
-        return;
+      for (const asset of result.assets) {
+        const validation = validateImage(asset.uri, asset.fileSize, 'REVIEW');
+        if (!validation.valid) {
+          Alert.alert('알림', validation.reason);
+          return;
+        }
       }
       setPhotos((prev) => [...prev, ...result.assets].slice(0, MAX_PHOTOS));
     }
   };
-  
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>

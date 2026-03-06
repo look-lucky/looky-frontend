@@ -2,7 +2,7 @@ import type { StorePartnershipResponse, StoreResponseCloverGrade } from '@/src/a
 import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { ThemedView } from '@/src/shared/common/themed-view';
-import { useAuth } from '@/src/shared/lib/auth/auth-context';
+import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, System, Text } from '@/src/shared/theme/theme';
 import { formatOperatingHours, parseAllOperatingHours } from '@/src/shared/utils/store-transform';
@@ -47,6 +47,7 @@ interface StoreHeaderProps {
   reviewCount: number;
   address: string;
   openHours: string;
+  closedDays: string;
   university: string;
   isPartner: boolean;
   partnerships: StorePartnershipResponse[];
@@ -127,6 +128,7 @@ function StoreInfoSection({
   reviewCount,
   address,
   openHours,
+  closedDays,
   onReviewPress,
 }: {
   name: string;
@@ -135,11 +137,26 @@ function StoreInfoSection({
   reviewCount: number;
   address: string;
   openHours: string;
+  closedDays: string;
   onReviewPress?: () => void;
 }) {
   const [isHoursExpanded, setIsHoursExpanded] = useState(false);
 
   const allHours = parseAllOperatingHours(openHours);
+
+  const getTodayHoursDisplay = () => {
+    if (!openHours) return '정보없음';
+    const hours = formatOperatingHours(openHours);
+    if (hours === '휴무') return '휴무';
+
+    const dayLabels = ['월', '화', '수', '목', '금', '토', '일'];
+    const todayIndex = (new Date().getDay() + 6) % 7;
+    const todayLabel = dayLabels[todayIndex];
+
+    return `${todayLabel} ${hours}`;
+  };
+
+  const todayHoursDisplay = getTodayHoursDisplay();
 
   const handleToggleHours = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -179,7 +196,7 @@ function StoreInfoSection({
       <TouchableOpacity style={styles.infoRow} onPress={handleToggleHours}>
         <Ionicons name="time-outline" size={rs(14)} color={Text.secondary} />
         <ThemedText style={styles.infoText}>
-          {formatOperatingHours(openHours) || '정보없음'}
+          영업시간 {todayHoursDisplay}
         </ThemedText>
         <Ionicons
           name={isHoursExpanded ? "chevron-up" : "chevron-down"}
@@ -198,8 +215,19 @@ function StoreInfoSection({
             </ThemedView>
           ))}
         </ThemedView>
-
       )}
+
+      <ThemedView style={[styles.infoRow, { marginTop: rs(2) }]}>
+        <Ionicons name="time-outline" size={rs(14)} color={Text.secondary} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(5) }}>
+          <ThemedText style={styles.infoText}>
+            휴무일 <ThemedText style={[styles.infoText, { color: closedDays ? '#FF6200' : '#1B1D1F' }]}>
+              {closedDays ? closedDays : '없음'}
+            </ThemedText>
+          </ThemedText>
+        </View>
+      </ThemedView>
+
       <View style={styles.horizontalDivider} />
     </ThemedView>
   );
@@ -249,6 +277,7 @@ export function StoreHeader({
   reviewCount,
   address,
   openHours,
+  closedDays,
   university,
   isPartner,
   partnerships,
@@ -322,6 +351,7 @@ export function StoreHeader({
           reviewCount={reviewCount}
           address={address}
           openHours={openHours}
+          closedDays={closedDays}
           onReviewPress={onReviewPress}
         />
         <TagSection

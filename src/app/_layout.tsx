@@ -1,6 +1,6 @@
 import { NetworkErrorProvider } from "@/src/shared/contexts/network-error-context";
 import { TabBarProvider } from "@/src/shared/contexts/tab-bar-context";
-import { AuthProvider } from "@/src/shared/lib/auth";
+import { AuthProvider, useAuth } from "@/src/shared/lib/auth";
 import { useFonts } from "expo-font";
 import { Stack, usePathname, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -11,7 +11,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useGetMyStoreClaims } from "@/src/api/store-claim";
 import "react-native-reanimated";
-import { useAuth } from "../shared/lib/auth";
 
 // 점주용 앱 import
 import ShopOwnerApp from "@/src/app/(shopowner)/ShopOwnerNavigator";

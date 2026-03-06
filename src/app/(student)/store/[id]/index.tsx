@@ -24,6 +24,7 @@ import { StoreHeader } from '@/src/app/(student)/components/store/header';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
+import type { MenuCategory } from '@/src/shared/types/store';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -56,14 +57,32 @@ const formatDate = (dateStr?: string) => {
   return `${y}.${m}.${day}`;
 };
 
+const formatDiscount = (benefitType?: string, benefitValue?: string) => {
+  if (!benefitValue) return '';
+  switch (benefitType) {
+    case 'PERCENTAGE_DISCOUNT':
+      const cleanPercent = String(benefitValue).replace(/[^0-9]/g, '');
+      return `${cleanPercent}% 할인`;
+    case 'FIXED_DISCOUNT':
+      const cleanValue = String(benefitValue).replace(/[^0-9]/g, '');
+      const price = Number(cleanValue);
+      return `${isNaN(price) ? '0' : price.toLocaleString()}원 쿠폰`;
+    case 'SERVICE_GIFT':
+      return benefitValue;
+    default:
+      return benefitValue;
+  }
+};
+
 export default function StoreDetailScreen() {
-  const { id, name, image, rating, reviewCount, tab } = useLocalSearchParams<{
+  const { id, name, image, rating, reviewCount, tab, openCoupon } = useLocalSearchParams<{
     id: string;
     name?: string;
     image?: string;
     rating?: string;
     reviewCount?: string;
     tab?: string;
+    openCoupon?: string;
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -180,6 +199,13 @@ export default function StoreDetailScreen() {
     }
   }, [myFavoritesRes, myFavoriteStoreIds, storeId, isLikeInitialized]);
 
+  // 쿠폰 바로가기 처리
+  useEffect(() => {
+    if (openCoupon === 'true') {
+      setIsCouponModalVisible(true);
+    }
+  }, [openCoupon]);
+
   // 즐겨찾기 추가/취소 mutation
   const addFavoriteMutation = useAddFavorite({
     mutation: {
@@ -294,6 +320,19 @@ export default function StoreDetailScreen() {
   const storeRating = apiStore?.averageRating ?? (Number(rating) || 0);
   const storeReviewCount = apiStore?.reviewCount ?? (Number(reviewCount) || 0);
 
+  // 휴무일 포맷팅 (YYYY-MM-DD -> MM/DD, 콤마로 연결)
+  const storeHolidayDates = useMemo(() => {
+    const dates = apiStore?.holidayDates ?? [];
+    return dates.map(d => {
+      if (d.includes('-')) {
+        const parts = d.split('-');
+        if (parts.length === 3) return `${parts[1]}/${parts[2]}`;
+        if (parts.length === 2) return `${parts[0]}/${parts[1]}`;
+      }
+      return d.replace(/-/g, '/');
+    }).join(', ');
+  }, [apiStore?.holidayDates]);
+
   // 즐겨찾기 수
   const storeLikeCount = favoriteCount ?? 0;
 
@@ -321,7 +360,7 @@ export default function StoreDetailScreen() {
         id: String(c.id),
         title: c.title ?? '',
         description: c.minOrderAmount ? `최소 주문 ${Number(c.minOrderAmount).toLocaleString()}원` : '',
-        discount: c.benefitValue ?? '',
+        discount: formatDiscount(c.benefitType, c.benefitValue),
         expiryDate: c.issueEndsAt ? `${formatDate(c.issueEndsAt)}까지 발급 가능` : '',
         remainingCount: c.totalQuantity != null && c.downloadCount != null
           ? Math.max(0, c.totalQuantity - c.downloadCount) : undefined,
@@ -578,6 +617,7 @@ export default function StoreDetailScreen() {
           reviewCount={storeReviewRating.totalCount || storeReviewCount}
           address={storeAddress}
           openHours={storeOpenHours}
+          closedDays={storeHolidayDates}
           university={selectedUniversity}
           isPartner={storeIsPartner}
           partnerships={apiPartnerships}
