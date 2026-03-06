@@ -9,7 +9,7 @@ import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Text } from "@/src/shared/theme/theme";
 import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // 소셜 로그인 브랜드 공식 색상 (플랫폼 가이드라인 준수)
@@ -119,16 +119,18 @@ export default function SignInPage() {
           </ThemedText>
         </Pressable>
 
-        <Pressable
-          style={[styles.socialButton, styles.appleButton, appleLoading && styles.disabledButton]}
-          onPress={handleAppleLogin}
-          disabled={isLoading}
-        >
-          <SignupIcons.apple width={20} height={20} />
-          <ThemedText lightColor={Gray.black} style={styles.socialButtonText}>
-            Apple로 시작하기
-          </ThemedText>
-        </Pressable>
+        {Platform.OS === "ios" && (
+          <Pressable
+            style={[styles.socialButton, styles.appleButton, appleLoading && styles.disabledButton]}
+            onPress={handleAppleLogin}
+            disabled={isLoading}
+          >
+            <SignupIcons.apple width={20} height={20} />
+            <ThemedText lightColor={Gray.black} style={styles.socialButtonText}>
+              Apple로 시작하기
+            </ThemedText>
+          </Pressable>
+        )}
 
         {/* 약관 텍스트 */}
         <ThemedText lightColor={Text.placeholder} style={styles.termsText}>
