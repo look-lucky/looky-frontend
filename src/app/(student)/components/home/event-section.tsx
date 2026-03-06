@@ -1,6 +1,7 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray } from '@/src/shared/theme/theme';
+import type { EventType } from '@/src/shared/types/event';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
@@ -13,8 +14,6 @@ import {
   ViewToken,
 } from 'react-native';
 import { SectionHeader } from './section-header';
-
-type EventType = 'FOOD_EVENT' | 'POPUP_STORE' | 'SCHOOL_EVENT' | 'PROMOTION' | 'COMMUNITY' | 'FLEA_MARKET' | 'PERFORMANCE';
 
 interface EventItem {
   id: number;
@@ -31,14 +30,13 @@ interface EventSectionProps {
   events: EventItem[];
 }
 
-// 이벤트 타입별 아이콘 매핑
+// 이벤트 타입별 아이콘 매핑 (event/index.tsx와 동일한 소스)
 const EVENT_TYPE_ICONS: Record<EventType, ImageSourcePropType> = {
   FOOD_EVENT: require('@/assets/images/icons/map/event-food.png'),
   SCHOOL_EVENT: require('@/assets/images/icons/map/event-college.png'),
   POPUP_STORE: require('@/assets/images/icons/map/event-brand.png'),
   FLEA_MARKET: require('@/assets/images/icons/map/event-market.png'),
   PERFORMANCE: require('@/assets/images/icons/map/event-busking.png'),
-  PROMOTION: require('@/assets/images/icons/map/event-student.png'),
   COMMUNITY: require('@/assets/images/icons/map/event-student.png'),
 };
 
@@ -98,7 +96,7 @@ export function EventSection({ events }: EventSectionProps) {
 
   const getEventIcon = (event: EventItem): ImageSourcePropType => {
     const primaryType = event.eventTypes?.[0];
-    return EVENT_TYPE_ICONS[primaryType] ?? EVENT_TYPE_ICONS.SCHOOL_EVENT;
+    return EVENT_TYPE_ICONS[primaryType] ?? EVENT_TYPE_ICONS.COMMUNITY;
   };
 
   const onViewableItemsChanged = useRef(
