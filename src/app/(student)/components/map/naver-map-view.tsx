@@ -178,7 +178,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
   ) {
     const mapRef = useRef<NaverMapViewRef>(null);
     const isInitialMount = useRef(true);
-    const [currentZoom, setCurrentZoom] = useState(15);
+    const [currentZoom, setCurrentZoom] = useState<number>(15);
     const [isMapReady, setIsMapReady] = useState(false);
 
     useImperativeHandle(ref, () => mapRef.current!, []);
@@ -250,7 +250,8 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           onCameraChanged={(params) => {
             const zoom = params.zoom ?? 15;
             setCurrentZoom((prev) => {
-              if (Math.floor(zoom) !== Math.floor(prev)) return zoom;
+              const floored = Math.floor(zoom);
+              if (floored !== prev) return floored;
               return prev;
             });
             onCameraChanged?.({

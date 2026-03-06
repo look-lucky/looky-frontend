@@ -1,11 +1,12 @@
+import { customFetch } from '@/src/api/mutator';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
-import { useEvents } from '@/src/shared/hooks/use-events';
 import { rs } from '@/src/shared/theme/scale';
 import { useMapNavigationStore } from '@/src/shared/stores/map-navigation-store';
 import { Fonts, Gray, Primary } from '@/src/shared/theme/theme';
 import type { Event, EventType } from '@/src/shared/types/event';
-import { getDDay } from '@/src/shared/types/event';
+import { getDDay, getEventStatus, isEventVisible } from '@/src/shared/types/event';
+import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -97,7 +98,32 @@ const EventCard = ({ event }: { event: Event }) => {
 
 export default function EventListScreen() {
     const router = useRouter();
-    const { events, isLoading } = useEvents({ myLocation: null, selectedDistance: '0' });
+    const { data: rawData, isLoading } = useQuery({
+        queryKey: ['events'],
+        queryFn: () =>
+            customFetch<{ data: { data: { content: any[] } }; status: number; headers: Headers }>(
+                '/api/events?status=UPCOMING&status=LIVE&size=100',
+                { method: 'GET' },
+            ),
+        staleTime: 3 * 60 * 1000,
+    });
+    const events: Event[] = (rawData?.data?.data?.content ?? [])
+        .map((r: any) => ({
+            id: String(r.id),
+            title: r.title,
+            description: r.description,
+            eventTypes: r.eventTypes as EventType[],
+            lat: r.latitude,
+            lng: r.longitude,
+            startDateTime: new Date(r.startDateTime),
+            endDateTime: new Date(r.endDateTime),
+            status: getEventStatus({ startDateTime: new Date(r.startDateTime), endDateTime: new Date(r.endDateTime) } as Event),
+            bannerImageUrl: r.bannerImageUrl,
+            imageUrls: r.imageUrls ?? [],
+            place: r.place,
+            createdAt: new Date(r.createdAt),
+        }))
+        .filter(isEventVisible);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
