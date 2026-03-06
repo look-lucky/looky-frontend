@@ -33,11 +33,11 @@ interface EventSectionProps {
 
 // 이벤트 타입별 아이콘 매핑
 const EVENT_TYPE_ICONS: Record<EventType, ImageSourcePropType> = {
-  FOOD_EVENT: require('@/assets/images/icons/home/event-burger.png'),
-  SCHOOL_EVENT: require('@/assets/images/icons/home/event-alarm.png'),
-  POPUP_STORE: require('@/assets/images/icons/home/event-alarm.png'),
+  FOOD_EVENT: require('@/assets/images/icons/map/event-food.png'),
+  SCHOOL_EVENT: require('@/assets/images/icons/map/event-college.png'),
+  POPUP_STORE: require('@/assets/images/icons/map/event-brand.png'),
   FLEA_MARKET: require('@/assets/images/icons/map/event-market.png'),
-  PERFORMANCE: require('@/assets/images/icons/map/event-student.png'),
+  PERFORMANCE: require('@/assets/images/icons/map/event-busking.png'),
   PROMOTION: require('@/assets/images/icons/map/event-student.png'),
   COMMUNITY: require('@/assets/images/icons/map/event-student.png'),
 };
