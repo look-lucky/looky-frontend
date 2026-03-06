@@ -25,11 +25,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  CreateReviewBody,
+  CreateReviewRequest,
   GetMyReviewsParams,
   GetReviewsParams,
   ReportRequest,
-  UpdateReviewBody
+  UpdateReviewRequest
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -220,20 +220,15 @@ export const getCreateReviewUrl = (storeId: number,) => {
 }
 
 export const createReview = async (storeId: number,
-    createReviewBody: CreateReviewBody, options?: RequestInit): Promise<createReviewResponse> => {
-    const formData = new FormData();
-formData.append(`request`, createReviewBody.request);
-if(createReviewBody.images !== undefined) {
- createReviewBody.images.forEach(value => formData.append(`images`, value));
- }
-
+    createReviewRequest: CreateReviewRequest, options?: RequestInit): Promise<createReviewResponse> => {
+  
   return customFetch<createReviewResponse>(getCreateReviewUrl(storeId),
   {      
     ...options,
-    method: 'POST'
-    ,
-    body: 
-      formData,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createReviewRequest,)
   }
 );}
 
@@ -241,8 +236,8 @@ if(createReviewBody.images !== undefined) {
 
 
 export const getCreateReviewMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewRequest}, TContext> => {
 
 const mutationKey = ['createReview'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -254,7 +249,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReview>>, {storeId: number;data: CreateReviewBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReview>>, {storeId: number;data: CreateReviewRequest}> = (props) => {
           const {storeId,data} = props ?? {};
 
           return  createReview(storeId,data,requestOptions)
@@ -268,18 +263,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createReview>>>
-    export type CreateReviewMutationBody = CreateReviewBody
+    export type CreateReviewMutationBody = CreateReviewRequest
     export type CreateReviewMutationError = Blob
 
     /**
  * @summary [공통] 리뷰 및 답글 작성
  */
 export const useCreateReview = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createReview>>,
         TError,
-        {storeId: number;data: CreateReviewBody},
+        {storeId: number;data: CreateReviewRequest},
         TContext
       > => {
       return useMutation(getCreateReviewMutationOptions(options), queryClient);
@@ -694,20 +689,15 @@ export const getUpdateReviewUrl = (reviewId: number,) => {
 }
 
 export const updateReview = async (reviewId: number,
-    updateReviewBody: UpdateReviewBody, options?: RequestInit): Promise<updateReviewResponse> => {
-    const formData = new FormData();
-formData.append(`request`, updateReviewBody.request);
-if(updateReviewBody.images !== undefined) {
- updateReviewBody.images.forEach(value => formData.append(`images`, value));
- }
-
+    updateReviewRequest: UpdateReviewRequest, options?: RequestInit): Promise<updateReviewResponse> => {
+  
   return customFetch<updateReviewResponse>(getUpdateReviewUrl(reviewId),
   {      
     ...options,
-    method: 'PATCH'
-    ,
-    body: 
-      formData,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateReviewRequest,)
   }
 );}
 
@@ -715,8 +705,8 @@ if(updateReviewBody.images !== undefined) {
 
 
 export const getUpdateReviewMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewRequest}, TContext> => {
 
 const mutationKey = ['updateReview'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -728,7 +718,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReview>>, {reviewId: number;data: UpdateReviewBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReview>>, {reviewId: number;data: UpdateReviewRequest}> = (props) => {
           const {reviewId,data} = props ?? {};
 
           return  updateReview(reviewId,data,requestOptions)
@@ -742,18 +732,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof updateReview>>>
-    export type UpdateReviewMutationBody = UpdateReviewBody
+    export type UpdateReviewMutationBody = UpdateReviewRequest
     export type UpdateReviewMutationError = Blob
 
     /**
  * @summary [공통] 리뷰 수정
  */
 export const useUpdateReview = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateReview>>,
         TError,
-        {reviewId: number;data: UpdateReviewBody},
+        {reviewId: number;data: UpdateReviewRequest},
         TContext
       > => {
       return useMutation(getUpdateReviewMutationOptions(options), queryClient);

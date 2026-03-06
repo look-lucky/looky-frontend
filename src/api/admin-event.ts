@@ -16,8 +16,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  CreateEventBody,
-  UpdateEventBody
+  CreateEventRequest,
+  UpdateEventRequest
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -64,23 +64,15 @@ export const getCreateEventUrl = () => {
   return `/api/admin/events`
 }
 
-export const createEvent = async (createEventBody: CreateEventBody, options?: RequestInit): Promise<createEventResponse> => {
-    const formData = new FormData();
-formData.append(`request`, createEventBody.request);
-if(createEventBody.bannerImage !== undefined) {
- formData.append(`bannerImage`, createEventBody.bannerImage);
- }
-if(createEventBody.images !== undefined) {
- createEventBody.images.forEach(value => formData.append(`images`, value));
- }
-
+export const createEvent = async (createEventRequest: CreateEventRequest, options?: RequestInit): Promise<createEventResponse> => {
+  
   return customFetch<createEventResponse>(getCreateEventUrl(),
   {      
     ...options,
-    method: 'POST'
-    ,
-    body: 
-      formData,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createEventRequest,)
   }
 );}
 
@@ -88,8 +80,8 @@ if(createEventBody.images !== undefined) {
 
 
 export const getCreateEventMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: CreateEventBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: CreateEventBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: CreateEventRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: CreateEventRequest}, TContext> => {
 
 const mutationKey = ['createEvent'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -101,7 +93,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEvent>>, {data: CreateEventBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEvent>>, {data: CreateEventRequest}> = (props) => {
           const {data} = props ?? {};
 
           return  createEvent(data,requestOptions)
@@ -115,18 +107,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateEventMutationResult = NonNullable<Awaited<ReturnType<typeof createEvent>>>
-    export type CreateEventMutationBody = CreateEventBody
+    export type CreateEventMutationBody = CreateEventRequest
     export type CreateEventMutationError = Blob
 
     /**
  * @summary [관리자] 이벤트 등록
  */
 export const useCreateEvent = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: CreateEventBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: CreateEventRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createEvent>>,
         TError,
-        {data: CreateEventBody},
+        {data: CreateEventRequest},
         TContext
       > => {
       return useMutation(getCreateEventMutationOptions(options), queryClient);
@@ -262,23 +254,15 @@ export const getUpdateEventUrl = (eventId: number,) => {
 }
 
 export const updateEvent = async (eventId: number,
-    updateEventBody: UpdateEventBody, options?: RequestInit): Promise<updateEventResponse> => {
-    const formData = new FormData();
-formData.append(`request`, updateEventBody.request);
-if(updateEventBody.bannerImage !== undefined) {
- formData.append(`bannerImage`, updateEventBody.bannerImage);
- }
-if(updateEventBody.images !== undefined) {
- updateEventBody.images.forEach(value => formData.append(`images`, value));
- }
-
+    updateEventRequest: UpdateEventRequest, options?: RequestInit): Promise<updateEventResponse> => {
+  
   return customFetch<updateEventResponse>(getUpdateEventUrl(eventId),
   {      
     ...options,
-    method: 'PATCH'
-    ,
-    body: 
-      formData,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateEventRequest,)
   }
 );}
 
@@ -286,8 +270,8 @@ if(updateEventBody.images !== undefined) {
 
 
 export const getUpdateEventMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvent>>, TError,{eventId: number;data: UpdateEventBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateEvent>>, TError,{eventId: number;data: UpdateEventBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvent>>, TError,{eventId: number;data: UpdateEventRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEvent>>, TError,{eventId: number;data: UpdateEventRequest}, TContext> => {
 
 const mutationKey = ['updateEvent'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -299,7 +283,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEvent>>, {eventId: number;data: UpdateEventBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEvent>>, {eventId: number;data: UpdateEventRequest}> = (props) => {
           const {eventId,data} = props ?? {};
 
           return  updateEvent(eventId,data,requestOptions)
@@ -313,18 +297,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateEventMutationResult = NonNullable<Awaited<ReturnType<typeof updateEvent>>>
-    export type UpdateEventMutationBody = UpdateEventBody
+    export type UpdateEventMutationBody = UpdateEventRequest
     export type UpdateEventMutationError = Blob
 
     /**
  * @summary [관리자] 이벤트 수정
  */
 export const useUpdateEvent = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvent>>, TError,{eventId: number;data: UpdateEventBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvent>>, TError,{eventId: number;data: UpdateEventRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateEvent>>,
         TError,
-        {eventId: number;data: UpdateEventBody},
+        {eventId: number;data: UpdateEventRequest},
         TContext
       > => {
       return useMutation(getUpdateEventMutationOptions(options), queryClient);

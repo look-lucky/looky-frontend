@@ -25,8 +25,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  CreateItemBody,
-  UpdateItemBody
+  CreateItemRequest,
+  UpdateItemRequest
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -197,22 +197,15 @@ export const getCreateItemUrl = (storeId: number,) => {
 }
 
 export const createItem = async (storeId: number,
-    createItemBody: CreateItemBody, options?: RequestInit): Promise<createItemResponse> => {
-    const formData = new FormData();
-if(createItemBody.image !== undefined) {
- formData.append(`image`, createItemBody.image);
- }
-if(createItemBody.request !== undefined) {
- formData.append(`request`, createItemBody.request);
- }
-
+    createItemRequest: CreateItemRequest, options?: RequestInit): Promise<createItemResponse> => {
+  
   return customFetch<createItemResponse>(getCreateItemUrl(storeId),
   {      
     ...options,
-    method: 'POST'
-    ,
-    body: 
-      formData,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createItemRequest,)
   }
 );}
 
@@ -220,8 +213,8 @@ if(createItemBody.request !== undefined) {
 
 
 export const getCreateItemMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError,{storeId: number;data: CreateItemBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError,{storeId: number;data: CreateItemBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError,{storeId: number;data: CreateItemRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError,{storeId: number;data: CreateItemRequest}, TContext> => {
 
 const mutationKey = ['createItem'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -233,7 +226,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createItem>>, {storeId: number;data: CreateItemBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createItem>>, {storeId: number;data: CreateItemRequest}> = (props) => {
           const {storeId,data} = props ?? {};
 
           return  createItem(storeId,data,requestOptions)
@@ -247,18 +240,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateItemMutationResult = NonNullable<Awaited<ReturnType<typeof createItem>>>
-    export type CreateItemMutationBody = CreateItemBody
+    export type CreateItemMutationBody = CreateItemRequest
     export type CreateItemMutationError = Blob
 
     /**
  * @summary [점주] 상품 등록
  */
 export const useCreateItem = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError,{storeId: number;data: CreateItemBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItem>>, TError,{storeId: number;data: CreateItemRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createItem>>,
         TError,
-        {storeId: number;data: CreateItemBody},
+        {storeId: number;data: CreateItemRequest},
         TContext
       > => {
       return useMutation(getCreateItemMutationOptions(options), queryClient);
@@ -512,22 +505,15 @@ export const getUpdateItemUrl = (itemId: number,) => {
 }
 
 export const updateItem = async (itemId: number,
-    updateItemBody: UpdateItemBody, options?: RequestInit): Promise<updateItemResponse> => {
-    const formData = new FormData();
-if(updateItemBody.image !== undefined) {
- formData.append(`image`, updateItemBody.image);
- }
-if(updateItemBody.request !== undefined) {
- formData.append(`request`, updateItemBody.request);
- }
-
+    updateItemRequest: UpdateItemRequest, options?: RequestInit): Promise<updateItemResponse> => {
+  
   return customFetch<updateItemResponse>(getUpdateItemUrl(itemId),
   {      
     ...options,
-    method: 'PATCH'
-    ,
-    body: 
-      formData,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateItemRequest,)
   }
 );}
 
@@ -535,8 +521,8 @@ if(updateItemBody.request !== undefined) {
 
 
 export const getUpdateItemMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,{itemId: number;data: UpdateItemBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,{itemId: number;data: UpdateItemBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,{itemId: number;data: UpdateItemRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,{itemId: number;data: UpdateItemRequest}, TContext> => {
 
 const mutationKey = ['updateItem'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -548,7 +534,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateItem>>, {itemId: number;data: UpdateItemBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateItem>>, {itemId: number;data: UpdateItemRequest}> = (props) => {
           const {itemId,data} = props ?? {};
 
           return  updateItem(itemId,data,requestOptions)
@@ -562,18 +548,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateItem>>>
-    export type UpdateItemMutationBody = UpdateItemBody
+    export type UpdateItemMutationBody = UpdateItemRequest
     export type UpdateItemMutationError = Blob
 
     /**
  * @summary [점주] 상품 수정
  */
 export const useUpdateItem = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,{itemId: number;data: UpdateItemBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,{itemId: number;data: UpdateItemRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateItem>>,
         TError,
-        {itemId: number;data: UpdateItemBody},
+        {itemId: number;data: UpdateItemRequest},
         TContext
       > => {
       return useMutation(getUpdateItemMutationOptions(options), queryClient);
