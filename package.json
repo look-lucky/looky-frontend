@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "generate": "node scripts/fetch-openapi.js && node scripts/patch-openapi.js && npx orval && node scripts/patch-generated.js",
-    "eas-build-pre-install": "npm install --package-lock-only"
+    "eas-build-pre-install": "npm install --package-lock-only",
+    "eas:android": "git checkout release/android-production && eas build --platform android --profile production"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
