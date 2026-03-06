@@ -96,18 +96,22 @@ export default function ReviewWriteScreen() {
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
 
-    console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| photos:', photos.length);
+    console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| photos:', photos.length, '| rating:', rating, '| content length:', reviewContent.trim().length);
 
     let imageUrls: string[] | undefined;
     if (photos.length > 0) {
       try {
+        console.log('[Review] 이미지 업로드 시작...');
         imageUrls = await uploadImageAssets(photos);
+        console.log('[Review] 이미지 업로드 완료:', imageUrls);
       } catch (e) {
+        console.error('[Review] 이미지 업로드 실패:', e);
         Alert.alert('알림', '이미지 업로드에 실패했습니다. 다시 시도해주세요.');
         return;
       }
     }
 
+    console.log('[Review] createReview 호출 - imageUrls:', imageUrls);
     createReview({
       storeId: Number(id),
       data: {
