@@ -243,6 +243,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
             zoom: 15,
           }}
           isShowZoomControls={isShowZoomControls}
+          isShowCompass={false}
           onInitialized={() => {
             setIsMapReady(true);
             onMapReady?.();
