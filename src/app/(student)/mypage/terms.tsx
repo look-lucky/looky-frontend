@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -48,9 +49,12 @@ const TERMS_DATA = [
   {
     title: "2. 개인정보처리방침",
     items: [
-      { id: 't2-1', title: '개인정보의 수집·이용 목적', content: '회사는 다음과 같은 목적으로 개인정보를 수집하고 이용합니다...' },
-      { id: 't2-2', title: '제3자 제공시 제공받는 자의 성명, 제공받는 자의 이용목적', content: '회사는 원칙적으로 이용자의 개인정보를 제3자에게 제공하지 않습니다...' },
-      { id: 't2-3', title: '개인정보의 보유 및 이용기간, 파기절차 및 파기방법', content: '회사는 개인정보 수집 및 이용목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다...' },
+      {
+        id: 't2-1',
+        title: '개인정보처리방침 안내',
+        link: 'https://sites.google.com/view/looky-privacy-policy/%ED%99%88',
+        icon: 'information-circle-outline'
+      },
     ]
   }
 ];
@@ -81,6 +85,14 @@ export default function TermsScreen() {
     );
   };
 
+  const handleItemPress = (item: any) => {
+    if (item.link) {
+      Linking.openURL(item.link);
+    } else {
+      toggleExpand(item.id);
+    }
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -102,24 +114,33 @@ export default function TermsScreen() {
                 <Text style={styles.sectionTitle}>{section.title}</Text>
               </View>
               <View style={styles.divider} />
-              {section.items.map((item) => {
+              {section.items.map((item: any) => {
                 const isExpanded = expandedIds.includes(item.id);
                 return (
                   <View key={item.id}>
                     <TouchableOpacity
                       style={styles.termItem}
-                      onPress={() => toggleExpand(item.id)}
+                      onPress={() => handleItemPress(item)}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.termTitle}>{item.title}</Text>
-                      <Ionicons
-                        name="chevron-down"
-                        size={rs(16)}
-                        color="#828282"
-                        style={{ transform: [{ rotate: isExpanded ? '180deg' : '0deg' }] }}
-                      />
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        {item.icon && (
+                          <Ionicons name={item.icon} size={rs(16)} color="#828282" style={{ marginRight: rs(8) }} />
+                        )}
+                        <Text style={styles.termTitle}>{item.title}</Text>
+                      </View>
+                      {item.link ? (
+                        <Ionicons name="open-outline" size={rs(16)} color="#828282" />
+                      ) : (
+                        <Ionicons
+                          name="chevron-down"
+                          size={rs(16)}
+                          color="#828282"
+                          style={{ transform: [{ rotate: isExpanded ? '180deg' : '0deg' }] }}
+                        />
+                      )}
                     </TouchableOpacity>
-                    {isExpanded && (
+                    {isExpanded && item.content && (
                       <View style={styles.termContentBox}>
                         <Text style={styles.termContentText}>{renderBoldText(item.content)}</Text>
                       </View>
