@@ -40,6 +40,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
+      "./plugins/withTabletRestriction",
       "expo-router",
       [
         "expo-splash-screen",
