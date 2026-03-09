@@ -22,7 +22,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     userInterfaceStyle: "light",
     newArchEnabled: true,
     ios: {
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: bundleId,
       usesAppleSignIn: true,
     },
@@ -40,6 +40,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
+      "./plugins/withTabletRestriction",
       "expo-router",
       [
         "expo-splash-screen",

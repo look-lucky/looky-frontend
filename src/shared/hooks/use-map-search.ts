@@ -1,6 +1,6 @@
 import { useGetStoreMap } from '@/src/api/store';
-import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import { CATEGORY_TO_API } from '@/src/shared/constants/map';
+import { useAuth } from '@/src/shared/lib/auth';
 import type { Store } from '@/src/shared/types/store';
 import {
   getDistanceKm,
@@ -129,11 +129,11 @@ export function useMapSearch(permissionReady = true, skipInitialCenterMove = fal
         if (!store.category) return false;
         return apiCategories.some((cat) => store.category?.includes(
           cat === 'RESTAURANT' ? '식당'
-          : cat === 'BAR' ? '주점'
-          : cat === 'CAFE' ? '카페'
-          : cat === 'ENTERTAINMENT' ? '놀거리'
-          : cat === 'BEAUTY_HEALTH' ? '뷰티/건강'
-          : cat
+            : cat === 'BAR' ? '주점'
+              : cat === 'CAFE' ? '카페'
+                : cat === 'ENTERTAINMENT' ? '놀거리'
+                  : cat === 'BEAUTY_HEALTH' ? '뷰티/건강'
+                    : cat
         ));
       });
     }
