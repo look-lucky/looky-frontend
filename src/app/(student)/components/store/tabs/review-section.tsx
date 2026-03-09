@@ -8,6 +8,7 @@ import ProfileBlue from '@/assets/images/icons/mypage/profile-blue.png';
 import ProfileGreen from '@/assets/images/icons/mypage/profile-green.png';
 import ProfileOrange from '@/assets/images/icons/mypage/profile-orange.png';
 import ProfileRed from '@/assets/images/icons/mypage/profile-red.png';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
@@ -313,13 +314,19 @@ function ReviewItemCard({
         <View style={styles.ownerReplySection}>
           <View style={styles.ownerHeader}>
             <View style={styles.ownerInfo}>
-              <View style={styles.ownerProfile} />
+              {review.ownerProfileImage ? (
+                <Image source={{ uri: review.ownerProfileImage }} style={styles.ownerProfile} />
+              ) : (
+                <View style={[styles.ownerProfile, { backgroundColor: '#309821', justifyContent: 'center', alignItems: 'center' }]}>
+                  <Ionicons name="storefront-outline" size={rs(16)} color="#fff" />
+                </View>
+              )}
               <ThemedText style={styles.ownerName} lightColor="#000">사장님</ThemedText>
             </View>
-            <ThemedText style={styles.replyDate} lightColor="#828282">2026.02.01</ThemedText>
+            <ThemedText style={styles.replyDate} lightColor="#828282">{review.replyDate || '-'}</ThemedText>
           </View>
           <ThemedText style={styles.replyContent} lightColor="#000">
-            맛있게 드셔주셔서 감사합니다! 앞으로도 좋은 서비스로 보답하겠습니다. 😍✌🏻✌🏻
+            {review.replyContent || '답글 내용을 불러올 수 없습니다.'}
           </ThemedText>
         </View>
       )}

@@ -1,7 +1,7 @@
 import GiftIcon from '@/assets/images/icons/coupon/gift.svg';
 import HotPriceIcon from '@/assets/images/icons/coupon/hot-price.svg';
 import PriceTagDollarIcon from '@/assets/images/icons/coupon/price-tag-dollar.svg';
-import { useDownloadCoupon, useGetTodayCoupons } from '@/src/api/coupon';
+import { useGetTodayCoupons } from '@/src/api/coupon';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
@@ -49,11 +49,14 @@ const formatDiscount = (benefitType?: string, benefitValue?: string) => {
   if (!benefitValue) return '';
   switch (benefitType) {
     case 'PERCENTAGE_DISCOUNT':
-      return `${benefitValue}%`;
+      const cleanPercent = String(benefitValue).replace(/[^0-9]/g, '');
+      return `${cleanPercent}% 할인`;
     case 'FIXED_DISCOUNT':
-      return `${Number(benefitValue).toLocaleString()}원`;
+      const cleanValue = String(benefitValue).replace(/[^0-9]/g, '');
+      const price = Number(cleanValue);
+      return `${isNaN(price) ? '0' : price.toLocaleString()}원 쿠폰`;
     case 'SERVICE_GIFT':
-      return '서비스 증정';
+      return benefitValue;
     default:
       return benefitValue;
   }
@@ -91,8 +94,6 @@ const getTimeAgo = (dateStr?: string) => {
 export default function TodayCouponsPage() {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState<CouponFilter>('all');
-  const downloadCouponMutation = useDownloadCoupon();
-
   const { data: todayCouponsRes, isLoading } = useGetTodayCoupons();
   const rawCoupons = (todayCouponsRes as any)?.data?.data ?? [];
   const coupons = Array.isArray(rawCoupons) ? rawCoupons : [];
@@ -103,8 +104,8 @@ export default function TodayCouponsPage() {
   }, [coupons, selectedFilter]);
 
   const handleCouponPress = (coupon: any) => {
-    downloadCouponMutation.mutate({ couponId: coupon.id });
-    router.push(`/store/${coupon.storeId}`);
+    // downloadCouponMutation.mutate({ couponId: coupon.id });
+    router.push(`/store/${coupon.storeId}?openCoupon=true` as any);
   };
 
   return (

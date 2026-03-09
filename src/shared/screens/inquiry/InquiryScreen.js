@@ -1,5 +1,6 @@
 import { useGetInquiries } from '@/src/api/customer-support';
 import { customFetch } from '@/src/api/mutator';
+import { processAndUploadImages, validateImage } from '@/src/shared/lib/upload/image-upload';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation } from '@tanstack/react-query';
@@ -61,8 +62,9 @@ export default function InquiryScreen({ navigation, route }) {
     const [inquiryTypeKey, setInquiryTypeKey] = useState('');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [attachedFile, setAttachedFile] = useState(null);
+    const [attachedFiles, setAttachedFiles] = useState([]);
     const [typeModalVisible, setTypeModalVisible] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     const isTypeSelected = inquiryTypeKey !== '';
     const isTitleValid = title.trim().length >= 1 && title.trim().length <= 14;
@@ -71,14 +73,13 @@ export default function InquiryScreen({ navigation, route }) {
 
     const { mutate: submitInquiry, isPending: isSubmitting } = useMutation({
         mutationFn: async ({ request, images }) => {
-            const formData = new FormData();
-            formData.append('request', JSON.stringify(request));
-            if (images) {
-                images.forEach(img => formData.append('images', img));
-            }
             return customFetch('/api/inquiries', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    request: JSON.stringify(request),
+                    images: images
+                }),
             });
         },
     });
@@ -91,51 +92,65 @@ export default function InquiryScreen({ navigation, route }) {
         }
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: false,
-            quality: 1,
+            allowsMultipleSelection: true,
+            selectionLimit: 5 - attachedFiles.length,
+            quality: 0.8,
         });
         if (!result.canceled) {
-            const asset = result.assets[0];
-            if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
-                Alert.alert('알림', '첨부파일은 10MB 이내로 업로드해주세요.');
-                return;
+            for (const asset of result.assets) {
+                const validation = validateImage(asset.uri, asset.fileSize, 'INQUIRY');
+                if (!validation.valid) {
+                    Alert.alert('알림', validation.reason);
+                    return;
+                }
             }
-            setAttachedFile(asset);
+
+            setAttachedFiles((prev) => {
+                const newFiles = [...prev, ...result.assets];
+                if (newFiles.length > 5) {
+                    Alert.alert('알림', '이미지는 최대 5개까지 첨부할 수 있습니다.');
+                    return newFiles.slice(0, 5);
+                }
+                return newFiles;
+            });
         }
     };
 
-    const removeFile = () => setAttachedFile(null);
+    const removeFile = (index) => setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
 
-    const handleSubmit = () => {
-        if (!canSubmit || isSubmitting) return;
+    const handleSubmit = async () => {
+        if (!canSubmit || isSubmitting || isUploading) return;
 
-        const images = [];
-        if (attachedFile) {
-            images.push({
-                uri: attachedFile.uri,
-                type: attachedFile.mimeType || 'image/jpeg',
-                name: attachedFile.fileName || 'image.jpg',
-            });
+        try {
+            setIsUploading(true);
+
+            const localUris = attachedFiles.map(img => img.uri);
+            const finalImageUrls = await processAndUploadImages(localUris);
+
+            submitInquiry(
+                {
+                    request: {
+                        type: inquiryTypeKey,
+                        title: title.trim(),
+                        content: content.trim(),
+                    },
+                    images: finalImageUrls.length > 0 ? finalImageUrls : undefined,
+                },
+                {
+                    onSuccess: () => {
+                        navigation.navigate('InquiryComplete');
+                    },
+                    onError: () => {
+                        Alert.alert('오류', '문의 등록에 실패했습니다. 다시 시도해주세요.');
+                    },
+                }
+            );
+        } catch (error) {
+            console.error('[Inquiry] 업로드 오류:', error);
+            Alert.alert('알림', '첨부파일 업로드에 실패했습니다. 다시 시도해주세요.');
+        } finally {
+            setIsUploading(false);
         }
-
-        submitInquiry(
-            {
-                request: {
-                    type: inquiryTypeKey,
-                    title: title.trim(),
-                    content: content.trim(),
-                },
-                images: images.length > 0 ? images : undefined,
-            },
-            {
-                onSuccess: () => {
-                    navigation.navigate('InquiryComplete');
-                },
-                onError: () => {
-                    Alert.alert('오류', '문의 등록에 실패했습니다. 다시 시도해주세요.');
-                },
-            }
-        );
     };
 
     // ================= [History 관련 상태 & 로직] =================
@@ -206,22 +221,24 @@ export default function InquiryScreen({ navigation, route }) {
             <View style={styles.inputGroup}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={styles.label}>첨부파일 (선택)</Text>
-                    <Text style={styles.subLabel}>최대 10MB</Text>
+                    <Text style={styles.subLabel}>최대 5MB, 5개</Text>
                 </View>
 
-                {attachedFile ? (
-                    <View style={styles.fileBox}>
+                {attachedFiles.map((file, index) => (
+                    <View key={index} style={[styles.fileBox, { marginBottom: rs(8) }]}>
                         <Text style={styles.fileName} numberOfLines={1}>
-                            {attachedFile.fileName || "image.jpg"}
+                            {file.fileName || `image_${index + 1}.jpg`}
                         </Text>
-                        <TouchableOpacity onPress={removeFile}>
+                        <TouchableOpacity onPress={() => removeFile(index)}>
                             <Ionicons name="close-circle" size={rs(20)} color="#828282" />
                         </TouchableOpacity>
                     </View>
-                ) : (
+                ))}
+
+                {attachedFiles.length < 5 && (
                     <TouchableOpacity style={styles.uploadBtn} onPress={pickImage}>
                         <Ionicons name="camera-outline" size={rs(20)} color="#828282" />
-                        <Text style={styles.uploadBtnText}>사진 추가하기</Text>
+                        <Text style={styles.uploadBtnText}>사진 추가하기 ({attachedFiles.length}/5)</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -353,9 +370,9 @@ export default function InquiryScreen({ navigation, route }) {
                     <TouchableOpacity
                         style={[styles.submitBtn, canSubmit ? styles.submitBtnActive : styles.submitBtnDisabled]}
                         onPress={handleSubmit}
-                        disabled={!canSubmit || isSubmitting}
+                        disabled={!canSubmit || isSubmitting || isUploading}
                     >
-                        {isSubmitting ? (
+                        {isSubmitting || isUploading ? (
                             <ActivityIndicator color="white" size="small" />
                         ) : (
                             <Text style={styles.submitBtnText}>문의하기</Text>

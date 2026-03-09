@@ -46,21 +46,28 @@ export default function HomePage() {
   const couponCount = Array.isArray(rawCoupons) ? rawCoupons.length : 0;
 
   const { data: todayCouponsRes } = useGetTodayCoupons();
-  const todayCoupons = ((todayCouponsRes as any)?.data?.data ?? []).map((item: any) => {
-    // API 응답 구조가 [{ data: { id, storeName, ... } }] 형태일 가능성 대비
-    const c = item.data || item;
-    return {
-      id: c.id || item.id,
-      storeId: c.storeId || item.storeId,
-      // 가능한 모든 필드명을 확인하여 매핑 (storeName, name, store_name, brandName, shopName 등)
-      storeName: c.storeName || item.storeName || c.store?.name || item.store?.name || c.name || item.name || c.store_name || item.store_name || c.brandName || item.brandName || c.shopName || item.shopName || '',
-      title: c.title ?? item.title ?? '',
-      description: c.description ?? item.description,
-      benefitType: c.benefitType ?? item.benefitType,
-      benefitValue: c.benefitValue ?? item.benefitValue ?? '',
-      issueStartsAt: c.issueStartsAt ?? item.issueStartsAt,
-    };
-  });
+  const todayCoupons = ((todayCouponsRes as any)?.data?.data ?? [])
+    .filter((item: any) => {
+      const c = item.data || item;
+      if (!c.issueStartsAt) return true;
+      const issueDate = new Date(c.issueStartsAt);
+      const now = new Date();
+      // 24시간(ms) = 24 * 60 * 60 * 1000 = 86,400,000
+      return now.getTime() - issueDate.getTime() <= 86400000;
+    })
+    .map((item: any) => {
+      const c = item.data || item;
+      return {
+        id: c.id || item.id,
+        storeId: c.storeId || item.storeId,
+        storeName: c.storeName || item.storeName || c.store?.name || item.store?.name || c.name || item.name || c.store_name || item.store_name || c.brandName || item.brandName || c.shopName || item.shopName || '',
+        title: c.title ?? item.title ?? '',
+        description: c.description ?? item.description,
+        benefitType: c.benefitType ?? item.benefitType,
+        benefitValue: c.benefitValue ?? item.benefitValue ?? '',
+        issueStartsAt: c.issueStartsAt ?? item.issueStartsAt,
+      };
+    });
 
   const { data: hotStoresRes } = useGetHotStores({ query: { staleTime: 5 * 60 * 1000 } });
   const hotPlaces: HotPlaceItem[] = ((hotStoresRes as any)?.data?.data ?? []).map(

@@ -76,12 +76,6 @@ export default function StoreManagementScreen({ navigation, route }) {
     navigation.navigate('StoreAdd', { mode: 'add' });
   };
 
-  const handleEditStore = () => {
-    if (!selectedStoreId) return;
-    const selectedStore = stores.find(s => s.id === selectedStoreId);
-    navigation.navigate('StoreAdd', { mode: 'edit', storeData: selectedStore });
-  };
-
   const handleDeleteStore = () => {
     if (!selectedStoreId) return;
     const selectedStore = stores.find(s => s.id === selectedStoreId);
@@ -105,10 +99,6 @@ export default function StoreManagementScreen({ navigation, route }) {
       <View style={styles.contentContainer}>
         <View style={styles.titleRow}>
           <Text style={styles.pageTitle}>가게 관리</Text>
-          <TouchableOpacity style={styles.addStoreBtn} onPress={handleAddStore}>
-            <Ionicons name="add" size={rs(12)} color="#34B262" />
-            <Text style={styles.addStoreText}>가게 추가하기</Text>
-          </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.storeList} showsVerticalScrollIndicator={false}>
@@ -149,11 +139,10 @@ export default function StoreManagementScreen({ navigation, route }) {
             <Text style={styles.bottomBtnText}>삭제하기</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.bottomBtn, { backgroundColor: selectedStoreId ? '#34B262' : '#D5D5D5' }]}
-            disabled={!selectedStoreId}
-            onPress={handleEditStore}
+            style={[styles.bottomBtn, { backgroundColor: '#34B262' }]}
+            onPress={handleAddStore}
           >
-            <Text style={styles.bottomBtnText}>수정하기</Text>
+            <Text style={styles.bottomBtnText}>가게 추가하기</Text>
           </TouchableOpacity>
         </View>
       </View>
