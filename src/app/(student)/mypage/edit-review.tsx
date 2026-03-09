@@ -4,6 +4,7 @@ import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { validateImageAsset, uploadImageAssets } from '@/src/shared/hooks/use-upload-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -50,7 +51,6 @@ export default function EditReview() {
   const [newImages, setNewImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
 
   const MAX_PHOTOS = 3;
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
   // 기존 이미지 초기화
   useEffect(() => {
@@ -107,12 +107,12 @@ export default function EditReview() {
     });
 
     if (!result.canceled) {
-      const oversized = result.assets.find(
-        (a) => a.fileSize && a.fileSize > MAX_FILE_SIZE,
-      );
-      if (oversized) {
-        Alert.alert('알림', '10MB 이하의 사진만 업로드할 수 있습니다.');
-        return;
+      for (const asset of result.assets) {
+        const error = validateImageAsset(asset, 'gallery');
+        if (error) {
+          Alert.alert('알림', error);
+          return;
+        }
       }
       setNewImages((prev) => [...prev, ...result.assets].slice(0, MAX_PHOTOS - existingImages.length));
     }
@@ -128,23 +128,29 @@ export default function EditReview() {
     setNewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleUpdateReview = () => {
+  const handleUpdateReview = async () => {
     if (!reviewId) return;
 
-    // 새 이미지를 FormData 형식으로 변환
-    const images = newImages.map((asset) => ({
-      uri: asset.uri,
-      type: asset.mimeType || 'image/jpeg',
-      name: asset.fileName || `review_${Date.now()}.jpg`,
-    }));
+    let uploadedUrls: string[] = [];
+    if (newImages.length > 0) {
+      try {
+        uploadedUrls = await uploadImageAssets(newImages);
+      } catch (e) {
+        Alert.alert('알림', '이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+    }
+
+    const allImageUrls = [...existingImages, ...uploadedUrls];
 
     updateReview(
       {
         reviewId: Number(reviewId),
         data: {
-          request: JSON.stringify({ content: reviewText, rating }),
-          images: images.length > 0 ? (images as any) : undefined,
-        },
+          content: reviewText,
+          rating,
+          imageUrls: allImageUrls,
+        } as any,
       },
       {
         onSuccess: () => setEditSuccessVisible(true),

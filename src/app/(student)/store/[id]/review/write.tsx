@@ -2,7 +2,7 @@ import { useCreateReview } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
-import { processAndUploadImages, validateImage } from '@/src/shared/lib/upload/image-upload';
+import { uploadImageAssets, validateImageAsset } from '@/src/shared/hooks/use-upload-image';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Colors, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -97,27 +97,32 @@ export default function ReviewWriteScreen() {
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
 
+    console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| photos:', photos.length);
+
     try {
       setIsUploading(true);
 
-      const localUris = photos.map(photo => photo.uri);
-      const finalImageUrls = await processAndUploadImages(localUris);
-
-      console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| imageUrls:', finalImageUrls);
+      let imageUrls: string[] | undefined;
+      if (photos.length > 0) {
+        try {
+          imageUrls = await uploadImageAssets(photos);
+        } catch (e) {
+          Alert.alert('알림', '이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+          return;
+        }
+      }
 
       createReview({
         storeId: Number(id),
         data: {
-          request: JSON.stringify({
-            content: reviewContent.trim(),
-            rating,
-          }),
-          images: finalImageUrls.length > 0 ? finalImageUrls : undefined,
+          content: reviewContent.trim(),
+          rating,
+          imageUrls,
         },
       });
     } catch (error) {
-      console.error('[Review] 이미지 업로드 중 오류:', error);
-      Alert.alert('알림', '이미지 스토리지 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      console.error('[Review] 제출 중 오류:', error);
+      Alert.alert('알림', '제출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setIsUploading(false);
     }
@@ -144,9 +149,9 @@ export default function ReviewWriteScreen() {
 
     if (!result.canceled) {
       for (const asset of result.assets) {
-        const validation = validateImage(asset.uri, asset.fileSize, 'REVIEW');
-        if (!validation.valid) {
-          Alert.alert('알림', validation.reason);
+        const error = validateImageAsset(asset, 'gallery');
+        if (error) {
+          Alert.alert('알림', error);
           return;
         }
       }

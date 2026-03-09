@@ -25,11 +25,11 @@ import {
 } from '@tanstack/react-query';
 
 import type {
-  CreateReviewBody,
+  CreateReviewRequest,
   GetMyReviewsParams,
   GetReviewsParams,
   ReportRequest,
-  UpdateReviewBody
+  UpdateReviewRequest
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -225,15 +225,15 @@ export const getCreateReviewUrl = (storeId: number,) => {
 }
 
 export const createReview = async (storeId: number,
-  createReviewBody: CreateReviewBody, options?: RequestInit): Promise<createReviewResponse> => {
+  createReviewRequest: CreateReviewRequest, options?: RequestInit): Promise<createReviewResponse> => {
 
   return customFetch<createReviewResponse>(getCreateReviewUrl(storeId),
     {
       ...options,
-      method: 'POST'
-      ,
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(createReviewBody),
+      body: JSON.stringify(
+        createReviewRequest,)
     }
   );
 }
@@ -242,8 +242,8 @@ export const createReview = async (storeId: number,
 
 
 export const getCreateReviewMutationOptions = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError, { storeId: number; data: CreateReviewBody }, TContext>, request?: SecondParameter<typeof customFetch> }
-  ): UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError, { storeId: number; data: CreateReviewBody }, TContext> => {
+  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError, { storeId: number; data: CreateReviewRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
+  ): UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError, { storeId: number; data: CreateReviewRequest }, TContext> => {
 
   const mutationKey = ['createReview'];
   const { mutation: mutationOptions, request: requestOptions } = options ?
@@ -255,7 +255,7 @@ export const getCreateReviewMutationOptions = <TError = Blob,
 
 
 
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReview>>, { storeId: number; data: CreateReviewBody }> = (props) => {
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReview>>, { storeId: number; data: CreateReviewRequest }> = (props) => {
     const { storeId, data } = props ?? {};
 
     return createReview(storeId, data, requestOptions)
@@ -270,18 +270,18 @@ export const getCreateReviewMutationOptions = <TError = Blob,
 }
 
 export type CreateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createReview>>>
-export type CreateReviewMutationBody = CreateReviewBody
+export type CreateReviewMutationBody = CreateReviewRequest
 export type CreateReviewMutationError = Blob
 
 /**
 * @summary [공통] 리뷰 및 답글 작성
 */
 export const useCreateReview = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError, { storeId: number; data: CreateReviewBody }, TContext>, request?: SecondParameter<typeof customFetch> }
+  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError, { storeId: number; data: CreateReviewRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
     , queryClient?: QueryClient): UseMutationResult<
       Awaited<ReturnType<typeof createReview>>,
       TError,
-      { storeId: number; data: CreateReviewBody },
+      { storeId: number; data: CreateReviewRequest },
       TContext
     > => {
   return useMutation(getCreateReviewMutationOptions(options), queryClient);
@@ -704,15 +704,15 @@ export const getUpdateReviewUrl = (reviewId: number,) => {
 }
 
 export const updateReview = async (reviewId: number,
-  updateReviewBody: UpdateReviewBody, options?: RequestInit): Promise<updateReviewResponse> => {
+  updateReviewRequest: UpdateReviewRequest, options?: RequestInit): Promise<updateReviewResponse> => {
 
   return customFetch<updateReviewResponse>(getUpdateReviewUrl(reviewId),
     {
       ...options,
-      method: 'PATCH'
-      ,
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(updateReviewBody),
+      body: JSON.stringify(
+        updateReviewRequest,)
     }
   );
 }
@@ -721,8 +721,8 @@ export const updateReview = async (reviewId: number,
 
 
 export const getUpdateReviewMutationOptions = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError, { reviewId: number; data: UpdateReviewBody }, TContext>, request?: SecondParameter<typeof customFetch> }
-  ): UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError, { reviewId: number; data: UpdateReviewBody }, TContext> => {
+  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError, { reviewId: number; data: UpdateReviewRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
+  ): UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError, { reviewId: number; data: UpdateReviewRequest }, TContext> => {
 
   const mutationKey = ['updateReview'];
   const { mutation: mutationOptions, request: requestOptions } = options ?
@@ -734,7 +734,7 @@ export const getUpdateReviewMutationOptions = <TError = Blob,
 
 
 
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReview>>, { reviewId: number; data: UpdateReviewBody }> = (props) => {
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReview>>, { reviewId: number; data: UpdateReviewRequest }> = (props) => {
     const { reviewId, data } = props ?? {};
 
     return updateReview(reviewId, data, requestOptions)
@@ -749,18 +749,18 @@ export const getUpdateReviewMutationOptions = <TError = Blob,
 }
 
 export type UpdateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof updateReview>>>
-export type UpdateReviewMutationBody = UpdateReviewBody
+export type UpdateReviewMutationBody = UpdateReviewRequest
 export type UpdateReviewMutationError = Blob
 
 /**
 * @summary [공통] 리뷰 수정
 */
 export const useUpdateReview = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError, { reviewId: number; data: UpdateReviewBody }, TContext>, request?: SecondParameter<typeof customFetch> }
+  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError, { reviewId: number; data: UpdateReviewRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
     , queryClient?: QueryClient): UseMutationResult<
       Awaited<ReturnType<typeof updateReview>>,
       TError,
-      { reviewId: number; data: UpdateReviewBody },
+      { reviewId: number; data: UpdateReviewRequest },
       TContext
     > => {
   return useMutation(getUpdateReviewMutationOptions(options), queryClient);
@@ -812,7 +812,7 @@ export const getReviewStats = async (storeId: number, options?: RequestInit): Pr
 
 
 
-export const getGetReviewStatsQueryKey = (storeId?: number,) => {
+export const getGetReviewStatsQueryKey = (storeId: number,) => {
   return [
     `/api/stores/${storeId}/reviews/stats`
   ] as const;
@@ -889,8 +889,8 @@ export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewSta
 
 
 /**
- * 내가 작성한 리뷰 목록을 조회합니다.
- * @summary [공통] 내 리뷰 목록 조회
+ * 내가 작성한 리뷰들을 페이징하여 조회합니다.
+ * @summary [학생] 내 리뷰 목록 조회
  */
 export type getMyReviewsResponse200 = {
   data: Blob
@@ -900,7 +900,6 @@ export type getMyReviewsResponse200 = {
 export type getMyReviewsResponseSuccess = (getMyReviewsResponse200) & {
   headers: Headers;
 };
-;
 
 export type getMyReviewsResponse = (getMyReviewsResponseSuccess)
 
@@ -993,7 +992,7 @@ export function useGetMyReviews<TData = Awaited<ReturnType<typeof getMyReviews>>
   , queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary [공통] 내 리뷰 목록 조회
+ * @summary [학생] 내 리뷰 목록 조회
  */
 
 export function useGetMyReviews<TData = Awaited<ReturnType<typeof getMyReviews>>, TError = unknown>(
@@ -1007,7 +1006,3 @@ export function useGetMyReviews<TData = Awaited<ReturnType<typeof getMyReviews>>
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
-
-
-
-

@@ -25,11 +25,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  CreateStoreNewsBody,
   CreateStoreNewsCommentRequest,
+  CreateStoreNewsRequest,
   GetCommentsParams,
   GetStoreNewsListParams,
-  UpdateStoreNewsBody
+  UpdateStoreNewsRequest
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -203,20 +203,15 @@ export const getCreateStoreNewsUrl = (storeId: number,) => {
 }
 
 export const createStoreNews = async (storeId: number,
-    createStoreNewsBody: CreateStoreNewsBody, options?: RequestInit): Promise<createStoreNewsResponse> => {
-    const formData = new FormData();
-if(createStoreNewsBody.images !== undefined) {
- createStoreNewsBody.images.forEach(value => formData.append(`images`, value));
- }
-formData.append(`request`, createStoreNewsBody.request);
-
+    createStoreNewsRequest: CreateStoreNewsRequest, options?: RequestInit): Promise<createStoreNewsResponse> => {
+  
   return customFetch<createStoreNewsResponse>(getCreateStoreNewsUrl(storeId),
   {      
     ...options,
-    method: 'POST'
-    ,
-    body: 
-      formData,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createStoreNewsRequest,)
   }
 );}
 
@@ -224,8 +219,8 @@ formData.append(`request`, createStoreNewsBody.request);
 
 
 export const getCreateStoreNewsMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsRequest}, TContext> => {
 
 const mutationKey = ['createStoreNews'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -237,7 +232,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStoreNews>>, {storeId: number;data: CreateStoreNewsBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStoreNews>>, {storeId: number;data: CreateStoreNewsRequest}> = (props) => {
           const {storeId,data} = props ?? {};
 
           return  createStoreNews(storeId,data,requestOptions)
@@ -251,18 +246,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof createStoreNews>>>
-    export type CreateStoreNewsMutationBody = CreateStoreNewsBody
+    export type CreateStoreNewsMutationBody = CreateStoreNewsRequest
     export type CreateStoreNewsMutationError = Blob
 
     /**
  * @summary [점주] 소식 등록
  */
 export const useCreateStoreNews = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createStoreNews>>,
         TError,
-        {storeId: number;data: CreateStoreNewsBody},
+        {storeId: number;data: CreateStoreNewsRequest},
         TContext
       > => {
       return useMutation(getCreateStoreNewsMutationOptions(options), queryClient);
@@ -777,20 +772,15 @@ export const getUpdateStoreNewsUrl = (newsId: number,) => {
 }
 
 export const updateStoreNews = async (newsId: number,
-    updateStoreNewsBody: UpdateStoreNewsBody, options?: RequestInit): Promise<updateStoreNewsResponse> => {
-    const formData = new FormData();
-if(updateStoreNewsBody.images !== undefined) {
- updateStoreNewsBody.images.forEach(value => formData.append(`images`, value));
- }
-formData.append(`request`, updateStoreNewsBody.request);
-
+    updateStoreNewsRequest: UpdateStoreNewsRequest, options?: RequestInit): Promise<updateStoreNewsResponse> => {
+  
   return customFetch<updateStoreNewsResponse>(getUpdateStoreNewsUrl(newsId),
   {      
     ...options,
-    method: 'PATCH'
-    ,
-    body: 
-      formData,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateStoreNewsRequest,)
   }
 );}
 
@@ -798,8 +788,8 @@ formData.append(`request`, updateStoreNewsBody.request);
 
 
 export const getUpdateStoreNewsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsRequest}, TContext> => {
 
 const mutationKey = ['updateStoreNews'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -811,7 +801,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStoreNews>>, {newsId: number;data: UpdateStoreNewsBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStoreNews>>, {newsId: number;data: UpdateStoreNewsRequest}> = (props) => {
           const {newsId,data} = props ?? {};
 
           return  updateStoreNews(newsId,data,requestOptions)
@@ -825,18 +815,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof updateStoreNews>>>
-    export type UpdateStoreNewsMutationBody = UpdateStoreNewsBody
+    export type UpdateStoreNewsMutationBody = UpdateStoreNewsRequest
     export type UpdateStoreNewsMutationError = unknown
 
     /**
  * @summary [점주] 소식 수정
  */
 export const useUpdateStoreNews = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateStoreNews>>,
         TError,
-        {newsId: number;data: UpdateStoreNewsBody},
+        {newsId: number;data: UpdateStoreNewsRequest},
         TContext
       > => {
       return useMutation(getUpdateStoreNewsMutationOptions(options), queryClient);
