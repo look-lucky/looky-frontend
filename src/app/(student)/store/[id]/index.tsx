@@ -306,7 +306,11 @@ export default function StoreDetailScreen() {
 
   // 가게 기본 정보 (API > route params > 빈값)
   const storeName = apiStore?.name ?? name ?? '';
-  const storeImage = apiStore?.imageUrls?.[0] ?? image ?? '';
+  const storeImages = useMemo(() => {
+    const apiUrls = apiStore?.imageUrls ?? [];
+    if (apiUrls.length > 0) return apiUrls;
+    return image ? [image] : [];
+  }, [apiStore?.imageUrls, image]);
   const storeAddress = apiStore?.roadAddress ?? '';
   const storeOpenHours = apiStore?.operatingHours ?? '';
   const storeCategory = apiStore?.storeCategories
@@ -443,8 +447,13 @@ export default function StoreDetailScreen() {
       isOwner: !!(currentUsername && r.username === currentUsername),
       hasReply: r.ownerReply ?? false,
       isLiked: r.liked ?? false,
+      ownerProfileImage: (apiStore as any)?.profileImageUrl,
+      replyContent: (r as any).children?.[((r as any).children?.length || 1) - 1]?.content,
+      replyDate: (r as any).children?.[((r as any).children?.length || 1) - 1]?.createdAt
+        ? formatDate((r as any).children?.[((r as any).children?.length || 1) - 1].createdAt)
+        : undefined,
     })),
-    [allReviews, currentUsername]);
+    [allReviews, currentUsername, apiStore?.profileImageUrl]);
 
   // 매장 정보: API StoreResponse → InfoSection props
   const storeInfo = useMemo(() => ({
@@ -608,7 +617,7 @@ export default function StoreDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <StoreHeader
-          image={storeImage}
+          images={storeImages}
           cloverGrade={storeCloverGrade}
           isLiked={isLiked}
           name={storeName}

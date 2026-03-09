@@ -7,8 +7,10 @@ import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, System, Text } from '@/src/shared/theme/theme';
 import { formatOperatingHours, parseAllOperatingHours } from '@/src/shared/utils/store-transform';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Dimensions,
+  FlatList,
   Image,
   ImageSourcePropType,
   LayoutAnimation,
@@ -38,7 +40,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 // ============================================
 
 interface StoreHeaderProps {
-  image?: string | null;
+  images?: string[];
   cloverGrade?: StoreResponseCloverGrade;
   isLiked: boolean;
   name: string;
@@ -62,13 +64,13 @@ interface StoreHeaderProps {
 // ============================================
 
 function MainImageSection({
-  image,
+  images = [],
   cloverGrade,
   isLiked,
   onBack,
   onLike,
 }: {
-  image?: string | null;
+  images?: string[];
   cloverGrade?: StoreResponseCloverGrade;
   isLiked: boolean;
   onBack: () => void;
@@ -76,17 +78,98 @@ function MainImageSection({
 }) {
   const insets = useSafeAreaInsets();
   const cloverImage = cloverGrade ? CLOVER_IMAGES[cloverGrade] : null;
+  const screenWidth = Dimensions.get('window').width;
 
-  const [hasError, setHasError] = useState(false);
-  const imageSource = (image && image.trim().length > 0 && !hasError) ? { uri: image } : DEFAULT_BANNER;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const displayImages = images.length > 0 ? images.slice(0, 3) : [null];
+
+  const flatListRef = useRef<FlatList>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startTimer = useCallback(() => {
+    if (displayImages.length <= 1) return;
+
+    timerRef.current = setInterval(() => {
+      const nextIndex = (activeIndex + 1) % displayImages.length;
+      flatListRef.current?.scrollToIndex({
+        index: nextIndex,
+        animated: true,
+      });
+      setActiveIndex(nextIndex);
+    }, 10000); // 10 seconds
+  }, [activeIndex, displayImages.length]);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    startTimer();
+    return () => stopTimer();
+  }, [startTimer, stopTimer]);
+
+  const handleScroll = (event: any) => {
+    const contentOffset = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffset / screenWidth);
+    if (index !== activeIndex) {
+      setActiveIndex(index);
+    }
+  };
+
+  const onScrollBeginDrag = () => {
+    stopTimer();
+  };
+
+  const onScrollEndDrag = () => {
+    startTimer();
+  };
 
   return (
     <ThemedView style={styles.imageContainer}>
-      <Image
-        source={imageSource}
-        style={styles.image}
-        onError={() => setHasError(true)}
+      <FlatList
+        ref={flatListRef}
+        data={displayImages}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        onScrollBeginDrag={onScrollBeginDrag}
+        onScrollEndDrag={onScrollEndDrag}
+        scrollEventThrottle={16}
+        keyExtractor={(_, index) => index.toString()}
+        onScrollToIndexFailed={(info) => {
+          setTimeout(() => {
+            flatListRef.current?.scrollToIndex({ index: info.index, animated: false });
+          }, 100);
+        }}
+        renderItem={({ item }) => {
+          const imageSource = item ? { uri: item } : DEFAULT_BANNER;
+          return (
+            <Image
+              source={imageSource}
+              style={[styles.image, { width: screenWidth }]}
+              resizeMode="cover"
+            />
+          );
+        }}
       />
+
+      {displayImages.length > 1 && (
+        <View style={styles.paginationContainer}>
+          {displayImages.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.paginationDot,
+                activeIndex === index && styles.paginationDotActive
+              ]}
+            />
+          ))}
+        </View>
+      )}
 
       <TouchableOpacity
         style={[styles.backButton, { top: insets.top + rs(8) }]}
@@ -268,7 +351,7 @@ function TagSection({
 // ============================================
 
 export function StoreHeader({
-  image,
+  images,
   cloverGrade,
   isLiked,
   name,
@@ -337,7 +420,7 @@ export function StoreHeader({
   return (
     <>
       <MainImageSection
-        image={image}
+        images={images}
         cloverGrade={cloverGrade}
         isLiked={isLiked}
         onBack={onBack}
@@ -433,6 +516,28 @@ const styles = StyleSheet.create({
     width: rs(25),
     height: rs(25),
     resizeMode: 'contain',
+  },
+  paginationContainer: {
+    position: 'absolute',
+    bottom: rs(16),
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: rs(6),
+  },
+  paginationDot: {
+    width: rs(6),
+    height: rs(6),
+    borderRadius: rs(3),
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  paginationDotActive: {
+    backgroundColor: '#FFFFFF',
+    width: rs(8),
+    height: rs(8),
+    borderRadius: rs(4),
   },
 
   // StoreInfoSection
