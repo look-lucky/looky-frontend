@@ -173,6 +173,7 @@ export function EventSection({ events }: EventSectionProps) {
         keyExtractor={(item) => item.id.toString()}
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.list}
         contentContainerStyle={styles.listContent}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
@@ -214,10 +215,15 @@ function formatEventDate(start: string, end: string): string {
 const styles = StyleSheet.create({
   container: {
     gap: 0,
+    overflow: 'visible',
+  },
+  list: {
+    marginTop: -rs(3),
+    overflow: 'visible',
   },
   listContent: {
     gap: rs(12),
-    paddingVertical: rs(6), // Reduced from 10, enough for 4px shadow
+    paddingVertical: rs(5), // Enough for 4px shadow to show clearly
     paddingHorizontal: rs(5),
   },
   card: {
