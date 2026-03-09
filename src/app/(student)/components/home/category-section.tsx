@@ -1,6 +1,6 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
-import { Gray, Text as TextColor } from '@/src/shared/theme/theme';
+import { Fonts, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -59,7 +59,7 @@ export function CategorySection() {
           >
             <View style={styles.iconCircle}>
               {category.Icon ? (
-                <category.Icon width={rs(44)} height={rs(36)} />
+                <category.Icon width={rs(42)} height={rs(34)} />
               ) : (
                 <ThemedText style={styles.iconText}>···</ThemedText>
               )}
@@ -84,8 +84,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconCircle: {
-    width: rs(64),
-    height: rs(76),
+    width: rs(72),
+    height: rs(72),
     borderRadius: rs(20),
     backgroundColor: Gray.white,
     justifyContent: 'center',
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: rs(12),
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
     color: TextColor.primary,
   },
 });
