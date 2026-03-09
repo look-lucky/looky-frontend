@@ -25,7 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  CreateInquiryBody,
+  CreateInquiryRequest,
   GetInquiriesParams
 } from './generated.schemas';
 
@@ -186,20 +186,15 @@ export const getCreateInquiryUrl = () => {
   return `/api/inquiries`
 }
 
-export const createInquiry = async (createInquiryBody: CreateInquiryBody, options?: RequestInit): Promise<createInquiryResponse> => {
-    const formData = new FormData();
-formData.append(`request`, createInquiryBody.request);
-if(createInquiryBody.images !== undefined) {
- createInquiryBody.images.forEach(value => formData.append(`images`, value));
- }
-
+export const createInquiry = async (createInquiryRequest: CreateInquiryRequest, options?: RequestInit): Promise<createInquiryResponse> => {
+  
   return customFetch<createInquiryResponse>(getCreateInquiryUrl(),
   {      
     ...options,
-    method: 'POST'
-    ,
-    body: 
-      formData,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createInquiryRequest,)
   }
 );}
 
@@ -207,8 +202,8 @@ if(createInquiryBody.images !== undefined) {
 
 
 export const getCreateInquiryMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: CreateInquiryBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: CreateInquiryBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: CreateInquiryRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: CreateInquiryRequest}, TContext> => {
 
 const mutationKey = ['createInquiry'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -220,7 +215,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInquiry>>, {data: CreateInquiryBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInquiry>>, {data: CreateInquiryRequest}> = (props) => {
           const {data} = props ?? {};
 
           return  createInquiry(data,requestOptions)
@@ -234,18 +229,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateInquiryMutationResult = NonNullable<Awaited<ReturnType<typeof createInquiry>>>
-    export type CreateInquiryMutationBody = CreateInquiryBody
+    export type CreateInquiryMutationBody = CreateInquiryRequest
     export type CreateInquiryMutationError = Blob
 
     /**
  * @summary 문의하기
  */
 export const useCreateInquiry = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: CreateInquiryBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: CreateInquiryRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createInquiry>>,
         TError,
-        {data: CreateInquiryBody},
+        {data: CreateInquiryRequest},
         TContext
       > => {
       return useMutation(getCreateInquiryMutationOptions(options), queryClient);

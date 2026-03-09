@@ -25,13 +25,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  CreateStoreBody,
   GetNearbyStoresParams,
   GetStoreMapParams,
   GetStoresByLocationParams,
   GetStoresParams,
+  StoreCreateRequest,
   StoreReportRequest,
-  UpdateStoreBody
+  StoreUpdateRequest
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -201,20 +201,15 @@ export const getCreateStoreUrl = () => {
   return `/api/stores`
 }
 
-export const createStore = async (createStoreBody: CreateStoreBody, options?: RequestInit): Promise<createStoreResponse> => {
-    const formData = new FormData();
-if(createStoreBody.images !== undefined) {
- createStoreBody.images.forEach(value => formData.append(`images`, value));
- }
-formData.append(`request`, createStoreBody.request);
-
+export const createStore = async (storeCreateRequest: StoreCreateRequest, options?: RequestInit): Promise<createStoreResponse> => {
+  
   return customFetch<createStoreResponse>(getCreateStoreUrl(),
   {      
     ...options,
-    method: 'POST'
-    ,
-    body: 
-      formData,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      storeCreateRequest,)
   }
 );}
 
@@ -222,8 +217,8 @@ formData.append(`request`, createStoreBody.request);
 
 
 export const getCreateStoreMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: CreateStoreBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: CreateStoreBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: StoreCreateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: StoreCreateRequest}, TContext> => {
 
 const mutationKey = ['createStore'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -235,7 +230,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStore>>, {data: CreateStoreBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStore>>, {data: StoreCreateRequest}> = (props) => {
           const {data} = props ?? {};
 
           return  createStore(data,requestOptions)
@@ -249,18 +244,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof createStore>>>
-    export type CreateStoreMutationBody = CreateStoreBody
+    export type CreateStoreMutationBody = StoreCreateRequest
     export type CreateStoreMutationError = Blob
 
     /**
  * @summary [점주] 상점 등록
  */
 export const useCreateStore = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: CreateStoreBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: StoreCreateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createStore>>,
         TError,
-        {data: CreateStoreBody},
+        {data: StoreCreateRequest},
         TContext
       > => {
       return useMutation(getCreateStoreMutationOptions(options), queryClient);
@@ -615,20 +610,15 @@ export const getUpdateStoreUrl = (storeId: number,) => {
 }
 
 export const updateStore = async (storeId: number,
-    updateStoreBody: UpdateStoreBody, options?: RequestInit): Promise<updateStoreResponse> => {
-    const formData = new FormData();
-formData.append(`request`, updateStoreBody.request);
-if(updateStoreBody.images !== undefined) {
- updateStoreBody.images.forEach(value => formData.append(`images`, value));
- }
-
+    storeUpdateRequest: StoreUpdateRequest, options?: RequestInit): Promise<updateStoreResponse> => {
+  
   return customFetch<updateStoreResponse>(getUpdateStoreUrl(storeId),
   {      
     ...options,
-    method: 'PATCH'
-    ,
-    body: 
-      formData,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      storeUpdateRequest,)
   }
 );}
 
@@ -636,8 +626,8 @@ if(updateStoreBody.images !== undefined) {
 
 
 export const getUpdateStoreMutationOptions = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: UpdateStoreBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: UpdateStoreBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: StoreUpdateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: StoreUpdateRequest}, TContext> => {
 
 const mutationKey = ['updateStore'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -649,7 +639,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStore>>, {storeId: number;data: UpdateStoreBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStore>>, {storeId: number;data: StoreUpdateRequest}> = (props) => {
           const {storeId,data} = props ?? {};
 
           return  updateStore(storeId,data,requestOptions)
@@ -663,18 +653,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof updateStore>>>
-    export type UpdateStoreMutationBody = UpdateStoreBody
+    export type UpdateStoreMutationBody = StoreUpdateRequest
     export type UpdateStoreMutationError = Blob
 
     /**
  * @summary [점주] 상점 정보 수정
  */
 export const useUpdateStore = <TError = Blob,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: UpdateStoreBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: StoreUpdateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateStore>>,
         TError,
-        {storeId: number;data: UpdateStoreBody},
+        {storeId: number;data: StoreUpdateRequest},
         TContext
       > => {
       return useMutation(getUpdateStoreMutationOptions(options), queryClient);
@@ -1503,88 +1493,3 @@ export function useGetHotStores<TData = Awaited<ReturnType<typeof getHotStores>>
 
 
 
-/**
- * 상점의 특정 이미지를 삭제합니다.
- * @summary [점주] 상점 이미지 개별 삭제
- */
-export type deleteStoreImageResponse200 = {
-  data: Blob
-  status: 200
-}
-    
-export type deleteStoreImageResponseSuccess = (deleteStoreImageResponse200) & {
-  headers: Headers;
-};
-;
-
-export type deleteStoreImageResponse = (deleteStoreImageResponseSuccess)
-
-export const getDeleteStoreImageUrl = (storeId: number,
-    imageId: number,) => {
-
-
-  
-
-  return `/api/stores/${storeId}/images/${imageId}`
-}
-
-export const deleteStoreImage = async (storeId: number,
-    imageId: number, options?: RequestInit): Promise<deleteStoreImageResponse> => {
-  
-  return customFetch<deleteStoreImageResponse>(getDeleteStoreImageUrl(storeId,imageId),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
-
-
-export const getDeleteStoreImageMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreImage>>, TError,{storeId: number;imageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteStoreImage>>, TError,{storeId: number;imageId: number}, TContext> => {
-
-const mutationKey = ['deleteStoreImage'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStoreImage>>, {storeId: number;imageId: number}> = (props) => {
-          const {storeId,imageId} = props ?? {};
-
-          return  deleteStoreImage(storeId,imageId,requestOptions)
-        }
-
-
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteStoreImageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStoreImage>>>
-    
-    export type DeleteStoreImageMutationError = unknown
-
-    /**
- * @summary [점주] 상점 이미지 개별 삭제
- */
-export const useDeleteStoreImage = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreImage>>, TError,{storeId: number;imageId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteStoreImage>>,
-        TError,
-        {storeId: number;imageId: number},
-        TContext
-      > => {
-      return useMutation(getDeleteStoreImageMutationOptions(options), queryClient);
-    }
-    
