@@ -32,11 +32,17 @@ export default function MyReview() {
   const { data: studentInfoRes } = useGetStudentInfo();
   const nickname = (studentInfoRes as any)?.data?.data?.nickname ?? '나';
 
-  const allReviews = useMemo(() => {
+  const { reviews, replies } = useMemo(() => {
     const raw = (myReviewsRes as any)?.data?.data as
       | PageResponseReviewResponse
       | undefined;
-    return raw?.content ?? [];
+    const items = raw?.content ?? [];
+
+    // parentReviewId가 있거나, 별점이 0점(또는 없음)이면 답글로 취급 (학생 리뷰는 최소 1점 이상)
+    return {
+      reviews: items.filter(r => !r.parentReviewId && (r.rating !== undefined && r.rating > 0)),
+      replies: items.filter(r => (!!r.parentReviewId) || (r.rating === undefined || r.rating === 0))
+    };
   }, [myReviewsRes]);
 
   // ownerReply(= isOwnerReply)는 루트 리뷰에 "사장님 답글 달림" bool로 옴 (별도 reply 객체 아님)
@@ -61,7 +67,7 @@ export default function MyReview() {
 
   const handleEditPress = (id: number) => {
     closeMenu();
-    const review = allReviews.find((r) => r.reviewId === id);
+    const review = reviews.find((r) => r.reviewId === id);
     if (!review) return;
     const imageUrlsParam = review.imageUrls && review.imageUrls.length > 0
       ? encodeURIComponent(JSON.stringify(review.imageUrls))
@@ -124,7 +130,7 @@ export default function MyReview() {
           <Text style={styles.summaryText}>
             <Text style={{ fontWeight: '600' }}>{nickname}</Text>님은 지금까지{' '}
             <Text style={{ fontWeight: '700', color: '#34B262' }}>
-              {allReviews.length}번
+              {reviews.length}번
             </Text>
             의 소중한 기록을{'\n'}남겨주셨어요! ✍🏻
           </Text>
@@ -136,168 +142,201 @@ export default function MyReview() {
         showsVerticalScrollIndicator={false}
         onScrollBeginDrag={closeMenu}
       >
-          {allReviews.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>작성한 리뷰가 없습니다</Text>
-            </View>
-          )}
+        {reviews.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>작성한 리뷰가 없습니다</Text>
+          </View>
+        )}
 
-          {allReviews.map((review) => {
-            const hasReply = review.ownerReply ?? false;
-            const dateStr = review.createdAt
-              ? new Date(review.createdAt).toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-              })
-              : '';
-            return (
-              <View
-                key={review.reviewId}
-                style={styles.reviewCard}
-              >
-                <View style={styles.reviewHeader}>
+        {reviews.map((review) => {
+          // 1. 중첩 구조인 경우 (Store Detail API 방식)
+          const children = (review as any).children;
+          const nestedReplies = (review as any).replies || (review as any).reply;
+          const nestedReply = (Array.isArray(children) && children.length > 0)
+            ? children[children.length - 1]
+            : (Array.isArray(nestedReplies) && nestedReplies.length > 0)
+              ? nestedReplies[nestedReplies.length - 1]
+              : (typeof nestedReplies === 'object' && nestedReplies !== null)
+                ? nestedReplies
+                : null;
+
+          // 2. 평면 구조인 경우 (My Page API 방식 추정)
+          const flatReply = replies.find(r =>
+            r.parentReviewId && review.reviewId && String(r.parentReviewId) === String(review.reviewId)
+          );
+
+          // 3. 필드 자체가 객체인 경우 (ownerReply가 불리언이 아닐 가능성 대비)
+          const objectReply = (typeof review.ownerReply === 'object' && review.ownerReply !== null)
+            ? (review.ownerReply as any)
+            : null;
+
+          const serverReply = nestedReply || flatReply || objectReply;
+          const hasReply = (review.ownerReply === true) || !!serverReply;
+          const replyContent = serverReply?.content || (review as any).ownerReplyContent || (review as any).replyContent;
+          const replyDate = (serverReply?.createdAt || (review as any).replyDate || (review as any).ownerReplyDate)
+            ? new Date(serverReply?.createdAt || (review as any).replyDate || (review as any).ownerReplyDate).toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+            })
+            : '';
+
+          const dateStr = review.createdAt
+            ? new Date(review.createdAt).toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+            })
+            : '';
+          return (
+            <View
+              key={review.reviewId}
+              style={styles.reviewCard}
+            >
+              <View style={styles.reviewHeader}>
+                <TouchableOpacity
+                  onPress={() => handleCardPress(review.storeId)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.storeName}>{review.storeName}</Text>
+                  <Text style={styles.reviewDate}>{dateStr}</Text>
+                </TouchableOpacity>
+                <View style={{ position: 'relative', zIndex: 10 }}>
                   <TouchableOpacity
-                    onPress={() => handleCardPress(review.storeId)}
-                    activeOpacity={0.7}
+                    onPress={() => toggleMenu(review.reviewId!)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Text style={styles.storeName}>{review.storeName}</Text>
-                    <Text style={styles.reviewDate}>{dateStr}</Text>
+                    <Ionicons name="ellipsis-vertical" size={rs(16)} color="#BDBDBD" />
                   </TouchableOpacity>
-                  <View style={{ position: 'relative', zIndex: 10 }}>
-                    <TouchableOpacity
-                      onPress={() => toggleMenu(review.reviewId!)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons name="ellipsis-vertical" size={rs(16)} color="#BDBDBD" />
-                    </TouchableOpacity>
-                    {activeMenuId === review.reviewId && (
-                      <View style={styles.menuPopup}>
-                        {!hasReply && (
-                          <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => handleEditPress(review.reviewId!)}
-                          >
-                            <Text style={styles.menuText}>수정</Text>
-                          </TouchableOpacity>
-                        )}
+                  {activeMenuId === review.reviewId && (
+                    <View style={styles.menuPopup}>
+                      {!hasReply && (
                         <TouchableOpacity
                           style={styles.menuItem}
-                          onPress={() => handleDeletePress(review.reviewId!)}
+                          onPress={() => handleEditPress(review.reviewId!)}
                         >
-                          <Text style={styles.menuText}>삭제</Text>
+                          <Text style={styles.menuText}>수정</Text>
                         </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
+                      )}
+                      <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => handleDeletePress(review.reviewId!)}
+                      >
+                        <Text style={styles.menuText}>삭제</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
+              </View>
 
-                <View style={styles.starRow}>
-                  {[...Array(5)].map((_, i) => (
-                    <Ionicons
-                      key={i}
-                      name="star"
-                      size={rs(14)}
-                      color={i < (review.rating ?? 0) ? '#FBBC05' : '#E0E0E0'}
+              <View style={styles.starRow}>
+                {[...Array(5)].map((_, i) => (
+                  <Ionicons
+                    key={i}
+                    name="star"
+                    size={rs(14)}
+                    color={i < (review.rating ?? 0) ? '#FBBC05' : '#E0E0E0'}
+                  />
+                ))}
+              </View>
+
+              {/* 리뷰 이미지 */}
+              {review.imageUrls && review.imageUrls.length > 0 && (
+                <View style={styles.imageContainer}>
+                  {review.imageUrls.map((url, idx) => (
+                    <Image
+                      key={idx}
+                      source={{ uri: url }}
+                      style={styles.reviewImage}
                     />
                   ))}
                 </View>
+              )}
 
-                {/* 리뷰 이미지 */}
-                {review.imageUrls && review.imageUrls.length > 0 && (
-                  <View style={styles.imageContainer}>
-                    {review.imageUrls.map((url, idx) => (
-                      <Image
-                        key={idx}
-                        source={{ uri: url }}
-                        style={styles.reviewImage}
-                      />
-                    ))}
-                  </View>
-                )}
+              <Text style={styles.reviewContent}>{review.content}</Text>
 
-                <Text style={styles.reviewContent}>{review.content}</Text>
-
-                {hasReply && (
-                  <>
-                    <View style={styles.divider} />
-                    <View style={styles.replySection}>
-                      <View style={styles.replyHeader}>
-                        <View
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: rs(5) }}
-                        >
-                          <Ionicons
-                            name="chatbubble-ellipses-outline"
-                            size={rs(16)}
-                            color="#444444"
-                          />
-                          <Text style={styles.replyTitle}>사장님 답글</Text>
-                        </View>
+              {hasReply && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.replySection}>
+                    <View style={styles.replyHeader}>
+                      <View
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: rs(5) }}
+                      >
+                        <Ionicons
+                          name="chatbubble-ellipses-outline"
+                          size={rs(16)}
+                          color="#34B262"
+                        />
+                        <Text style={styles.replyTitle}>사장님 답글</Text>
+                        {replyDate ? <Text style={styles.replyDateText}>{replyDate}</Text> : null}
                       </View>
                     </View>
-                  </>
-                )}
-              </View>
-            );
-          })}
-          <View style={{ height: rs(50) }} />
-        </ScrollView>
+                    <Text style={styles.replyContentText}>{replyContent || '답글 내용을 불러올 수 없습니다.'}</Text>
+                  </View>
+                </>
+              )}
+            </View>
+          );
+        })}
+        <View style={{ height: rs(50) }} />
+      </ScrollView>
 
-        <Modal
-          transparent
-          visible={deletePopupVisible}
-          animationType="fade"
-          onRequestClose={() => setDeletePopupVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.popupContainer}>
-              <View style={styles.popupTextContainer}>
-                <Text style={styles.popupTitle}>리뷰를 삭제하시겠어요?</Text>
-                <Text style={styles.popupSubtitle}>삭제된 리뷰는 복구할 수 없어요</Text>
-              </View>
-              <View style={styles.popupBtnRow}>
-                <AppButton
-                  label="아니요"
-                  backgroundColor={Gray.gray5}
-                  style={styles.popupBtnHalf}
-                  onPress={() => setDeletePopupVisible(false)}
-                />
-                <AppButton
-                  label="삭제할게요"
-                  backgroundColor={Brand.primaryDarken}
-                  style={styles.popupBtnHalf}
-                  onPress={confirmDelete}
-                />
-              </View>
+      <Modal
+        transparent
+        visible={deletePopupVisible}
+        animationType="fade"
+        onRequestClose={() => setDeletePopupVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.popupContainer}>
+            <View style={styles.popupTextContainer}>
+              <Text style={styles.popupTitle}>리뷰를 삭제하시겠어요?</Text>
+              <Text style={styles.popupSubtitle}>삭제된 리뷰는 복구할 수 없어요</Text>
+            </View>
+            <View style={styles.popupBtnRow}>
+              <AppButton
+                label="아니요"
+                backgroundColor={Gray.gray5}
+                style={styles.popupBtnHalf}
+                onPress={() => setDeletePopupVisible(false)}
+              />
+              <AppButton
+                label="삭제할게요"
+                backgroundColor={Brand.primaryDarken}
+                style={styles.popupBtnHalf}
+                onPress={confirmDelete}
+              />
             </View>
           </View>
-        </Modal>
+        </View>
+      </Modal>
 
-        <AppPopup
-          visible={deleteSuccessVisible}
-          title="리뷰가 삭제되었습니다"
-          onClose={() => setDeleteSuccessVisible(false)}
-        />
+      <AppPopup
+        visible={deleteSuccessVisible}
+        title="리뷰가 삭제되었습니다"
+        onClose={() => setDeleteSuccessVisible(false)}
+      />
 
-        <ErrorPopup
-          visible={networkErrorVisible}
-          type="NETWORK"
-          onRefresh={() => {
-            setNetworkErrorVisible(false);
-            confirmDelete();
-          }}
-          onClose={() => {
-            setNetworkErrorVisible(false);
-            setSelectedReviewId(null);
-          }}
-        />
+      <ErrorPopup
+        visible={networkErrorVisible}
+        type="NETWORK"
+        onRefresh={() => {
+          setNetworkErrorVisible(false);
+          confirmDelete();
+        }}
+        onClose={() => {
+          setNetworkErrorVisible(false);
+          setSelectedReviewId(null);
+        }}
+      />
 
-        <AppPopup
-          visible={deleteApiErrorVisible}
-          title="리뷰 삭제에 실패했어요"
-          subtitle="다시 시도해주세요"
-          onClose={() => setDeleteApiErrorVisible(false)}
-        />
+      <AppPopup
+        visible={deleteApiErrorVisible}
+        title="리뷰 삭제에 실패했어요"
+        subtitle="다시 시도해주세요"
+        onClose={() => setDeleteApiErrorVisible(false)}
+      />
     </View>
   );
 }
@@ -401,8 +440,21 @@ const styles = StyleSheet.create({
   replyTitle: {
     fontSize: rs(14),
     fontWeight: '700',
-    color: '#444444',
+    color: '#34B262',
     fontFamily: 'Pretendard',
+  },
+  replyDateText: {
+    fontSize: rs(12),
+    color: '#828282',
+    fontFamily: 'Pretendard',
+    marginLeft: rs(5),
+  },
+  replyContentText: {
+    fontSize: rs(14),
+    color: '#1B1D1F',
+    fontFamily: 'Pretendard',
+    lineHeight: rs(20),
+    marginTop: rs(5),
   },
   menuPopup: {
     position: 'absolute',

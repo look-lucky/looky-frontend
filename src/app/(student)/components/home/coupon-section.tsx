@@ -3,7 +3,6 @@ import GiftIcon from '@/assets/images/icons/home/coupon-gift.svg';
 import HotPriceIcon from '@/assets/images/icons/home/coupon-hot-price.svg';
 import PriceTagDollarIcon from '@/assets/images/icons/home/coupon-tag-dollar.svg';
 import LightingIcon from '@/assets/images/icons/home/lighting.svg';
-import { useDownloadCoupon } from '@/src/api/coupon';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Text as TextColor } from '@/src/shared/theme/theme';
@@ -28,15 +27,14 @@ interface CouponSectionProps {
 
 export function CouponSection({ coupons }: CouponSectionProps) {
   const router = useRouter();
-  const downloadCouponMutation = useDownloadCoupon();
 
   const handleMorePress = () => {
     router.push('/today-coupons' as any);
   };
 
   const handleCouponPress = (coupon: CouponItem) => {
-    downloadCouponMutation.mutate({ couponId: coupon.id });
-    router.push(`/store/${coupon.storeId}`);
+    // downloadCouponMutation.mutate({ couponId: coupon.id });
+    router.push(`/store/${coupon.storeId}?openCoupon=true` as any);
   };
 
   const getTimeAgo = (dateString?: string) => {
@@ -78,7 +76,7 @@ export function CouponSection({ coupons }: CouponSectionProps) {
         const price = Number(cleanValue);
         return `${isNaN(price) ? '0' : price.toLocaleString()}원 쿠폰`;
       case 'SERVICE_GIFT':
-        return `${coupon.benefitValue || '서비스'} 증정 쿠폰`;
+        return coupon.benefitValue || '서비스 증정';
       default:
         return '';
     }
@@ -115,7 +113,7 @@ export function CouponSection({ coupons }: CouponSectionProps) {
       <View style={styles.container}>
         <SectionHeader
           icon={<LightingIcon width={rs(10)} height={rs(20)} />}
-          title="오늘 발급된 따끈한 쿠폰"
+          title="방금 발급된 따끈한 쿠폰"
           onMorePress={handleMorePress}
         />
         <View style={styles.emptyContainer}>
@@ -159,7 +157,7 @@ export function CouponSection({ coupons }: CouponSectionProps) {
             <View style={styles.couponBottom}>
               <View style={styles.timeContainer}>
                 <ThemedText style={styles.clockIcon}>
-                  <ClockIcon width={rs(12)} height={rs(12)} color="#DC2626" />
+                  <ClockIcon width={rs(14)} height={rs(14)} color="#DC2626" />
                 </ThemedText>
                 <ThemedText style={styles.timeText}>
                   {getTimeAgo(coupon.issueStartsAt)}
@@ -191,7 +189,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(4),
   },
   couponCard: {
-    width: rs(140),
+    width: rs(130),
     backgroundColor: Gray.white,
     borderRadius: rs(12),
     overflow: 'hidden',
@@ -224,21 +222,25 @@ const styles = StyleSheet.create({
   },
   storeName: {
     fontSize: rs(10),
-    color: '#000000',
-    marginTop: rs(4),
+    fontWeight: 'bold',
+    color: '#828282',
+    marginTop: rs(5),
+    lineHeight: rs(12),
     fontFamily: 'Pretendard',
   },
   couponTitle: {
     fontSize: rs(12),
     fontWeight: '600',
     color: '#000000',
+    marginTop: rs(5),
+    lineHeight: rs(16),
     fontFamily: 'Pretendard',
   },
   discountText: {
     fontSize: rs(12),
     fontWeight: '700',
     color: '#EF6239',
-    marginTop: rs(2),
+    marginTop: -rs(2),
     fontFamily: 'Pretendard',
   },
   emptyContainer: {

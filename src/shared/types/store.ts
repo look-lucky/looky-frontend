@@ -77,6 +77,9 @@ export interface ReviewItem {
   isOwner?: boolean;
   hasReply?: boolean;
   isLiked?: boolean;
+  ownerProfileImage?: string;
+  replyContent?: string;
+  replyDate?: string;
 }
 
 export interface ReviewRating {

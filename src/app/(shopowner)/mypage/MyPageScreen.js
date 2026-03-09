@@ -1,4 +1,4 @@
-import { useAuth } from '@/src/shared/lib/auth/auth-context';
+import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';

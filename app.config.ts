@@ -22,7 +22,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     userInterfaceStyle: "light",
     newArchEnabled: true,
     ios: {
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: bundleId,
       usesAppleSignIn: true,
     },

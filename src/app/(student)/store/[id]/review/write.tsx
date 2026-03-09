@@ -2,14 +2,14 @@ import { useCreateReview } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
+import { uploadImageAssets, validateImageAsset } from '@/src/shared/hooks/use-upload-image';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Colors, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { validateImageAsset, uploadImageAssets } from '@/src/shared/hooks/use-upload-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Image,
@@ -60,6 +60,7 @@ export default function ReviewWriteScreen() {
   const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { mutate: createReview, isPending } = useCreateReview({
     mutation: {
@@ -85,7 +86,7 @@ export default function ReviewWriteScreen() {
   });
 
   const isSubmitDisabled =
-    rating === 0 || reviewContent.trim().length < MIN_REVIEW_LENGTH || isPending;
+    rating === 0 || reviewContent.trim().length < MIN_REVIEW_LENGTH || isPending || isUploading;
 
   const handleBack = () => router.back();
   const handleStarPress = (star: number) => setRating(star);
@@ -98,24 +99,33 @@ export default function ReviewWriteScreen() {
 
     console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| photos:', photos.length);
 
-    let imageUrls: string[] | undefined;
-    if (photos.length > 0) {
-      try {
-        imageUrls = await uploadImageAssets(photos);
-      } catch (e) {
-        Alert.alert('알림', '이미지 업로드에 실패했습니다. 다시 시도해주세요.');
-        return;
-      }
-    }
+    try {
+      setIsUploading(true);
 
-    createReview({
-      storeId: Number(id),
-      data: {
-        content: reviewContent.trim(),
-        rating,
-        imageUrls,
-      },
-    });
+      let imageUrls: string[] | undefined;
+      if (photos.length > 0) {
+        try {
+          imageUrls = await uploadImageAssets(photos);
+        } catch (e) {
+          Alert.alert('알림', '이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+          return;
+        }
+      }
+
+      createReview({
+        storeId: Number(id),
+        data: {
+          content: reviewContent.trim(),
+          rating,
+          imageUrls,
+        },
+      });
+    } catch (error) {
+      console.error('[Review] 제출 중 오류:', error);
+      Alert.alert('알림', '제출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleAddPhoto = async () => {
@@ -148,7 +158,7 @@ export default function ReviewWriteScreen() {
       setPhotos((prev) => [...prev, ...result.assets].slice(0, MAX_PHOTOS));
     }
   };
-  
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>

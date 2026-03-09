@@ -76,7 +76,7 @@ export default function MyPageTab() {
   const reviewCount = useMemo(() => {
     const content = (myReviewsRes as any)?.data?.data?.content;
     if (!Array.isArray(content)) return 0;
-    return content.filter((r: any) => !r.ownerReply).length;
+    return content.filter((r: any) => !r.parentReviewId).length;
   }, [myReviewsRes]);
 
   const couponCounts = useMemo(() => {
