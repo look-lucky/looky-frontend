@@ -35,6 +35,7 @@ const CATEGORIES: CategoryItem[] = [
   { id: 'ETC', label: 'ETC', Icon: null, color: '#F59E0B' },
 ];
 
+
 export function CategorySection() {
   const router = useRouter();
 
