@@ -26,10 +26,10 @@ import type {
 
 import type {
   BizVerificationRequest,
-  CreateStoreClaimsBody,
   GetStoreClaimsParams,
   SearchUnclaimedStoresParams,
-  StoreClaimRejectionRequest
+  StoreClaimRejectionRequest,
+  StoreClaimRequest
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -64,7 +64,7 @@ export const getCreateStoreClaimsUrl = () => {
   return `/api/store-claims`
 }
 
-export const createStoreClaims = async (createStoreClaimsBody: CreateStoreClaimsBody, options?: RequestInit): Promise<createStoreClaimsResponse> => {
+export const createStoreClaims = async (storeClaimRequest: StoreClaimRequest, options?: RequestInit): Promise<createStoreClaimsResponse> => {
   
   return customFetch<createStoreClaimsResponse>(getCreateStoreClaimsUrl(),
   {      
@@ -72,7 +72,7 @@ export const createStoreClaims = async (createStoreClaimsBody: CreateStoreClaims
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      createStoreClaimsBody,)
+      storeClaimRequest,)
   }
 );}
 
@@ -80,8 +80,8 @@ export const createStoreClaims = async (createStoreClaimsBody: CreateStoreClaims
 
 
 export const getCreateStoreClaimsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreClaims>>, TError,{data: CreateStoreClaimsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createStoreClaims>>, TError,{data: CreateStoreClaimsBody}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreClaims>>, TError,{data: StoreClaimRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStoreClaims>>, TError,{data: StoreClaimRequest}, TContext> => {
 
 const mutationKey = ['createStoreClaims'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -93,7 +93,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStoreClaims>>, {data: CreateStoreClaimsBody}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStoreClaims>>, {data: StoreClaimRequest}> = (props) => {
           const {data} = props ?? {};
 
           return  createStoreClaims(data,requestOptions)
@@ -107,18 +107,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateStoreClaimsMutationResult = NonNullable<Awaited<ReturnType<typeof createStoreClaims>>>
-    export type CreateStoreClaimsMutationBody = CreateStoreClaimsBody
+    export type CreateStoreClaimsMutationBody = StoreClaimRequest
     export type CreateStoreClaimsMutationError = unknown
 
     /**
  * @summary [점주] 상점 소유 요청 등록
  */
 export const useCreateStoreClaims = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreClaims>>, TError,{data: CreateStoreClaimsBody}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreClaims>>, TError,{data: StoreClaimRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createStoreClaims>>,
         TError,
-        {data: CreateStoreClaimsBody},
+        {data: StoreClaimRequest},
         TContext
       > => {
       return useMutation(getCreateStoreClaimsMutationOptions(options), queryClient);

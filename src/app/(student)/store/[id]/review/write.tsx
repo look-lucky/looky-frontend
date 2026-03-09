@@ -6,6 +6,7 @@ import { rs } from '@/src/shared/theme/scale';
 import { Brand, Colors, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { validateImageAsset, uploadImageAssets } from '@/src/shared/hooks/use-upload-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -92,29 +93,27 @@ export default function ReviewWriteScreen() {
   const handleRemovePhoto = (index: number) =>
     setPhotos((prev) => prev.filter((_, i) => i !== index));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (isSubmitDisabled) return;
 
-    const timestamp = Date.now();
-    const images = photos.map((asset, index) => {
-      const rawType = asset.mimeType ?? 'image/jpeg';
-      // HEIC/HEIF는 서버에서 지원하지 않을 수 있으므로 JPEG로 처리
-      const type = rawType === 'image/heic' || rawType === 'image/heif' ? 'image/jpeg' : rawType;
-      const ext = type.split('/')[1] ?? 'jpg';
-      const name = asset.fileName ?? `review_${timestamp}_${index}.${ext}`;
-      return { uri: asset.uri, type, name };
-    });
+    console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| photos:', photos.length);
 
-    console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| images:', images.map(i => ({ name: i.name, type: i.type, uri: i.uri?.substring(0, 60) })));
+    let imageUrls: string[] | undefined;
+    if (photos.length > 0) {
+      try {
+        imageUrls = await uploadImageAssets(photos);
+      } catch (e) {
+        Alert.alert('알림', '이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+    }
 
     createReview({
       storeId: Number(id),
       data: {
-        request: JSON.stringify({
-          content: reviewContent.trim(),
-          rating,
-        }),
-        images: images.length > 0 ? (images as any) : undefined,
+        content: reviewContent.trim(),
+        rating,
+        imageUrls,
       },
     });
   };
@@ -139,12 +138,12 @@ export default function ReviewWriteScreen() {
     });
 
     if (!result.canceled) {
-      const oversized = result.assets.find(
-        (a) => a.fileSize && a.fileSize > 10 * 1024 * 1024,
-      );
-      if (oversized) {
-        Alert.alert('알림', '10MB 이하의 사진만 업로드할 수 있습니다.');
-        return;
+      for (const asset of result.assets) {
+        const error = validateImageAsset(asset, 'gallery');
+        if (error) {
+          Alert.alert('알림', error);
+          return;
+        }
       }
       setPhotos((prev) => [...prev, ...result.assets].slice(0, MAX_PHOTOS));
     }

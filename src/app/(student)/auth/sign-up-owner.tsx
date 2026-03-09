@@ -8,9 +8,9 @@ import { useSignupOwner, useCompleteSocialSignup, login } from "@/src/api/auth";
 import { useAuth } from "@/src/shared/lib/auth";
 import { saveCredentials, saveToken } from "@/src/shared/lib/auth/token";
 import type { UserType } from "@/src/shared/lib/auth/token";
-import { useVerifyBizRegNo } from "@/src/api/store-claim";
+import { useVerifyBizRegNo, useCreateStoreClaims } from "@/src/api/store-claim";
 import * as ImagePicker from "expo-image-picker";
-import { customFetch } from "@/src/api/mutator";
+import { uploadImageAsset, validateImageAsset } from "@/src/shared/hooks/use-upload-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -83,6 +83,7 @@ export default function SignupOwnerPage() {
   const signupOwnerMutation = useSignupOwner();
   const completeSocialSignupMutation = useCompleteSocialSignup();
   const verifyBizRegNoMutation = useVerifyBizRegNo();
+  const createStoreClaimsMutation = useCreateStoreClaims();
 
   // 로딩 상태
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -129,7 +130,13 @@ export default function SignupOwnerPage() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setBusinessImageUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      const error = validateImageAsset(asset, 'profile');
+      if (error) {
+        Alert.alert('알림', error);
+        return;
+      }
+      setBusinessImageUri(asset.uri);
     }
   };
 
@@ -252,28 +259,37 @@ export default function SignupOwnerPage() {
       const storeId = savedStoreId;
 
       // 4️⃣ 상점 소유 요청 (사업자등록증 업로드)
+      let licenseImageUrl: string | undefined;
       if (businessImageUri) {
-        const formData = new FormData();
-        formData.append("request", JSON.stringify({
+        const asset: ImagePicker.ImagePickerAsset = {
+          uri: businessImageUri,
+          mimeType: 'image/jpeg',
+          fileName: 'business-registration.jpg',
+          width: 0,
+          height: 0,
+          assetId: null,
+          base64: null,
+          exif: null,
+          duration: null,
+          fileSize: undefined,
+          type: 'image',
+          pairedVideoAsset: undefined,
+        };
+        licenseImageUrl = await uploadImageAsset(asset);
+        console.log("✅ 사업자등록증 업로드 성공:", licenseImageUrl);
+      }
+
+      await createStoreClaimsMutation.mutateAsync({
+        data: {
           storeId,
           userId,
           bizRegNo: businessNumber,
           representativeName,
           storeName,
           storePhone,
-        }));
-        formData.append("image", {
-          uri: businessImageUri,
-          type: "image/jpeg",
-          name: "business-registration.jpg",
-        } as any);
-
-        await customFetch("/api/store-claims", {
-          method: "POST",
-          body: formData,
-        });
-        console.log("✅ 사업자등록증 업로드 성공");
-      }
+          licenseImageUrl,
+        },
+      });
 
       // 5️⃣ handleAuthSuccess 호출 → isAuthenticated = true → _layout에서 화면 전환
       // (store claim 생성 완료 후에 호출해야 중간에 언마운트되지 않음)
