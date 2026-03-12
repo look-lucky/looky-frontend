@@ -407,8 +407,15 @@ export function StoreHeader({
   }, [partnershipOptions, collegeName]);
 
   const highlightedIds = React.useMemo(() => {
-    return sortedOptions.slice(0, 3).map((opt) => opt.id);
-  }, [sortedOptions]);
+    const myBenefitNames = new Set(
+      partnerships
+        .filter((p) => p.isMyBenefit && p.organizationName)
+        .map((p) => p.organizationName!)
+    );
+    return sortedOptions
+      .filter((opt) => myBenefitNames.has(opt.id))
+      .map((opt) => opt.id);
+  }, [sortedOptions, partnerships]);
 
   const handleUniversitySelect = (id: string | number) => {
     const orgName = String(id);
