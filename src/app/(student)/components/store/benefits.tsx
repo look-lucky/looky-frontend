@@ -11,7 +11,7 @@ import {
   Text as TextColor,
 } from '@/src/shared/theme/theme';
 import type { Coupon } from '@/src/shared/types/store';
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 // Re-export type for convenience
@@ -39,14 +39,40 @@ const COUPON_ICONS: Record<string, any> = {
 // BenefitBanner
 // ============================================
 
+const COLLAPSED_LINES = 2;
+
 function BenefitBanner({ benefits }: { benefits: string[] }) {
-  const displayText = benefits.length > 0 ? benefits.join('\n') : '제휴를 제공하지 않는 매장입니다.\n사장님의 행운을 기다려주세요.';
+  const [expanded, setExpanded] = useState(false);
+  const [needsExpand, setNeedsExpand] = useState(false);
+
+  const rawText = benefits.length > 0
+    ? benefits.map(b => b.replace(/ \/ /g, '\n').replace(/\//g, '\n')).join('\n')
+    : '제휴를 제공하지 않는 매장입니다.\n사장님의 행운을 기다려주세요.';
+
+  const hasBenefits = benefits.length > 0;
 
   return (
     <View style={styles.bannerContainer}>
-      <ThemedText style={styles.bannerText} numberOfLines={2} lightColor={TextColor.primary} darkColor={TextColor.primary}>
-        {displayText}
+      <ThemedText
+        style={styles.bannerText}
+        numberOfLines={expanded ? undefined : COLLAPSED_LINES}
+        onTextLayout={(e) => {
+          if (!needsExpand && e.nativeEvent.lines.length > COLLAPSED_LINES) {
+            setNeedsExpand(true);
+          }
+        }}
+        lightColor={TextColor.primary}
+        darkColor={TextColor.primary}
+      >
+        {rawText}
       </ThemedText>
+      {hasBenefits && needsExpand && (
+        <TouchableOpacity onPress={() => setExpanded(prev => !prev)} style={styles.expandButton}>
+          <ThemedText style={styles.expandText} lightColor={TextColor.secondary} darkColor={TextColor.secondary}>
+            {expanded ? '접기' : '더보기'}
+          </ThemedText>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -170,6 +196,15 @@ const styles = StyleSheet.create({
     color: TextColor.primary,
     lineHeight: rs(18),
     textAlign: 'center',
+  },
+  expandButton: {
+    marginTop: rs(4),
+    alignItems: 'center',
+  },
+  expandText: {
+    fontFamily: Fonts.regular,
+    fontSize: rs(11),
+    color: TextColor.secondary,
   },
 
   // CouponSection

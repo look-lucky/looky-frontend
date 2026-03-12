@@ -25,6 +25,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supportsTablet: false,
       bundleIdentifier: bundleId,
       usesAppleSignIn: true,
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription:
+          "사용자의 현재 위치를 중심으로 내 주변의 대학 제휴 매장, 실시간 이벤트 팝업, 할인 혜택을 지도상에 표시하고 해당 매장까지의 거리를 안내하기 위해 위치 정보가 필요합니다.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "사용자의 현재 위치를 중심으로 내 주변의 대학 제휴 매장, 실시간 이벤트 팝업, 할인 혜택을 지도상에 표시하고 해당 매장까지의 거리를 안내하기 위해 위치 정보가 필요합니다.",
+        NSPhotoLibraryUsageDescription:
+          "학생 회원의 제휴 매장 리뷰 사진 첨부 및 파트너 회원(점주)의 가입용 사업자등록증 제출, 매장 배너/메뉴 이미지 등록을 위해 기기의 사진첩 접근 권한이 필요합니다.",
+        NSPhotoLibraryAddUsageDescription:
+          "학생 회원의 제휴 매장 리뷰 사진 첨부 및 파트너 회원(점주)의 가입용 사업자등록증 제출, 매장 배너/메뉴 이미지 등록을 위해 기기의 사진첩 접근 권한이 필요합니다.",
+        NSCameraUsageDescription:
+          "학생 회원의 리뷰 사진 촬영 및 파트너 회원(점주)의 사업자등록증, 매장 메뉴 사진을 직접 촬영하여 등록하기 위해 카메라 접근 권한이 필요합니다.",
+      },
     },
     android: {
       package: bundleId,
