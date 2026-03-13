@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Polyline } from "react-native-svg";
 
 // ============================================
@@ -364,6 +364,7 @@ type AgreeModalProps = {
 };
 
 export function AgreeModal({ visible, onAgree, onClose }: AgreeModalProps) {
+  const insets = useSafeAreaInsets();
   const [termsChecked, setTermsChecked] = useState(false);
   const [privacyChecked, setPrivacyChecked] = useState(false);
   const [ageChecked, setAgeChecked] = useState(false);
@@ -404,7 +405,7 @@ export function AgreeModal({ visible, onAgree, onClose }: AgreeModalProps) {
         onRequestClose={handleClose}
       >
         <View style={styles.overlay}>
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + rs(16) }]}>
             <View style={styles.handle} />
           <View style={styles.header}>
             <TouchableOpacity onPress={handleClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -527,7 +528,6 @@ const styles = StyleSheet.create({
     backgroundColor: Gray.white,
     borderTopLeftRadius: rs(20),
     borderTopRightRadius: rs(20),
-    paddingBottom: rs(40),
   },
   handle: {
     width: rs(40),
