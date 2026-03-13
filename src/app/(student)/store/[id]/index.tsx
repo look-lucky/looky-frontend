@@ -657,6 +657,7 @@ export default function StoreDetailScreen() {
               onTabChange={setActiveTab}
               news={storeNews}
               menu={storeMenu}
+              menuImageUrls={(apiStore as any)?.menuImageUrls || []}
               announcements={storeNews.map((n) => ({ id: n.id, title: n.title, content: n.content }))}
               recommendStores={[]} // TODO: 추천 가게 API 추가 후 연동
               reviewRating={storeReviewRating}

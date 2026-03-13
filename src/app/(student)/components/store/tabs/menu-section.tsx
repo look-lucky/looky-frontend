@@ -12,6 +12,7 @@ export type { MenuCategory, MenuItem };
 
 interface MenuSectionProps {
   categories: MenuCategory[];
+  menuImageUrls?: string[];
   scrollViewRef?: React.RefObject<ScrollView | null>;
   scrollOffsetY?: React.RefObject<number>;
 }
@@ -165,12 +166,12 @@ function CategorySelector({ categories, activeId, onSelect }: CategorySelectorPr
 // MenuSection (Export)
 // ============================================
 
-export function MenuSection({ categories, scrollViewRef }: MenuSectionProps) {
+export function MenuSection({ categories, menuImageUrls = [], scrollViewRef }: MenuSectionProps) {
   const [activeCategoryId, setActiveCategoryId] = React.useState(categories[0]?.id || '');
   const categoryPositions = React.useRef<Record<string, number>>({});
   const containerRef = React.useRef<View>(null);
 
-  if (categories.length === 0) {
+  if (categories.length === 0 && menuImageUrls.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <ThemedText style={styles.emptyText} lightColor="#999" darkColor="#999">
@@ -233,6 +234,23 @@ export function MenuSection({ categories, scrollViewRef }: MenuSectionProps) {
             </View>
           </View>
         ))}
+
+        {menuImageUrls.length > 0 && (
+          <View style={styles.menuImageUrlsSection}>
+            {categories.length > 0 && <View style={styles.sectionDivider} />}
+            <CategoryHeader name="메뉴판 이미지로 보기" />
+            <View style={styles.menuImageUrlsList}>
+              {menuImageUrls.map((url, index) => (
+                <Image
+                  key={index}
+                  source={{ uri: url }}
+                  style={styles.menuBoardImage}
+                  resizeMode="cover"
+                />
+              ))}
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -418,5 +436,19 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E6E6E6',
     marginBottom: rs(5),
+  },
+  menuImageUrlsSection: {
+    gap: rs(12),
+    marginTop: rs(5),
+    paddingBottom: rs(20),
+  },
+  menuImageUrlsList: {
+    gap: rs(15),
+  },
+  menuBoardImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: rs(12),
+    backgroundColor: '#f0f0f0',
   },
 });
