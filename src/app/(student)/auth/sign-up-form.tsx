@@ -448,7 +448,7 @@ export default function SignupTypePage() {
       <AgreeModal
         visible={agreeModalVisible}
         onAgree={() => setAgreeModalVisible(false)}
-        onClose={() => router.canGoBack() ? router.back() : router.replace("/auth")}
+        onClose={() => router.replace("/auth")}
       />
       {/* Header */}
       <View style={styles.header}>
