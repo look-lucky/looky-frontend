@@ -60,16 +60,16 @@ export default function SocialSignupFormPage() {
     provider: string;
   }>();
   const { handleLogout, userType } = useAuth();
-  const setSignupFields = useSignupStore((state) => state.setSignupFields);
+  const { setSignupFields, userType: storedUserType, gender: storedGender, birthYear: storedBirthYear, birthMonth: storedBirthMonth, birthDay: storedBirthDay, nickname: storedNickname, ownerEmail: storedOwnerEmail } = useSignupStore();
 
   const sendEmailMutation = useSend();
   const verifyEmailMutation = useVerify();
 
-  const [selectedUserType, setSelectedUserType] = useState<UserType>(null);
-  const [gender, setGender] = useState<Gender>("male");
-  const [birthYear, setBirthYear] = useState("");
-  const [birthMonth, setBirthMonth] = useState("");
-  const [birthDay, setBirthDay] = useState("");
+  const [selectedUserType, setSelectedUserType] = useState<UserType>(storedUserType);
+  const [gender, setGender] = useState<Gender>(storedGender);
+  const [birthYear, setBirthYear] = useState(storedBirthYear);
+  const [birthMonth, setBirthMonth] = useState(storedBirthMonth);
+  const [birthDay, setBirthDay] = useState(storedBirthDay);
 
   const [birthTouched, setBirthTouched] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -77,10 +77,10 @@ export default function SocialSignupFormPage() {
   const [nicknameFocused, setNicknameFocused] = useState(false);
 
   // 학생 전용
-  const [nickname, setNickname] = useState("");
+  const [nickname, setNickname] = useState(storedNickname);
 
   // 점주 전용
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(storedOwnerEmail);
   const [emailCode, setEmailCode] = useState("");
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [timer, setTimer] = useState(295);

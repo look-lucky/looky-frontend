@@ -70,7 +70,6 @@ export default function ReviewWriteScreen() {
         setSuccessVisible(true);
       },
       onError: (error: any) => {
-        console.error('[Review] 리뷰 등록 실패 - status:', error?.status, '| data:', JSON.stringify(error?.data));
         if (error?.status === 409) {
           Alert.alert('알림', '이미 작성한 리뷰가 있습니다.');
         } else if (error?.status === 400) {
@@ -97,8 +96,6 @@ export default function ReviewWriteScreen() {
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
 
-    console.log('[Review] 리뷰 등록 요청 - storeId:', id, '| photos:', photos.length);
-
     try {
       setIsUploading(true);
 
@@ -121,7 +118,6 @@ export default function ReviewWriteScreen() {
         },
       });
     } catch (error) {
-      console.error('[Review] 제출 중 오류:', error);
       Alert.alert('알림', '제출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setIsUploading(false);
