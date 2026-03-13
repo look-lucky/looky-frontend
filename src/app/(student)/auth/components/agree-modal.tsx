@@ -418,7 +418,7 @@ export function AgreeModal({ visible, onAgree, onClose }: AgreeModalProps) {
               <ThemedText type="subtitle" lightColor={Brand.primary}>
                 루키
               </ThemedText>
-              {" "}이용을 위해{"\n"}동의가 필요해요
+              {" "}이용을 위해 동의가 필요해요
             </ThemedText>
 
             {/* 전체 동의 */}
