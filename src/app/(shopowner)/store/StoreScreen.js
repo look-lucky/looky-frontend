@@ -1,3 +1,4 @@
+import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -189,7 +190,8 @@ export default function StoreScreen() {
 
   // # State: Store Data
   const [storeInfo, setStoreInfo] = useState({
-    name: '', branch: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImages: []
+    name: '', branch: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImages: [],
+    menuImageUrls: [] // [추가] 메뉴판 이미지 목록
   });
 
   const initialHours = ['월', '화', '수', '목', '금', '토', '일'].map(day => ({
@@ -573,7 +575,10 @@ export default function StoreScreen() {
           logoImage: myStore.profileImageUrl || null,
           bannerImages: (myStore.imageUrls && Array.isArray(myStore.imageUrls))
             ? myStore.imageUrls.slice(0, 3)
-            : []
+            : [],
+          menuImageUrls: (myStore.menuImageUrls && Array.isArray(myStore.menuImageUrls))
+            ? myStore.menuImageUrls
+            : [] // [추가] 메뉴판 이미지 초기화
         });
         console.log("📸 [StoreScreen] 매장 이미지 목록:", myStore.imageUrls);
         console.log("📸 [StoreScreen] 설정된 배너 목록:", (myStore.imageUrls && Array.isArray(myStore.imageUrls)) ? myStore.imageUrls.slice(0, 3) : "없음");
@@ -1404,6 +1409,83 @@ export default function StoreScreen() {
     }
   };
 
+  // [추가] 메뉴판 이미지 선택 및 업로드
+  const pickMenuBoardImage = async () => {
+    // 1. 권한 요청
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 부족', '사진 라이브러리 접근 권한이 필요합니다.');
+      return;
+    }
+
+    // 2. 이미지 선택
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+      maxWidth: 1024,
+    });
+
+    if (!result.canceled) {
+      const asset = result.assets[0];
+
+      // 3. 형식 및 용량 검증
+      const validation = validateImage(asset.uri, asset.fileSize, 'MENU_IMAGE');
+      if (!validation.valid) {
+        Alert.alert('알림', validation.reason);
+        return;
+      }
+
+      try {
+        // 4. S3 업로드
+        const uploadedUrls = await processAndUploadImages([asset.uri]);
+        const newUrl = uploadedUrls[0];
+
+        if (newUrl) {
+          const updatedMenuImages = [...(storeInfo.menuImageUrls || []), newUrl];
+
+          // 5. 서버 업데이트 (PATCH)
+          await manualStoreUpdate({ menuImageUrls: updatedMenuImages });
+
+          // 6. 상태 반영
+          setStoreInfo(prev => ({ ...prev, menuImageUrls: updatedMenuImages }));
+          Alert.alert("성공", "메뉴판 이미지가 추가되었습니다.");
+          refetchStore();
+        }
+      } catch (error) {
+        console.error("메뉴판 이미지 업로드 실패:", error);
+        Alert.alert("실패", "이미지 업로드 중 오류가 발생했습니다.");
+      }
+    }
+  };
+
+  // [추가] 메뉴판 이미지 삭제
+  const handleDeleteMenuBoardImage = (index) => {
+    Alert.alert("이미지 삭제", "이 메뉴판 이미지를 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const updatedMenuImages = storeInfo.menuImageUrls.filter((_, i) => i !== index);
+
+            // 서버 업데이트 (PATCH)
+            await manualStoreUpdate({ menuImageUrls: updatedMenuImages });
+
+            // 상태 반영
+            setStoreInfo(prev => ({ ...prev, menuImageUrls: updatedMenuImages }));
+            Alert.alert("성공", "이미지가 삭제되었습니다.");
+            refetchStore();
+          } catch (error) {
+            console.error("메뉴판 이미지 삭제 실패:", error);
+            Alert.alert("실패", "이미지 삭제 중 오류가 발생했습니다.");
+          }
+        }
+      }
+    ]);
+  };
+
   const handleDeleteMenu = () => {
     if (!targetItemId) return;
     Alert.alert("메뉴 삭제", "정말로 이 메뉴를 삭제하시겠습니까?", [
@@ -1446,7 +1528,7 @@ export default function StoreScreen() {
       <SafeAreaView style={styles.container}>
         <View style={{ paddingHorizontal: rs(20) }}>
           {/* Top Logo */}
-          <Image source={require('@/assets/images/shopowner/logo2.png')} style={styles.logo} resizeMode="contain" />
+          <LookyLogo width={rs(120)} height={rs(37)} style={styles.logo} />
 
           {/* Tabs */}
           <View style={styles.tabWrapper}>
@@ -1671,6 +1753,53 @@ export default function StoreScreen() {
         ) : (
           /* ==================== 메뉴 관리 탭 ==================== */
           <View style={{ flex: 1, paddingHorizontal: rs(20) }}>
+            {/* [추가] 메뉴판 사진 섹션 */}
+            <View style={[styles.infoCard, { marginBottom: rs(15), paddingBottom: rs(15) }]}>
+              <View style={styles.cardHeader}>
+                <View style={[styles.headerTitleRow, { alignItems: 'center' }]}>
+                  <View style={styles.iconCircle}><Ionicons name="images" size={rs(14)} color="#34B262" /></View>
+                  <Text style={styles.headerTitle}>메뉴판 사진</Text>
+                </View>
+                <TouchableOpacity style={styles.editButton} onPress={pickMenuBoardImage}>
+                  <Text style={styles.editButtonText}>추가</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ marginTop: rs(10) }}>
+                {storeInfo.menuImageUrls && storeInfo.menuImageUrls.length > 0 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rs(10) }}>
+                    {storeInfo.menuImageUrls.map((uri, index) => (
+                      <View key={index} style={{ position: 'relative' }}>
+                        <TouchableOpacity
+                          activeOpacity={0.9}
+                          onPress={() => {
+                            setFullScreenImages(storeInfo.menuImageUrls);
+                            setIsFullScreenBannerVisible(true);
+                          }}
+                        >
+                          <Image source={{ uri }} style={{ width: rs(100), height: rs(100), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }} resizeMode="cover" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ position: 'absolute', top: rs(-5), right: rs(-5), backgroundColor: '#FF3B30', borderRadius: rs(10), padding: rs(2) }}
+                          onPress={() => handleDeleteMenuBoardImage(index)}
+                        >
+                          <Ionicons name="close" size={rs(14)} color="white" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : (
+                  <TouchableOpacity
+                    style={{ width: '100%', height: rs(80), backgroundColor: '#F5F5F5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: '#EEEEEE' }}
+                    onPress={pickMenuBoardImage}
+                  >
+                    <Ionicons name="add-circle-outline" size={rs(24)} color="#AAAAAA" />
+                    <Text style={{ color: '#AAAAAA', fontSize: rs(12), marginTop: rs(5) }}>메뉴판 사진을 추가해주세요</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
             {/* 고정된 카테고리 헤더 */}
             <View style={styles.categoryScrollContainer}>
               <View style={[styles.categoryTabsContainer, { flex: 1 }]}>
@@ -2713,7 +2842,7 @@ const ImagePlaceholder = ({ label, size = 90 }) => (<View style={styles.uploadBo
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, },
   scrollContent: { paddingTop: rs(10), paddingBottom: rs(40), paddingHorizontal: rs(20) },
-  logo: { width: rs(120), height: rs(30), marginBottom: rs(20) },
+  logo: { width: rs(120), height: rs(37), marginBottom: rs(10), marginLeft: rs(-10) },
   tabWrapper: { alignItems: 'center', marginBottom: rs(20) },
   tabContainer: { width: '100%', height: rs(48), backgroundColor: 'rgba(218, 218, 218, 0.40)', borderRadius: rs(10), flexDirection: 'row', alignItems: 'center', paddingHorizontal: rs(4) },
   tabButton: { flex: 1, height: rs(40), justifyContent: 'center', alignItems: 'center', borderRadius: rs(8) },

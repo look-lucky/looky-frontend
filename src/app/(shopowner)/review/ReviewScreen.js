@@ -1,3 +1,4 @@
+import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -450,10 +451,10 @@ export default function ReviewScreen({ navigation }) {
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
 
-          <Image
-            source={require('@/assets/images/shopowner/logo2.png')}
+          <LookyLogo
+            width={rs(120)}
+            height={rs(37)}
             style={styles.logo}
-            resizeMode="contain"
           />
 
           <View style={styles.titleContainer}>
@@ -596,7 +597,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, },
   scrollContent: { paddingTop: rs(10), paddingBottom: rs(40), paddingHorizontal: rs(20) },
 
-  logo: { width: rs(120), height: rs(30), marginBottom: rs(10), marginLeft: 0 },
+  logo: { width: rs(120), height: rs(37), marginBottom: rs(10), marginLeft: rs(-10) },
   titleContainer: { alignItems: 'flex-start', marginBottom: rs(20) },
   titleText: { textAlign: 'left', lineHeight: rs(24) },
   storeName: { fontSize: rs(20), fontWeight: '700', color: 'black' },
