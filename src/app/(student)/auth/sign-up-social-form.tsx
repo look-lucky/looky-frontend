@@ -8,6 +8,7 @@ import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/theme/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { AgreeModal } from "./components/agree-modal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -89,6 +90,8 @@ export default function SocialSignupFormPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [sendCodeMessage, setSendCodeMessage] = useState("");
   const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [agreeModalVisible, setAgreeModalVisible] = useState(true);
 
   const isStudent = selectedUserType === "student";
   const primaryColor = selectedUserType === "owner" ? Owner.primary : Brand.primary;
@@ -269,6 +272,11 @@ export default function SocialSignupFormPage() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <AgreeModal
+        visible={agreeModalVisible}
+        onAgree={() => setAgreeModalVisible(false)}
+        onClose={() => router.canGoBack() ? router.back() : router.replace("/auth")}
+      />
       <View style={styles.header}>
         <ArrowLeft onPress={() => {
           Alert.alert(
