@@ -31,8 +31,8 @@ export default function SignInPage() {
     if (result.success) {
       if (result.needsSignup && result.userId != null) {
         router.push({
-          pathname: "/auth/sign-up-social-form",
-          params: { userId: result.userId, provider },
+          pathname: "/auth/sign-up-agree",
+          params: { from: "social", userId: result.userId, provider },
         });
       } else {
         router.replace("/(student)/(tabs)");
