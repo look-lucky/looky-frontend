@@ -505,8 +505,9 @@ export default function ReviewScreen({ navigation }) {
                   <View key={review.reviewId} style={styles.reviewCard}>
 
                     <View style={styles.cardHeader}>
-                      <View style={[styles.profileCircle, { backgroundColor: getProfileColor(review.username) }]} />
-                      <Text style={styles.authorName}>{review.username}</Text>
+                      <View style={[styles.profileCircle, { backgroundColor: getProfileColor(review.nickname) }]} />
+                      <Text style={styles.authorName}>{review.nickname}</Text>
+
 
                       {!hasReply ? (
                         <View style={styles.badgeUnanswered}>
