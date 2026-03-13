@@ -4,6 +4,7 @@ import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Text as TextColors } from "@/src/shared/theme/theme";
 import { useState } from "react";
 import {
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -382,17 +383,31 @@ export function AgreeModal({ visible, onAgree, onClose }: AgreeModalProps) {
     onAgree();
   };
 
+  const handleClose = () => {
+    Alert.alert(
+      "회원가입 취소",
+      "회원가입을 그만두시겠어요?",
+      [
+        { text: "계속하기", style: "cancel" },
+        { text: "그만두기", style: "destructive", onPress: onClose },
+      ]
+    );
+  };
+
   return (
     <>
       <Modal
         visible={visible}
         animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={onClose}
+        presentationStyle="overFullScreen"
+        transparent
+        onRequestClose={handleClose}
       >
-        <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <View style={styles.handle} />
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={handleClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <ChevronLeftIcon />
             </TouchableOpacity>
           </View>
@@ -486,7 +501,8 @@ export function AgreeModal({ visible, onAgree, onClose }: AgreeModalProps) {
               disabled={!allChecked}
             />
           </View>
-        </SafeAreaView>
+          </View>
+        </View>
       </Modal>
 
       {/* 약관 상세 모달 */}
@@ -502,18 +518,33 @@ export function AgreeModal({ visible, onAgree, onClose }: AgreeModalProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  sheet: {
     backgroundColor: Gray.white,
+    borderTopLeftRadius: rs(20),
+    borderTopRightRadius: rs(20),
+    paddingBottom: rs(40),
+  },
+  handle: {
+    width: rs(40),
+    height: rs(4),
+    backgroundColor: Gray.gray4,
+    borderRadius: rs(2),
+    alignSelf: "center",
+    marginTop: rs(12),
+    marginBottom: rs(4),
   },
   header: {
     paddingHorizontal: rs(24),
     paddingVertical: rs(12),
   },
   content: {
-    flex: 1,
     paddingHorizontal: rs(24),
-    paddingTop: rs(16),
+    paddingTop: rs(8),
     gap: rs(20),
   },
   title: {
@@ -568,7 +599,6 @@ const styles = StyleSheet.create({
   },
   bottom: {
     paddingHorizontal: rs(24),
-    paddingBottom: rs(40),
-    paddingTop: rs(16),
+    paddingTop: rs(24),
   },
 });
