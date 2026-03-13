@@ -433,6 +433,8 @@ export default function StoreScreen() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [targetItemId, setTargetItemId] = useState(null);
 
+
+
   // 메뉴 폼 데이터
   const [menuForm, setMenuForm] = useState({
     name: '', price: '', desc: '', category: '메인메뉴',
@@ -1327,7 +1329,7 @@ export default function StoreScreen() {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1.7, 1], // 배너 비율 유지
+      aspect: [1, 1], // 1:1 크롭 유지 (사용자 확인)
       quality: 0.8, // 용량 최적화
       maxWidth: 1024,
     });
@@ -1411,6 +1413,12 @@ export default function StoreScreen() {
 
   // [추가] 메뉴판 이미지 선택 및 업로드
   const pickMenuBoardImage = async () => {
+    // 0. 개수 제한 체크 (최대 10개)
+    if ((storeInfo.menuImageUrls || []).length >= 10) {
+      Alert.alert('알림', '메뉴판 사진은 최대 10개까지만 등록 가능합니다.');
+      return;
+    }
+
     // 1. 권한 요청
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -1418,10 +1426,11 @@ export default function StoreScreen() {
       return;
     }
 
-    // 2. 이미지 선택
+    // 2. 이미지 선택 (1:1 크롭 활성화)
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
+      aspect: [1, 1],
       quality: 0.8,
       maxWidth: 1024,
     });
@@ -1458,6 +1467,8 @@ export default function StoreScreen() {
       }
     }
   };
+
+
 
   // [추가] 메뉴판 이미지 삭제
   const handleDeleteMenuBoardImage = (index) => {
@@ -1606,7 +1617,8 @@ export default function StoreScreen() {
                   </View>
                 </View>
                 <View style={[styles.rowSection, { flexDirection: 'column', alignItems: 'flex-start' }]}>
-                  <View style={styles.fixedLabel}>
+                  <View style={[styles.fixedLabel, { width: 'auto' }]}>
+
                     <Ionicons name="image" size={rs(12)} color="#828282" />
                     <Text style={styles.labelText}>가게 배너 이미지</Text>
                   </View>
@@ -1629,19 +1641,59 @@ export default function StoreScreen() {
                           >
                             <Image
                               source={{ uri: imgUri }}
-                              style={{ width: rs(204), height: rs(120), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }}
+                              style={{ width: rs(180), height: rs(135), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }}
                               resizeMode="cover"
                             />
                           </TouchableOpacity>
                         ))}
                       </ScrollView>
                     ) : (
-                      <View style={{ width: rs(204), height: rs(120), backgroundColor: '#F5F5F5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EEEEEE', borderStyle: 'dashed' }}>
+                      <View style={{ width: rs(180), height: rs(135), backgroundColor: '#F5F5F5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EEEEEE', borderStyle: 'dashed' }}>
                         <Text style={{ color: '#AAAAAA', fontSize: rs(11), fontFamily: 'Pretendard' }}>배너를 추가해주세요</Text>
                       </View>
                     )}
                   </View>
                 </View>
+
+                {/* [추가] 가게 메뉴판 이미지 섹션 (배너 이미지 아래) */}
+                <View style={[styles.rowSection, { flexDirection: 'column', alignItems: 'flex-start' }]}>
+                  <View style={[styles.fixedLabel, { width: 'auto' }]}>
+
+                    <Ionicons name="images" size={rs(12)} color="#828282" />
+                    <Text style={styles.labelText}>가게 메뉴판 이미지</Text>
+                  </View>
+                  <View style={{ width: '100%', marginTop: rs(10) }}>
+                    {storeInfo.menuImageUrls && storeInfo.menuImageUrls.length > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: rs(10), paddingRight: rs(10) }}
+                      >
+                        {storeInfo.menuImageUrls.map((uri, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() => {
+                              setFullScreenImages(storeInfo.menuImageUrls);
+                              setIsFullScreenBannerVisible(true);
+                            }}
+                            activeOpacity={0.9}
+                          >
+                            <Image
+                              source={{ uri }}
+                              style={{ width: rs(120), height: rs(120), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }}
+                              resizeMode="cover"
+                            />
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      <View style={{ width: rs(120), height: rs(120), backgroundColor: '#F5F5F5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EEEEEE', borderStyle: 'dashed' }}>
+                        <Text style={{ color: '#AAAAAA', fontSize: rs(11), fontFamily: 'Pretendard', textAlign: 'center' }}>메뉴판 사진이{"\n"}없습니다</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
                 <InfoRow icon="location" label="주소" labelStyle={{ width: rs(60) }} content={<View style={{ marginTop: rs(2) }}>{storeInfo.address ? (<><Text style={styles.bodyText}>{storeInfo.address}</Text>{storeInfo.detailAddress ? <Text style={[styles.bodyText, { color: '#828282', marginTop: rs(2) }]}>{storeInfo.detailAddress}</Text> : null}</>) : <Text style={[styles.placeholderText, { marginTop: 0 }]}>정보 없음</Text>}</View>} />
                 <InfoRow icon="call" label="전화번호" content={storeInfo.phone ? <Text style={[styles.bodyText, { marginTop: rs(2) }]}>{formatPhoneNumber(storeInfo.phone)}</Text> : <Text style={styles.placeholderText}>정보 없음</Text>} style={{ marginBottom: 0 }} />
               </View>
@@ -1753,54 +1805,8 @@ export default function StoreScreen() {
         ) : (
           /* ==================== 메뉴 관리 탭 ==================== */
           <View style={{ flex: 1, paddingHorizontal: rs(20) }}>
-            {/* [추가] 메뉴판 사진 섹션 */}
-            <View style={[styles.infoCard, { marginBottom: rs(15), paddingBottom: rs(15) }]}>
-              <View style={styles.cardHeader}>
-                <View style={[styles.headerTitleRow, { alignItems: 'center' }]}>
-                  <View style={styles.iconCircle}><Ionicons name="images" size={rs(14)} color="#34B262" /></View>
-                  <Text style={styles.headerTitle}>메뉴판 사진</Text>
-                </View>
-                <TouchableOpacity style={styles.editButton} onPress={pickMenuBoardImage}>
-                  <Text style={styles.editButtonText}>추가</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={{ marginTop: rs(10) }}>
-                {storeInfo.menuImageUrls && storeInfo.menuImageUrls.length > 0 ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: rs(10) }}>
-                    {storeInfo.menuImageUrls.map((uri, index) => (
-                      <View key={index} style={{ position: 'relative' }}>
-                        <TouchableOpacity
-                          activeOpacity={0.9}
-                          onPress={() => {
-                            setFullScreenImages(storeInfo.menuImageUrls);
-                            setIsFullScreenBannerVisible(true);
-                          }}
-                        >
-                          <Image source={{ uri }} style={{ width: rs(100), height: rs(100), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }} resizeMode="cover" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={{ position: 'absolute', top: rs(-5), right: rs(-5), backgroundColor: '#FF3B30', borderRadius: rs(10), padding: rs(2) }}
-                          onPress={() => handleDeleteMenuBoardImage(index)}
-                        >
-                          <Ionicons name="close" size={rs(14)} color="white" />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </ScrollView>
-                ) : (
-                  <TouchableOpacity
-                    style={{ width: '100%', height: rs(80), backgroundColor: '#F5F5F5', borderRadius: rs(8), justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: '#EEEEEE' }}
-                    onPress={pickMenuBoardImage}
-                  >
-                    <Ionicons name="add-circle-outline" size={rs(24)} color="#AAAAAA" />
-                    <Text style={{ color: '#AAAAAA', fontSize: rs(12), marginTop: rs(5) }}>메뉴판 사진을 추가해주세요</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
             {/* 고정된 카테고리 헤더 */}
+
             <View style={styles.categoryScrollContainer}>
               <View style={[styles.categoryTabsContainer, { flex: 1 }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: rs(20) }}>
@@ -2411,7 +2417,7 @@ export default function StoreScreen() {
                     )}
                   </View>
                 </EditSection>
-                <EditSection icon="image" label="가게 배너 이미지(최대 3장)">
+                <EditSection icon="image" label="가게 배너 이미지">
                   <View style={{ gap: rs(10), width: '100%' }}>
                     {/* 1. 이미지 슬라이더 (1.7:1 비율) */}
                     {editBasicData.bannerImages && editBasicData.bannerImages.length > 0 && (
@@ -2421,7 +2427,7 @@ export default function StoreScreen() {
                         contentContainerStyle={{ gap: rs(10), paddingRight: rs(10), paddingTop: rs(8) }}
                       >
                         {editBasicData.bannerImages.map((imgUri, index) => (
-                          <View key={index} style={{ width: rs(153), height: rs(90) }}>
+                          <View key={index} style={{ width: rs(136), height: rs(102) }}>
                             <Image source={{ uri: imgUri }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
                             <TouchableOpacity
                               style={{ position: 'absolute', top: rs(-8), right: rs(-8), backgroundColor: 'white', borderRadius: rs(10) }}
@@ -2451,6 +2457,46 @@ export default function StoreScreen() {
                     </TouchableOpacity>
                   </View>
                 </EditSection>
+
+                {/* [추가] 가게 메뉴판 이미지 수정 섹션 (배너 이미지 아래) */}
+                <EditSection icon="images" label="가게 메뉴판 이미지">
+                  <View style={{ gap: rs(10), width: '100%' }}>
+                    {/* 1. 이미지 슬라이더 */}
+                    {storeInfo.menuImageUrls && storeInfo.menuImageUrls.length > 0 && (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: rs(10), paddingRight: rs(10), paddingTop: rs(8) }}
+                      >
+                        {storeInfo.menuImageUrls.map((uri, index) => (
+                          <View key={index} style={{ width: rs(100), height: rs(100) }}>
+                            <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
+                            <TouchableOpacity
+                              style={{ position: 'absolute', top: rs(-8), right: rs(-8), backgroundColor: 'white', borderRadius: rs(10) }}
+                              onPress={() => handleDeleteMenuBoardImage(index)}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                              <Ionicons name="close-circle" size={rs(20)} color="#FF3E41" />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    )}
+
+                    {/* 2. 추가 버튼 */}
+                    <TouchableOpacity
+                      style={[styles.editBannerAddBtn, (storeInfo.menuImageUrls || []).length >= 10 && { opacity: 0.5 }]}
+                      onPress={pickMenuBoardImage}
+                      activeOpacity={0.8}
+                      disabled={(storeInfo.menuImageUrls || []).length >= 10}
+                    >
+                      <Ionicons name="camera" size={rs(16)} color="#828282" />
+                      <Text style={styles.editBannerAddText}>메뉴판 사진 추가하기({(storeInfo.menuImageUrls || []).length}/10)</Text>
+                    </TouchableOpacity>
+
+                  </View>
+                </EditSection>
+
 
                 <EditSection icon="location" label="주소">
                   <TouchableOpacity
@@ -2787,8 +2833,8 @@ export default function StoreScreen() {
           </View>
         </Modal>
 
-        {/* Floating Action Button (Outside ScrollView) */}
         {activeTab === 'management' && (
+
           <View style={styles.floatingButtonArea}>
             <TouchableOpacity style={styles.floatingAddBtn} onPress={openAddMenuModal} activeOpacity={0.8}>
               <Ionicons name="add" size={rs(20)} color="white" />
@@ -3113,3 +3159,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+
