@@ -13,6 +13,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   AppState,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -308,10 +310,15 @@ export default function SocialSignupFormPage() {
         <LookyLogo width={169} height={57} />
       </View>
 
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* 가입 유형 */}
         <View style={styles.fieldGroup}>
@@ -382,7 +389,7 @@ export default function SocialSignupFormPage() {
                     if (text.length === 2) {
                       const num = parseInt(text, 10);
                       if (!isNaN(num)) {
-                        setBirthMonth(String(Math.min(Math.max(num, 1), 12)));
+                        setBirthMonth(String(Math.min(Math.max(num, 1), 12)).padStart(2, "0"));
                         return;
                       }
                     }
@@ -407,7 +414,7 @@ export default function SocialSignupFormPage() {
                     if (text.length === 2) {
                       const num = parseInt(text, 10);
                       if (!isNaN(num)) {
-                        setBirthDay(String(Math.min(Math.max(num, 1), 31)));
+                        setBirthDay(String(Math.min(Math.max(num, 1), 31)).padStart(2, "0"));
                         return;
                       }
                     }
@@ -548,6 +555,7 @@ export default function SocialSignupFormPage() {
           disabled={!isFormValid()}
         />
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -570,6 +578,9 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: rs(14),
     color: Gray.black,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
