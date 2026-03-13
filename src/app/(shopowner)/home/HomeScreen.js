@@ -1,3 +1,4 @@
+import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -249,11 +250,7 @@ export default function HomeScreen({ navigation }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* 로고 */}
-        <Image
-          source={require("@/assets/images/shopowner/logo2.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <LookyLogo width={rs(120)} height={rs(37)} style={styles.logo} />
 
         {/* --- 1. 상단 프로필 카드 --- */}
         <TouchableOpacity
@@ -700,7 +697,7 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5", paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 },
   scrollContent: { paddingTop: rs(10), paddingBottom: rs(40), paddingHorizontal: rs(20) },
-  logo: { width: rs(120), height: rs(30), marginBottom: rs(10), marginLeft: 0 },
+  logo: { width: rs(120), height: rs(37), marginBottom: rs(10), marginLeft: rs(-10) },
 
   // 프로필 카드 스타일
   profileCard: {
