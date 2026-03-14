@@ -129,7 +129,7 @@ export default function LoginPage() {
   };
 
   const handleSignup = () => {
-    router.push("/auth/sign-up-form");
+    router.push("/auth/sign-up-agree");
   };
 
   const handleFindId = () => {

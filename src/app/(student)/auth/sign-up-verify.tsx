@@ -16,6 +16,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   AppState,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -506,10 +508,15 @@ export default function StudentVerificationPage() {
         </ThemedText>
       </View>
 
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* 대학 선택 섹션 */}
         <View style={styles.section}>
@@ -703,6 +710,7 @@ export default function StudentVerificationPage() {
           disabled={!isFormValid}
         />
       </View>
+      </KeyboardAvoidingView>
 
       {/* 대학 선택 모달 */}
       <SelectModal
@@ -766,6 +774,9 @@ const styles = StyleSheet.create({
   description: {
     color: TextColors.secondary,
     fontSize: rs(14),
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
