@@ -1,3 +1,4 @@
+import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -531,12 +532,11 @@ export default function CouponScreen({ navigation, route }) {
             <View style={{ height: Platform.OS === 'android' ? StatusBar.currentHeight : 0, backgroundColor: '#E0EDE4' }} />
             <View style={styles.backgroundTop} />
 
-            {/* 헤더 */}
             <View style={styles.header}>
-                <Image
-                    source={require('@/assets/images/shopowner/logo2.png')}
+                <LookyLogo
+                    width={rs(120)}
+                    height={rs(37)}
                     style={styles.logo}
-                    resizeMode="contain"
                 />
             </View>
 
@@ -1579,7 +1579,7 @@ export default function CouponScreen({ navigation, route }) {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#E0EDE4' },
     header: { paddingTop: rs(10), paddingHorizontal: rs(20), },
-    logo: { width: rs(120), height: rs(30), marginBottom: rs(20) },
+    logo: { width: rs(120), height: rs(37), marginBottom: rs(10), marginLeft: rs(-10) },
     fixedTabContainer: { paddingHorizontal: rs(20), backgroundColor: '#E0EDE4', zIndex: 1, },
     scrollContent: { paddingHorizontal: rs(20), paddingTop: rs(10), },
     tabWrapper: { alignItems: 'center', marginBottom: rs(10) },

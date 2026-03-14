@@ -8,10 +8,13 @@ import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/theme/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { AgreeModal } from "./components/agree-modal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   AppState,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -89,6 +92,8 @@ export default function SocialSignupFormPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [sendCodeMessage, setSendCodeMessage] = useState("");
   const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [agreeModalVisible, setAgreeModalVisible] = useState(true);
 
   const isStudent = selectedUserType === "student";
   const primaryColor = selectedUserType === "owner" ? Owner.primary : Brand.primary;
@@ -269,6 +274,11 @@ export default function SocialSignupFormPage() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <AgreeModal
+        visible={agreeModalVisible}
+        onAgree={() => setAgreeModalVisible(false)}
+        onClose={() => router.canGoBack() ? router.back() : router.replace("/auth")}
+      />
       <View style={styles.header}>
         <ArrowLeft onPress={() => {
           Alert.alert(
@@ -300,10 +310,15 @@ export default function SocialSignupFormPage() {
         <LookyLogo width={169} height={57} />
       </View>
 
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* 가입 유형 */}
         <View style={styles.fieldGroup}>
@@ -374,7 +389,7 @@ export default function SocialSignupFormPage() {
                     if (text.length === 2) {
                       const num = parseInt(text, 10);
                       if (!isNaN(num)) {
-                        setBirthMonth(String(Math.min(Math.max(num, 1), 12)));
+                        setBirthMonth(String(Math.min(Math.max(num, 1), 12)).padStart(2, "0"));
                         return;
                       }
                     }
@@ -399,7 +414,7 @@ export default function SocialSignupFormPage() {
                     if (text.length === 2) {
                       const num = parseInt(text, 10);
                       if (!isNaN(num)) {
-                        setBirthDay(String(Math.min(Math.max(num, 1), 31)));
+                        setBirthDay(String(Math.min(Math.max(num, 1), 31)).padStart(2, "0"));
                         return;
                       }
                     }
@@ -540,6 +555,7 @@ export default function SocialSignupFormPage() {
           disabled={!isFormValid()}
         />
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -562,6 +578,9 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: rs(14),
     color: Gray.black,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,

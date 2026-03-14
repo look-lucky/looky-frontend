@@ -33,21 +33,33 @@ const EVENT_TYPE_IMAGES: Record<EventType, ImageSourcePropType> = {
 };
 
 const getEventTheme = (dDay: string | null) => {
-    if (dDay === null) return { badge: '진행중', color: '#51BF80', gradient: ['#DEFFEA', '#D5FFE0'] as [string, string] };
     if (dDay === 'D-DAY') return { badge: 'D-DAY', color: '#61ADE3', gradient: ['#E3EFF9', '#EFF9FE'] as [string, string] };
-    const num = parseInt(dDay.replace('D-', ''), 10);
-    if (num <= 1) return { badge: dDay, color: '#FA726B', gradient: ['#FAECED', '#FEF1F0'] as [string, string] };
-    if (num <= 3) return { badge: dDay, color: '#FBBC05', gradient: ['#FEF4C7', '#FFF4E6'] as [string, string] };
-    return { badge: dDay, color: '#51BF80', gradient: ['#DEFFEA', '#D5FFE0'] as [string, string] };
+    if (dDay !== null) {
+        const num = parseInt(dDay.replace('D-', ''), 10);
+        if (num <= 1) return { badge: dDay, color: '#FA726B', gradient: ['#FAECED', '#FEF1F0'] as [string, string] };
+        if (num <= 3) return { badge: dDay, color: '#FBBC05', gradient: ['#FEF4C7', '#FFF4E6'] as [string, string] };
+        return { badge: dDay, color: '#F5A623', gradient: ['#FFF8EC', '#FFF4E0'] as [string, string] };
+    }
+    return { badge: 'D-DAY', color: '#61ADE3', gradient: ['#E3EFF9', '#EFF9FE'] as [string, string] };
 };
 
 const formatDate = (date: Date) =>
     `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 
+const getLiveDDay = (event: Event): string | null => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const endDate = new Date(event.endDateTime);
+    endDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return 'D-DAY';
+    return `D-${diffDays}`;
+};
+
 const EventCard = ({ event }: { event: Event }) => {
     const router = useRouter();
     const setPendingEventId = useMapNavigationStore((s) => s.setPendingEventId);
-    const dDay = getDDay(event);
+    const dDay = event.status === 'live' ? getLiveDDay(event) : getDDay(event);
     const theme = getEventTheme(dDay);
     const icon = EVENT_TYPE_IMAGES[event.eventTypes[0]] ?? EVENT_TYPE_IMAGES.COMMUNITY;
 

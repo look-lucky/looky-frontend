@@ -8,6 +8,7 @@ import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/theme/theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { AgreeModal } from "./components/agree-modal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AppState,
@@ -159,6 +160,8 @@ export default function SignupTypePage() {
   const [phone, setPhone] = useState("");
   const [phoneCode, setPhoneCode] = useState("");
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+
+  const [agreeModalVisible, setAgreeModalVisible] = useState(true);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const isSendingRef = useRef(false);
@@ -442,6 +445,11 @@ export default function SignupTypePage() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <AgreeModal
+        visible={agreeModalVisible}
+        onAgree={() => setAgreeModalVisible(false)}
+        onClose={() => router.replace("/auth")}
+      />
       {/* Header */}
       <View style={styles.header}>
         <ArrowLeft onPress={() => router.canGoBack() ? router.back() : router.replace("/auth")} />
