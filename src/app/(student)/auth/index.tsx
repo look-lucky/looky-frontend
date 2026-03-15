@@ -72,7 +72,9 @@ export default function SignInPage() {
         >
           우리대학 제휴혜택이 궁금할 땐?
         </ThemedText>
-        <LookyLogo width={169} height={57} />
+        <View style={styles.logoWrapper}>
+          <LookyLogo width={169} height={57} />
+        </View>
       </View>
 
       <View style={styles.bottomContent}>
@@ -172,6 +174,9 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "center",
     transform: [{ translateY: rs(60) }],
+  },
+  logoWrapper: {
+    transform: [{ translateX: -rs(18) }],
   },
   subtitle: {
     fontSize: 14,

@@ -14,7 +14,7 @@ import { useGetStudentInfo } from '@/src/api/my-page';
 import { useGetOrganizations } from '@/src/api/organization';
 import { useGetStorePartnerships } from '@/src/api/partnership';
 import { useAddLike, useDeleteReview, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
-import { useGetStore } from '@/src/api/store';
+import { useGetMenuBoardImages, useGetStore } from '@/src/api/store';
 import { useGetStoreNewsList } from '@/src/api/store-news';
 import { StoreBenefits } from '@/src/app/(student)/components/store/benefits';
 import { BottomFixedBar } from '@/src/app/(student)/components/store/bottom-bar';
@@ -132,6 +132,10 @@ export default function StoreDetailScreen() {
     query: { staleTime: 5 * 60 * 1000 },
   });
   const apiStore = (storeRes as any)?.data?.data as StoreResponse | undefined;
+
+  // 메뉴판 이미지
+  const { data: menuBoardImagesRes } = useGetMenuBoardImages(storeId);
+  const menuImageUrls = (menuBoardImagesRes as any)?.data?.data || [];
 
   // 리뷰 통계 (rating, reviewCount, 별점 분포)
   const { data: reviewStatsRes } = useGetReviewStats(storeId);
@@ -625,6 +629,8 @@ export default function StoreDetailScreen() {
           category={storeCategory}
           reviewCount={storeReviewRating.totalCount || storeReviewCount}
           address={storeAddress}
+          latitude={apiStore?.latitude ?? undefined}
+          longitude={apiStore?.longitude ?? undefined}
           openHours={storeOpenHours}
           closedDays={storeHolidayDates}
           university={selectedUniversity}
@@ -657,7 +663,7 @@ export default function StoreDetailScreen() {
               onTabChange={setActiveTab}
               news={storeNews}
               menu={storeMenu}
-              menuImageUrls={(apiStore as any)?.menuImageUrls || []}
+              menuImageUrls={menuImageUrls}
               announcements={storeNews.map((n) => ({ id: n.id, title: n.title, content: n.content }))}
               recommendStores={[]} // TODO: 추천 가게 API 추가 후 연동
               reviewRating={storeReviewRating}
