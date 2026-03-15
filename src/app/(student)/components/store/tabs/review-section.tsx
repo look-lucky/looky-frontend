@@ -277,15 +277,17 @@ function ReviewItemCard({
             <View style={styles.menuPopup}>
               {review.isOwner ? (
                 <>
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => {
-                      onMenuClose();
-                      onEdit?.();
-                    }}
-                  >
-                    <ThemedText style={styles.menuItemText}>수정</ThemedText>
-                  </TouchableOpacity>
+                  {!review.hasReply && (
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => {
+                        onMenuClose();
+                        onEdit?.();
+                      }}
+                    >
+                      <ThemedText style={styles.menuItemText}>수정</ThemedText>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => {
@@ -499,7 +501,7 @@ export function ReviewSection({
 
 const styles = StyleSheet.create({
   container: {
-    gap: rs(16),
+    gap: rs(10),
   },
   filterWrapper: {
     gap: rs(10),
@@ -648,7 +650,7 @@ const styles = StyleSheet.create({
 
   // Review Card Redesign
   reviewCard: {
-    paddingTop: rs(16),
+    paddingTop: rs(10),
   },
   reviewHeader: {
     height: rs(60),

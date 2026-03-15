@@ -589,6 +589,15 @@ export default function StoreDetailScreen() {
       addLikeMutation.mutate({ reviewId: Number(reviewId) });
     }
   };
+  const handleReportReview = (reviewId: string) => {
+    router.push({
+      pathname: '/review/ReportScreen',
+      params: {
+        reviewId: Number(reviewId),
+        reporterType: 'student'
+      }
+    });
+  };
   const handleLoadMoreReviews = () => {
     if (!isReviewsFetching && hasMoreReviews) {
       setReviewPage((prev) => prev + 1);
@@ -687,6 +696,7 @@ export default function StoreDetailScreen() {
               onEditReview={handleEditReview}
               onDeleteReview={handleDeleteReview}
               onLikeReview={handleLikeReview}
+              onReportReview={handleReportReview}
               storeInfo={storeInfo}
               scrollViewRef={scrollViewRef}
               scrollOffsetY={scrollOffsetY}
