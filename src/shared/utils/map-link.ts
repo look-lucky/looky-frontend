@@ -18,7 +18,7 @@ export const MapLinks = {
                 android: `nmap://map?v=2&lat=${lat}&lng=${lng}&zoom=15&text=${encodeURIComponent(name)}&appname=kr.looky.looky`,
             })!,
         getWebUrl: (lat: number, lng: number, name: string) =>
-            `https://map.naver.com/index.nhn?slng=&slat=&stext=&elng=${lng}&elat=${lat}&etext=${encodeURIComponent(name)}&menu=route`,
+            `https://m.map.naver.com/route.nhn?menu=route&ename=${encodeURIComponent(name)}&ex=${lng}&ey=${lat}&pathType=0&showMap=true`,
     },
     kakao: {
         name: '카카오맵',

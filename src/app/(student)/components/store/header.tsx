@@ -285,7 +285,7 @@ function StoreInfoSection({
       >
         <Ionicons name="location-outline" size={rs(14)} color={Text.secondary} />
         <ThemedText style={styles.infoText}>{address}</ThemedText>
-        <Ionicons name="chevron-forward" size={rs(12)} color={Text.tertiary} />
+        <Ionicons name="map-outline" size={rs(14)} color={Text.tertiary} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.infoRow} onPress={handleToggleHours}>
