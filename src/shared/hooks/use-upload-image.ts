@@ -43,16 +43,10 @@ export async function uploadImageAsset(asset: ImagePickerAsset): Promise<string>
   }
 
   // 2. S3에 직접 PUT
-  const blob = await uriToBlob(asset.uri);
-  const s3Res = await fetch(presignedUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': mimeType },
-    body: blob,
-  });
-
-  if (!s3Res.ok) {
-    throw new Error(`S3 업로드 실패 (${s3Res.status})`);
-  }
+  // iOS에서 fetch().blob()으로 생성한 Blob은 type이 빈 문자열이 되어
+  // S3에서 Content-Type 불일치로 415를 반환하는 문제가 있음.
+  // XMLHttpRequest로 직접 PUT하면 iOS에서도 Content-Type 헤더가 정상 전송됨.
+  await uploadToS3(presignedUrl, asset.uri, mimeType);
 
   return fileUrl;
 }
@@ -69,7 +63,19 @@ export async function uploadImageAssets(assets: ImagePickerAsset[]): Promise<str
   return urls;
 }
 
-async function uriToBlob(uri: string): Promise<Blob> {
-  const res = await fetch(uri);
-  return res.blob();
+function uploadToS3(presignedUrl: string, uri: string, mimeType: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', presignedUrl);
+    xhr.setRequestHeader('Content-Type', mimeType);
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`S3 업로드 실패 (${xhr.status})`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('S3 업로드 네트워크 오류'));
+    xhr.send({ uri, type: mimeType, name: 'upload' } as any);
+  });
 }
