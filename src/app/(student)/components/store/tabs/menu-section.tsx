@@ -4,8 +4,9 @@ import {
   Fonts,
 } from '@/src/shared/theme/theme';
 import type { MenuCategory, MenuItem } from '@/src/shared/types/store';
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 // Re-export types for convenience
 export type { MenuCategory, MenuItem };
@@ -65,7 +66,7 @@ function SoldOutLabel() {
 // MenuItemCard
 // ============================================
 
-function MenuItemCard({ item }: { item: MenuItem }) {
+function MenuItemCard({ item, onImagePress }: { item: MenuItem; onImagePress?: (url: string) => void }) {
   const formattedPrice = item.price.toLocaleString() + '원';
 
   // Use the badge field from the item, or fallback to flags if necessary
@@ -111,8 +112,14 @@ function MenuItemCard({ item }: { item: MenuItem }) {
           </View>
         </View>
 
-        {item.image && (
-          <Image source={{ uri: item.image }} style={styles.menuImage} />
+        {item.image ? (
+          <TouchableOpacity activeOpacity={0.8} onPress={() => onImagePress && onImagePress(item.image!)}>
+            <Image source={{ uri: item.image }} style={styles.menuImage} />
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.menuImage, styles.menuImagePlaceholder]}>
+            <Ionicons name="restaurant-outline" size={rs(32)} color="#D5D5D5" />
+          </View>
         )}
       </View>
     </View>
@@ -168,6 +175,7 @@ function CategorySelector({ categories, activeId, onSelect }: CategorySelectorPr
 
 export function MenuSection({ categories, menuImageUrls = [], scrollViewRef }: MenuSectionProps) {
   const [activeCategoryId, setActiveCategoryId] = React.useState(categories[0]?.id || '');
+  const [viewerImageUrl, setViewerImageUrl] = React.useState<string | null>(null);
   const categoryPositions = React.useRef<Record<string, number>>({});
   const containerRef = React.useRef<View>(null);
 
@@ -228,7 +236,7 @@ export function MenuSection({ categories, menuImageUrls = [], scrollViewRef }: M
             <View style={styles.menuList}>
               {category.items.map((item) => (
                 <React.Fragment key={item.id}>
-                  <MenuItemCard item={item} />
+                  <MenuItemCard item={item} onImagePress={setViewerImageUrl} />
                 </React.Fragment>
               ))}
             </View>
@@ -241,17 +249,49 @@ export function MenuSection({ categories, menuImageUrls = [], scrollViewRef }: M
             <CategoryHeader name="메뉴판 이미지로 보기" />
             <View style={styles.menuImageUrlsList}>
               {menuImageUrls.map((url, index) => (
-                <Image
-                  key={index}
-                  source={{ uri: url }}
-                  style={styles.menuBoardImage}
-                  resizeMode="cover"
-                />
+                <TouchableOpacity key={index} activeOpacity={0.8} onPress={() => setViewerImageUrl(url)}>
+                  <Image
+                    source={{ uri: url }}
+                    style={styles.menuBoardImage}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
               ))}
             </View>
           </View>
         )}
       </View>
+
+      {/* Full Screen Image Viewer Modal */}
+      <Modal
+        visible={!!viewerImageUrl}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setViewerImageUrl(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setViewerImageUrl(null)}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <Ionicons name="close" size={rs(32)} color="#fff" />
+          </TouchableOpacity>
+          <TouchableWithoutFeedback onPress={() => setViewerImageUrl(null)}>
+            <View style={styles.modalImageWrapper}>
+              {viewerImageUrl && (
+                <TouchableWithoutFeedback onPress={() => { }}>
+                  <Image
+                    source={{ uri: viewerImageUrl }}
+                    style={styles.modalImage}
+                    resizeMode="contain"
+                  />
+                </TouchableWithoutFeedback>
+              )}
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -353,8 +393,14 @@ const styles = StyleSheet.create({
   menuInfo: {
     flex: 1,
     height: rs(95),
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: rs(8),
     paddingBottom: rs(2),
+  },
+  menuImagePlaceholder: {
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuInfoTopGroup: {
     gap: rs(2),
@@ -450,5 +496,30 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: rs(12),
     backgroundColor: '#f0f0f0',
+  },
+
+  // Modal Viewer
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: rs(50),
+    right: rs(20),
+    zIndex: 1,
+    padding: rs(10),
+  },
+  modalImageWrapper: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    width: '100%',
+    height: '80%',
   },
 });
