@@ -125,10 +125,34 @@ export default function Favorite() {
               activeOpacity={0.7}
             >
               <View style={styles.cardLeft}>
-                <Image
-                  source={{ uri: store.imageUrl || undefined }}
-                  style={styles.storeImage}
-                />
+                {(() => {
+                  // [Robust Image Selection]
+                  // 1. profileImageUrl: The official store logo/profile image
+                  // 2. logoImage: Alternative field name for logo
+                  // 3. imageUrl: Primary image (might be banner)
+                  // 4. imageUrls[0]: First banner image
+                  const imageSrc =
+                    (store as any).profileImageUrl ||
+                    (store as any).logoImage ||
+                    store.imageUrl ||
+                    (store as any).imageUrls?.[0] ||
+                    (store as any).storeLogo ||
+                    (store as any).image;
+
+                  if (imageSrc) {
+                    return (
+                      <Image
+                        source={{ uri: imageSrc }}
+                        style={styles.storeImage}
+                      />
+                    );
+                  }
+                  return (
+                    <View style={[styles.storeImage, styles.imagePlaceholder]}>
+                      <Ionicons name="storefront-outline" size={rs(24)} color="#828282" />
+                    </View>
+                  );
+                })()}
                 <View style={styles.storeInfo}>
                   <Text style={styles.storeCategory}>
                     {formatStoreCategories(
@@ -271,6 +295,10 @@ const styles = StyleSheet.create({
     height: rs(60),
     borderRadius: rs(12),
     backgroundColor: '#D9D9D9',
+  },
+  imagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   storeInfo: { gap: rs(3) },
   storeCategory: {

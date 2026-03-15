@@ -14,7 +14,7 @@ import { useGetStudentInfo } from '@/src/api/my-page';
 import { useGetOrganizations } from '@/src/api/organization';
 import { useGetStorePartnerships } from '@/src/api/partnership';
 import { useAddLike, useDeleteReview, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
-import { useGetMenuBoardImages, useGetStore } from '@/src/api/store';
+import { useGetStore } from '@/src/api/store';
 import { useGetStoreNewsList } from '@/src/api/store-news';
 import { StoreBenefits } from '@/src/app/(student)/components/store/benefits';
 import { BottomFixedBar } from '@/src/app/(student)/components/store/bottom-bar';
@@ -133,9 +133,8 @@ export default function StoreDetailScreen() {
   });
   const apiStore = (storeRes as any)?.data?.data as StoreResponse | undefined;
 
-  // 메뉴판 이미지
-  const { data: menuBoardImagesRes } = useGetMenuBoardImages(storeId);
-  const menuImageUrls = (menuBoardImagesRes as any)?.data?.data || [];
+  // 메뉴판 이미지는 이제 가게 정보(apiStore)에 포함되어 내려옵니다.
+  const menuImageUrls = (apiStore as any)?.menuBoardImageUrls || [];
 
   // 리뷰 통계 (rating, reviewCount, 별점 분포)
   const { data: reviewStatsRes } = useGetReviewStats(storeId);

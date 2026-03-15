@@ -189,7 +189,10 @@ export function MenuSection({ categories, menuImageUrls = [], scrollViewRef }: M
     );
   }
 
-  const selectorCategories = categories.map(c => ({ id: c.id, name: c.name }));
+  const selectorCategories = [
+    ...categories.map(c => ({ id: c.id, name: c.name })),
+    ...(menuImageUrls.length > 0 ? [{ id: 'MENU_BOARD', name: '메뉴판' }] : [])
+  ];
 
   const handleCategorySelect = (id: string) => {
     setActiveCategoryId(id);
@@ -244,20 +247,32 @@ export function MenuSection({ categories, menuImageUrls = [], scrollViewRef }: M
         ))}
 
         {menuImageUrls.length > 0 && (
-          <View style={styles.menuImageUrlsSection}>
+          <View
+            style={styles.menuImageUrlsSection}
+            onLayout={(event) => {
+              categoryPositions.current['MENU_BOARD'] = event.nativeEvent.layout.y;
+            }}
+          >
             {categories.length > 0 && <View style={styles.sectionDivider} />}
             <CategoryHeader name="메뉴판 이미지로 보기" />
-            <View style={styles.menuImageUrlsList}>
-              {menuImageUrls.map((url, index) => (
-                <TouchableOpacity key={index} activeOpacity={0.8} onPress={() => setViewerImageUrl(url)}>
-                  <Image
-                    source={{ uri: url }}
-                    style={styles.menuBoardImage}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.menuImageUrlsScroll}
+              contentContainerStyle={styles.menuImageUrlsList}
+            >
+              <View style={styles.menuImageUrlsInner}>
+                {menuImageUrls.map((url, index) => (
+                  <TouchableOpacity key={index} activeOpacity={0.8} onPress={() => setViewerImageUrl(url)}>
+                    <Image
+                      source={{ uri: url }}
+                      style={styles.menuBoardImage}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </View>
         )}
       </View>
@@ -488,13 +503,22 @@ const styles = StyleSheet.create({
     marginTop: rs(5),
     paddingBottom: rs(20),
   },
+  menuImageUrlsScroll: {
+    marginHorizontal: -rs(20),
+  },
   menuImageUrlsList: {
-    gap: rs(15),
+    paddingHorizontal: rs(20),
+    flexGrow: 1,
+    justifyContent: 'flex-start',
+  },
+  menuImageUrlsInner: {
+    flexDirection: 'row',
+    gap: rs(10), // Spacing between images
   },
   menuBoardImage: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: rs(12),
+    width: rs(120),
+    height: rs(120),
+    borderRadius: rs(10),
     backgroundColor: '#f0f0f0',
   },
 
