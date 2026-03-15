@@ -2,6 +2,8 @@ import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useLogin } from "@/src/api/auth";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { useAuth } from "@/src/shared/lib/auth";
+import type { UserType } from "@/src/shared/lib/auth/token";
+import { saveCredentials, saveLoginProvider, saveUsername } from "@/src/shared/lib/auth/token";
 import { rs } from "@/src/shared/theme/scale";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -18,8 +20,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import type { UserType } from "@/src/shared/lib/auth/token";
-import { saveCredentials, saveLoginProvider, saveUsername } from "@/src/shared/lib/auth/token";
 
 // JWT payload 디코딩 함수
 function decodeJwtPayload(token: string): { role?: string } | null {
@@ -151,7 +151,7 @@ export default function LoginPage() {
         {/* Top content with subtitle and logo */}
         <View style={styles.topContent}>
           <Text style={styles.subtitle}>우리대학 제휴혜택이 궁금할 땐?</Text>
-          <LookyLogo width={rs(169)} height={rs(57)} />
+          <LookyLogo width={rs(169)} height={rs(57)} style={styles.logo} />
         </View>
 
         {/* Center content with input fields */}
@@ -250,6 +250,9 @@ const styles = StyleSheet.create({
   topContent: {
     paddingTop: rs(40),
     gap: rs(4),
+  },
+  logo: {
+    marginLeft: rs(-18),
   },
   subtitle: {
     fontSize: rs(14),
