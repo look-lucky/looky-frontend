@@ -199,14 +199,9 @@ export function MenuSection({ categories, menuImageUrls = [], scrollViewRef }: M
 
     const yPos = categoryPositions.current[id];
     if (yPos !== undefined && scrollViewRef?.current) {
-      // MenuSection의 시작 위치를 알아내기 위해 measureLayout 사용하거나,
-      // 부모로부터 전달받은 contentYRef(가게 정보 아래)를 활용할 수 있음.
-      // 여기서는 containerRef를 통해 ScrollView 내에서의 상대 위치를 계산합니다.
       containerRef.current?.measureLayout(
         scrollViewRef.current as any,
         (x, y) => {
-          // 카테고리 선택기(selectorWrapper)의 높이만큼 더 내려가야함
-          // selectorWrapper height (paddingVertical rs(10) * 2 + categoryChip rs(25))
           const selectorHeight = rs(45);
           scrollViewRef.current?.scrollTo({
             y: y + selectorHeight + yPos,

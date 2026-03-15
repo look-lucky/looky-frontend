@@ -261,12 +261,28 @@ export default function StoreDetailScreen() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
       },
+      onError: (error: any) => {
+        const errorMessage =
+          error?.data?.message ||
+          error?.data?.data?.message ||
+          error?.message ||
+          '좋아요 처리에 실패했습니다.';
+        Alert.alert('알림', errorMessage);
+      },
     },
   });
   const removeLikeMutation = useRemoveLike({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
+      },
+      onError: (error: any) => {
+        const errorMessage =
+          error?.data?.message ||
+          error?.data?.data?.message ||
+          error?.message ||
+          '좋아요 취소에 실패했습니다.';
+        Alert.alert('알림', errorMessage);
       },
     },
   });
@@ -446,7 +462,7 @@ export default function StoreDetailScreen() {
       content: r.content ?? '',
       images: r.imageUrls ?? [],
       likeCount: r.likeCount ?? 0,
-      commentCount: 0,
+      commentCount: (r as any).children?.length || (r.ownerReply ? 1 : 0),
       isOwner: !!(currentUsername && r.username === currentUsername),
       hasReply: r.ownerReply ?? false,
       isLiked: r.liked ?? false,

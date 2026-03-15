@@ -18,6 +18,7 @@ import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Modal,
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -167,6 +168,7 @@ function ReviewItemCard({
   onDelete,
   onReport,
   onLike,
+  onImagePress,
   isLast,
   menuOpen,
   onMenuToggle,
@@ -177,6 +179,7 @@ function ReviewItemCard({
   onDelete?: () => void;
   onReport?: () => void;
   onLike?: () => void;
+  onImagePress?: (url: string) => void;
   isLast?: boolean;
   menuOpen: boolean;
   onMenuToggle: () => void;
@@ -217,8 +220,8 @@ function ReviewItemCard({
       {review.images && review.images.length > 0 && (
         <View style={styles.imageGallery}>
           {review.images.map((image, index) => (
-            <TouchableOpacity key={index} style={styles.imageThumbnail}>
-              <Image source={{ uri: image }} style={styles.reviewImage} renderIndicator={() => <ActivityIndicator />} />
+            <TouchableOpacity key={index} style={styles.imageThumbnail} activeOpacity={0.8} onPress={() => onImagePress?.(image)}>
+              <Image source={{ uri: image }} style={styles.reviewImage} />
             </TouchableOpacity>
           ))}
         </View>
@@ -378,6 +381,7 @@ export function ReviewSection({
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   // 낙관적 좋아요 상태: reviewId → liked 여부
   const [optimisticLikes, setOptimisticLikes] = useState<Record<string, boolean>>({});
+  const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
 
   const sortedReviews = [...reviews].sort((a, b) => {
     if (activeFilter === 'best') {
@@ -387,8 +391,10 @@ export function ReviewSection({
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
-  const handleLike = useCallback((reviewId: string, currentLiked: boolean) => {
-    setOptimisticLikes((prev) => ({ ...prev, [reviewId]: !currentLiked }));
+  const handleLike = useCallback((reviewId: string, currentLiked: boolean, isOwner: boolean) => {
+    if (!isOwner) {
+      setOptimisticLikes((prev) => ({ ...prev, [reviewId]: !currentLiked }));
+    }
     onLikeReview?.(reviewId);
   }, [onLikeReview]);
 
@@ -399,57 +405,91 @@ export function ReviewSection({
   }, [hasMore, isLoadingMore, onLoadMore]);
 
   return (
-    <TouchableWithoutFeedback onPress={() => setActiveMenuId(null)}>
-      <View style={styles.container}>
-        <ReviewRatingBlock rating={rating} />
-        <View style={styles.filterWrapper}>
-          <View style={styles.filterDivider} />
-          <ReviewFilter
-            activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-            onWriteReview={onWriteReview}
-          />
-          <View style={styles.filterDivider} />
-        </View>
+    <>
+      <TouchableWithoutFeedback onPress={() => setActiveMenuId(null)}>
+        <View style={styles.container}>
+          <ReviewRatingBlock rating={rating} />
+          <View style={styles.filterWrapper}>
+            <View style={styles.filterDivider} />
+            <ReviewFilter
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+              onWriteReview={onWriteReview}
+            />
+            <View style={styles.filterDivider} />
+          </View>
 
-        <View style={styles.reviewList}>
-          {sortedReviews.length === 0 ? (
-            <View style={styles.emptyReview}>
-              <ThemedText style={styles.emptyReviewText} lightColor="#999" darkColor="#999">
-                아직 리뷰가 없습니다.
-              </ThemedText>
+          <View style={styles.reviewList}>
+            {sortedReviews.length === 0 ? (
+              <View style={styles.emptyReview}>
+                <ThemedText style={styles.emptyReviewText} lightColor="#999" darkColor="#999">
+                  아직 리뷰가 없습니다.
+                </ThemedText>
+              </View>
+            ) : (
+              sortedReviews.map((review, index) => {
+                const isLiked = optimisticLikes[review.id] !== undefined
+                  ? optimisticLikes[review.id]
+                  : !!review.isLiked;
+                return (
+                  <ReviewItemCard
+                    key={review.id}
+                    review={{ ...review, isLiked }}
+                    isLast={index === sortedReviews.length - 1 && !hasMore}
+                    onEdit={() => onEditReview?.(review.id)}
+                    onDelete={() => onDeleteReview?.(review.id)}
+                    onReport={() => onReportReview?.(review.id)}
+                    onLike={() => handleLike(review.id, isLiked, !!review.isOwner)}
+                    menuOpen={activeMenuId === review.id}
+                    onMenuToggle={() =>
+                      setActiveMenuId((prev) => (prev === review.id ? null : review.id))
+                    }
+                    onMenuClose={() => setActiveMenuId(null)}
+                    onImagePress={setViewerImageUrl}
+                  />
+                );
+              })
+            )}
+
+            {/* 무한 스크롤 트리거 */}
+            {hasMore && (
+              <LoadMoreTrigger onTrigger={handleLoadMore} isLoading={isLoadingMore} />
+            )}
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+
+      {/* Full Screen Image Viewer Modal */}
+      <Modal
+        visible={!!viewerImageUrl}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setViewerImageUrl(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setViewerImageUrl(null)}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <Ionicons name="close" size={rs(32)} color="#fff" />
+          </TouchableOpacity>
+          <TouchableWithoutFeedback onPress={() => setViewerImageUrl(null)}>
+            <View style={styles.modalImageWrapper}>
+              {viewerImageUrl && (
+                <TouchableWithoutFeedback onPress={() => { }}>
+                  <Image
+                    source={{ uri: viewerImageUrl }}
+                    style={styles.modalImage}
+                    resizeMode="contain"
+                  />
+                </TouchableWithoutFeedback>
+              )}
             </View>
-          ) : (
-            sortedReviews.map((review, index) => {
-              const isLiked = optimisticLikes[review.id] !== undefined
-                ? optimisticLikes[review.id]
-                : review.isLiked;
-              return (
-                <ReviewItemCard
-                  key={review.id}
-                  review={{ ...review, isLiked }}
-                  isLast={index === sortedReviews.length - 1 && !hasMore}
-                  onEdit={() => onEditReview?.(review.id)}
-                  onDelete={() => onDeleteReview?.(review.id)}
-                  onReport={() => onReportReview?.(review.id)}
-                  onLike={() => handleLike(review.id, isLiked)}
-                  menuOpen={activeMenuId === review.id}
-                  onMenuToggle={() =>
-                    setActiveMenuId((prev) => (prev === review.id ? null : review.id))
-                  }
-                  onMenuClose={() => setActiveMenuId(null)}
-                />
-              );
-            })
-          )}
-
-          {/* 무한 스크롤 트리거 */}
-          {hasMore && (
-            <LoadMoreTrigger onTrigger={handleLoadMore} isLoading={isLoadingMore} />
-          )}
+          </TouchableWithoutFeedback>
         </View>
-      </View>
-    </TouchableWithoutFeedback>
+      </Modal>
+    </>
   );
 }
 
@@ -785,7 +825,7 @@ const styles = StyleSheet.create({
   },
   replyContent: {
     flex: 1,
-    marginLeft: rs(42),
+    marginLeft: rs(0),
     fontSize: rs(14),
     fontFamily: 'Pretendard',
     fontWeight: '400',
@@ -798,4 +838,28 @@ const styles = StyleSheet.create({
     marginTop: rs(10),
   },
 
+  // Modal Viewer
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: rs(50),
+    right: rs(20),
+    zIndex: 1,
+    padding: rs(10),
+  },
+  modalImageWrapper: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    width: '100%',
+    height: '80%',
+  },
 });
