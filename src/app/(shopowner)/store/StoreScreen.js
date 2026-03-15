@@ -27,7 +27,7 @@ import { getToken } from '@/src/shared/lib/auth/token';
 // [API] Hooks Import
 import { useCreateItem, useDeleteItem, useGetItems, useUpdateItem } from '@/src/api/item';
 import { useCreateItemCategory, useDeleteItemCategory, useGetItemCategories, useUpdateItemCategory } from '@/src/api/item-category';
-import { useGetMyStores } from '@/src/api/store';
+import { useGetMyStores, useGetStore } from '@/src/api/store';
 import { processAndUploadImages, validateImage } from '@/src/shared/lib/upload/image-upload';
 
 // # Helper Functions & Constants
@@ -103,6 +103,18 @@ export default function StoreScreen() {
     refetch: refetchStore
   } = useGetMyStores();
   const [myStoreId, setMyStoreId] = useState(null);
+
+  // (1-2) 가게 상세 정보 조회 (menuBoardImageUrls 등 리스트에 없는 정보 포함)
+  const {
+    data: storeDetailResponse,
+    refetch: refetchStoreDetail
+  } = useGetStore(myStoreId, {
+    query: {
+      enabled: !!myStoreId
+    }
+  });
+
+
 
   // (2) 가게 정보 수정 (Mutation은 사용 안 함 -> Direct Fetch로 대체)
   // const updateStoreMutation = useUpdateStore(); 
@@ -191,7 +203,7 @@ export default function StoreScreen() {
   // # State: Store Data
   const [storeInfo, setStoreInfo] = useState({
     name: '', branch: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImages: [],
-    menuImageUrls: [] // [추가] 메뉴판 이미지 목록
+    menuBoardImageUrls: [] // [추가] 메뉴판 이미지 목록
   });
 
   const initialHours = ['월', '화', '수', '목', '금', '토', '일'].map(day => ({
@@ -479,7 +491,13 @@ export default function StoreScreen() {
   // =================================================================
 
   useEffect(() => {
+    let active = true;
     const initStore = async () => {
+      // 상세 데이터 추출 (다양한 응답 포맷 대응: .data.data 또는 .data)
+      const detailedStore = storeDetailResponse?.data?.data || (storeDetailResponse?.data?.isSuccess === undefined ? storeDetailResponse?.data : null);
+
+      if (!active) return;
+
       // 1. AsyncStorage에서 선택된 가게 ID 가져오기
       const savedStoreId = await AsyncStorage.getItem('SELECTED_STORE_ID');
 
@@ -501,8 +519,12 @@ export default function StoreScreen() {
       if (!matchedStore && normalizedList.length > 0) {
         matchedStore = normalizedList[0];
         currentStoreId = matchedStore.id;
-        await AsyncStorage.setItem('SELECTED_STORE_ID', currentStoreId.toString());
+        if (active) {
+          await AsyncStorage.setItem('SELECTED_STORE_ID', currentStoreId.toString());
+        }
       }
+
+      if (!active) return;
 
       if (matchedStore) {
         setMyStoreId(currentStoreId);
@@ -515,11 +537,8 @@ export default function StoreScreen() {
         const MOOD_MAP = {
           'GROUP_GATHERING': '회식•모임',
           'ROMANTIC': '데이트',
-          // 'QUIET': '조용한',
-          // 'LIVELY': '활기찬',
           'SOLO_DINING': '1인 혼밥',
           'LATE_NIGHT': '야식',
-          // 필요에 따라 추가
         };
         const mappedMoods = myStore.storeMoods ? myStore.storeMoods.map(m => MOOD_MAP[m] || m) : [];
 
@@ -560,30 +579,33 @@ export default function StoreScreen() {
           }
         }
 
-        console.log("DEBUG: myStore object:", myStore);
-        console.log("DEBUG: Setting storeInfo with name:", myStore.name, "branch:", myStore.branch);
+        console.log("DEBUG: detailedStore loaded:", !!detailedStore);
 
-        setStoreInfo({
-          name: myStore.name || '',
-          branch: myStore.branch || '',
-          categories: myStore.storeCategories
-            ? myStore.storeCategories.map(c => CATEGORY_EN_TO_KR[c] || c)
-            : (myStore.category ? [CATEGORY_EN_TO_KR[myStore.category] || myStore.category] : []),
-          vibes: mappedMoods,
-          intro: myStore.introduction || '',
-          address: myStore.roadAddress || myStore.jibunAddress || '', // roadAddress 우선 사용
-          detailAddress: '', // 상세주소는 분리되어 있지 않아 보임, 필요하면 jibunAddress 등 활용
-          phone: myStore.phone || '', // phoneNumber -> phone 수정
-          logoImage: myStore.profileImageUrl || null,
-          bannerImages: (myStore.imageUrls && Array.isArray(myStore.imageUrls))
-            ? myStore.imageUrls.slice(0, 3)
-            : [],
-          menuImageUrls: (myStore.menuImageUrls && Array.isArray(myStore.menuImageUrls))
-            ? myStore.menuImageUrls
-            : [] // [추가] 메뉴판 이미지 초기화
+        // [핵심] 상세 정보와 리스트 정보를 안전하게 병합
+        // 상세 응답이 아직 없는 경우(로딩 중)에는 기존 storeInfo의 중요한 값들을 유지하도록 함
+        setStoreInfo(prev => {
+          const finalMenuImages = (detailedStore?.menuBoardImageUrls || detailedStore?.menuBoardImages || myStore.menuBoardImageUrls || myStore.menuBoardImages || prev.menuBoardImageUrls || [])
+            .filter(url => typeof url === 'string' && url.trim().length > 0);
+
+          return {
+            name: detailedStore?.name || myStore.name || prev.name || '',
+            branch: detailedStore?.branch || myStore.branch || prev.branch || '',
+            categories: (detailedStore?.storeCategories || myStore.storeCategories)
+              ? (detailedStore?.storeCategories || myStore.storeCategories).map(c => CATEGORY_EN_TO_KR[c] || c)
+              : (myStore.category ? [CATEGORY_EN_TO_KR[myStore.category] || myStore.category] : (prev.categories || [])),
+            vibes: detailedStore?.storeMoods
+              ? detailedStore.storeMoods.map(m => MOOD_MAP[m] || m)
+              : (mappedMoods.length > 0 ? mappedMoods : (prev.vibes || [])),
+            intro: detailedStore?.introduction || myStore.introduction || prev.intro || '',
+            address: detailedStore?.roadAddress || detailedStore?.jibunAddress || myStore.roadAddress || myStore.jibunAddress || prev.address || '',
+            detailAddress: detailedStore?.addressDetail || prev.detailAddress || '',
+            phone: detailedStore?.phone || myStore.phone || prev.phone || '',
+            logoImage: detailedStore?.profileImageUrl || myStore.profileImageUrl || myStore.logoImage || myStore.imageUrl || prev.logoImage,
+            bannerImages: (detailedStore?.imageUrls && detailedStore.imageUrls.length > 0) ? detailedStore.imageUrls : (myStore.imageUrls && myStore.imageUrls.length > 0 ? myStore.imageUrls : (prev.bannerImages || [])),
+            menuBoardImageUrls: (detailedStore?.menuBoardImageUrls || detailedStore?.menuBoardImages || myStore.menuBoardImageUrls || myStore.menuBoardImages || detailedStore?.menuImageUrls || myStore.menuImageUrls || prev.menuBoardImageUrls || prev.menuImageUrls || [])
+              .filter(url => typeof url === 'string' && url.trim().length > 0)
+          };
         });
-        console.log("📸 [StoreScreen] 매장 이미지 목록:", myStore.imageUrls);
-        console.log("📸 [StoreScreen] 설정된 배너 목록:", (myStore.imageUrls && Array.isArray(myStore.imageUrls)) ? myStore.imageUrls.slice(0, 3) : "없음");
 
         // 2. 휴무일 초기화 (holidayDates 전용)
         if (myStore.holidayDates && Array.isArray(myStore.holidayDates)) {
@@ -598,18 +620,18 @@ export default function StoreScreen() {
         // [추가] 매장이 없는 경우 상태 초기화
         setMyStoreId(null);
         setStoreInfo({
-          name: '', branch: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImages: []
+          name: '', branch: '', categories: [], vibes: [], intro: '', address: '', detailAddress: '', phone: '', logoImage: null, bannerImages: [], menuBoardImageUrls: []
         });
         setOperatingHours(initialHours);
         setSelectedHolidays([]);
         setHasBreakTime(false);
         setIsPaused(false);
-        console.log("🏪 [StoreScreen] No store matched or found. State reset.");
       }
     };
 
     initStore();
-  }, [storeDataResponse]);
+    return () => { active = false; };
+  }, [storeDataResponse, storeDetailResponse]);
 
   // [Fix] 기본 모달이 닫힐 때 주소 검색 모달도 함께 닫히도록 처리 (화면 멈춤 방지)
   useEffect(() => {
@@ -762,6 +784,7 @@ export default function StoreScreen() {
       }
 
       const finalBannerUrls = await processAndUploadImages(editBasicData.bannerImages || []);
+      const finalMenuBoardUrls = await processAndUploadImages(editBasicData.menuBoardImageUrls || []);
 
       const requestData = {
         name: editBasicData.name,
@@ -782,6 +805,7 @@ export default function StoreScreen() {
         }),
         profileImageUrl: finalProfileUrl,
         imageUrls: finalBannerUrls.length > 0 ? finalBannerUrls : (editBasicData.bannerImages === null ? null : []),
+        menuBoardImageUrls: finalMenuBoardUrls || []
       };
 
       console.log("🚀 [handleBasicSave] Request Payload:", JSON.stringify(requestData, null, 2));
@@ -789,7 +813,7 @@ export default function StoreScreen() {
       await manualStoreUpdate(requestData);
 
       Alert.alert("성공", "가게 정보가 수정되었습니다.");
-      // [Fix 1] Update local storeInfo state immediately to reflect changes in basic info card
+      // [Fix 1] Update local storeInfo state immediately with UPLOADED urls
       setStoreInfo(prev => ({
         ...prev,
         name: editBasicData.name,
@@ -800,11 +824,14 @@ export default function StoreScreen() {
         phone: editBasicData.phone,
         categories: editBasicData.categories,
         vibes: editBasicData.vibes,
-        logoImage: editBasicData.logoImage, // Update logo image
-        bannerImages: editBasicData.bannerImages // Update banner images
+        logoImage: finalProfileUrl, // Use uploaded URL
+        bannerImages: finalBannerUrls, // Use uploaded URLs
+        menuBoardImageUrls: finalMenuBoardUrls // Use uploaded URLs
       }));
       setBasicModalVisible(false);
-      refetchStore(); // 최신 데이터 반영
+      refetchStore(); // 가게 목록 리프레시
+      refetchStoreDetail(); // 상세 정보 리프레시 (menuBoardImageUrls 반영)
+      refetchItems(); // 아이템 목록 리프레시
 
     } catch (error) {
       console.error("💥 [매장 수정 에러]", error);
@@ -1022,7 +1049,8 @@ export default function StoreScreen() {
     console.log("DEBUG: Opening Edit Modal. storeInfo:", storeInfo);
     setEditBasicData({
       ...storeInfo,
-      phone: formatPhoneNumber(storeInfo.phone)
+      phone: formatPhoneNumber(storeInfo.phone),
+      menuBoardImageUrls: [...(storeInfo.menuBoardImageUrls || [])]
     });
     setBasicModalVisible(true);
   };
@@ -1414,7 +1442,7 @@ export default function StoreScreen() {
   // [추가] 메뉴판 이미지 선택 및 업로드
   const pickMenuBoardImage = async () => {
     // 0. 개수 제한 체크 (최대 10개)
-    if ((storeInfo.menuImageUrls || []).length >= 10) {
+    if ((storeInfo.menuBoardImageUrls || []).length >= 10) {
       Alert.alert('알림', '메뉴판 사진은 최대 10개까지만 등록 가능합니다.');
       return;
     }
@@ -1451,15 +1479,17 @@ export default function StoreScreen() {
         const newUrl = uploadedUrls[0];
 
         if (newUrl) {
-          const updatedMenuImages = [...(storeInfo.menuImageUrls || []), newUrl];
+          const updatedMenuImages = [...((basicModalVisible ? editBasicData.menuBoardImageUrls : storeInfo.menuBoardImageUrls) || []), newUrl];
 
-          // 5. 서버 업데이트 (PATCH)
-          await manualStoreUpdate({ menuImageUrls: updatedMenuImages });
-
-          // 6. 상태 반영
-          setStoreInfo(prev => ({ ...prev, menuImageUrls: updatedMenuImages }));
-          Alert.alert("성공", "메뉴판 이미지가 추가되었습니다.");
-          refetchStore();
+          if (basicModalVisible) {
+            // 모달 안에서는 로컬 상태만 업데이트 (저장 버튼 시 일괄 전송)
+            setEditBasicData(prev => ({ ...prev, menuBoardImageUrls: updatedMenuImages }));
+          } else {
+            // 밖에서는 즉시 서버 업데이트
+            await manualStoreUpdate({ menuBoardImageUrls: updatedMenuImages });
+            setStoreInfo(prev => ({ ...prev, menuBoardImageUrls: updatedMenuImages }));
+            Alert.alert("성공", "메뉴판 이미지가 추가되었습니다.");
+          }
         }
       } catch (error) {
         console.error("메뉴판 이미지 업로드 실패:", error);
@@ -1479,15 +1509,18 @@ export default function StoreScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            const updatedMenuImages = storeInfo.menuImageUrls.filter((_, i) => i !== index);
+            const currentImages = (basicModalVisible ? editBasicData.menuBoardImageUrls : storeInfo.menuBoardImageUrls) || [];
+            const updatedMenuImages = currentImages.filter((_, i) => i !== index);
 
-            // 서버 업데이트 (PATCH)
-            await manualStoreUpdate({ menuImageUrls: updatedMenuImages });
-
-            // 상태 반영
-            setStoreInfo(prev => ({ ...prev, menuImageUrls: updatedMenuImages }));
-            Alert.alert("성공", "이미지가 삭제되었습니다.");
-            refetchStore();
+            if (basicModalVisible) {
+              // 모달 안에서는 로컬 상태만 업데이트
+              setEditBasicData(prev => ({ ...prev, menuBoardImageUrls: updatedMenuImages }));
+            } else {
+              // 밖에서는 즉시 서버 업데이트
+              await manualStoreUpdate({ menuBoardImageUrls: updatedMenuImages });
+              setStoreInfo(prev => ({ ...prev, menuBoardImageUrls: updatedMenuImages }));
+              Alert.alert("성공", "이미지가 삭제되었습니다.");
+            }
           } catch (error) {
             console.error("메뉴판 이미지 삭제 실패:", error);
             Alert.alert("실패", "이미지 삭제 중 오류가 발생했습니다.");
@@ -1663,23 +1696,23 @@ export default function StoreScreen() {
                     <Text style={styles.labelText}>가게 메뉴판 이미지</Text>
                   </View>
                   <View style={{ width: '100%', marginTop: rs(10) }}>
-                    {storeInfo.menuImageUrls && storeInfo.menuImageUrls.length > 0 ? (
+                    {storeInfo.menuBoardImageUrls && storeInfo.menuBoardImageUrls.length > 0 ? (
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={{ gap: rs(10), paddingRight: rs(10) }}
                       >
-                        {storeInfo.menuImageUrls.map((uri, index) => (
+                        {storeInfo.menuBoardImageUrls.map((uri, index) => (
                           <TouchableOpacity
                             key={index}
                             onPress={() => {
-                              setFullScreenImages(storeInfo.menuImageUrls);
+                              setFullScreenImages(storeInfo.menuBoardImageUrls);
                               setIsFullScreenBannerVisible(true);
                             }}
                             activeOpacity={0.9}
                           >
                             <Image
-                              source={{ uri }}
+                              source={{ uri: uri }}
                               style={{ width: rs(120), height: rs(120), borderRadius: rs(8), borderWidth: 1, borderColor: '#E0E0E0' }}
                               resizeMode="cover"
                             />
@@ -2462,15 +2495,15 @@ export default function StoreScreen() {
                 <EditSection icon="images" label="가게 메뉴판 이미지">
                   <View style={{ gap: rs(10), width: '100%' }}>
                     {/* 1. 이미지 슬라이더 */}
-                    {storeInfo.menuImageUrls && storeInfo.menuImageUrls.length > 0 && (
+                    {editBasicData.menuBoardImageUrls && editBasicData.menuBoardImageUrls.length > 0 && (
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={{ gap: rs(10), paddingRight: rs(10), paddingTop: rs(8) }}
                       >
-                        {storeInfo.menuImageUrls.map((uri, index) => (
+                        {editBasicData.menuBoardImageUrls && editBasicData.menuBoardImageUrls.map((uri, index) => (
                           <View key={index} style={{ width: rs(100), height: rs(100) }}>
-                            <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
+                            <Image source={{ uri: uri }} style={{ width: '100%', height: '100%', borderRadius: rs(8) }} resizeMode="cover" />
                             <TouchableOpacity
                               style={{ position: 'absolute', top: rs(-8), right: rs(-8), backgroundColor: 'white', borderRadius: rs(10) }}
                               onPress={() => handleDeleteMenuBoardImage(index)}
@@ -2485,13 +2518,13 @@ export default function StoreScreen() {
 
                     {/* 2. 추가 버튼 */}
                     <TouchableOpacity
-                      style={[styles.editBannerAddBtn, (storeInfo.menuImageUrls || []).length >= 10 && { opacity: 0.5 }]}
+                      style={[styles.editBannerAddBtn, (editBasicData.menuBoardImageUrls || []).length >= 10 && { opacity: 0.5 }]}
                       onPress={pickMenuBoardImage}
                       activeOpacity={0.8}
-                      disabled={(storeInfo.menuImageUrls || []).length >= 10}
+                      disabled={(editBasicData.menuBoardImageUrls || []).length >= 10}
                     >
                       <Ionicons name="camera" size={rs(16)} color="#828282" />
-                      <Text style={styles.editBannerAddText}>메뉴판 사진 추가하기({(storeInfo.menuImageUrls || []).length}/10)</Text>
+                      <Text style={styles.editBannerAddText}>메뉴판 사진 추가하기({(editBasicData.menuBoardImageUrls || []).length}/10)</Text>
                     </TouchableOpacity>
 
                   </View>

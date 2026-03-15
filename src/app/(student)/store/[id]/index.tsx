@@ -133,6 +133,9 @@ export default function StoreDetailScreen() {
   });
   const apiStore = (storeRes as any)?.data?.data as StoreResponse | undefined;
 
+  // 메뉴판 이미지는 이제 가게 정보(apiStore)에 포함되어 내려옵니다.
+  const menuImageUrls = (apiStore as any)?.menuBoardImageUrls || [];
+
   // 리뷰 통계 (rating, reviewCount, 별점 분포)
   const { data: reviewStatsRes } = useGetReviewStats(storeId);
   const reviewStats = (reviewStatsRes as any)?.data?.data as ReviewStatsResponse | undefined;
@@ -258,12 +261,28 @@ export default function StoreDetailScreen() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
       },
+      onError: (error: any) => {
+        const errorMessage =
+          error?.data?.message ||
+          error?.data?.data?.message ||
+          error?.message ||
+          '좋아요 처리에 실패했습니다.';
+        Alert.alert('알림', errorMessage);
+      },
     },
   });
   const removeLikeMutation = useRemoveLike({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
+      },
+      onError: (error: any) => {
+        const errorMessage =
+          error?.data?.message ||
+          error?.data?.data?.message ||
+          error?.message ||
+          '좋아요 취소에 실패했습니다.';
+        Alert.alert('알림', errorMessage);
       },
     },
   });
@@ -443,7 +462,7 @@ export default function StoreDetailScreen() {
       content: r.content ?? '',
       images: r.imageUrls ?? [],
       likeCount: r.likeCount ?? 0,
-      commentCount: 0,
+      commentCount: (r as any).children?.length || (r.ownerReply ? 1 : 0),
       isOwner: !!(currentUsername && r.username === currentUsername),
       hasReply: r.ownerReply ?? false,
       isLiked: r.liked ?? false,
@@ -570,6 +589,15 @@ export default function StoreDetailScreen() {
       addLikeMutation.mutate({ reviewId: Number(reviewId) });
     }
   };
+  const handleReportReview = (reviewId: string) => {
+    router.push({
+      pathname: '/review/ReportScreen',
+      params: {
+        reviewId: Number(reviewId),
+        reporterType: 'student'
+      }
+    });
+  };
   const handleLoadMoreReviews = () => {
     if (!isReviewsFetching && hasMoreReviews) {
       setReviewPage((prev) => prev + 1);
@@ -625,6 +653,8 @@ export default function StoreDetailScreen() {
           category={storeCategory}
           reviewCount={storeReviewRating.totalCount || storeReviewCount}
           address={storeAddress}
+          latitude={apiStore?.latitude ?? undefined}
+          longitude={apiStore?.longitude ?? undefined}
           openHours={storeOpenHours}
           closedDays={storeHolidayDates}
           university={selectedUniversity}
@@ -657,6 +687,7 @@ export default function StoreDetailScreen() {
               onTabChange={setActiveTab}
               news={storeNews}
               menu={storeMenu}
+              menuImageUrls={menuImageUrls}
               announcements={storeNews.map((n) => ({ id: n.id, title: n.title, content: n.content }))}
               recommendStores={[]} // TODO: 추천 가게 API 추가 후 연동
               reviewRating={storeReviewRating}
@@ -665,6 +696,7 @@ export default function StoreDetailScreen() {
               onEditReview={handleEditReview}
               onDeleteReview={handleDeleteReview}
               onLikeReview={handleLikeReview}
+              onReportReview={handleReportReview}
               storeInfo={storeInfo}
               scrollViewRef={scrollViewRef}
               scrollOffsetY={scrollOffsetY}

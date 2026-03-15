@@ -648,7 +648,7 @@ export default function HomeScreen({ navigation }) {
                     setIsStoreModalVisible(false);
                     navigation.navigate('StoreManagement');
                   }}>
-                    <Text style={styles.addStoreText}>+ 가게 추가</Text>
+                    <Text style={styles.addStoreText}>+ 가게 설정</Text>
                   </TouchableOpacity>
                 </View>
 

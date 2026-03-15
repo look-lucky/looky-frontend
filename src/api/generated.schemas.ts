@@ -1720,34 +1720,34 @@ export interface WithdrawRequest {
 }
 
 export type GetStoresParams = {
-/**
- * 검색 키워드 (상점 이름)
- */
-keyword?: string;
-/**
- * 카테고리 필터 (복수 선택 가능)
- */
-categories?: GetStoresCategoriesItem[];
-/**
- * 분위기 필터 (복수 선택 가능)
- */
-moods?: GetStoresMoodsItem[];
-/**
- * 대학(상권) ID 필터
- */
-universityId?: number;
-/**
- * 제휴 업체 보유 여부 필터 (true: 있음, false: 없음, 생략: 전체)
- */
-hasPartnership?: boolean;
-/**
- * 상점 상태 필터 (UNCLAIMED, ACTIVE, BANNED, 생략: 전체)
- */
-storeStatus?: GetStoresStoreStatus;
-/**
- * 페이징 정보 (page, size, sort)
- */
-pageable: Pageable;
+  /**
+   * 검색 키워드 (상점 이름)
+   */
+  keyword?: string;
+  /**
+   * 카테고리 필터 (복수 선택 가능)
+   */
+  categories?: GetStoresCategoriesItem[];
+  /**
+   * 분위기 필터 (복수 선택 가능)
+   */
+  moods?: GetStoresMoodsItem[];
+  /**
+   * 대학(상권) ID 필터
+   */
+  universityId?: number;
+  /**
+   * 제휴 업체 보유 여부 필터 (true: 있음, false: 없음, 생략: 전체)
+   */
+  hasPartnership?: boolean;
+  /**
+   * 상점 상태 필터 (UNCLAIMED, ACTIVE, BANNED, 생략: 전체)
+   */
+  storeStatus?: GetStoresStoreStatus;
+  /**
+   * 페이징 정보 (page, size, sort)
+   */
+  pageable: Pageable;
 };
 
 export type GetStoresCategoriesItem = typeof GetStoresCategoriesItem[keyof typeof GetStoresCategoriesItem];
@@ -1782,37 +1782,37 @@ export const GetStoresStoreStatus = {
 } as const;
 
 export type GetReviewsParams = {
-/**
- * 페이징 정보
- */
-pageable: Pageable;
+  /**
+   * 페이징 정보
+   */
+  pageable: Pageable;
 };
 
 export type GetStoreNewsListParams = {
-/**
- * 페이징 정보 (page, size, sort)
- */
-pageable: Pageable;
+  /**
+   * 페이징 정보 (page, size, sort)
+   */
+  pageable: Pageable;
 };
 
-export type CreateItemCategoryBody = {[key: string]: string};
+export type CreateItemCategoryBody = { [key: string]: string };
 
 export type GetCommentsParams = {
-/**
- * 페이징 정보
- */
-pageable: Pageable;
+  /**
+   * 페이징 정보
+   */
+  pageable: Pageable;
 };
 
 export type GetInquiriesParams = {
-/**
- * 페이징 정보
- */
-pageable: Pageable;
+  /**
+   * 페이징 정보
+   */
+  pageable: Pageable;
 };
 
 export type CompleteSocialSignupParams = {
-userId: number;
+  userId: number;
 };
 
 export type UploadStoreDataBody = {
@@ -1821,10 +1821,10 @@ export type UploadStoreDataBody = {
 };
 
 export type UploadPartnershipDataParams = {
-/**
- * 대상 조직 ID (관리자용)
- */
-organizationId?: number;
+  /**
+   * 대상 조직 ID (관리자용)
+   */
+  organizationId?: number;
 };
 
 export type UploadPartnershipDataBody = {
@@ -1832,82 +1832,82 @@ export type UploadPartnershipDataBody = {
   file: Blob;
 };
 
-export type UpdateItemCategoryBody = {[key: string]: string};
+export type UpdateItemCategoryBody = { [key: string]: string };
 
-export type HealthCheck200 = {[key: string]: { [key: string]: unknown }};
+export type HealthCheck200 = { [key: string]: { [key: string]: unknown } };
 
 export type GetNearbyStoresParams = {
-/**
- * 위도
- */
-latitude: number;
-/**
- * 경도
- */
-longitude: number;
-/**
- * 반경(km)
- */
-radius: number;
+  /**
+   * 위도
+   */
+  latitude: number;
+  /**
+   * 경도
+   */
+  longitude: number;
+  /**
+   * 반경(km)
+   */
+  radius: number;
 };
 
 export type GetStoreMapParams = {
-/**
- * 대학(상권) ID 필터
- */
-universityId?: number;
+  /**
+   * 대학(상권) ID 필터
+   */
+  universityId?: number;
 };
 
 export type GetStoresByLocationParams = {
-/**
- * 위도
- */
-latitude: number;
-/**
- * 경도
- */
-longitude: number;
+  /**
+   * 위도
+   */
+  latitude: number;
+  /**
+   * 경도
+   */
+  longitude: number;
 };
 
 export type SearchUnclaimedStoresParams = {
-keyword: string;
+  keyword: string;
 };
 
 export type GetMyReviewsParams = {
-/**
- * 페이징 정보
- */
-pageable: Pageable;
+  /**
+   * 페이징 정보
+   */
+  pageable: Pageable;
 };
 
 export type GetMyFavoritesParams = {
-/**
- * 페이징 정보
- */
-pageable: Pageable;
+  /**
+   * 페이징 정보
+   */
+  pageable: Pageable;
 };
 
 export type GetEventsParams = {
-/**
- * 검색 키워드 (제목)
- */
-keyword?: string;
-/**
- * 이벤트 타입 필터 (복수 선택 가능)
- */
-eventTypes?: GetEventsEventTypesItem[];
-/**
- * 상태 필터
- */
-status?: GetEventsStatus;
-/**
- * 대학 ID
- */
-universityId?: number;
-/**
- * 페이징 정보
- */
-pageable: Pageable;
+  /**
+   * 검색 키워드 (제목)
+   */
+  keyword?: string;
+  /**
+   * 이벤트 타입 필터 (복수 선택 가능)
+   */
+  eventTypes?: GetEventsEventTypesItem[];
+  /**
+   * 상태 필터
+   */
+  status?: GetEventsStatus;
+  /**
+   * 대학 ID
+   */
+  universityId?: number;
+  /**
+   * 페이징 정보
+   */
+  pageable: Pageable;
 };
 
 export type GetEventsEventTypesItem = typeof GetEventsEventTypesItem[keyof typeof GetEventsEventTypesItem];
@@ -1932,29 +1932,29 @@ export const GetEventsStatus = {
 } as const;
 
 export type CheckUsernameAvailabilityParams = {
-username: string;
+  username: string;
 };
 
 export type GetAllUsersParams = {
-/**
- * 페이징 정보
- */
-pageable: Pageable;
+  /**
+   * 페이징 정보
+   */
+  pageable: Pageable;
 };
 
 export type GetGeocodeParams = {
-/**
- * 도로명 주소 (예: 전라북도 전주시 덕진구 명륜3길 22)
- */
-address: string;
+  /**
+   * 도로명 주소 (예: 전라북도 전주시 덕진구 명륜3길 22)
+   */
+  address: string;
 };
 
 export type GetStoreClaimsParams = {
-/**
- * 요청 상태 (PENDING, APPROVED, REJECTED, CANCELED)
- */
-status?: GetStoreClaimsStatus;
-pageable: Pageable;
+  /**
+   * 요청 상태 (PENDING, APPROVED, REJECTED, CANCELED)
+   */
+  status?: GetStoreClaimsStatus;
+  pageable: Pageable;
 };
 
 export type GetStoreClaimsStatus = typeof GetStoreClaimsStatus[keyof typeof GetStoreClaimsStatus];
@@ -1968,16 +1968,20 @@ export const GetStoreClaimsStatus = {
 } as const;
 
 export type ExportPartnershipTemplateParams = {
-/**
- * 대상 대학 ID
- */
-universityId: number;
+  /**
+   * 대상 대학 ID
+   */
+  universityId: number;
 };
 
 export type GetAllInquiriesParams = {
-/**
- * 페이징 정보
- */
-pageable: Pageable;
+  /**
+   * 페이징 정보
+   */
+  pageable: Pageable;
 };
 
+export interface StoreMenuBoardImageResponse {
+  isSuccess?: boolean;
+  data?: string[];
+}
