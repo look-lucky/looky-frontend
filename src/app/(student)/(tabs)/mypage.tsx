@@ -83,33 +83,23 @@ export default function MyPageTab() {
     const rawCoupons = (myCouponsRes as any)?.data?.data;
     const coupons = Array.isArray(rawCoupons) ? rawCoupons : [];
     const now = Date.now();
-    // benefits.tsx의 isExpiringSoon 로직 (7일 이내)
-    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
 
     let owned = 0;
     let expiringSoon = 0;
     let used = 0;
 
     for (const c of coupons) {
-      const isUnexpired = !c.expiresAt || new Date(c.expiresAt).getTime() > now;
-
-      // 보유 쿠폰: UNUSED 또는 ACTIVATED 이면서 만료되지 않음
-      if ((c.status === "UNUSED" || c.status === "ACTIVATED") && isUnexpired) {
-        owned++;
-      }
-
-      // 곧 만료: UNUSED 이면서 7일 이내 만료
-      if (c.status === "UNUSED" && c.expiresAt) {
-        const expiresAt = new Date(c.expiresAt).getTime();
-        const diffMs = expiresAt - now;
-        if (diffMs >= 0 && diffMs <= sevenDaysMs) {
-          expiringSoon++;
-        }
-      }
-
-      // 사용완료: USED 거나 EXPIRED 인 경우
       if (c.status === "USED" || c.status === "EXPIRED") {
         used++;
+      } else if (c.status === "UNUSED" || c.status === "ACTIVATED") {
+        owned++;
+        if (c.expiresAt) {
+          const expiresAt = new Date(c.expiresAt).getTime();
+          if (expiresAt - now <= threeDays && expiresAt - now > 0) {
+            expiringSoon++;
+          }
+        }
       }
     }
 
