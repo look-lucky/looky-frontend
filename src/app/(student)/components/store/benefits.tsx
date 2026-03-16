@@ -12,7 +12,7 @@ import {
 } from '@/src/shared/theme/theme';
 import type { Coupon } from '@/src/shared/types/store';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 // Re-export type for convenience
 export type { Coupon };
