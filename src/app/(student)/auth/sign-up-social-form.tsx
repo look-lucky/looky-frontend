@@ -277,7 +277,12 @@ export default function SocialSignupFormPage() {
       <AgreeModal
         visible={agreeModalVisible}
         onAgree={() => setAgreeModalVisible(false)}
-        onClose={() => router.canGoBack() ? router.back() : router.replace("/auth")}
+        onClose={async () => {
+          if (userType === "ROLE_GUEST") {
+            await handleLogout();
+          }
+          router.replace("/auth");
+        }}
       />
       <View style={styles.header}>
         <ArrowLeft onPress={() => {
