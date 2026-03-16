@@ -181,7 +181,7 @@ export function transformStoreResponse(
   return {
     id: String(response.id ?? 0),
     name: response.name ?? '',
-    image: response.imageUrls?.[0] ?? '',
+    image: response.profileImageUrl || response.imageUrls?.[0] || '',
     rating: response.averageRating ?? 0,
     reviewCount: response.reviewCount ?? 0,
     distance,

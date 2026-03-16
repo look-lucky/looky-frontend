@@ -26,6 +26,7 @@ interface StoreContentProps {
   onTabChange: (tabId: string) => void;
   news: NewsItem[];
   menu: MenuCategory[];
+  menuImageUrls?: string[];
   announcements: Announcement[];
   recommendStores: RecommendStore[];
   reviewRating: ReviewRating;
@@ -49,6 +50,7 @@ export function StoreContent({
   onTabChange,
   news,
   menu,
+  menuImageUrls,
   announcements,
   recommendStores,
   reviewRating,
@@ -73,6 +75,7 @@ export function StoreContent({
       {activeTab === 'menu' && (
         <MenuSection
           categories={menu}
+          menuImageUrls={menuImageUrls}
           scrollViewRef={scrollViewRef}
           scrollOffsetY={scrollOffsetY}
         />

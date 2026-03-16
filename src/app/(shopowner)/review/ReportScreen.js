@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -18,10 +19,11 @@ const REASON_MAP = {
 };
 
 export default function ReportScreen({ navigation, route }) {
-  const reviewId = route?.params?.reviewId;
+  const params = useLocalSearchParams();
+  const reviewId = params?.reviewId || route?.params?.reviewId;
   const scrollViewRef = useRef(null);
 
-  const [reporterType, setReporterType] = useState('owner');
+  const [reporterType, setReporterType] = useState(params?.reporterType || route?.params?.reporterType || 'owner');
   const [selectedReason, setSelectedReason] = useState(null);
   const [detailText, setDetailText] = useState('');
 
@@ -79,7 +81,7 @@ export default function ReportScreen({ navigation, route }) {
     reportMutation.mutate(
       { reviewId, data: body },
       {
-        onSuccess: () => navigation.navigate('ReportComplete'),
+        onSuccess: () => navigation.navigate('ReportComplete', { reporterType }),
         onError: (error) => {
           if (error?.status === 409) {
             Alert.alert('알림', '이미 신고된 리뷰입니다.');
@@ -137,9 +139,9 @@ export default function ReportScreen({ navigation, route }) {
             <Text style={styles.sectionTitle}>신고자 정보</Text>
             <View style={styles.radioGroup}>
               <RadioItem
-                label="매장 관계자"
-                isSelected={reporterType === 'owner'}
-                onPress={() => setReporterType('owner')}
+                label={reporterType === 'owner' ? "매장 관계자" : "학생"}
+                isSelected={true}
+                onPress={() => { }}
               />
             </View>
             <View style={styles.divider} />

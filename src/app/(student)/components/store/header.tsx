@@ -5,10 +5,13 @@ import { ThemedView } from '@/src/shared/common/themed-view';
 import { useAuth } from '@/src/shared/lib/auth';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, System, Text } from '@/src/shared/theme/theme';
+import { MapLinks, MapType, openExternalMap } from '@/src/shared/utils/map-link';
 import { formatOperatingHours, parseAllOperatingHours } from '@/src/shared/utils/store-transform';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActionSheetIOS,
+  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -48,6 +51,8 @@ interface StoreHeaderProps {
   category: string;
   reviewCount: number;
   address: string;
+  latitude?: number;
+  longitude?: number;
   openHours: string;
   closedDays: string;
   university: string;
@@ -213,6 +218,7 @@ function StoreInfoSection({
   openHours,
   closedDays,
   onReviewPress,
+  onAddressPress,
 }: {
   name: string;
   rating: number;
@@ -222,6 +228,7 @@ function StoreInfoSection({
   openHours: string;
   closedDays: string;
   onReviewPress?: () => void;
+  onAddressPress?: () => void;
 }) {
   const [isHoursExpanded, setIsHoursExpanded] = useState(false);
 
@@ -271,10 +278,15 @@ function StoreInfoSection({
 
       <View style={styles.horizontalDivider} />
 
-      <ThemedView style={styles.infoRow}>
+      <TouchableOpacity
+        style={styles.infoRow}
+        onPress={onAddressPress}
+        activeOpacity={0.7}
+      >
         <Ionicons name="location-outline" size={rs(14)} color={Text.secondary} />
         <ThemedText style={styles.infoText}>{address}</ThemedText>
-      </ThemedView>
+        <Ionicons name="map-outline" size={rs(14)} color={Text.tertiary} />
+      </TouchableOpacity>
 
       <TouchableOpacity style={styles.infoRow} onPress={handleToggleHours}>
         <Ionicons name="time-outline" size={rs(14)} color={Text.secondary} />
@@ -359,6 +371,8 @@ export function StoreHeader({
   category,
   reviewCount,
   address,
+  latitude,
+  longitude,
   openHours,
   closedDays,
   university,
@@ -371,6 +385,46 @@ export function StoreHeader({
 }: StoreHeaderProps) {
   const { collegeName } = useAuth();
   const [showUniversityModal, setShowUniversityModal] = useState(false);
+
+  const handleMapSelect = async (type: MapType) => {
+    if (latitude && longitude) {
+      await openExternalMap(type, {
+        latitude,
+        longitude,
+        name,
+        address,
+      });
+    }
+  };
+
+  const handleAddressPress = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['취소', MapLinks.naver.name, MapLinks.kakao.name, MapLinks.google.name],
+          cancelButtonIndex: 0,
+          title: '길찾기 지도 선택',
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) handleMapSelect('naver');
+          else if (buttonIndex === 2) handleMapSelect('kakao');
+          else if (buttonIndex === 3) handleMapSelect('google');
+        }
+      );
+    } else {
+      Alert.alert(
+        '길찾기 지도 선택',
+        '사용하실 지도 앱을 선택해주세요.',
+        [
+          { text: MapLinks.naver.name, onPress: () => handleMapSelect('naver') },
+          { text: MapLinks.kakao.name, onPress: () => handleMapSelect('kakao') },
+          { text: MapLinks.google.name, onPress: () => handleMapSelect('google') },
+          { text: '취소', style: 'cancel' },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
 
   // partnership 목록 → SelectModal 옵션 (organizationName을 id/label로 사용)
   const partnershipOptions = React.useMemo(() =>
@@ -440,9 +494,12 @@ export function StoreHeader({
           category={category}
           reviewCount={reviewCount}
           address={address}
+          latitude={latitude}
+          longitude={longitude}
           openHours={openHours}
           closedDays={closedDays}
           onReviewPress={onReviewPress}
+          onAddressPress={handleAddressPress}
         />
         <TagSection
           university={university}

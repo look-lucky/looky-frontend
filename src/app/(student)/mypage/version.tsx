@@ -1,5 +1,6 @@
 import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,7 +24,7 @@ export default function VersionScreen() {
 
         <View style={styles.versionRow}>
           <Text style={styles.versionLabel}>버전</Text>
-          <Text style={styles.versionValue}>0.0.1</Text>
+          <Text style={styles.versionValue}>{Constants.expoConfig?.version ?? '1.0.0'}</Text>
         </View>
 
         <View style={styles.divider} />

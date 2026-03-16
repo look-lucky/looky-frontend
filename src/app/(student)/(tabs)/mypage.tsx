@@ -90,9 +90,9 @@ export default function MyPageTab() {
     let used = 0;
 
     for (const c of coupons) {
-      if (c.status === "USED" || c.status === "ACTIVATED" || c.status === "EXPIRED") {
+      if (c.status === "USED" || c.status === "EXPIRED") {
         used++;
-      } else if (c.status === "UNUSED") {
+      } else if (c.status === "UNUSED" || c.status === "ACTIVATED") {
         owned++;
         if (c.expiresAt) {
           const expiresAt = new Date(c.expiresAt).getTime();

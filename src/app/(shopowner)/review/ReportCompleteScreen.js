@@ -1,13 +1,18 @@
+import { useLocalSearchParams } from 'expo-router';
 import { Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export default function ReportCompleteScreen({ navigation }) {
+export default function ReportCompleteScreen({ navigation, route }) {
+  const params = useLocalSearchParams();
+  const reporterType = params?.reporterType || route?.params?.reporterType || 'owner';
+
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 1. 중앙 콘텐츠 영역 */}
       <View style={styles.content}>
-        <Image 
-          source={ require('@/assets/images/shopowner/ReportComplete.png') } 
-          style={styles.completeImage} 
+        <Image
+          source={require('@/assets/images/shopowner/ReportComplete.png')}
+          style={styles.completeImage}
         />
 
         <View style={styles.textContainer}>
@@ -18,11 +23,20 @@ export default function ReportCompleteScreen({ navigation }) {
 
       {/* 2. 하단 버튼 영역 */}
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={styles.confirmButton} 
-          onPress={() => navigation.navigate('MainTabs', { screen: 'Review' })}
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={() => {
+            if (reporterType === 'student') {
+              navigation.goBack();
+              navigation.goBack();
+            } else {
+              navigation.navigate('MainTabs', { screen: 'Review' });
+            }
+          }}
         >
-          <Text style={styles.confirmButtonText}>리뷰 화면으로 돌아가기</Text>
+          <Text style={styles.confirmButtonText}>
+            {reporterType === 'student' ? '매장 화면으로 돌아가기' : '리뷰 화면으로 돌아가기'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -30,61 +44,61 @@ export default function ReportCompleteScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#fff' 
+  container: {
+    flex: 1,
+    backgroundColor: '#fff'
   },
-  content: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    paddingHorizontal: 20 
-  },
-  
-  // 94x94 이미지 스타일
-  completeImage: { 
-    width: 94, 
-    height: 94, 
-    marginBottom: 20 
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20
   },
 
-  textContainer: { 
-    alignItems: 'center', 
-    gap: 5 
+  // 94x94 이미지 스타일
+  completeImage: {
+    width: 94,
+    height: 94,
+    marginBottom: 20
   },
-  titleText: { 
-    fontSize: 20, 
-    fontWeight: '700', 
-    color: 'black', 
+
+  textContainer: {
+    alignItems: 'center',
+    gap: 5
+  },
+  titleText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: 'black',
     lineHeight: 28,
-    fontFamily: 'Pretendard' 
+    fontFamily: 'Pretendard'
   },
-  subText: { 
-    fontSize: 14, 
-    fontWeight: '500', 
-    color: '#828282', 
+  subText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#828282',
     lineHeight: 19.6,
-    fontFamily: 'Pretendard' 
+    fontFamily: 'Pretendard'
   },
 
   // 하단 버튼 스타일
-  footer: { 
-    paddingHorizontal: 20, 
-    paddingBottom: 30, 
-    alignItems: 'center' 
+  footer: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    alignItems: 'center'
   },
-  confirmButton: { 
+  confirmButton: {
     width: '100%',
-    height: 45, 
+    height: 45,
     backgroundColor: 'black',
-    borderRadius: 8, 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  confirmButtonText: { 
-    color: 'white', 
-    fontSize: 14, 
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 14,
     fontWeight: '700',
-    fontFamily: 'Pretendard' 
+    fontFamily: 'Pretendard'
   },
 });

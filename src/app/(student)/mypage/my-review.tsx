@@ -165,16 +165,28 @@ export default function MyReview() {
             r.parentReviewId && review.reviewId && String(r.parentReviewId) === String(review.reviewId)
           );
 
-          // 3. 필드 자체가 객체인 경우 (ownerReply가 불리언이 아닐 가능성 대비)
-          const objectReply = (typeof review.ownerReply === 'object' && review.ownerReply !== null)
-            ? (review.ownerReply as any)
-            : null;
-
-          const serverReply = nestedReply || flatReply || objectReply;
+          const serverReply = nestedReply || flatReply;
           const hasReply = (review.ownerReply === true) || !!serverReply;
-          const replyContent = serverReply?.content || (review as any).ownerReplyContent || (review as any).replyContent;
-          const replyDate = (serverReply?.createdAt || (review as any).replyDate || (review as any).ownerReplyDate)
-            ? new Date(serverReply?.createdAt || (review as any).replyDate || (review as any).ownerReplyDate).toLocaleDateString('ko-KR', {
+
+          // 다양한 필드명 대응 (루트 객체 직접 확인 및 중첩 객체 확인)
+          const replyContent = serverReply?.content
+            || (review as any).ownerReplyContent
+            || (review as any).replyContent
+            || (review as any).replyText
+            || (review as any).ownerComment
+            || (review as any).comment
+            || (typeof review.ownerReply === 'string' ? review.ownerReply : '')
+            || (typeof (review as any).reply === 'string' ? (review as any).reply : '')
+            || (typeof (review as any).ownerReply === 'object' && (review as any).ownerReply !== null ? ((review as any).ownerReply.content || (review as any).ownerReply.text) : '');
+
+          const rawReplyDate = serverReply?.createdAt
+            || (review as any).replyDate
+            || (review as any).ownerReplyDate
+            || (review as any).ownerReplyCreatedAt
+            || (typeof (review as any).ownerReply === 'object' && (review as any).ownerReply !== null ? (review as any).ownerReply.createdAt : null);
+
+          const replyDate = rawReplyDate
+            ? new Date(rawReplyDate).toLocaleDateString('ko-KR', {
               year: 'numeric',
               month: '2-digit',
               day: '2-digit',
@@ -255,7 +267,8 @@ export default function MyReview() {
 
               <Text style={styles.reviewContent}>{review.content}</Text>
 
-              {hasReply && (
+              {/* 사장님 답글 섹션 (임시 비활성화: 데이터 로딩 문제로 인해 주석 처리) */}
+              {/* {hasReply && (
                 <>
                   <View style={styles.divider} />
                   <View style={styles.replySection}>
@@ -275,7 +288,7 @@ export default function MyReview() {
                     <Text style={styles.replyContentText}>{replyContent || '답글 내용을 불러올 수 없습니다.'}</Text>
                   </View>
                 </>
-              )}
+              )} */}
             </View>
           );
         })}
@@ -422,7 +435,7 @@ const styles = StyleSheet.create({
     color: 'black',
     fontFamily: 'Pretendard',
     lineHeight: rs(20),
-    marginBottom: rs(12),
+    marginBottom: rs(0),
   },
   divider: {
     height: 1,
