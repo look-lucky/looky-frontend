@@ -1,5 +1,5 @@
-import StudentIcon from "@/assets/images/onboarding/student.svg";
 import OwnerIcon from "@/assets/images/onboarding/owner.svg";
+import StudentIcon from "@/assets/images/onboarding/student.svg";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Fonts, Gray } from "@/src/shared/theme/theme";
@@ -69,17 +69,20 @@ const styles = StyleSheet.create({
   },
   heroArea: {
     alignItems: "center",
-    gap: rs(8),
+    gap: rs(0),
   },
   characterImage: {
     width: rs(120),
     height: rs(120),
+    transform: [{ translateY: -rs(0) }],
   },
   logoText: {
     fontSize: rs(32),
     fontFamily: Fonts.bold,
     color: Brand.primary,
     letterSpacing: 2,
+    lineHeight: rs(35),
+    paddingVertical: rs(0),
   },
   questionText: {
     fontSize: rs(16),
