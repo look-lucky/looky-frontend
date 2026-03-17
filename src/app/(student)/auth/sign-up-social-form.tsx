@@ -4,6 +4,7 @@ import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
+import { decodeJwtPayload, getToken } from "@/src/shared/lib/auth/token";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/theme/theme";
@@ -58,12 +59,27 @@ function RadioButton({
 
 export default function SocialSignupFormPage() {
   const router = useRouter();
-  const { userId, provider } = useLocalSearchParams<{
+  const { userId: userIdParam, provider } = useLocalSearchParams<{
     userId: string;
     provider: string;
   }>();
   const { handleLogout, userType } = useAuth();
   const { setSignupFields, userType: storedUserType, gender: storedGender, birthYear: storedBirthYear, birthMonth: storedBirthMonth, birthDay: storedBirthDay, nickname: storedNickname, ownerEmail: storedOwnerEmail } = useSignupStore();
+
+  // URL 파라미터에 userId가 없을 경우(AuthRedirectGuard의 params 없는 리다이렉트) JWT에서 fallback
+  const [userId, setUserId] = useState<string | undefined>(userIdParam);
+  useEffect(() => {
+    if (!userIdParam) {
+      getToken().then((tokenData) => {
+        if (tokenData) {
+          const payload = decodeJwtPayload(tokenData.accessToken);
+          if (payload?.sub) {
+            setUserId(payload.sub);
+          }
+        }
+      });
+    }
+  }, [userIdParam]);
 
   const sendEmailMutation = useSend();
   const verifyEmailMutation = useVerify();
