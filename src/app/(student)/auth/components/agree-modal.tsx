@@ -504,16 +504,14 @@ export function AgreeModal({ visible, onAgree, onClose }: AgreeModalProps) {
           </View>
           </View>
         </View>
-      </Modal>
 
-      {/* 약관 상세 모달 */}
-      {detailModal && (
+        {/* 약관 상세 모달 - Modal 안에 중첩해야 iOS에서 AgreeModal 위에 정상 표시됨 */}
         <TermsDetailModal
           visible={!!detailModal}
-          type={detailModal}
+          type={detailModal ?? "terms"}
           onClose={() => setDetailModal(null)}
         />
-      )}
+      </Modal>
     </>
   );
 }
