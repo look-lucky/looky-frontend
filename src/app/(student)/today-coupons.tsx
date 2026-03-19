@@ -2,6 +2,7 @@ import GiftIcon from '@/assets/images/icons/coupon/gift.svg';
 import HotPriceIcon from '@/assets/images/icons/coupon/hot-price.svg';
 import PriceTagDollarIcon from '@/assets/images/icons/coupon/price-tag-dollar.svg';
 import { useGetTodayCoupons } from '@/src/api/coupon';
+import { useGetStudentInfo } from '@/src/api/my-page';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
@@ -12,6 +13,7 @@ import {
   Primary,
   Text as TextColor,
 } from '@/src/shared/theme/theme';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -64,7 +66,12 @@ const formatDiscount = (benefitType?: string, benefitValue?: string) => {
 
 const formatIssueEndDate = (dateStr?: string) => {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
+
+  let normalized = dateStr;
+  if (dateStr && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
+    normalized = dateStr.replace(' ', 'T') + 'Z';
+  }
+  const d = new Date(normalized);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -81,7 +88,12 @@ const formatIssueEndDate = (dateStr?: string) => {
 const getTimeAgo = (dateStr?: string) => {
   if (!dateStr) return '';
   const now = new Date();
-  const created = new Date(dateStr);
+
+  let normalized = dateStr;
+  if (dateStr && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
+    normalized = dateStr.replace(' ', 'T') + 'Z';
+  }
+  const created = new Date(normalized);
   const diffMs = now.getTime() - created.getTime();
   if (diffMs < 0) return '방금 전';
   const diffMinutes = Math.floor(diffMs / (1000 * 60));
@@ -94,9 +106,67 @@ const getTimeAgo = (dateStr?: string) => {
 export default function TodayCouponsPage() {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState<CouponFilter>('all');
-  const { data: todayCouponsRes, isLoading } = useGetTodayCoupons();
-  const rawCoupons = (todayCouponsRes as any)?.data?.data ?? [];
-  const coupons = Array.isArray(rawCoupons) ? rawCoupons : [];
+  const { data: studentInfoRes } = useGetStudentInfo();
+  const studentInfo = (studentInfoRes as any)?.data?.data;
+  const universityId = studentInfo?.universityId;
+
+  // 2. 오늘의 신규 쿠폰 조회 (백엔드 통합 API 사용)
+  const { data: todayCouponsRes, isLoading } = useGetTodayCoupons({
+    query: {
+      enabled: !!universityId,
+      staleTime: 0,
+    },
+  });
+
+  const rawCoupons = useMemo(() => {
+    const isWithin24HoursRaw = (dateString?: string) => {
+      if (!dateString) return false;
+      let dateToParse = dateString;
+      if (!dateString.includes('Z') && !dateString.includes('+')) {
+        dateToParse = dateString.replace(' ', 'T') + 'Z';
+      }
+      const created = new Date(dateToParse);
+      const now = new Date();
+      const diffMs = now.getTime() - created.getTime();
+      const adjustedDiffMs = Math.abs(diffMs - 32400000) < 600000 ? 0 : diffMs;
+      return adjustedDiffMs >= 0 && adjustedDiffMs <= 24 * 60 * 60 * 1000;
+    };
+
+    const baseCouponsRaw = (todayCouponsRes as any)?.data?.data ?? [];
+    
+    // 데이터 정규화 및 필터링
+    const normalized = (Array.isArray(baseCouponsRaw) ? baseCouponsRaw : [])
+      .map((item: any) => {
+        const c = item.data || item;
+        return {
+          ...c,
+          id: c.id || item.id || c.couponId || item.couponId,
+        };
+      })
+      .filter(c => isWithin24HoursRaw(c.issueStartsAt));
+
+    // 중복 제거 및 최신순 정렬
+    const seen = new Set();
+    const result = normalized
+      .filter((c: any) => {
+        const id = c.id;
+        if (!id || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      })
+      .sort((a: any, b: any) => (Number(b.id) || 0) - (Number(a.id) || 0));
+
+    return result;
+  }, [todayCouponsRes]);
+  const coupons = useMemo(() => {
+    return (Array.isArray(rawCoupons) ? rawCoupons : []).map((item: any) => {
+      const c = item.data || item;
+      return {
+        ...item, // 기존 필드 유지
+        ...c,    // 중첩된 데이터가 있다면 덮어쓰기
+      };
+    });
+  }, [rawCoupons]);
 
   const filteredCoupons = useMemo(() => {
     if (selectedFilter === 'all') return coupons;
