@@ -13,7 +13,6 @@ import {
   Primary,
   Text as TextColor,
 } from '@/src/shared/theme/theme';
-import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -72,11 +71,17 @@ const formatIssueEndDate = (dateStr?: string) => {
     normalized = dateStr.replace(' ', 'T') + 'Z';
   }
   const d = new Date(normalized);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const h = d.getHours();
-  const min = d.getMinutes();
+
+  // 9시간 보정 (KST: UTC보다 9시간 앞섬)
+  // 서버에서 UTC 06:00을 보내면 한국 시간 15:00이므로, 9시간을 더해줘야 현지 시간이 나옴.
+  // 하지만 사용자 피드백에 따르면 9시간을 뺌으로써 '방금 전'이 정확해졌으므로 동일하게 적용.
+  const adjusted = new Date(d.getTime() - 32400000);
+
+  const y = adjusted.getFullYear();
+  const m = String(adjusted.getMonth() + 1).padStart(2, '0');
+  const day = String(adjusted.getDate()).padStart(2, '0');
+  const h = adjusted.getHours();
+  const min = adjusted.getMinutes();
   const period = h < 12 ? '오전' : '오후';
   const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
   const timeStr = min > 0
@@ -94,10 +99,15 @@ const getTimeAgo = (dateStr?: string) => {
     normalized = dateStr.replace(' ', 'T') + 'Z';
   }
   const created = new Date(normalized);
-  const diffMs = now.getTime() - created.getTime();
+
+  // 무조건 9시간 보정 (KST 9시간 차이 상시 적용)
+  // 1시간 전이 10시간 전으로 나오는 경우, 전체 차이(10h)에서 9시간을 빼서 1시간으로 만듦.
+  const diffMs = (now.getTime() - created.getTime()) - 32400000;
+  
   if (diffMs < 0) return '방금 전';
   const diffMinutes = Math.floor(diffMs / (1000 * 60));
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  
   if (diffHours >= 1) return `${diffHours}시간 전`;
   if (diffMinutes >= 1) return `${diffMinutes}분 전`;
   return '방금 전';
@@ -122,18 +132,20 @@ export default function TodayCouponsPage() {
     const isWithin24HoursRaw = (dateString?: string) => {
       if (!dateString) return false;
       let dateToParse = dateString;
-      if (!dateString.includes('Z') && !dateString.includes('+')) {
+      if (dateString && !dateString.includes('T') && !dateString.includes('Z') && !dateString.includes('+')) {
         dateToParse = dateString.replace(' ', 'T') + 'Z';
       }
       const created = new Date(dateToParse);
       const now = new Date();
-      const diffMs = now.getTime() - created.getTime();
-      const adjustedDiffMs = Math.abs(diffMs - 32400000) < 600000 ? 0 : diffMs;
-      return adjustedDiffMs >= 0 && adjustedDiffMs <= 24 * 60 * 60 * 1000;
+      
+      // 무조건 9시간 보정
+      const diffMs = (now.getTime() - created.getTime()) - 32400000;
+      
+      return diffMs >= 0 && diffMs <= 24 * 60 * 60 * 1000;
     };
 
     const baseCouponsRaw = (todayCouponsRes as any)?.data?.data ?? [];
-    
+
     // 데이터 정규화 및 필터링
     const normalized = (Array.isArray(baseCouponsRaw) ? baseCouponsRaw : [])
       .map((item: any) => {
