@@ -93,12 +93,29 @@ export default function MyPageTab() {
       if (c.status === "USED" || c.status === "EXPIRED") {
         used++;
       } else if (c.status === "UNUSED" || c.status === "ACTIVATED") {
-        owned++;
+        // 유효기간 체크 (9시간 보정 포함하여 benefits.tsx와 동기화)
+        let isExpired = false;
         if (c.expiresAt) {
-          const expiresAt = new Date(c.expiresAt).getTime();
-          if (expiresAt - now <= threeDays && expiresAt - now > 0) {
+          let normalized = c.expiresAt;
+          if (!normalized.includes('T') && !normalized.includes('Z') && !normalized.includes('+')) {
+            normalized = normalized.replace(' ', 'T') + 'Z';
+          }
+          const expiryTime = new Date(normalized).getTime() - 32400000;
+          if (expiryTime <= now) {
+            isExpired = true;
+          }
+          
+          // 곧 만료 예고 (3일 이내)
+          if (!isExpired && (expiryTime - now <= threeDays)) {
             expiringSoon++;
           }
+        }
+
+        if (isExpired) {
+          // 서버 상태는 UNUSED여도 시간이 지났으면 사용완료/만료로 집계 (Benefits과 동일하게)
+          used++;
+        } else {
+          owned++;
         }
       }
     }
