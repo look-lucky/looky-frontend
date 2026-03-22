@@ -1,4 +1,4 @@
-import { useDownloadCoupon, useGetCouponsByStore, useGetMyCoupons } from '@/src/api/coupon';
+import { useDownloadCoupon, useGetCouponsByStore } from '@/src/api/coupon';
 import { useAddFavorite, useCountFavorites, useGetMyFavorites, useRemoveFavorite } from '@/src/api/favorite';
 import type {
   CouponResponse,
@@ -189,10 +189,6 @@ export default function StoreDetailScreen() {
   const rawCoupons = (couponsRes as any)?.data?.data;
   const apiCoupons = (Array.isArray(rawCoupons) ? rawCoupons : []) as CouponResponse[];
 
-  // 내 쿠폰 목록 (이미 발급받은 쿠폰 확인용)
-  const { data: myCouponsRes } = useGetMyCoupons();
-  const rawMyCoupons = (myCouponsRes as any)?.data?.data;
-  const myCoupons = (Array.isArray(rawMyCoupons) ? rawMyCoupons : []) as any[];
 
   // 즐겨찾기 초기 상태 동기화
   React.useEffect(() => {
@@ -240,7 +236,8 @@ export default function StoreDetailScreen() {
     mutation: {
       onSuccess: () => {
         Alert.alert('쿠폰 발급 완료', '내 쿠폰함에서 확인하세요');
-        // 내 쿠폰 목록 갱신 + 지도 마커 hasCoupon 반영
+        // 스토어 쿠폰 목록 갱신 (isDownloaded 반영) + 내 쿠폰함 + 지도 마커 hasCoupon 반영
+        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/coupons`] });
         queryClient.invalidateQueries({ queryKey: ['/api/my-coupons'] });
         queryClient.invalidateQueries({ queryKey: ['/api/stores/map'] });
       },
@@ -388,6 +385,7 @@ export default function StoreDetailScreen() {
         remainingCount: c.totalQuantity != null && c.downloadCount != null
           ? Math.max(0, c.totalQuantity - c.downloadCount) : undefined,
         benefitType: c.benefitType as any,
+        isDownloaded: c.isDownloaded ?? false,
       }));
   }, [apiCoupons]);
 
@@ -507,13 +505,6 @@ export default function StoreDetailScreen() {
 
   const filteredCoupons = storeCoupons;
 
-  // 이미 발급받은 쿠폰 타이틀 목록 (API에 couponId 필드 없어서 title로 매칭)
-  const issuedCouponTitles = useMemo(() =>
-    myCoupons
-      .filter((mc) => mc.title != null)
-      .map((mc) => mc.title as string),
-    [myCoupons],
-  );
 
   // ── 이벤트 핸들러 ──────────────────────────────────────────
 
@@ -720,7 +711,6 @@ export default function StoreDetailScreen() {
         onClose={() => setIsCouponModalVisible(false)}
         storeName={storeName}
         coupons={filteredCoupons}
-        issuedCouponTitles={issuedCouponTitles}
         onIssueCoupon={handleIssueCoupon}
         isIssuing={issueCouponMutation.isPending}
       />
