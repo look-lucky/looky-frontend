@@ -33,6 +33,7 @@ export interface Coupon {
   expiryDate: string;
   remainingCount?: number;
   benefitType?: 'FIXED_DISCOUNT' | 'PERCENTAGE_DISCOUNT' | 'SERVICE_GIFT';
+  isDownloaded?: boolean;
   targetOrganizationId?: number | null; // 특정 단과대학 전용 쿠폰 (null이면 전체 대상)
 }
 

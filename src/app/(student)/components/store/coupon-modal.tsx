@@ -21,7 +21,6 @@ interface CouponModalProps {
   onClose: () => void;
   storeName: string;
   coupons: Coupon[];
-  issuedCouponTitles: string[];
   onIssueCoupon: (couponId: string) => void;
   isIssuing: boolean;
 }
@@ -43,7 +42,6 @@ export function CouponModal({
   onClose,
   storeName,
   coupons,
-  issuedCouponTitles,
   onIssueCoupon,
   isIssuing,
 }: CouponModalProps) {
@@ -101,7 +99,7 @@ export function CouponModal({
               </View>
             ) : (
               coupons.map((coupon) => {
-                const isIssued = issuedCouponTitles.includes(coupon.title);
+                const isIssued = coupon.isDownloaded ?? false;
                 const isSoldOut = coupon.remainingCount != null && coupon.remainingCount === 0;
                 const iconBg = BENEFIT_ICON_BG[coupon.benefitType ?? ''] ?? '#FFEABC';
                 const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ''];
