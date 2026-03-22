@@ -13,8 +13,9 @@ import { useEvents } from '@/src/shared/hooks/use-events';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray } from '@/src/shared/theme/theme';
 import { useScrollToTop } from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { Alert, BackHandler, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -40,34 +41,59 @@ export default function HomePage() {
 
   const { data: studentInfoRes } = useGetStudentInfo();
   const studentInfo = (studentInfoRes as any)?.data?.data;
+  const universityId = studentInfo?.universityId;
 
   const { data: myCouponsRes } = useGetMyCoupons();
   const rawCoupons = (myCouponsRes as any)?.data?.data;
   const couponCount = Array.isArray(rawCoupons) ? rawCoupons.length : 0;
 
-  const { data: todayCouponsRes } = useGetTodayCoupons();
-  const todayCoupons = ((todayCouponsRes as any)?.data?.data ?? [])
-    .filter((item: any) => {
-      const c = item.data || item;
-      if (!c.issueStartsAt) return true;
-      const issueDate = new Date(c.issueStartsAt);
+  // 오늘의 신규 쿠폰 조회 (백엔드 통합 API 사용)
+  const { data: todayCouponsRes } = useGetTodayCoupons({
+    query: {
+      enabled: !!universityId,
+      staleTime: 0,
+    },
+  });
+
+  // 3. 데이터 정규화 및 필터링 (24시간)
+  const todayCoupons = useMemo(() => {
+    const isWithin24HoursRaw = (dateString?: string) => {
+      if (!dateString) return false;
+      let dateToParse = dateString;
+      if (!dateString.includes('Z') && !dateString.includes('+')) {
+        dateToParse = dateString.replace(' ', 'T') + 'Z';
+      }
+      const created = new Date(dateToParse);
       const now = new Date();
-      // 24시간(ms) = 24 * 60 * 60 * 1000 = 86,400,000
-      return now.getTime() - issueDate.getTime() <= 86400000;
-    })
-    .map((item: any) => {
-      const c = item.data || item;
-      return {
-        id: c.id || item.id,
-        storeId: c.storeId || item.storeId,
-        storeName: c.storeName || item.storeName || c.store?.name || item.store?.name || c.name || item.name || c.store_name || item.store_name || c.brandName || item.brandName || c.shopName || item.shopName || '',
-        title: c.title ?? item.title ?? '',
-        description: c.description ?? item.description,
-        benefitType: c.benefitType ?? item.benefitType,
-        benefitValue: c.benefitValue ?? item.benefitValue ?? '',
-        issueStartsAt: c.issueStartsAt ?? item.issueStartsAt,
-      };
-    });
+      const diffMs = now.getTime() - created.getTime();
+      const adjustedDiffMs = Math.abs(diffMs - 32400000) < 600000 ? 0 : diffMs;
+      return adjustedDiffMs >= 0 && adjustedDiffMs <= 24 * 60 * 60 * 1000;
+    };
+
+    const baseCouponsRaw = (todayCouponsRes as any)?.data?.data ?? [];
+    if (Array.isArray(baseCouponsRaw) && baseCouponsRaw.length > 0) {
+      console.log(`[쿠폰디버그 v5] API에서 ${baseCouponsRaw.length}개의 쿠폰 수신`);
+    }
+
+    const result = (Array.isArray(baseCouponsRaw) ? baseCouponsRaw : [])
+      .map((item: any) => {
+        const c = item.data || item;
+        return {
+          ...c,
+          id: c.id || item.id || c.couponId || item.couponId,
+          storeName: c.storeName || item.storeName || c.store?.name || item.store?.name || '',
+          title: c.title ?? item.title ?? '',
+          description: c.description ?? item.description,
+          benefitType: c.benefitType ?? item.benefitType ?? 'SERVICE_GIFT',
+          benefitValue: c.benefitValue ?? item.benefitValue ?? '',
+          issueStartsAt: c.issueStartsAt ?? item.issueStartsAt,
+        };
+      })
+      .filter(c => isWithin24HoursRaw(c.issueStartsAt))
+      .sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+
+    return result;
+  }, [todayCouponsRes]);
 
   const { data: hotStoresRes } = useGetHotStores({ query: { staleTime: 5 * 60 * 1000 } });
   const hotPlaces: HotPlaceItem[] = ((hotStoresRes as any)?.data?.data ?? []).map(
