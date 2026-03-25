@@ -3,7 +3,7 @@ import HotPriceIcon from "@/assets/images/icons/coupon/hot-price.svg";
 import PriceTagDollarIcon from "@/assets/images/icons/coupon/price-tag-dollar.svg";
 import LocationIcon from "@/assets/images/icons/home/location-icon.svg";
 import { getGetMyCouponsQueryKey, useActivateCoupon, useGetMyCoupons } from "@/src/api/coupon";
-import type { IssueCouponResponse } from "@/src/api/generated.schemas";
+import type { DownloadCouponResponse } from "@/src/api/generated.schemas";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { rs } from "@/src/shared/theme/scale";
@@ -61,9 +61,19 @@ const COUPON_ICONS: Record<string, any> = {
   SERVICE_GIFT: GiftIcon,
 };
 
-const formatDate = (dateStr?: string) => {
+const normalizeDate = (dateStr?: string) => {
   if (!dateStr) return "";
-  const d = new Date(dateStr);
+  let normalized = dateStr;
+  if (dateStr && !dateStr.includes("T") && !dateStr.includes("Z") && !dateStr.includes("+")) {
+    normalized = dateStr.replace(" ", "T") + "Z";
+  }
+  return normalized;
+};
+
+const formatDate = (dateStr?: string) => {
+  const normalized = normalizeDate(dateStr);
+  if (!normalized) return "";
+  const d = new Date(new Date(normalized).getTime() - 32400000);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -72,16 +82,18 @@ const formatDate = (dateStr?: string) => {
 };
 
 const isExpiringSoon = (expiresAt?: string) => {
-  if (!expiresAt) return false;
+  const normalized = normalizeDate(expiresAt);
+  if (!normalized) return false;
   const now = new Date();
-  const expiry = new Date(expiresAt);
+  const expiry = new Date(new Date(normalized).getTime() - 32400000);
   const diffDays = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-  return diffDays >= 0 && diffDays <= 7;
+  return diffDays >= 0 && diffDays <= 3; // 마이페이지와 동일하게 3일로 조정
 };
 
 const formatExpiryDateTime = (dateStr?: string) => {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
+  const normalized = normalizeDate(dateStr);
+  if (!normalized) return "";
+  const d = new Date(new Date(normalized).getTime() - 32400000);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -122,9 +134,10 @@ const formatDiscount = (benefitType?: string, benefitValue?: string) => {
 };
 
 const getTimeRemaining = (expiresAt?: string) => {
-  if (!expiresAt) return "";
+  const normalized = normalizeDate(expiresAt);
+  if (!normalized) return "";
   const now = new Date();
-  const expiry = new Date(expiresAt);
+  const expiry = new Date(new Date(normalized).getTime() - 32400000);
   const diffMs = expiry.getTime() - now.getTime();
 
   if (diffMs < 0) return "만료됨";
@@ -156,7 +169,7 @@ export default function BenefitsTab() {
       setSelectedTab(tab);
     }
   }, [tab]);
-  const [selectedCoupon, setSelectedCoupon] = useState<IssueCouponResponse | null>(null);
+  const [selectedCoupon, setSelectedCoupon] = useState<DownloadCouponResponse | null>(null);
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [activationExpiresAt, setActivationExpiresAt] = useState<string | null>(null);
   const [codeExpired, setCodeExpired] = useState(false);
@@ -189,7 +202,7 @@ export default function BenefitsTab() {
     setRemainingSeconds(0);
   };
 
-  const handleOpenCoupon = (coupon: IssueCouponResponse) => {
+  const handleOpenCoupon = (coupon: DownloadCouponResponse) => {
     setSelectedCoupon(coupon);
     // ACTIVATED 상태면 목록 데이터의 코드/만료시간 바로 사용
     const activationExpiresAt = (coupon as any).activationExpiresAt as string | null;
@@ -244,7 +257,7 @@ export default function BenefitsTab() {
   // API 호출
   const { data: myCouponsRes, isLoading } = useGetMyCoupons();
   const rawCoupons = (myCouponsRes as any)?.data?.data;
-  const coupons = (Array.isArray(rawCoupons) ? rawCoupons : []) as IssueCouponResponse[];
+  const coupons = (Array.isArray(rawCoupons) ? rawCoupons : []) as DownloadCouponResponse[];
 
   // STATE_CONFLICT 후 invalidate 시 selectedCoupon을 최신 데이터로 동기화
   useEffect(() => {
@@ -264,26 +277,34 @@ export default function BenefitsTab() {
 
   // 탭별 필터링
   const tabFilteredCoupons = useMemo(() => {
-    switch (selectedTab) {
-      case "owned":
-        return coupons.filter(
-          (c) =>
-            (c.status === "UNUSED" || c.status === "ACTIVATED") &&
-            (!c.expiresAt || new Date(c.expiresAt) > new Date()),
-        );
-      case "expiring":
-        return coupons.filter(
-          (c) => c.status === "UNUSED" && isExpiringSoon(c.expiresAt),
-        );
-      case "used":
-        return coupons.filter(
-          (c) =>
+    const now = new Date();
+    return coupons.filter((c) => {
+      let isExpired = false;
+      if (c.expiresAt) {
+        const normalized = normalizeDate(c.expiresAt);
+        const expiryTime = new Date(normalized).getTime() - 32400000;
+        if (expiryTime <= now.getTime()) {
+          isExpired = true;
+        }
+      }
+
+      switch (selectedTab) {
+        case "owned":
+          return (c.status === "UNUSED" || c.status === "ACTIVATED") && !isExpired;
+        case "expiring":
+          // UNUSED 상태이면서 유효기간 체크 로직 통과 시
+          return c.status === "UNUSED" && !isExpired && isExpiringSoon(c.expiresAt);
+        case "used":
+          // 명시적 사용/만료 상태거나, UNUSED지만 시간이 지났을 때
+          return (
             c.status === "USED" ||
-            c.status === "EXPIRED",
-        );
-      default:
-        return coupons;
-    }
+            c.status === "EXPIRED" ||
+            ((c.status === "UNUSED" || c.status === "ACTIVATED") && isExpired)
+          );
+        default:
+          return true;
+      }
+    });
   }, [coupons, selectedTab]);
 
   // 혜택 타입별 필터링
@@ -406,13 +427,26 @@ export default function BenefitsTab() {
         ) : (
           filteredCoupons.map((coupon) => {
             const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ""];
-            const isUsed = coupon.status === "USED" || coupon.status === "EXPIRED";
+            
+            // 유효기간 체크 (isUsed 판단용)
+            let isExpired = false;
+            if (coupon.expiresAt) {
+              const normalized = normalizeDate(coupon.expiresAt);
+              const expiryTime = new Date(normalized).getTime() - 32400000;
+              if (expiryTime <= Date.now()) {
+                isExpired = true;
+              }
+            }
+            
+            const isUsed = coupon.status === "USED" || coupon.status === "EXPIRED" || isExpired;
+
             return (
               <TouchableOpacity
                 key={coupon.studentCouponId}
                 style={[styles.couponCard, isUsed && styles.couponCardUsed]}
                 onPress={() => handleOpenCoupon(coupon)}
                 activeOpacity={0.8}
+                disabled={isUsed}
               >
                 <View
                   style={[
@@ -450,7 +484,7 @@ export default function BenefitsTab() {
                         {coupon.storeName ?? ""}
                       </ThemedText>
                     </View>
-                    {getTimeRemaining(coupon.expiresAt) ? (
+                    {getTimeRemaining(coupon.expiresAt) && !isUsed ? (
                       <View style={styles.couponTimeRemainingBadge}>
                         <ThemedText style={styles.couponTimeRemaining}>
                           {getTimeRemaining(coupon.expiresAt)}
@@ -459,6 +493,11 @@ export default function BenefitsTab() {
                     ) : null}
                   </View>
                 </View>
+
+                {/* 사용 완료 오버레이 (텍스트 제거, 더 연하게) */}
+                {isUsed && (
+                  <View style={styles.usedOverlay} />
+                )}
               </TouchableOpacity>
             );
           })
@@ -690,7 +729,7 @@ const styles = StyleSheet.create({
     borderColor: Gray.gray3,
   },
   couponCardUsed: {
-    opacity: 0.4,
+    opacity: 0.8,
   },
   couponIconContainer: {
     borderRadius: rs(12),
@@ -912,5 +951,11 @@ const styles = StyleSheet.create({
   },
   useButton: {
     marginTop: rs(4),
+  },
+  usedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    borderRadius: rs(16),
+    zIndex: 10,
   },
 });

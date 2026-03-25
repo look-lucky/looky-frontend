@@ -132,6 +132,7 @@ export function CouponSection({ coupons }: CouponSectionProps) {
         title="오늘 발급된 따끈한 쿠폰"
         onMorePress={handleMorePress}
       />
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -253,4 +254,5 @@ const styles = StyleSheet.create({
     fontSize: rs(14),
     color: TextColor.tertiary,
   },
+
 });
