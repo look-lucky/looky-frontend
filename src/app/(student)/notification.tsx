@@ -60,11 +60,20 @@ export default function NotificationScreen() {
 
   const getTimeAgo = (dateString: string) => {
     const now = new Date();
-    const created = new Date(dateString);
-    const diffMs = now.getTime() - created.getTime();
+    
+    let dateToParse = dateString;
+    if (dateString && !dateString.includes('T') && !dateString.includes('Z') && !dateString.includes('+')) {
+      dateToParse = dateString.replace(' ', 'T') + 'Z';
+    }
+    const created = new Date(dateToParse);
+    
+    // 무조건 9시간 보정 (KST 9시간 차이 상시 적용)
+    const diffMs = (now.getTime() - created.getTime()) - 32400000;
+    
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
+    if (diffMs < 0) return '방금 전';
     if (diffMinutes < 60) {
       return `${diffMinutes}분 전`;
     }
@@ -127,7 +136,7 @@ export default function NotificationScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <ArrowLeft size={rs(24)} color={Gray.black} />
+          <ArrowLeft size={rs(24)} />
         </TouchableOpacity>
         <ThemedText style={styles.headerTitle}>전체알림</ThemedText>
         <View style={styles.headerRight} />

@@ -11,8 +11,8 @@ import {
   Text as TextColor,
 } from '@/src/shared/theme/theme';
 import type { Coupon } from '@/src/shared/types/store';
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View, useWindowDimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 
 // Re-export type for convenience
 export type { Coupon };
@@ -68,65 +68,108 @@ function CouponSection({
   coupons: Coupon[];
   onCouponPress?: () => void;
 }) {
+  const { width: screenWidth } = useWindowDimensions();
+  const [activeIndex, setActiveIndex] = useState(0);
+
   if (coupons.length === 0) return null;
 
-  const coupon = coupons[0];
-  const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ''];
+  // 전체 패딩 rs(20) * 2 제외한 카드 너비
+  const cardWidth = screenWidth - rs(40);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const scrollOffset = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollOffset / cardWidth);
+    if (index !== activeIndex) {
+      setActiveIndex(index);
+    }
+  };
 
   return (
     <View style={styles.couponContainer}>
-      <View key={coupon.id} style={styles.couponCard}>
-        {/* Left: Icon + Info */}
-        <View style={styles.couponMain}>
-          <View
-            style={[
-              styles.couponIconContainer,
-              { backgroundColor: BENEFIT_ICON_BG[coupon.benefitType ?? ''] ?? CouponColor.yellow },
-            ]}
-          >
-            {CouponIcon ? (
-              <CouponIcon width={rs(48)} height={rs(48)} />
-            ) : (
-              <View style={styles.couponIconPlaceholder} />
-            )}
-          </View>
-          <View style={styles.couponTextContainer}>
-            <ThemedText style={styles.couponDiscount} lightColor={TextColor.primary} darkColor={TextColor.primary}>
-              {coupon.discount}
-            </ThemedText>
-            <ThemedText style={styles.couponTitle} numberOfLines={1} lightColor={TextColor.primary} darkColor={TextColor.primary}>
-              {coupon.title}
-            </ThemedText>
-            {coupon.description !== '' && (
-              <ThemedText style={styles.couponMinOrder} lightColor={TextColor.secondary} darkColor={TextColor.secondary}>
-                {coupon.description}
-              </ThemedText>
-            )}
-            <ThemedText style={styles.couponExpiry} lightColor={TextColor.secondary} darkColor={TextColor.secondary}>
-              {coupon.expiryDate}
-            </ThemedText>
-            {coupon.remainingCount != null && (
-              <View style={styles.remainingBadge}>
-                <ThemedText style={styles.remainingText} lightColor={Brand.primary} darkColor={Brand.primary}>
-                  {coupon.remainingCount}장 남음
-                </ThemedText>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        decelerationRate="fast"
+        snapToInterval={cardWidth + rs(12)} // gap 포함 스냅
+        snapToAlignment="start"
+        contentContainerStyle={{ gap: rs(12) }}
+      >
+        {coupons.map((coupon) => {
+          const CouponIcon = COUPON_ICONS[coupon.benefitType ?? ''];
+          return (
+            <View key={coupon.id} style={[styles.couponCard, { width: cardWidth }]}>
+              {/* Left: Icon + Info */}
+              <View style={styles.couponMain}>
+                <View
+                  style={[
+                    styles.couponIconContainer,
+                    { backgroundColor: BENEFIT_ICON_BG[coupon.benefitType ?? ''] ?? CouponColor.yellow },
+                  ]}
+                >
+                  {CouponIcon ? (
+                    <CouponIcon width={rs(48)} height={rs(48)} />
+                  ) : (
+                    <View style={styles.couponIconPlaceholder} />
+                  )}
+                </View>
+                <View style={styles.couponTextContainer}>
+                  <ThemedText style={styles.couponDiscount} lightColor={TextColor.primary} darkColor={TextColor.primary}>
+                    {coupon.discount}
+                  </ThemedText>
+                  <ThemedText style={styles.couponTitle} numberOfLines={1} lightColor={TextColor.primary} darkColor={TextColor.primary}>
+                    {coupon.title}
+                  </ThemedText>
+                  {coupon.description !== '' && (
+                    <ThemedText style={styles.couponMinOrder} lightColor={TextColor.secondary} darkColor={TextColor.secondary}>
+                      {coupon.description}
+                    </ThemedText>
+                  )}
+                  <ThemedText style={styles.couponExpiry} lightColor={TextColor.secondary} darkColor={TextColor.secondary}>
+                    {coupon.expiryDate}
+                  </ThemedText>
+                  {coupon.remainingCount != null && (
+                    <View style={styles.remainingBadge}>
+                      <ThemedText style={styles.remainingText} lightColor={Brand.primary} darkColor={Brand.primary}>
+                        {coupon.remainingCount}장 남음
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
               </View>
-            )}
-          </View>
+
+              {/* Dashed Divider */}
+              <View style={styles.dashedDivider} />
+
+              {/* Right: 쿠폰 보기 버튼 */}
+              <TouchableOpacity
+                style={styles.couponViewArea}
+                onPress={onCouponPress}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <ThemedText style={styles.couponViewText} lightColor={Brand.primary} darkColor={Brand.primary}>쿠폰{'\n'}보기</ThemedText>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </ScrollView>
+
+      {/* Pagination Dots */}
+      {coupons.length > 1 && (
+        <View style={styles.paginationDots}>
+          {coupons.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                index === activeIndex ? styles.activeDot : styles.inactiveDot,
+              ]}
+            />
+          ))}
         </View>
-
-        {/* Dashed Divider */}
-        <View style={styles.dashedDivider} />
-
-        {/* Right: 쿠폰 보기 버튼 */}
-        <TouchableOpacity
-          style={styles.couponViewArea}
-          onPress={onCouponPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <ThemedText style={styles.couponViewText} lightColor={Brand.primary} darkColor={Brand.primary}>쿠폰{'\n'}보기</ThemedText>
-        </TouchableOpacity>
-      </View>
+      )}
     </View>
   );
 }
@@ -281,5 +324,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     marginHorizontal: -rs(20),
     marginTop: 0,
+  },
+  paginationDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: rs(6),
+    marginTop: rs(4),
+  },
+  dot: {
+    width: rs(6),
+    height: rs(6),
+    borderRadius: rs(3),
+  },
+  activeDot: {
+    backgroundColor: Brand.primary,
+    width: rs(14),
+  },
+  inactiveDot: {
+    backgroundColor: Gray.gray3,
   },
 });
