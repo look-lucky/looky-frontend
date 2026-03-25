@@ -268,7 +268,10 @@ export default function SocialSignupFormPage() {
     if (selectedUserType === "owner") {
       router.push("/auth/sign-up-owner");
     } else {
-      router.push("/auth/sign-up-verify");
+      router.push({
+        pathname: "/auth/sign-up-verify",
+        params: { socialUserId: userId ?? "" },
+      });
     }
   };
 
