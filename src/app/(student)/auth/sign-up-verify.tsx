@@ -11,7 +11,7 @@ import type { UserType } from "@/src/shared/lib/auth/token";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, System, Text as TextColors } from "@/src/shared/theme/theme";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -75,6 +75,7 @@ function RadioButton({
 
 export default function StudentVerificationPage() {
   const router = useRouter();
+  const { socialUserId: socialUserIdParam } = useLocalSearchParams<{ socialUserId?: string }>();
 
   // Store에서 회원가입 정보 가져오기
   const {
@@ -85,9 +86,12 @@ export default function StudentVerificationPage() {
     birthYear,
     birthMonth,
     birthDay,
-    socialUserId,
+    socialUserId: socialUserIdStore,
     setSignupFields,
   } = useSignupStore();
+
+  // URL 파라미터 우선 (소셜 회원가입 시 레이스 컨디션 방지), 없으면 스토어 fallback
+  const socialUserId = socialUserIdParam || socialUserIdStore;
 
   // Auth
   const { handleAuthSuccess, saveUserCollegeId, saveUserCollegeName } = useAuth();
