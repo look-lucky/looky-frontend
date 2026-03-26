@@ -217,18 +217,21 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     const clusteredEventMarkers = useEventCluster(eventMarkers, currentZoom);
 
     // 가게 마커와 겹치는 이벤트 마커를 위로 살짝 이동
+    // clusteredMarkers 대신 원본 markers를 사용: zoom 변경 시 클러스터 재계산으로 오프셋이 갑자기 바뀌는 현상 방지
     const adjustedEventMarkers = useMemo((): EventClusterPoint[] => {
       const OVERLAP_THRESHOLD = 0.0015;
       const OFFSET = 0.001;
       return clusteredEventMarkers.map((ev) => {
-        const overlaps = clusteredMarkers.some(
+        // 클러스터 마커는 위치 조정 불필요
+        if (ev.type === 'cluster') return ev;
+        const overlaps = markers.some(
           (st) =>
             Math.abs(st.lat - ev.lat) < OVERLAP_THRESHOLD &&
             Math.abs(st.lng - ev.lng) < OVERLAP_THRESHOLD,
         );
         return overlaps ? { ...ev, lat: ev.lat + OFFSET } : ev;
       });
-    }, [clusteredEventMarkers, clusteredMarkers]);
+    }, [clusteredEventMarkers, markers]);
 
     const showLabel = currentZoom >= LABEL_MIN_ZOOM;
 
@@ -342,6 +345,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
               );
             }
             const markerSize = item.status === 'live' ? EVENT_MARKER_SIZE_LIVE : EVENT_MARKER_SIZE;
+            const opacity = getEventMarkerOpacity(item.status);
             return (
               <NaverMapMarkerOverlay
                 key={item.id}
@@ -352,8 +356,6 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                 onTap={() => onEventMarkerClick?.(item.id)}
                 anchor={{ x: 0.5, y: 0.5 }}
                 isHideCollidedCaptions
-                image={getEventMarkerIcon(item.eventType, item.status)}
-                alpha={getEventMarkerOpacity(item.status)}
                 caption={showLabel && item.title ? {
                   text: truncateLabel(item.title),
                   textSize: 11,
@@ -362,7 +364,16 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                   requestedWidth: LABEL_REQUESTED_WIDTH,
                   offset: 4,
                 } : undefined}
-              />
+              >
+                <View collapsable={false} style={{ width: markerSize, height: markerSize, opacity, backgroundColor: 'transparent' }}>
+                  <RNImage
+                    source={getEventMarkerIcon(item.eventType, item.status)}
+                    style={{ width: markerSize, height: markerSize }}
+                    resizeMode="contain"
+                    fadeDuration={0}
+                  />
+                </View>
+              </NaverMapMarkerOverlay>
             );
           })}
         </NaverMapView>
