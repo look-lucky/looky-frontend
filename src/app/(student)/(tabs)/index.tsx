@@ -4,10 +4,8 @@ import { useGetHotStores } from '@/src/api/store';
 import { CategorySection } from '@/src/app/(student)/components/home/category-section';
 import { CouponSection } from '@/src/app/(student)/components/home/coupon-section';
 import { EventSection } from '@/src/app/(student)/components/home/event-section';
-import {
-  HotPlaceItem,
-  HotPlaceSection,
-} from '@/src/app/(student)/components/home/hot-place-section';
+import { HotPlaceItem, HotPlaceSection } from '@/src/app/(student)/components/home/hot-place-section';
+import { HomePopup } from '@/src/app/(student)/components/home/home-popup';
 import { AdBannerSection } from '@/src/app/(student)/components/home/ad-banner-section';
 import { WelcomeBanner } from '@/src/app/(student)/components/home/welcome-banner';
 import { useEvents } from '@/src/shared/hooks/use-events';
@@ -123,6 +121,9 @@ export default function HomePage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* 팝업 모달 (전면 노출) */}
+      <HomePopup />
+
       <ScrollView
         ref={scrollRef}
         style={styles.scrollView}
