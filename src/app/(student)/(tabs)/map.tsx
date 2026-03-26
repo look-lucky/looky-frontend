@@ -861,7 +861,7 @@ export default function MapTab() {
             styles.filterButton,
             selectedCategory === category.id && styles.filterButtonActive,
           ]}
-          onPress={() => handleCategorySelect(category.id)}
+          onPress={() => { handleCategorySelect(category.id); setSelectedEventId(null); }}
         >
           {selectedCategory === category.id && (
             <Ionicons
