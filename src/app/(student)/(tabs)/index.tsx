@@ -8,6 +8,7 @@ import {
   HotPlaceItem,
   HotPlaceSection,
 } from '@/src/app/(student)/components/home/hot-place-section';
+import { AdBannerSection } from '@/src/app/(student)/components/home/ad-banner-section';
 import { WelcomeBanner } from '@/src/app/(student)/components/home/welcome-banner';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { rs } from '@/src/shared/theme/scale';
@@ -141,6 +142,9 @@ export default function HomePage() {
           couponCount={couponCount}
           eventCount={eventCount}
         />
+
+        {/* Ad Banner Section (임시) */}
+        <AdBannerSection />
 
         {/* Event Section */}
         <View style={styles.section}>

@@ -42,6 +42,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           "comgooglemaps",
           "googlemaps",
         ],
+        GIDClientID: "1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a.apps.googleusercontent.com",
       },
     },
     android: {
