@@ -18,7 +18,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/logo/ios-looky.png",
-    scheme: "rnapp",
+    scheme: ["rnapp", "com.googleusercontent.apps.1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a"],
     userInterfaceStyle: "light",
     newArchEnabled: true,
     ios: {

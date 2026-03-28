@@ -5,6 +5,10 @@
  * API 명세서
  * OpenAPI spec version: v1.0.0
  */
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -19,10 +23,6 @@ import type {
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
 
 import type {
   GetNearbyStoresParams,
@@ -30,7 +30,6 @@ import type {
   GetStoresByLocationParams,
   GetStoresParams,
   StoreCreateRequest,
-  StoreMenuBoardImageResponse,
   StoreReportRequest,
   StoreUpdateRequest
 } from './generated.schemas';
@@ -51,7 +50,7 @@ export type getStoresResponse200 = {
   data: Blob
   status: 200
 }
-
+    
 export type getStoresResponseSuccess = (getStoresResponse200) & {
   headers: Headers;
 };
@@ -63,7 +62,7 @@ export const getGetStoresUrl = (params: GetStoresParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
+    
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -75,44 +74,43 @@ export const getGetStoresUrl = (params: GetStoresParams,) => {
 }
 
 export const getStores = async (params: GetStoresParams, options?: RequestInit): Promise<getStoresResponse> => {
-
+  
   return customFetch<getStoresResponse>(getGetStoresUrl(params),
-    {
-      ...options,
-      method: 'GET'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
 
 
 
 
 
 export const getGetStoresQueryKey = (params?: GetStoresParams,) => {
-  return [
+    return [
     `/api/stores`, ...(params ? [params] : [])
-  ] as const;
-}
+    ] as const;
+    }
 
-
-export const getGetStoresQueryOptions = <TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(params: GetStoresParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
+    
+export const getGetStoresQueryOptions = <TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(params: GetStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetStoresQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetStoresQueryKey(params);
 
+  
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStores>>> = ({ signal }) => getStores(params, { signal, ...requestOptions });
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStores>>> = ({ signal }) => getStores(params, { signal, ...requestOptions });
+      
 
+      
 
-
-
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetStoresQueryResult = NonNullable<Awaited<ReturnType<typeof getStores>>>
@@ -120,45 +118,41 @@ export type GetStoresQueryError = unknown
 
 
 export function useGetStores<TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(
-  params: GetStoresParams, options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>> & Pick<
-      DefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStores>>,
-        TError,
-        Awaited<ReturnType<typeof getStores>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: GetStoresParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStores>>,
+          TError,
+          Awaited<ReturnType<typeof getStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStores<TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(
-  params: GetStoresParams, options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>> & Pick<
-      UndefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStores>>,
-        TError,
-        Awaited<ReturnType<typeof getStores>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: GetStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStores>>,
+          TError,
+          Awaited<ReturnType<typeof getStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStores<TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(
-  params: GetStoresParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: GetStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary [학생] 상점 목록 조회
  */
 
 export function useGetStores<TData = Awaited<ReturnType<typeof getStores>>, TError = unknown>(
-  params: GetStoresParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ params: GetStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetStoresQueryOptions(params, options)
+  const queryOptions = getGetStoresQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -189,7 +183,7 @@ export type createStoreResponse409 = {
   data: Blob
   status: 409
 }
-
+    
 export type createStoreResponseSuccess = (createStoreResponse201) & {
   headers: Headers;
 };
@@ -202,76 +196,74 @@ export type createStoreResponse = (createStoreResponseSuccess | createStoreRespo
 export const getCreateStoreUrl = () => {
 
 
-
+  
 
   return `/api/stores`
 }
 
 export const createStore = async (storeCreateRequest: StoreCreateRequest, options?: RequestInit): Promise<createStoreResponse> => {
-
+  
   return customFetch<createStoreResponse>(getCreateStoreUrl(),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(
-        storeCreateRequest,)
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      storeCreateRequest,)
+  }
+);}
 
 
 
 
 export const getCreateStoreMutationOptions = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError, { data: StoreCreateRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
-  ): UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError, { data: StoreCreateRequest }, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: StoreCreateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: StoreCreateRequest}, TContext> => {
 
-  const mutationKey = ['createStore'];
-  const { mutation: mutationOptions, request: requestOptions } = options ?
-    options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+const mutationKey = ['createStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey, }, request: undefined };
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStore>>, {data: StoreCreateRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStore(data,requestOptions)
+        }
 
 
 
-
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStore>>, { data: StoreCreateRequest }> = (props) => {
-    const { data } = props ?? {};
-
-    return createStore(data, requestOptions)
-  }
+        
 
 
+  return  { mutationFn, ...mutationOptions }}
 
+    export type CreateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof createStore>>>
+    export type CreateStoreMutationBody = StoreCreateRequest
+    export type CreateStoreMutationError = Blob
 
-
-
-  return { mutationFn, ...mutationOptions }
-}
-
-export type CreateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof createStore>>>
-export type CreateStoreMutationBody = StoreCreateRequest
-export type CreateStoreMutationError = Blob
-
-/**
-* @summary [점주] 상점 등록
-*/
+    /**
+ * @summary [점주] 상점 등록
+ */
 export const useCreateStore = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError, { data: StoreCreateRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
-    , queryClient?: QueryClient): UseMutationResult<
-      Awaited<ReturnType<typeof createStore>>,
-      TError,
-      { data: StoreCreateRequest },
-      TContext
-    > => {
-  return useMutation(getCreateStoreMutationOptions(options), queryClient);
-}
-/**
-* 특정 상점을 신고합니다.
-* @summary [학생] 상점 신고
-*/
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,{data: StoreCreateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createStore>>,
+        TError,
+        {data: StoreCreateRequest},
+        TContext
+      > => {
+      return useMutation(getCreateStoreMutationOptions(options), queryClient);
+    }
+    /**
+ * 특정 상점을 신고합니다.
+ * @summary [학생] 상점 신고
+ */
 export type reportStoreResponse200 = {
   data: Blob
   status: 200
@@ -286,7 +278,7 @@ export type reportStoreResponse409 = {
   data: Blob
   status: 409
 }
-
+    
 export type reportStoreResponseSuccess = (reportStoreResponse200) & {
   headers: Headers;
 };
@@ -299,77 +291,75 @@ export type reportStoreResponse = (reportStoreResponseSuccess | reportStoreRespo
 export const getReportStoreUrl = (storeId: number,) => {
 
 
-
+  
 
   return `/api/stores/${storeId}/reports`
 }
 
 export const reportStore = async (storeId: number,
-  storeReportRequest: StoreReportRequest, options?: RequestInit): Promise<reportStoreResponse> => {
-
+    storeReportRequest: StoreReportRequest, options?: RequestInit): Promise<reportStoreResponse> => {
+  
   return customFetch<reportStoreResponse>(getReportStoreUrl(storeId),
-    {
-      ...options,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(
-        storeReportRequest,)
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      storeReportRequest,)
+  }
+);}
 
 
 
 
 export const getReportStoreMutationOptions = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof reportStore>>, TError, { storeId: number; data: StoreReportRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
-  ): UseMutationOptions<Awaited<ReturnType<typeof reportStore>>, TError, { storeId: number; data: StoreReportRequest }, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportStore>>, TError,{storeId: number;data: StoreReportRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportStore>>, TError,{storeId: number;data: StoreReportRequest}, TContext> => {
 
-  const mutationKey = ['reportStore'];
-  const { mutation: mutationOptions, request: requestOptions } = options ?
-    options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+const mutationKey = ['reportStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey, }, request: undefined };
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportStore>>, {storeId: number;data: StoreReportRequest}> = (props) => {
+          const {storeId,data} = props ?? {};
+
+          return  reportStore(storeId,data,requestOptions)
+        }
 
 
 
-
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportStore>>, { storeId: number; data: StoreReportRequest }> = (props) => {
-    const { storeId, data } = props ?? {};
-
-    return reportStore(storeId, data, requestOptions)
-  }
+        
 
 
+  return  { mutationFn, ...mutationOptions }}
 
+    export type ReportStoreMutationResult = NonNullable<Awaited<ReturnType<typeof reportStore>>>
+    export type ReportStoreMutationBody = StoreReportRequest
+    export type ReportStoreMutationError = Blob
 
-
-
-  return { mutationFn, ...mutationOptions }
-}
-
-export type ReportStoreMutationResult = NonNullable<Awaited<ReturnType<typeof reportStore>>>
-export type ReportStoreMutationBody = StoreReportRequest
-export type ReportStoreMutationError = Blob
-
-/**
-* @summary [학생] 상점 신고
-*/
+    /**
+ * @summary [학생] 상점 신고
+ */
 export const useReportStore = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof reportStore>>, TError, { storeId: number; data: StoreReportRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
-    , queryClient?: QueryClient): UseMutationResult<
-      Awaited<ReturnType<typeof reportStore>>,
-      TError,
-      { storeId: number; data: StoreReportRequest },
-      TContext
-    > => {
-  return useMutation(getReportStoreMutationOptions(options), queryClient);
-}
-/**
-* 상점 ID로 상점의 상세 정보를 조회합니다.
-* @summary [학생] 상점 단건 조회
-*/
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportStore>>, TError,{storeId: number;data: StoreReportRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reportStore>>,
+        TError,
+        {storeId: number;data: StoreReportRequest},
+        TContext
+      > => {
+      return useMutation(getReportStoreMutationOptions(options), queryClient);
+    }
+    /**
+ * 상점 ID로 상점의 상세 정보를 조회합니다.
+ * @summary [학생] 상점 단건 조회
+ */
 export type getStoreResponse200 = {
   data: Blob
   status: 200
@@ -379,7 +369,7 @@ export type getStoreResponse404 = {
   data: Blob
   status: 404
 }
-
+    
 export type getStoreResponseSuccess = (getStoreResponse200) & {
   headers: Headers;
 };
@@ -392,86 +382,49 @@ export type getStoreResponse = (getStoreResponseSuccess | getStoreResponseError)
 export const getGetStoreUrl = (storeId: number,) => {
 
 
-
+  
 
   return `/api/stores/${storeId}`
 }
 
 export const getStore = async (storeId: number, options?: RequestInit): Promise<getStoreResponse> => {
-
+  
   return customFetch<getStoreResponse>(getGetStoreUrl(storeId),
-    {
-      ...options,
-      method: 'GET'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
 
 
 
 
 
 export const getGetStoreQueryKey = (storeId?: number,) => {
-  return [
+    return [
     `/api/stores/${storeId}`
-  ] as const;
-}
-
-
-export const getGetStoreQueryOptions = <TData = Awaited<ReturnType<typeof getStore>>, TError = Blob>(storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-) => {
-
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetStoreQueryKey(storeId);
-
-
-
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStore>>> = ({ signal }) => getStore(storeId, { signal, ...requestOptions });
-
-
-
-
-
-  return { queryKey, queryFn, enabled: !!(storeId), ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export const getGetMenuBoardImagesUrl = (storeId: number) => {
-  return `/api/stores/${storeId}/menu-board-images`
-}
-
-export const getMenuBoardImages = async (storeId: number, options?: RequestInit): Promise<StoreMenuBoardImageResponse> => {
-  return customFetch<StoreMenuBoardImageResponse>(getGetMenuBoardImagesUrl(storeId),
-    {
-      ...options,
-      method: 'GET'
+    ] as const;
     }
-  );
-}
 
-export const getGetMenuBoardImagesQueryKey = (storeId?: number) => {
-  return [
-    `/api/stores/${storeId}/menu-board-images`
-  ] as const;
-}
-
-export const getGetMenuBoardImagesQueryOptions = <TData = Awaited<ReturnType<typeof getMenuBoardImages>>, TError = unknown>(storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMenuBoardImages>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
+    
+export const getGetStoreQueryOptions = <TData = Awaited<ReturnType<typeof getStore>>, TError = Blob>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-  const queryKey = queryOptions?.queryKey ?? getGetMenuBoardImagesQueryKey(storeId);
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMenuBoardImages>>> = ({ signal }) => getMenuBoardImages(storeId, { signal, ...requestOptions });
-  return { queryKey, queryFn, enabled: !!(storeId), ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getMenuBoardImages>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
 
-export function useGetMenuBoardImages<TData = Awaited<ReturnType<typeof getMenuBoardImages>>, TError = unknown>(
-  storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMenuBoardImages>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-  const queryOptions = getGetMenuBoardImagesQueryOptions(storeId, options);
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-  query.queryKey = queryOptions.queryKey;
-  return query;
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreQueryKey(storeId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStore>>> = ({ signal }) => getStore(storeId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetStoreQueryResult = NonNullable<Awaited<ReturnType<typeof getStore>>>
@@ -479,45 +432,41 @@ export type GetStoreQueryError = Blob
 
 
 export function useGetStore<TData = Awaited<ReturnType<typeof getStore>>, TError = Blob>(
-  storeId: number, options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>> & Pick<
-      DefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStore>>,
-        TError,
-        Awaited<ReturnType<typeof getStore>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStore>>,
+          TError,
+          Awaited<ReturnType<typeof getStore>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStore<TData = Awaited<ReturnType<typeof getStore>>, TError = Blob>(
-  storeId: number, options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>> & Pick<
-      UndefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStore>>,
-        TError,
-        Awaited<ReturnType<typeof getStore>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStore>>,
+          TError,
+          Awaited<ReturnType<typeof getStore>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStore<TData = Awaited<ReturnType<typeof getStore>>, TError = Blob>(
-  storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary [학생] 상점 단건 조회
  */
 
 export function useGetStore<TData = Awaited<ReturnType<typeof getStore>>, TError = Blob>(
-  storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStore>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetStoreQueryOptions(storeId, options)
+  const queryOptions = getGetStoreQueryOptions(storeId,options)
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -543,7 +492,7 @@ export type deleteStoreResponse404 = {
   data: Blob
   status: 404
 }
-
+    
 export type deleteStoreResponseSuccess = (deleteStoreResponse204) & {
   headers: Headers;
 };
@@ -556,75 +505,73 @@ export type deleteStoreResponse = (deleteStoreResponseSuccess | deleteStoreRespo
 export const getDeleteStoreUrl = (storeId: number,) => {
 
 
-
+  
 
   return `/api/stores/${storeId}`
 }
 
 export const deleteStore = async (storeId: number, options?: RequestInit): Promise<deleteStoreResponse> => {
-
+  
   return customFetch<deleteStoreResponse>(getDeleteStoreUrl(storeId),
-    {
-      ...options,
-      method: 'DELETE'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
 
 
 
 
 export const getDeleteStoreMutationOptions = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof deleteStore>>, TError, { storeId: number }, TContext>, request?: SecondParameter<typeof customFetch> }
-  ): UseMutationOptions<Awaited<ReturnType<typeof deleteStore>>, TError, { storeId: number }, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStore>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStore>>, TError,{storeId: number}, TContext> => {
 
-  const mutationKey = ['deleteStore'];
-  const { mutation: mutationOptions, request: requestOptions } = options ?
-    options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+const mutationKey = ['deleteStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey, }, request: undefined };
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStore>>, {storeId: number}> = (props) => {
+          const {storeId} = props ?? {};
+
+          return  deleteStore(storeId,requestOptions)
+        }
 
 
 
-
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStore>>, { storeId: number }> = (props) => {
-    const { storeId } = props ?? {};
-
-    return deleteStore(storeId, requestOptions)
-  }
+        
 
 
+  return  { mutationFn, ...mutationOptions }}
 
+    export type DeleteStoreMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStore>>>
+    
+    export type DeleteStoreMutationError = Blob
 
-
-
-  return { mutationFn, ...mutationOptions }
-}
-
-export type DeleteStoreMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStore>>>
-
-export type DeleteStoreMutationError = Blob
-
-/**
-* @summary [점주] 상점 삭제
-*/
+    /**
+ * @summary [점주] 상점 삭제
+ */
 export const useDeleteStore = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof deleteStore>>, TError, { storeId: number }, TContext>, request?: SecondParameter<typeof customFetch> }
-    , queryClient?: QueryClient): UseMutationResult<
-      Awaited<ReturnType<typeof deleteStore>>,
-      TError,
-      { storeId: number },
-      TContext
-    > => {
-  return useMutation(getDeleteStoreMutationOptions(options), queryClient);
-}
-/**
-* 상점 정보를 수정합니다. (본인 상점만 가능)
-* @summary [점주] 상점 정보 수정
-*/
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStore>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStore>>,
+        TError,
+        {storeId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteStoreMutationOptions(options), queryClient);
+    }
+    /**
+ * 상점 정보를 수정합니다. (본인 상점만 가능)
+ * @summary [점주] 상점 정보 수정
+ */
 export type updateStoreResponse200 = {
   data: Blob
   status: 200
@@ -644,7 +591,7 @@ export type updateStoreResponse409 = {
   data: Blob
   status: 409
 }
-
+    
 export type updateStoreResponseSuccess = (updateStoreResponse200) & {
   headers: Headers;
 };
@@ -657,77 +604,75 @@ export type updateStoreResponse = (updateStoreResponseSuccess | updateStoreRespo
 export const getUpdateStoreUrl = (storeId: number,) => {
 
 
-
+  
 
   return `/api/stores/${storeId}`
 }
 
 export const updateStore = async (storeId: number,
-  storeUpdateRequest: StoreUpdateRequest, options?: RequestInit): Promise<updateStoreResponse> => {
-
+    storeUpdateRequest: StoreUpdateRequest, options?: RequestInit): Promise<updateStoreResponse> => {
+  
   return customFetch<updateStoreResponse>(getUpdateStoreUrl(storeId),
-    {
-      ...options,
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      body: JSON.stringify(
-        storeUpdateRequest,)
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      storeUpdateRequest,)
+  }
+);}
 
 
 
 
 export const getUpdateStoreMutationOptions = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError, { storeId: number; data: StoreUpdateRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
-  ): UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError, { storeId: number; data: StoreUpdateRequest }, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: StoreUpdateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: StoreUpdateRequest}, TContext> => {
 
-  const mutationKey = ['updateStore'];
-  const { mutation: mutationOptions, request: requestOptions } = options ?
-    options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+const mutationKey = ['updateStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey, }, request: undefined };
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStore>>, {storeId: number;data: StoreUpdateRequest}> = (props) => {
+          const {storeId,data} = props ?? {};
+
+          return  updateStore(storeId,data,requestOptions)
+        }
 
 
 
-
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStore>>, { storeId: number; data: StoreUpdateRequest }> = (props) => {
-    const { storeId, data } = props ?? {};
-
-    return updateStore(storeId, data, requestOptions)
-  }
+        
 
 
+  return  { mutationFn, ...mutationOptions }}
 
+    export type UpdateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof updateStore>>>
+    export type UpdateStoreMutationBody = StoreUpdateRequest
+    export type UpdateStoreMutationError = Blob
 
-
-
-  return { mutationFn, ...mutationOptions }
-}
-
-export type UpdateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof updateStore>>>
-export type UpdateStoreMutationBody = StoreUpdateRequest
-export type UpdateStoreMutationError = Blob
-
-/**
-* @summary [점주] 상점 정보 수정
-*/
+    /**
+ * @summary [점주] 상점 정보 수정
+ */
 export const useUpdateStore = <TError = Blob,
-  TContext = unknown>(options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError, { storeId: number; data: StoreUpdateRequest }, TContext>, request?: SecondParameter<typeof customFetch> }
-    , queryClient?: QueryClient): UseMutationResult<
-      Awaited<ReturnType<typeof updateStore>>,
-      TError,
-      { storeId: number; data: StoreUpdateRequest },
-      TContext
-    > => {
-  return useMutation(getUpdateStoreMutationOptions(options), queryClient);
-}
-/**
-* 상점의 통계 데이터(단골 수, 쿠폰 발행/사용 수, 리뷰 수)를 조회합니다.
-* @summary [점주] 상점 통계 조회
-*/
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,{storeId: number;data: StoreUpdateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateStore>>,
+        TError,
+        {storeId: number;data: StoreUpdateRequest},
+        TContext
+      > => {
+      return useMutation(getUpdateStoreMutationOptions(options), queryClient);
+    }
+    /**
+ * 상점의 통계 데이터(단골 수, 쿠폰 발행/사용 수, 리뷰 수)를 조회합니다.
+ * @summary [점주] 상점 통계 조회
+ */
 export type getStoreStatsResponse200 = {
   data: Blob
   status: 200
@@ -742,7 +687,7 @@ export type getStoreStatsResponse404 = {
   data: Blob
   status: 404
 }
-
+    
 export type getStoreStatsResponseSuccess = (getStoreStatsResponse200) & {
   headers: Headers;
 };
@@ -755,50 +700,49 @@ export type getStoreStatsResponse = (getStoreStatsResponseSuccess | getStoreStat
 export const getGetStoreStatsUrl = (storeId: number,) => {
 
 
-
+  
 
   return `/api/stores/${storeId}/stats`
 }
 
 export const getStoreStats = async (storeId: number, options?: RequestInit): Promise<getStoreStatsResponse> => {
-
+  
   return customFetch<getStoreStatsResponse>(getGetStoreStatsUrl(storeId),
-    {
-      ...options,
-      method: 'GET'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
 
 
 
 
 
 export const getGetStoreStatsQueryKey = (storeId?: number,) => {
-  return [
+    return [
     `/api/stores/${storeId}/stats`
-  ] as const;
-}
+    ] as const;
+    }
 
-
-export const getGetStoreStatsQueryOptions = <TData = Awaited<ReturnType<typeof getStoreStats>>, TError = Blob>(storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
+    
+export const getGetStoreStatsQueryOptions = <TData = Awaited<ReturnType<typeof getStoreStats>>, TError = Blob>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetStoreStatsQueryKey(storeId);
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreStatsQueryKey(storeId);
 
+  
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreStats>>> = ({ signal }) => getStoreStats(storeId, { signal, ...requestOptions });
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreStats>>> = ({ signal }) => getStoreStats(storeId, { signal, ...requestOptions });
+      
 
+      
 
-
-
-
-  return { queryKey, queryFn, enabled: !!(storeId), ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetStoreStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreStats>>>
@@ -806,45 +750,41 @@ export type GetStoreStatsQueryError = Blob
 
 
 export function useGetStoreStats<TData = Awaited<ReturnType<typeof getStoreStats>>, TError = Blob>(
-  storeId: number, options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>> & Pick<
-      DefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStoreStats>>,
-        TError,
-        Awaited<ReturnType<typeof getStoreStats>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreStats>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreStats>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoreStats<TData = Awaited<ReturnType<typeof getStoreStats>>, TError = Blob>(
-  storeId: number, options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>> & Pick<
-      UndefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStoreStats>>,
-        TError,
-        Awaited<ReturnType<typeof getStoreStats>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreStats>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreStats>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoreStats<TData = Awaited<ReturnType<typeof getStoreStats>>, TError = Blob>(
-  storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary [점주] 상점 통계 조회
  */
 
 export function useGetStoreStats<TData = Awaited<ReturnType<typeof getStoreStats>>, TError = Blob>(
-  storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetStoreStatsQueryOptions(storeId, options)
+  const queryOptions = getGetStoreStatsQueryOptions(storeId,options)
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -865,7 +805,7 @@ export type getStoreRegistrationStatusResponse404 = {
   data: Blob
   status: 404
 }
-
+    
 export type getStoreRegistrationStatusResponseSuccess = (getStoreRegistrationStatusResponse200) & {
   headers: Headers;
 };
@@ -878,50 +818,49 @@ export type getStoreRegistrationStatusResponse = (getStoreRegistrationStatusResp
 export const getGetStoreRegistrationStatusUrl = (storeId: number,) => {
 
 
-
+  
 
   return `/api/stores/${storeId}/registration-status`
 }
 
 export const getStoreRegistrationStatus = async (storeId: number, options?: RequestInit): Promise<getStoreRegistrationStatusResponse> => {
-
+  
   return customFetch<getStoreRegistrationStatusResponse>(getGetStoreRegistrationStatusUrl(storeId),
-    {
-      ...options,
-      method: 'GET'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
 
 
 
 
 
 export const getGetStoreRegistrationStatusQueryKey = (storeId?: number,) => {
-  return [
+    return [
     `/api/stores/${storeId}/registration-status`
-  ] as const;
-}
+    ] as const;
+    }
 
-
-export const getGetStoreRegistrationStatusQueryOptions = <TData = Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError = Blob>(storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
+    
+export const getGetStoreRegistrationStatusQueryOptions = <TData = Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError = Blob>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetStoreRegistrationStatusQueryKey(storeId);
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreRegistrationStatusQueryKey(storeId);
 
+  
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreRegistrationStatus>>> = ({ signal }) => getStoreRegistrationStatus(storeId, { signal, ...requestOptions });
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreRegistrationStatus>>> = ({ signal }) => getStoreRegistrationStatus(storeId, { signal, ...requestOptions });
+      
 
+      
 
-
-
-
-  return { queryKey, queryFn, enabled: !!(storeId), ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetStoreRegistrationStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreRegistrationStatus>>>
@@ -929,45 +868,41 @@ export type GetStoreRegistrationStatusQueryError = Blob
 
 
 export function useGetStoreRegistrationStatus<TData = Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError = Blob>(
-  storeId: number, options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>> & Pick<
-      DefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStoreRegistrationStatus>>,
-        TError,
-        Awaited<ReturnType<typeof getStoreRegistrationStatus>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreRegistrationStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreRegistrationStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoreRegistrationStatus<TData = Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError = Blob>(
-  storeId: number, options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>> & Pick<
-      UndefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStoreRegistrationStatus>>,
-        TError,
-        Awaited<ReturnType<typeof getStoreRegistrationStatus>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreRegistrationStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreRegistrationStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoreRegistrationStatus<TData = Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError = Blob>(
-  storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary [점주] 상점 등록 상태 조회
  */
 
 export function useGetStoreRegistrationStatus<TData = Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError = Blob>(
-  storeId: number, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreRegistrationStatus>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetStoreRegistrationStatusQueryOptions(storeId, options)
+  const queryOptions = getGetStoreRegistrationStatusQueryOptions(storeId,options)
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -983,7 +918,7 @@ export type getNearbyStoresResponse200 = {
   data: Blob
   status: 200
 }
-
+    
 export type getNearbyStoresResponseSuccess = (getNearbyStoresResponse200) & {
   headers: Headers;
 };
@@ -995,7 +930,7 @@ export const getGetNearbyStoresUrl = (params: GetNearbyStoresParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
+    
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1007,44 +942,43 @@ export const getGetNearbyStoresUrl = (params: GetNearbyStoresParams,) => {
 }
 
 export const getNearbyStores = async (params: GetNearbyStoresParams, options?: RequestInit): Promise<getNearbyStoresResponse> => {
-
+  
   return customFetch<getNearbyStoresResponse>(getGetNearbyStoresUrl(params),
-    {
-      ...options,
-      method: 'GET'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
 
 
 
 
 
 export const getGetNearbyStoresQueryKey = (params?: GetNearbyStoresParams,) => {
-  return [
+    return [
     `/api/stores/nearby`, ...(params ? [params] : [])
-  ] as const;
-}
+    ] as const;
+    }
 
-
-export const getGetNearbyStoresQueryOptions = <TData = Awaited<ReturnType<typeof getNearbyStores>>, TError = unknown>(params: GetNearbyStoresParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
+    
+export const getGetNearbyStoresQueryOptions = <TData = Awaited<ReturnType<typeof getNearbyStores>>, TError = unknown>(params: GetNearbyStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetNearbyStoresQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetNearbyStoresQueryKey(params);
 
+  
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNearbyStores>>> = ({ signal }) => getNearbyStores(params, { signal, ...requestOptions });
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getNearbyStores>>> = ({ signal }) => getNearbyStores(params, { signal, ...requestOptions });
+      
 
+      
 
-
-
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetNearbyStoresQueryResult = NonNullable<Awaited<ReturnType<typeof getNearbyStores>>>
@@ -1052,45 +986,41 @@ export type GetNearbyStoresQueryError = unknown
 
 
 export function useGetNearbyStores<TData = Awaited<ReturnType<typeof getNearbyStores>>, TError = unknown>(
-  params: GetNearbyStoresParams, options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>> & Pick<
-      DefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getNearbyStores>>,
-        TError,
-        Awaited<ReturnType<typeof getNearbyStores>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: GetNearbyStoresParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNearbyStores>>,
+          TError,
+          Awaited<ReturnType<typeof getNearbyStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetNearbyStores<TData = Awaited<ReturnType<typeof getNearbyStores>>, TError = unknown>(
-  params: GetNearbyStoresParams, options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>> & Pick<
-      UndefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getNearbyStores>>,
-        TError,
-        Awaited<ReturnType<typeof getNearbyStores>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: GetNearbyStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNearbyStores>>,
+          TError,
+          Awaited<ReturnType<typeof getNearbyStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetNearbyStores<TData = Awaited<ReturnType<typeof getNearbyStores>>, TError = unknown>(
-  params: GetNearbyStoresParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: GetNearbyStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary [학생] 주위 상점 조회
  */
 
 export function useGetNearbyStores<TData = Awaited<ReturnType<typeof getNearbyStores>>, TError = unknown>(
-  params: GetNearbyStoresParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ params: GetNearbyStoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetNearbyStoresQueryOptions(params, options)
+  const queryOptions = getGetNearbyStoresQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -1106,7 +1036,7 @@ export type getMyStoresResponse200 = {
   data: Blob
   status: 200
 }
-
+    
 export type getMyStoresResponseSuccess = (getMyStoresResponse200) & {
   headers: Headers;
 };
@@ -1117,50 +1047,49 @@ export type getMyStoresResponse = (getMyStoresResponseSuccess)
 export const getGetMyStoresUrl = () => {
 
 
-
+  
 
   return `/api/stores/my-stores`
 }
 
-export const getMyStores = async (options?: RequestInit): Promise<getMyStoresResponse> => {
-
+export const getMyStores = async ( options?: RequestInit): Promise<getMyStoresResponse> => {
+  
   return customFetch<getMyStoresResponse>(getGetMyStoresUrl(),
-    {
-      ...options,
-      method: 'GET'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
 
 
 
 
 
 export const getGetMyStoresQueryKey = () => {
-  return [
+    return [
     `/api/stores/my-stores`
-  ] as const;
-}
+    ] as const;
+    }
 
-
-export const getGetMyStoresQueryOptions = <TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>(options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
+    
+export const getGetMyStoresQueryOptions = <TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetMyStoresQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetMyStoresQueryKey();
 
+  
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyStores>>> = ({ signal }) => getMyStores({ signal, ...requestOptions });
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyStores>>> = ({ signal }) => getMyStores({ signal, ...requestOptions });
+      
 
+      
 
-
-
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetMyStoresQueryResult = NonNullable<Awaited<ReturnType<typeof getMyStores>>>
@@ -1168,45 +1097,41 @@ export type GetMyStoresQueryError = unknown
 
 
 export function useGetMyStores<TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>(
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>> & Pick<
-      DefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getMyStores>>,
-        TError,
-        Awaited<ReturnType<typeof getMyStores>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyStores>>,
+          TError,
+          Awaited<ReturnType<typeof getMyStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetMyStores<TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>(
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>> & Pick<
-      UndefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getMyStores>>,
-        TError,
-        Awaited<ReturnType<typeof getMyStores>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyStores>>,
+          TError,
+          Awaited<ReturnType<typeof getMyStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetMyStores<TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>(
-  options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary [점주] 자신의 상점 조회
  */
 
 export function useGetMyStores<TData = Awaited<ReturnType<typeof getMyStores>>, TError = unknown>(
-  options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetMyStoresQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -1222,7 +1147,7 @@ export type getStoreMapResponse200 = {
   data: Blob
   status: 200
 }
-
+    
 export type getStoreMapResponseSuccess = (getStoreMapResponse200) & {
   headers: Headers;
 };
@@ -1234,7 +1159,7 @@ export const getGetStoreMapUrl = (params?: GetStoreMapParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
+    
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1246,44 +1171,43 @@ export const getGetStoreMapUrl = (params?: GetStoreMapParams,) => {
 }
 
 export const getStoreMap = async (params?: GetStoreMapParams, options?: RequestInit): Promise<getStoreMapResponse> => {
-
+  
   return customFetch<getStoreMapResponse>(getGetStoreMapUrl(params),
-    {
-      ...options,
-      method: 'GET'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
 
 
 
 
 
 export const getGetStoreMapQueryKey = (params?: GetStoreMapParams,) => {
-  return [
+    return [
     `/api/stores/map`, ...(params ? [params] : [])
-  ] as const;
-}
+    ] as const;
+    }
 
-
-export const getGetStoreMapQueryOptions = <TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(params?: GetStoreMapParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
+    
+export const getGetStoreMapQueryOptions = <TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(params?: GetStoreMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetStoreMapQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreMapQueryKey(params);
 
+  
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreMap>>> = ({ signal }) => getStoreMap(params, { signal, ...requestOptions });
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreMap>>> = ({ signal }) => getStoreMap(params, { signal, ...requestOptions });
+      
 
+      
 
-
-
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetStoreMapQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreMap>>>
@@ -1291,45 +1215,41 @@ export type GetStoreMapQueryError = unknown
 
 
 export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
-  params: undefined | GetStoreMapParams, options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
-      DefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStoreMap>>,
-        TError,
-        Awaited<ReturnType<typeof getStoreMap>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: undefined |  GetStoreMapParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreMap>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreMap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
-  params?: GetStoreMapParams, options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
-      UndefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStoreMap>>,
-        TError,
-        Awaited<ReturnType<typeof getStoreMap>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetStoreMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoreMap>>,
+          TError,
+          Awaited<ReturnType<typeof getStoreMap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
-  params?: GetStoreMapParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params?: GetStoreMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary [학생] 지도용 상점 전체 조회
  */
 
 export function useGetStoreMap<TData = Awaited<ReturnType<typeof getStoreMap>>, TError = unknown>(
-  params?: GetStoreMapParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ params?: GetStoreMapParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreMap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetStoreMapQueryOptions(params, options)
+  const queryOptions = getGetStoreMapQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -1345,7 +1265,7 @@ export type getStoresByLocationResponse200 = {
   data: Blob
   status: 200
 }
-
+    
 export type getStoresByLocationResponseSuccess = (getStoresByLocationResponse200) & {
   headers: Headers;
 };
@@ -1357,7 +1277,7 @@ export const getGetStoresByLocationUrl = (params: GetStoresByLocationParams,) =>
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
+    
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -1369,44 +1289,43 @@ export const getGetStoresByLocationUrl = (params: GetStoresByLocationParams,) =>
 }
 
 export const getStoresByLocation = async (params: GetStoresByLocationParams, options?: RequestInit): Promise<getStoresByLocationResponse> => {
-
+  
   return customFetch<getStoresByLocationResponse>(getGetStoresByLocationUrl(params),
-    {
-      ...options,
-      method: 'GET'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
 
 
 
 
 
 export const getGetStoresByLocationQueryKey = (params?: GetStoresByLocationParams,) => {
-  return [
+    return [
     `/api/stores/location`, ...(params ? [params] : [])
-  ] as const;
-}
+    ] as const;
+    }
 
-
-export const getGetStoresByLocationQueryOptions = <TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(params: GetStoresByLocationParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
+    
+export const getGetStoresByLocationQueryOptions = <TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(params: GetStoresByLocationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetStoresByLocationQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetStoresByLocationQueryKey(params);
 
+  
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoresByLocation>>> = ({ signal }) => getStoresByLocation(params, { signal, ...requestOptions });
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoresByLocation>>> = ({ signal }) => getStoresByLocation(params, { signal, ...requestOptions });
+      
 
+      
 
-
-
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetStoresByLocationQueryResult = NonNullable<Awaited<ReturnType<typeof getStoresByLocation>>>
@@ -1414,45 +1333,41 @@ export type GetStoresByLocationQueryError = unknown
 
 
 export function useGetStoresByLocation<TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(
-  params: GetStoresByLocationParams, options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>> & Pick<
-      DefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStoresByLocation>>,
-        TError,
-        Awaited<ReturnType<typeof getStoresByLocation>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: GetStoresByLocationParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoresByLocation>>,
+          TError,
+          Awaited<ReturnType<typeof getStoresByLocation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoresByLocation<TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(
-  params: GetStoresByLocationParams, options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>> & Pick<
-      UndefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getStoresByLocation>>,
-        TError,
-        Awaited<ReturnType<typeof getStoresByLocation>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: GetStoresByLocationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStoresByLocation>>,
+          TError,
+          Awaited<ReturnType<typeof getStoresByLocation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetStoresByLocation<TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(
-  params: GetStoresByLocationParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+ params: GetStoresByLocationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary [학생] 특정 위치 상점 목록 조회
  */
 
 export function useGetStoresByLocation<TData = Awaited<ReturnType<typeof getStoresByLocation>>, TError = unknown>(
-  params: GetStoresByLocationParams, options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+ params: GetStoresByLocationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoresByLocation>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetStoresByLocationQueryOptions(params, options)
+  const queryOptions = getGetStoresByLocationQueryOptions(params,options)
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -1473,7 +1388,7 @@ export type getHotStoresResponse403 = {
   data: Blob
   status: 403
 }
-
+    
 export type getHotStoresResponseSuccess = (getHotStoresResponse200) & {
   headers: Headers;
 };
@@ -1486,50 +1401,49 @@ export type getHotStoresResponse = (getHotStoresResponseSuccess | getHotStoresRe
 export const getGetHotStoresUrl = () => {
 
 
-
+  
 
   return `/api/stores/hot`
 }
 
-export const getHotStores = async (options?: RequestInit): Promise<getHotStoresResponse> => {
-
+export const getHotStores = async ( options?: RequestInit): Promise<getHotStoresResponse> => {
+  
   return customFetch<getHotStoresResponse>(getGetHotStoresUrl(),
-    {
-      ...options,
-      method: 'GET'
-
-
-    }
-  );
-}
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
 
 
 
 
 
 export const getGetHotStoresQueryKey = () => {
-  return [
+    return [
     `/api/stores/hot`
-  ] as const;
-}
+    ] as const;
+    }
 
-
-export const getGetHotStoresQueryOptions = <TData = Awaited<ReturnType<typeof getHotStores>>, TError = Blob>(options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
+    
+export const getGetHotStoresQueryOptions = <TData = Awaited<ReturnType<typeof getHotStores>>, TError = Blob>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetHotStoresQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetHotStoresQueryKey();
 
+  
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHotStores>>> = ({ signal }) => getHotStores({ signal, ...requestOptions });
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getHotStores>>> = ({ signal }) => getHotStores({ signal, ...requestOptions });
+      
 
+      
 
-
-
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetHotStoresQueryResult = NonNullable<Awaited<ReturnType<typeof getHotStores>>>
@@ -1537,45 +1451,41 @@ export type GetHotStoresQueryError = Blob
 
 
 export function useGetHotStores<TData = Awaited<ReturnType<typeof getHotStores>>, TError = Blob>(
-  options: {
-    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>> & Pick<
-      DefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getHotStores>>,
-        TError,
-        Awaited<ReturnType<typeof getHotStores>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getHotStores>>,
+          TError,
+          Awaited<ReturnType<typeof getHotStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetHotStores<TData = Awaited<ReturnType<typeof getHotStores>>, TError = Blob>(
-  options?: {
-    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>> & Pick<
-      UndefinedInitialDataOptions<
-        Awaited<ReturnType<typeof getHotStores>>,
-        TError,
-        Awaited<ReturnType<typeof getHotStores>>
-      >, 'initialData'
-    >, request?: SecondParameter<typeof customFetch>
-  }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getHotStores>>,
+          TError,
+          Awaited<ReturnType<typeof getHotStores>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetHotStores<TData = Awaited<ReturnType<typeof getHotStores>>, TError = Blob>(
-  options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary [학생] 이번 주 핫한 가게 조회
  */
 
 export function useGetHotStores<TData = Awaited<ReturnType<typeof getHotStores>>, TError = Blob>(
-  options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch> }
-  , queryClient?: QueryClient
-): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHotStores>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetHotStoresQueryOptions(options)
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }

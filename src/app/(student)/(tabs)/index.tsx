@@ -144,7 +144,7 @@ export default function HomePage() {
           eventCount={eventCount}
         />
 
-        {/* Ad Banner Section (임시) */}
+        {/* Ad Banner Section (API 연동 완료) */}
         <AdBannerSection />
 
         {/* Event Section */}

@@ -1,76 +1,172 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useEffect, useState } from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import { useGetPopupAdvertisements } from "@/src/api/advertisement";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { rs } from "@/src/shared/theme/scale";
 import { Gray } from "@/src/shared/theme/theme";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  FlatList,
+  Image,
+  Linking,
+  Modal,
+  Pressable,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 const POPUP_HIDE_DATE_KEY = "HIDE_HOME_POPUP_DATE";
 
-export function HomePopup() {
-  const [isVisible, setIsVisible] = useState(false);
+interface HomePopupProps {}
 
+export function HomePopup({}: HomePopupProps) {
+  const { width } = useWindowDimensions();
+  const POPUP_WIDTH = width * 0.8;
+
+  const [isVisible, setIsVisible] = useState(false);
+  const { data: response, isLoading } = useGetPopupAdvertisements();
+
+  const ads = (response as any)?.data?.data || [];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // 팝업 표시 여부 -------------------------------------------------------------
   useEffect(() => {
+    if (ads.length === 0) {
+      setIsVisible(false);
+      return;
+    }
     checkPopupStatus();
-  }, []);
+  }, [ads.length]);
 
   const checkPopupStatus = async () => {
     try {
       const hideDate = await AsyncStorage.getItem(POPUP_HIDE_DATE_KEY);
-      // 한국 시간 기준으로 오늘 날짜 문자열 만들기 (예: "2026. 3. 26.")
       const today = new Date().toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
-      
-      // 저장된 날짜가 오늘 날짜와 다르면 팝업 표시
-      if (hideDate !== today) {
-        setIsVisible(true);
-      }
+      if (hideDate !== today) setIsVisible(true);
     } catch (e) {
-      // 에러 시 기본으로 보여줌
       setIsVisible(true);
     }
   };
 
-  const handleClose = () => {
-    // 세션 내에서만 숨김 처리 (앱 재시작시 다시 표시됨)
-    setIsVisible(false);
-  };
+  const handleClose = () => setIsVisible(false);
 
   const handleHideToday = async () => {
     try {
       const today = new Date().toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
       await AsyncStorage.setItem(POPUP_HIDE_DATE_KEY, today);
-      setIsVisible(false);
     } catch (e) {
       console.error("팝업 숨김 처리 실패:", e);
+    } finally {
       setIsVisible(false);
     }
   };
 
+  // 자동 로테이션 (Fade In/Out) -------------------------------------------------
+  useEffect(() => {
+    if (ads.length < 2 || !isVisible) return;
+
+    const timer = setInterval(() => {
+      // Fade Out: 300ms
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }).start(() => {
+        // 인덱스 변경 및 스크롤 이동 (애니메이션 없이 즉시 이동)
+        setCurrentIndex((prev) => {
+          const nextIndex = (prev + 1) % ads.length;
+          flatListRef.current?.scrollToIndex({ index: nextIndex, animated: false });
+          return nextIndex;
+        });
+
+        // Fade In: 300ms
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [ads.length, isVisible]);
+
+  // 스와이프(슬라이드) 시 현재 인덱스 업데이트 --------------------------------------
+  const onMomentumScrollEnd = (e: any) => {
+    const x = e.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(x / POPUP_WIDTH);
+    setCurrentIndex(newIndex);
+  };
+
+  // 렌더링 시작 ----------------------------------------------------------------
+  if (isLoading || ads.length === 0) return null;
+
   return (
     <Modal
       visible={isVisible}
-      transparent
+      transparent={true}
       animationType="fade"
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.popupContainer}>
-          {/* 배너 이미지 임시 뷰 영역 */}
-          <View style={styles.imagePlaceholder}>
-            <ThemedText style={styles.placeholderText}>
-              전면 광고 팝업 영역
-            </ThemedText>
-            <ThemedText style={styles.placeholderSubText}>
-              (API 연동 시 진짜 이미지로 교체)
-            </ThemedText>
-          </View>
+        <View style={[styles.popupContainer, { width: POPUP_WIDTH }]}>
+          {/* 광고 캐러셀 영역 */}
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <FlatList
+              ref={flatListRef}
+              data={ads}
+              keyExtractor={(item, index) => item.id?.toString() || String(index)}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              bounces={false}
+              onMomentumScrollEnd={onMomentumScrollEnd}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.imagePlaceholder, { width: POPUP_WIDTH }]}
+                  activeOpacity={item.landingUrl ? 0.8 : 1}
+                  onPress={() => {
+                    if (item.landingUrl) Linking.openURL(item.landingUrl);
+                    // TODO: Google Analytics 클릭 추적 (ad_id: item.id)
+                  }}
+                >
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.adImage}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              )}
+            />
+          </Animated.View>
+
+          {/* 인디케이터 (2개 이상일 때만 표시) */}
+          {ads.length > 1 && (
+            <View style={styles.indicatorContainer}>
+              {ads.map((_, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.indicatorDot,
+                    currentIndex === idx && styles.indicatorDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
 
           {/* 하단 버튼 영역 */}
           <View style={styles.buttonContainer}>
             <Pressable style={styles.hideTodayButton} onPress={handleHideToday}>
-              <ThemedText style={styles.buttonText}>
-                오늘 하루 그만 보기
-              </ThemedText>
+              <ThemedText style={styles.buttonText}>오늘 하루 그만 보기</ThemedText>
             </Pressable>
             <View style={styles.divider} />
             <Pressable style={styles.closeButton} onPress={handleClose}>
@@ -86,32 +182,49 @@ export function HomePopup() {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)", // 반투명 검은색 배경
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
   },
   popupContainer: {
-    width: "80%",
     backgroundColor: Gray.white,
     borderRadius: rs(12),
-    overflow: "hidden", // 모서리 둥글게 깎기 적용
+    overflow: "hidden",
   },
   imagePlaceholder: {
-    width: "100%",
-    aspectRatio: 3 / 4, // 팝업 전면광고의 일반적인 세로 4: 가로 3 비율
+    aspectRatio: 3 / 4,
     backgroundColor: Gray.gray3,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
-  placeholderText: {
-    fontSize: rs(16),
-    fontWeight: "700",
-    color: Gray.gray7,
+  adImage: {
+    width: "100%",
+    height: "100%",
   },
-  placeholderSubText: {
-    fontSize: rs(12),
-    color: Gray.gray5,
-    marginTop: rs(8),
+  indicatorContainer: {
+    position: "absolute",
+    bottom: rs(60), // 하단 버튼영역 위쪽
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: rs(6),
+  },
+  indicatorDot: {
+    width: rs(6),
+    height: rs(6),
+    borderRadius: rs(3),
+    backgroundColor: "rgba(0,0,0,0.3)",
+    shadowColor: Gray.black,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 1.5,
+    elevation: 2,
+  },
+  indicatorDotActive: {
+    backgroundColor: Gray.white,
   },
   buttonContainer: {
     flexDirection: "row",
