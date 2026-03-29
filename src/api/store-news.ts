@@ -270,13 +270,20 @@ export type toggleLikeResponse200 = {
   data: Blob
   status: 200
 }
+
+export type toggleLikeResponse404 = {
+  data: Blob
+  status: 404
+}
     
 export type toggleLikeResponseSuccess = (toggleLikeResponse200) & {
   headers: Headers;
 };
-;
+export type toggleLikeResponseError = (toggleLikeResponse404) & {
+  headers: Headers;
+};
 
-export type toggleLikeResponse = (toggleLikeResponseSuccess)
+export type toggleLikeResponse = (toggleLikeResponseSuccess | toggleLikeResponseError)
 
 export const getToggleLikeUrl = (newsId: number,) => {
 
@@ -300,7 +307,7 @@ export const toggleLike = async (newsId: number, options?: RequestInit): Promise
 
 
 
-export const getToggleLikeMutationOptions = <TError = unknown,
+export const getToggleLikeMutationOptions = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext> => {
 
@@ -329,12 +336,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ToggleLikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleLike>>>
     
-    export type ToggleLikeMutationError = unknown
+    export type ToggleLikeMutationError = Blob
 
     /**
  * @summary [공통] 소식 좋아요 토글
  */
-export const useToggleLike = <TError = unknown,
+export const useToggleLike = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof toggleLike>>,
@@ -474,17 +481,24 @@ export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, 
  * 소식에 댓글을 작성합니다.
  * @summary [공통] 댓글 작성
  */
-export type createCommentResponse200 = {
+export type createCommentResponse201 = {
   data: Blob
-  status: 200
+  status: 201
+}
+
+export type createCommentResponse404 = {
+  data: Blob
+  status: 404
 }
     
-export type createCommentResponseSuccess = (createCommentResponse200) & {
+export type createCommentResponseSuccess = (createCommentResponse201) & {
   headers: Headers;
 };
-;
+export type createCommentResponseError = (createCommentResponse404) & {
+  headers: Headers;
+};
 
-export type createCommentResponse = (createCommentResponseSuccess)
+export type createCommentResponse = (createCommentResponseSuccess | createCommentResponseError)
 
 export const getCreateCommentUrl = (newsId: number,) => {
 
@@ -510,7 +524,7 @@ export const createComment = async (newsId: number,
 
 
 
-export const getCreateCommentMutationOptions = <TError = unknown,
+export const getCreateCommentMutationOptions = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext> => {
 
@@ -539,12 +553,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateCommentMutationResult = NonNullable<Awaited<ReturnType<typeof createComment>>>
     export type CreateCommentMutationBody = CreateStoreNewsCommentRequest
-    export type CreateCommentMutationError = unknown
+    export type CreateCommentMutationError = Blob
 
     /**
  * @summary [공통] 댓글 작성
  */
-export const useCreateComment = <TError = unknown,
+export const useCreateComment = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createComment>>,
@@ -669,17 +683,29 @@ export function useGetStoreNews<TData = Awaited<ReturnType<typeof getStoreNews>>
  * 소식을 삭제합니다.
  * @summary [점주] 소식 삭제
  */
-export type deleteStoreNewsResponse200 = {
+export type deleteStoreNewsResponse204 = {
   data: Blob
-  status: 200
+  status: 204
+}
+
+export type deleteStoreNewsResponse403 = {
+  data: Blob
+  status: 403
+}
+
+export type deleteStoreNewsResponse404 = {
+  data: Blob
+  status: 404
 }
     
-export type deleteStoreNewsResponseSuccess = (deleteStoreNewsResponse200) & {
+export type deleteStoreNewsResponseSuccess = (deleteStoreNewsResponse204) & {
   headers: Headers;
 };
-;
+export type deleteStoreNewsResponseError = (deleteStoreNewsResponse403 | deleteStoreNewsResponse404) & {
+  headers: Headers;
+};
 
-export type deleteStoreNewsResponse = (deleteStoreNewsResponseSuccess)
+export type deleteStoreNewsResponse = (deleteStoreNewsResponseSuccess | deleteStoreNewsResponseError)
 
 export const getDeleteStoreNewsUrl = (newsId: number,) => {
 
@@ -703,7 +729,7 @@ export const deleteStoreNews = async (newsId: number, options?: RequestInit): Pr
 
 
 
-export const getDeleteStoreNewsMutationOptions = <TError = unknown,
+export const getDeleteStoreNewsMutationOptions = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreNews>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteStoreNews>>, TError,{newsId: number}, TContext> => {
 
@@ -732,12 +758,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStoreNews>>>
     
-    export type DeleteStoreNewsMutationError = unknown
+    export type DeleteStoreNewsMutationError = Blob
 
     /**
  * @summary [점주] 소식 삭제
  */
-export const useDeleteStoreNews = <TError = unknown,
+export const useDeleteStoreNews = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreNews>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteStoreNews>>,
@@ -755,13 +781,25 @@ export type updateStoreNewsResponse200 = {
   data: Blob
   status: 200
 }
+
+export type updateStoreNewsResponse403 = {
+  data: Blob
+  status: 403
+}
+
+export type updateStoreNewsResponse404 = {
+  data: Blob
+  status: 404
+}
     
 export type updateStoreNewsResponseSuccess = (updateStoreNewsResponse200) & {
   headers: Headers;
 };
-;
+export type updateStoreNewsResponseError = (updateStoreNewsResponse403 | updateStoreNewsResponse404) & {
+  headers: Headers;
+};
 
-export type updateStoreNewsResponse = (updateStoreNewsResponseSuccess)
+export type updateStoreNewsResponse = (updateStoreNewsResponseSuccess | updateStoreNewsResponseError)
 
 export const getUpdateStoreNewsUrl = (newsId: number,) => {
 
@@ -787,7 +825,7 @@ export const updateStoreNews = async (newsId: number,
 
 
 
-export const getUpdateStoreNewsMutationOptions = <TError = unknown,
+export const getUpdateStoreNewsMutationOptions = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsRequest}, TContext> => {
 
@@ -816,12 +854,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof updateStoreNews>>>
     export type UpdateStoreNewsMutationBody = UpdateStoreNewsRequest
-    export type UpdateStoreNewsMutationError = unknown
+    export type UpdateStoreNewsMutationError = Blob
 
     /**
  * @summary [점주] 소식 수정
  */
-export const useUpdateStoreNews = <TError = unknown,
+export const useUpdateStoreNews = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateStoreNews>>,
@@ -835,17 +873,29 @@ export const useUpdateStoreNews = <TError = unknown,
  * 자신의 댓글을 삭제합니다.
  * @summary [공통] 댓글 삭제
  */
-export type deleteCommentResponse200 = {
+export type deleteCommentResponse204 = {
   data: Blob
-  status: 200
+  status: 204
+}
+
+export type deleteCommentResponse403 = {
+  data: Blob
+  status: 403
+}
+
+export type deleteCommentResponse404 = {
+  data: Blob
+  status: 404
 }
     
-export type deleteCommentResponseSuccess = (deleteCommentResponse200) & {
+export type deleteCommentResponseSuccess = (deleteCommentResponse204) & {
   headers: Headers;
 };
-;
+export type deleteCommentResponseError = (deleteCommentResponse403 | deleteCommentResponse404) & {
+  headers: Headers;
+};
 
-export type deleteCommentResponse = (deleteCommentResponseSuccess)
+export type deleteCommentResponse = (deleteCommentResponseSuccess | deleteCommentResponseError)
 
 export const getDeleteCommentUrl = (newsId: number,
     commentId: number,) => {
@@ -871,7 +921,7 @@ export const deleteComment = async (newsId: number,
 
 
 
-export const getDeleteCommentMutationOptions = <TError = unknown,
+export const getDeleteCommentMutationOptions = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext> => {
 
@@ -900,12 +950,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteCommentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteComment>>>
     
-    export type DeleteCommentMutationError = unknown
+    export type DeleteCommentMutationError = Blob
 
     /**
  * @summary [공통] 댓글 삭제
  */
-export const useDeleteComment = <TError = unknown,
+export const useDeleteComment = <TError = Blob,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteComment>>,

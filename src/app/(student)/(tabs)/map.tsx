@@ -10,6 +10,7 @@ import { SelectedEventDetail } from '@/src/app/(student)/components/event/select
 import { NaverMap } from '@/src/app/(student)/components/map/naver-map-view';
 import { SelectedStoreDetail } from '@/src/app/(student)/components/map/selected-store-detail';
 import { FilterTab, StoreFilterModal } from '@/src/app/(student)/components/map/store-filter-modal';
+import { MapAdButton } from '@/src/app/(student)/components/map/map-ad-button';
 import { StoreCard } from '@/src/app/(student)/components/store/store-card';
 import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
@@ -23,8 +24,8 @@ import {
 import { useTabBar } from '@/src/shared/contexts/tab-bar-context';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { useMapSearch } from '@/src/shared/hooks/use-map-search';
-import { rs } from '@/src/shared/theme/scale';
 import { useMapNavigationStore } from '@/src/shared/stores/map-navigation-store';
+import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Owner, Text } from '@/src/shared/theme/theme';
 import type { Event, EventType } from '@/src/shared/types/event';
 import type { Store } from '@/src/shared/types/store';
@@ -89,7 +90,7 @@ export default function MapTab() {
   }, []);
 
   const finishTutorial = useCallback(async () => {
-    try { await AsyncStorage.setItem('MAP_TUTORIAL_SHOWN', 'true'); } catch {}
+    try { await AsyncStorage.setItem('MAP_TUTORIAL_SHOWN', 'true'); } catch { }
     setTutorialStep(0);
     setPermissionReady(true); // 튜토리얼 완료 → 이제 권한 요청
   }, []);
@@ -736,12 +737,12 @@ export default function MapTab() {
     // 이벤트 키워드 필터링 (검색 중이면 제목/설명으로 필터, 아니면 전체)
     const filteredEvents = submittedKeyword
       ? events.filter((event) => {
-          const kw = submittedKeyword.toLowerCase();
-          return (
-            event.title.toLowerCase().includes(kw) ||
-            (event.description?.toLowerCase().includes(kw) ?? false)
-          );
-        })
+        const kw = submittedKeyword.toLowerCase();
+        return (
+          event.title.toLowerCase().includes(kw) ||
+          (event.description?.toLowerCase().includes(kw) ?? false)
+        );
+      })
       : events;
     if (showEvents) {
       if (!isEventOnlyMode && storesWithFavorite.length > 0 && filteredEvents.length > 0) {
@@ -992,10 +993,10 @@ export default function MapTab() {
             selectedStoreWithFavorite
               ? [] // 가게 선택 시 이벤트 마커 전체 숨김
               : selectedEventId
-              ? eventMarkers.filter((m) => m.id === `event-${selectedEventId}`) // 선택된 이벤트 마커만 표시
-              : showEvents
-              ? eventMarkers
-              : []
+                ? eventMarkers.filter((m) => m.id === `event-${selectedEventId}`) // 선택된 이벤트 마커만 표시
+                : showEvents
+                  ? eventMarkers
+                  : []
           }
           myLocation={myLocation}
           onMapClick={onMapClick}
@@ -1045,6 +1046,9 @@ export default function MapTab() {
         </View>
       )}
 
+      {/* 플로팅 광고 버튼 (내 위치보기 버튼 위) */}
+      <MapAdButton bottomPosition={floatingButtonBottom + rs(44) + 12} />
+
       {/* 지도 컨트롤 버튼 */}
       <TouchableOpacity
         style={[styles.controlButton, styles.controlButtonLeft, { bottom: floatingButtonBottom }]}
@@ -1090,7 +1094,7 @@ export default function MapTab() {
             <View style={styles.bottomSheetHeader}>
               <View style={styles.hotPlacesHeader}>
                 <ThemedText type="subtitle" lightColor={Text.primary}>🔥 지금 인기있는 곳</ThemedText>
-                <ThemedText style={styles.hotPlacesSubtitle}>이번 주 찜이 가장 많이 늘어난 가게</ThemedText>
+                <ThemedText style={styles.hotPlacesSubtitle}>이번 주에 가장 인기있는 매장</ThemedText>
               </View>
             </View>
           ) : (
