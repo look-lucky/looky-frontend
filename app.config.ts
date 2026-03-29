@@ -4,11 +4,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const variant = process.env.APP_VARIANT;
   const IS_DEV = variant === "development";
   const IS_PREVIEW = variant === "preview";
-  const bundleId = IS_DEV
-    ? "kr.looky.looky.dev"
-    : IS_PREVIEW
-      ? "kr.looky.looky.preview"
-      : "kr.looky.looky";
+
+  // [CRITICAL FIX] 구글 로그인 iOS SDK는 클라이언트 ID 생성 시 등록된 정확한 Bundle ID(kr.looky.looky)와 
+  // 실제 빌드된 앱의 Bundle ID가 1글자라도 다르면 앱을 강제 종료(Crash)시킵니다.
+  // 프리뷰 버전을 위해 .preview를 붙이면 구글 콘솔에 새로 등록해야 하므로, 테스트를 위해 production과 동일하게 맞춥니다.
+  const bundleId = "kr.looky.looky";
 
   return {
     ...config,
@@ -18,7 +18,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/logo/ios-looky.png",
-    scheme: ["rnapp", "com.googleusercontent.apps.1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a"],
+    // 구글 로그인 scheme은 아래 플러그인(google-signin)에서 자동으로 추가하므로 중복 방지를 위해 제거
+    scheme: ["rnapp", "looky"],
     userInterfaceStyle: "light",
     newArchEnabled: true,
     ios: {
@@ -41,8 +42,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           "kakaomap",
           "comgooglemaps",
           "googlemaps",
+          "kakaokompassauth", // 카카오 로그인용 필수
+          "kakaolink",        // 카카오 로그인/공유용 필수
+          "kakaotalk",
         ],
-        GIDClientID: "1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a.apps.googleusercontent.com",
+        // GIDClientID: "1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a.apps.googleusercontent.com",
+        // GIDServerClientID: "409232942871-dardm07iqdd0pfmhvjod9gnsets1g520.apps.googleusercontent.com",
       },
     },
     android: {

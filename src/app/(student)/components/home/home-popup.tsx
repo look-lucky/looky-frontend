@@ -20,11 +20,11 @@ import {
 
 const POPUP_HIDE_DATE_KEY = "HIDE_HOME_POPUP_DATE";
 
-interface HomePopupProps {}
+interface HomePopupProps { }
 
-export function HomePopup({}: HomePopupProps) {
+export function HomePopup({ }: HomePopupProps) {
   const { width } = useWindowDimensions();
-  const POPUP_WIDTH = width * 0.8;
+  const POPUP_WIDTH = width * 0.9; // 좌우 여백을 줄임 (가록폭을 넓힘) 0.85 -> 0.9
 
   const [isVisible, setIsVisible] = useState(false);
   const { data: response, isLoading } = useGetPopupAdvertisements();
@@ -35,7 +35,7 @@ export function HomePopup({}: HomePopupProps) {
   const flatListRef = useRef<FlatList>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  // 팝업 표시 여부 -------------------------------------------------------------
+  // 팝업 표시 여부 로직
   useEffect(() => {
     if (ads.length === 0) {
       setIsVisible(false);
@@ -67,26 +67,23 @@ export function HomePopup({}: HomePopupProps) {
     }
   };
 
-  // 자동 로테이션 (Fade In/Out) -------------------------------------------------
+  // 자동 페이드 인/아웃 타이머
   useEffect(() => {
     if (ads.length < 2 || !isVisible) return;
 
     const timer = setInterval(() => {
-      // Fade Out: 300ms
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 300,
         easing: Easing.inOut(Easing.ease),
         useNativeDriver: true,
       }).start(() => {
-        // 인덱스 변경 및 스크롤 이동 (애니메이션 없이 즉시 이동)
         setCurrentIndex((prev) => {
           const nextIndex = (prev + 1) % ads.length;
           flatListRef.current?.scrollToIndex({ index: nextIndex, animated: false });
           return nextIndex;
         });
 
-        // Fade In: 300ms
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 300,
@@ -99,14 +96,12 @@ export function HomePopup({}: HomePopupProps) {
     return () => clearInterval(timer);
   }, [ads.length, isVisible]);
 
-  // 스와이프(슬라이드) 시 현재 인덱스 업데이트 --------------------------------------
   const onMomentumScrollEnd = (e: any) => {
     const x = e.nativeEvent.contentOffset.x;
     const newIndex = Math.round(x / POPUP_WIDTH);
     setCurrentIndex(newIndex);
   };
 
-  // 렌더링 시작 ----------------------------------------------------------------
   if (isLoading || ads.length === 0) return null;
 
   return (
@@ -117,59 +112,60 @@ export function HomePopup({}: HomePopupProps) {
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
-        <View style={[styles.popupContainer, { width: POPUP_WIDTH }]}>
-          {/* 광고 캐러셀 영역 */}
-          <Animated.View style={{ opacity: fadeAnim }}>
-            <FlatList
-              ref={flatListRef}
-              data={ads}
-              keyExtractor={(item, index) => item.id?.toString() || String(index)}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              bounces={false}
-              onMomentumScrollEnd={onMomentumScrollEnd}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.imagePlaceholder, { width: POPUP_WIDTH }]}
-                  activeOpacity={item.landingUrl ? 0.8 : 1}
-                  onPress={() => {
-                    if (item.landingUrl) Linking.openURL(item.landingUrl);
-                    // TODO: Google Analytics 클릭 추적 (ad_id: item.id)
-                  }}
-                >
-                  <Image
-                    source={{ uri: item.imageUrl }}
-                    style={styles.adImage}
-                    resizeMode="cover"
+        <View style={{ width: POPUP_WIDTH }}>
+          {/* 이미지 캐러셀 컨테이너 (둥근 모서리 적용) */}
+          <View style={[styles.carouselWrapper, { width: POPUP_WIDTH }]}>
+            <Animated.View style={{ opacity: fadeAnim }}>
+              <FlatList
+                ref={flatListRef}
+                data={ads}
+                keyExtractor={(item, index) => item.id?.toString() || String(index)}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                bounces={false}
+                onMomentumScrollEnd={onMomentumScrollEnd}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.imagePlaceholder, { width: POPUP_WIDTH }]}
+                    activeOpacity={item.landingUrl ? 0.8 : 1}
+                    onPress={() => {
+                      if (item.landingUrl) Linking.openURL(item.landingUrl);
+                      // TODO: Google Analytics
+                    }}
+                  >
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.adImage}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                )}
+              />
+            </Animated.View>
+
+            {/* 인디케이터 (2개 이상일 때만, 캐러셀 이미지 하단 영역에 배치) */}
+            {ads.length > 1 && (
+              <View style={styles.indicatorContainer}>
+                {ads.map((_, idx) => (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.indicatorDot,
+                      currentIndex === idx && styles.indicatorDotActive,
+                    ]}
                   />
-                </TouchableOpacity>
-              )}
-            />
-          </Animated.View>
+                ))}
+              </View>
+            )}
+          </View>
 
-          {/* 인디케이터 (2개 이상일 때만 표시) */}
-          {ads.length > 1 && (
-            <View style={styles.indicatorContainer}>
-              {ads.map((_, idx) => (
-                <View
-                  key={idx}
-                  style={[
-                    styles.indicatorDot,
-                    currentIndex === idx && styles.indicatorDotActive,
-                  ]}
-                />
-              ))}
-            </View>
-          )}
-
-          {/* 하단 버튼 영역 */}
+          {/* 하단 투명 버튼 영역 (배경 없이 텍스트만 양 끝 배치) */}
           <View style={styles.buttonContainer}>
-            <Pressable style={styles.hideTodayButton} onPress={handleHideToday}>
-              <ThemedText style={styles.buttonText}>오늘 하루 그만 보기</ThemedText>
+            <Pressable onPress={handleHideToday} hitSlop={10}>
+              <ThemedText style={styles.buttonText}>하루동안 보지 않기</ThemedText>
             </Pressable>
-            <View style={styles.divider} />
-            <Pressable style={styles.closeButton} onPress={handleClose}>
+            <Pressable onPress={handleClose} hitSlop={10}>
               <ThemedText style={styles.buttonText}>닫기</ThemedText>
             </Pressable>
           </View>
@@ -183,20 +179,19 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
+    paddingBottom: rs(60), // 위치를 하단으로 내리기 위해 간격 조정
   },
-  popupContainer: {
-    backgroundColor: Gray.white,
-    borderRadius: rs(12),
-    overflow: "hidden",
+  carouselWrapper: {
+    borderRadius: rs(16),
+    overflow: "hidden", // 이미지가 모서리를 넘어가지 않게 자름
+    backgroundColor: Gray.gray3,
   },
   imagePlaceholder: {
-    aspectRatio: 3 / 4,
-    backgroundColor: Gray.gray3,
+    aspectRatio: 1.30, // 높이를 조금 더 줄임 (위아래로 납작해짐)
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
   },
   adImage: {
     width: "100%",
@@ -204,7 +199,7 @@ const styles = StyleSheet.create({
   },
   indicatorContainer: {
     position: "absolute",
-    bottom: rs(60), // 하단 버튼영역 위쪽
+    bottom: rs(12),
     left: 0,
     right: 0,
     flexDirection: "row",
@@ -228,28 +223,13 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: "row",
-    height: rs(48),
-    borderTopWidth: 1,
-    borderTopColor: Gray.gray3,
-  },
-  hideTodayButton: {
-    flex: 1,
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
-  },
-  closeButton: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  divider: {
-    width: 1,
-    height: "100%",
-    backgroundColor: Gray.gray3,
+    marginTop: rs(8), // 사진과 글자 간격 줄임 (16 -> 8)
   },
   buttonText: {
     fontSize: rs(14),
     fontWeight: "500",
-    color: Gray.gray7,
+    color: Gray.white,
   },
 });

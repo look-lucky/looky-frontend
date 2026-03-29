@@ -1,32 +1,17 @@
-import Constants, { ExecutionEnvironment } from "expo-constants";
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
 import { useCallback, useEffect, useState } from "react";
+import { Platform } from "react-native";
 
 import { googleLogin } from "@/src/api/auth";
 import { ENV } from "@/src/shared/constants/env";
 import { useAuth } from "./auth-context";
 import type { UserType } from "./token";
 import { saveLoginProvider } from "./token";
-
-// Expo Go 여부 체크
-const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-
-// 네이티브 모듈 안전 로드
-let GoogleSignin: any;
-let statusCodes: any;
-let isErrorWithCode: any;
-let isSuccessResponse: any;
-
-if (!isExpoGo) {
-  try {
-    const GoogleModule = require("@react-native-google-signin/google-signin");
-    GoogleSignin = GoogleModule.GoogleSignin;
-    statusCodes = GoogleModule.statusCodes;
-    isErrorWithCode = GoogleModule.isErrorWithCode;
-    isSuccessResponse = GoogleModule.isSuccessResponse;
-  } catch (e) {
-    console.warn("GoogleSignin module load failed", e);
-  }
-}
 
 interface SocialLoginResult {
   success: boolean;
@@ -45,30 +30,35 @@ function decodeJwtPayload(token: string): { role?: string; sub?: string } | null
   }
 }
 
+// 전역 싱글톤 설정 플래그 (앱 실행 내내 한 번만 초기화되도록 보장)
+let isConfigured = false;
+
 export function useGoogleLogin() {
   const { handleAuthSuccess } = useAuth();
-  const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const isReady = true;
 
+  // 화면이나 훅이 마운트될 때 안전하게 초기화
   useEffect(() => {
-    if (!isExpoGo && GoogleSignin) {
+    if (!isConfigured) {
       GoogleSignin.configure({
         webClientId: ENV.GOOGLE_WEB_CLIENT_ID,
-        iosClientId: ENV.GOOGLE_IOS_CLIENT_ID || undefined,
+        iosClientId: ENV.GOOGLE_IOS_CLIENT_ID,
+        scopes: ["email", "profile"],
       });
+      isConfigured = true;
+      console.log("GoogleSignin successfully configured at mount.");
     }
-    setIsReady(true);
   }, []);
 
   const login = useCallback(async (): Promise<SocialLoginResult> => {
     try {
       setIsLoading(true);
 
-      if (isExpoGo || !GoogleSignin) {
-        return { success: false, error: "Expo Go에서는 구글 로그인을 지원하지 않습니다. 빌드된 앱에서 확인해주세요." };
+      if (Platform.OS === "android") {
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       }
 
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
 
       if (!isSuccessResponse(response) || !response.data.idToken) {
@@ -103,7 +93,7 @@ export function useGoogleLogin() {
       await handleAuthSuccess(accessToken, expiresIn, role ?? "ROLE_CUSTOMER");
       return { success: true };
     } catch (error: any) {
-      if (!isExpoGo && isErrorWithCode && isErrorWithCode(error)) {
+      if (isErrorWithCode && isErrorWithCode(error)) {
         switch (error.code) {
           case statusCodes.SIGN_IN_CANCELLED:
             return { success: false, error: "cancelled" };
