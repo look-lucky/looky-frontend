@@ -18,6 +18,10 @@ expo-env.d.ts
 # IDE
 .idea/
 
+# Firebase config (sensitive)
+google-services.json
+GoogleService-Info.plist
+
 # Native
 .kotlin/
 *.orig.*

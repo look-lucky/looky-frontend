@@ -460,6 +460,13 @@ export default function MapTab() {
       handleBack();
       return true;
     }
+    // 이벤트 단일 마커 상태 → 선택 해제
+    if (selectedEventId) {
+      setSelectedEventId(null);
+      router.setParams({ eventId: undefined } as any);
+      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
+      return true;
+    }
     // 검색 결과 표시 중 → 바텀시트 먼저 접고 키워드 초기화 (애니메이션 즉시 시작)
     if (submittedKeyword) {
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
@@ -471,8 +478,18 @@ export default function MapTab() {
       bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
       return true;
     }
+    // 카테고리/필터 활성화 상태 → 전체 초기화
+    const hasActiveFilters =
+      selectedCategory !== 'all' ||
+      selectedStoreTypes.length > 0 ||
+      selectedMoods.length > 0 ||
+      selectedEvents.length > 0;
+    if (hasActiveFilters) {
+      handleFilterReset();
+      return true;
+    }
     return false;
-  }, [handleBack, selectedStore, submittedKeyword, currentIndexRef]);
+  }, [handleBack, handleFilterReset, selectedStore, selectedEventId, submittedKeyword, currentIndexRef, selectedCategory, selectedStoreTypes, selectedMoods, selectedEvents, router]);
 
   // 안드로이드 하드웨어 뒤로가기 처리
   useFocusEffect(
@@ -487,8 +504,9 @@ export default function MapTab() {
     Keyboard.dismiss();
     handleMapClick();
     setSelectedEventId(null);
+    router.setParams({ eventId: undefined } as any);
     bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
-  }, [handleMapClick]);
+  }, [handleMapClick, router]);
 
   // 가게 마커 클릭
   const onMarkerClick = useCallback(
@@ -861,7 +879,7 @@ export default function MapTab() {
             styles.filterButton,
             selectedCategory === category.id && styles.filterButtonActive,
           ]}
-          onPress={() => { handleCategorySelect(category.id); setSelectedEventId(null); }}
+          onPress={() => { handleCategorySelect(category.id); setSelectedEventId(null); router.setParams({ eventId: undefined } as any); }}
         >
           {selectedCategory === category.id && (
             <Ionicons
