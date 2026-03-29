@@ -487,8 +487,9 @@ export default function MapTab() {
     Keyboard.dismiss();
     handleMapClick();
     setSelectedEventId(null);
+    router.setParams({ eventId: undefined } as any);
     bottomSheetRef.current?.snapToIndex(SNAP_INDEX.COLLAPSED);
-  }, [handleMapClick]);
+  }, [handleMapClick, router]);
 
   // 가게 마커 클릭
   const onMarkerClick = useCallback(
@@ -861,7 +862,7 @@ export default function MapTab() {
             styles.filterButton,
             selectedCategory === category.id && styles.filterButtonActive,
           ]}
-          onPress={() => { handleCategorySelect(category.id); setSelectedEventId(null); }}
+          onPress={() => { handleCategorySelect(category.id); setSelectedEventId(null); router.setParams({ eventId: undefined } as any); }}
         >
           {selectedCategory === category.id && (
             <Ionicons
