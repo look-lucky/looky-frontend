@@ -17,6 +17,12 @@
 - px 단위는 4단위 (4, 8, 12, 16, 20, 24, 28)
 - 컴포넌트명은 PascalCase
 
+## 빌드 버전 관리
+
+- 로컬 Android 빌드 시 (`./gradlew bundleRelease`) versionCode는 `android/app/build.gradle`에서 관리
+  - `defaultConfig` 블록 내 `versionCode` 값 수정
+  - EAS 원격 빌드가 아닌 로컬 빌드이므로 `eas.json`이나 `app.config.ts`에는 없음
+
 ## API 코드 생성 (orval)
 
 - API 코드 재생성 시 `npm run orval` 대신 반드시 `npm run generate` 사용
