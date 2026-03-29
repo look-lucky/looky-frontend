@@ -69,6 +69,9 @@ export interface CreateOrganizationRequest {
   expiresAt?: string;
 }
 
+/**
+ * 가게 카테고리 목록
+ */
 export type StoreCreateRequestStoreCategoriesItem = typeof StoreCreateRequestStoreCategoriesItem[keyof typeof StoreCreateRequestStoreCategoriesItem];
 
 
@@ -81,6 +84,9 @@ export const StoreCreateRequestStoreCategoriesItem = {
   ETC: 'ETC',
 } as const;
 
+/**
+ * 가게 분위기 목록
+ */
 export type StoreCreateRequestStoreMoodsItem = typeof StoreCreateRequestStoreMoodsItem[keyof typeof StoreCreateRequestStoreMoodsItem];
 
 
@@ -91,22 +97,44 @@ export const StoreCreateRequestStoreMoodsItem = {
   ROMANTIC: 'ROMANTIC',
 } as const;
 
+/**
+ * 가게 정보 생성 요청
+ */
 export interface StoreCreateRequest {
+  /** 상호명 */
   name: string;
+  /** 지점명 */
+  branch?: string;
+  /** 사업자등록번호 */
   bizRegNo?: string;
+  /** 도로명 주소 */
   roadAddress: string;
+  /** 지번 주소 */
   jibunAddress?: string;
+  /** 위도 */
   latitude?: number;
+  /** 경도 */
   longitude?: number;
+  /** 가게 전화번호 */
   storePhone?: string;
+  /** 대표자명 */
   representativeName?: string;
+  /** 가게 소개 */
   introduction?: string;
+  /** 영업 시간 (JSON 형식 권장) */
   operatingHours?: string;
+  /** 가게 카테고리 목록 */
   storeCategories?: StoreCreateRequestStoreCategoriesItem[];
+  /** 가게 분위기 목록 */
   storeMoods?: StoreCreateRequestStoreMoodsItem[];
+  /** 연결할 대학 ID 목록 */
   universityIds?: number[];
+  /** 프로필 이미지 URL */
   profileImageUrl?: string;
+  /** 갤러리 이미지 URL 목록 (최대 3장) */
   imageUrls?: string[];
+  /** 메뉴판 이미지 URL 목록 (최대 10장) */
+  menuBoardImageUrls?: string[];
 }
 
 export interface CreateReviewRequest {
@@ -637,6 +665,73 @@ export interface CreateEventRequest {
 }
 
 /**
+ * 광고 타입 (POPUP / BANNER / FLOATING)
+ */
+export type CreateAdvertisementRequestAdvertisementType = typeof CreateAdvertisementRequestAdvertisementType[keyof typeof CreateAdvertisementRequestAdvertisementType];
+
+
+export const CreateAdvertisementRequestAdvertisementType = {
+  POPUP: 'POPUP',
+  BANNER: 'BANNER',
+  FLOATING: 'FLOATING',
+} as const;
+
+/**
+ * 타겟 성별 (없으면 전체 성별 대상, MALE / FEMALE / UNKNOWN)
+ * @nullable
+ */
+export type CreateAdvertisementRequestTargetGender = typeof CreateAdvertisementRequestTargetGender[keyof typeof CreateAdvertisementRequestTargetGender] | null;
+
+
+export const CreateAdvertisementRequestTargetGender = {
+  MALE: 'MALE',
+  FEMALE: 'FEMALE',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+/**
+ * 광고 등록 요청
+ */
+export interface CreateAdvertisementRequest {
+  /** 광고 제목 */
+  title: string;
+  /** 광고 타입 (POPUP / BANNER / FLOATING) */
+  advertisementType: CreateAdvertisementRequestAdvertisementType;
+  /** 광고 이미지 URL */
+  imageUrl: string;
+  /**
+   * 랜딩 URL (없으면 클릭 불가)
+   * @nullable
+   */
+  landingUrl?: string | null;
+  /**
+   * 노출 순서 (낮을수록 우선 노출, ACTIVE 시작 시만 적용 / 미입력 시 마지막 순서)
+   * @minimum 0
+   * @nullable
+   */
+  displayOrder?: number | null;
+  /** 노출 시작일시 */
+  startAt: string;
+  /** 노출 종료일시 */
+  endAt: string;
+  /**
+   * 타겟 대학 ID 목록 (없으면 전체 대학 대상)
+   * @nullable
+   */
+  targetUniversityIds?: (number | null)[] | null;
+  /**
+   * 타겟 단과대 ID 목록 (없으면 전체 단과대 대상, 반드시 대학 ID도 함께 지정해야 함)
+   * @nullable
+   */
+  targetOrganizationIds?: (number | null)[] | null;
+  /**
+   * 타겟 성별 (없으면 전체 성별 대상, MALE / FEMALE / UNKNOWN)
+   * @nullable
+   */
+  targetGender?: CreateAdvertisementRequestTargetGender;
+}
+
+/**
  * 학교 이메일 도메인 목록
  */
 export interface JsonNullableListString {
@@ -705,6 +800,7 @@ export interface StoreUpdateRequest {
   isSuspended?: JsonNullableBoolean;
   profileImageUrl?: JsonNullableString;
   imageUrls?: JsonNullableListString;
+  menuBoardImageUrls?: JsonNullableListString;
 }
 
 /**
@@ -880,6 +976,45 @@ export interface UpdateEventRequest {
   imageUrls?: JsonNullableListString;
 }
 
+/**
+ * 광고 상태 (ACTIVE / INACTIVE만 직접 변경 가능)
+ */
+export interface JsonNullableAdvertisementStatus {
+  present?: boolean;
+}
+
+/**
+ * 타겟 성별 (null 전송 시 타겟 제거)
+ * @nullable
+ */
+export type JsonNullableGender = {
+  present?: boolean;
+} | null | null;
+
+/**
+ * 타겟 단과대 ID 목록 (null 전송 시 타겟 전체 제거, 빈 배열도 전체 제거)
+ * @nullable
+ */
+export type JsonNullableListLong = {
+  present?: boolean;
+} | null | null;
+
+/**
+ * 광고 수정 요청
+ */
+export interface UpdateAdvertisementRequest {
+  title?: JsonNullableString;
+  imageUrl?: JsonNullableString;
+  landingUrl?: JsonNullableString;
+  displayOrder?: JsonNullableInteger;
+  startAt?: JsonNullableLocalDateTime;
+  endAt?: JsonNullableLocalDateTime;
+  status?: JsonNullableAdvertisementStatus;
+  targetUniversityIds?: JsonNullableListLong | null;
+  targetOrganizationIds?: JsonNullableListLong | null;
+  targetGender?: JsonNullableGender | null;
+}
+
 export interface UniversityResponse {
   id?: number;
   name?: string;
@@ -916,49 +1051,6 @@ export interface OrganizationResponse {
 export interface CommonResponseListOrganizationResponse {
   isSuccess?: boolean;
   data?: OrganizationResponse[];
-}
-
-export type CouponResponseStatus = typeof CouponResponseStatus[keyof typeof CouponResponseStatus];
-
-
-export const CouponResponseStatus = {
-  ACTIVE: 'ACTIVE',
-  SOLD_OUT: 'SOLD_OUT',
-  EXPIRED: 'EXPIRED',
-  WITHDRAWN_BY_OWNER: 'WITHDRAWN_BY_OWNER',
-} as const;
-
-export type CouponResponseBenefitType = typeof CouponResponseBenefitType[keyof typeof CouponResponseBenefitType];
-
-
-export const CouponResponseBenefitType = {
-  FIXED_DISCOUNT: 'FIXED_DISCOUNT',
-  PERCENTAGE_DISCOUNT: 'PERCENTAGE_DISCOUNT',
-  SERVICE_GIFT: 'SERVICE_GIFT',
-} as const;
-
-export interface CouponResponse {
-  id?: number;
-  storeId?: number;
-  storeName?: string;
-  title?: string;
-  issueStartsAt?: string;
-  issueEndsAt?: string;
-  validDays?: number;
-  totalQuantity?: number;
-  limitPerUser?: number;
-  status?: CouponResponseStatus;
-  benefitType?: CouponResponseBenefitType;
-  benefitValue?: string;
-  minOrderAmount?: number;
-  downloadCount?: number;
-  usedCount?: number;
-  isDownloaded?: boolean;
-}
-
-export interface CommonResponseListCouponResponse {
-  isSuccess?: boolean;
-  data?: CouponResponse[];
 }
 
 export interface Pageable {
@@ -1042,6 +1134,7 @@ export interface StoreResponse {
   storeCategories?: StoreResponseStoreCategoriesItem[];
   storeMoods?: StoreResponseStoreMoodsItem[];
   imageUrls?: string[];
+  menuBoardImageUrls?: string[];
   averageRating?: number;
   reviewCount?: number;
   holidayDates?: string[];
@@ -1230,6 +1323,49 @@ export interface ItemCategoryResponse {
 export interface CommonResponseListItemCategoryResponse {
   isSuccess?: boolean;
   data?: ItemCategoryResponse[];
+}
+
+export type CouponResponseStatus = typeof CouponResponseStatus[keyof typeof CouponResponseStatus];
+
+
+export const CouponResponseStatus = {
+  ACTIVE: 'ACTIVE',
+  SOLD_OUT: 'SOLD_OUT',
+  EXPIRED: 'EXPIRED',
+  WITHDRAWN_BY_OWNER: 'WITHDRAWN_BY_OWNER',
+} as const;
+
+export type CouponResponseBenefitType = typeof CouponResponseBenefitType[keyof typeof CouponResponseBenefitType];
+
+
+export const CouponResponseBenefitType = {
+  FIXED_DISCOUNT: 'FIXED_DISCOUNT',
+  PERCENTAGE_DISCOUNT: 'PERCENTAGE_DISCOUNT',
+  SERVICE_GIFT: 'SERVICE_GIFT',
+} as const;
+
+export interface CouponResponse {
+  id?: number;
+  storeId?: number;
+  storeName?: string;
+  title?: string;
+  issueStartsAt?: string;
+  issueEndsAt?: string;
+  validDays?: number;
+  totalQuantity?: number;
+  limitPerUser?: number;
+  status?: CouponResponseStatus;
+  benefitType?: CouponResponseBenefitType;
+  benefitValue?: string;
+  minOrderAmount?: number;
+  downloadCount?: number;
+  usedCount?: number;
+  isDownloaded?: boolean;
+}
+
+export interface CommonResponseListCouponResponse {
+  isSuccess?: boolean;
+  data?: CouponResponse[];
 }
 
 export interface CommonResponseListStoreResponse {
@@ -1562,6 +1698,18 @@ export interface CommonResponseBoolean {
   data?: boolean;
 }
 
+export interface AdvertisementResponse {
+  id?: number;
+  imageUrl?: string;
+  landingUrl?: string;
+  displayOrder?: number;
+}
+
+export interface CommonResponseListAdvertisementResponse {
+  isSuccess?: boolean;
+  data?: AdvertisementResponse[];
+}
+
 export type UserResponseRole = typeof UserResponseRole[keyof typeof UserResponseRole];
 
 
@@ -1702,6 +1850,75 @@ export interface CommonResponsePageResponseInquiryResponse {
   data?: PageResponseInquiryResponse;
 }
 
+export type AdminAdvertisementResponseAdvertisementType = typeof AdminAdvertisementResponseAdvertisementType[keyof typeof AdminAdvertisementResponseAdvertisementType];
+
+
+export const AdminAdvertisementResponseAdvertisementType = {
+  POPUP: 'POPUP',
+  BANNER: 'BANNER',
+  FLOATING: 'FLOATING',
+} as const;
+
+export type AdminAdvertisementResponseStatus = typeof AdminAdvertisementResponseStatus[keyof typeof AdminAdvertisementResponseStatus];
+
+
+export const AdminAdvertisementResponseStatus = {
+  SCHEDULED: 'SCHEDULED',
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  ENDED: 'ENDED',
+} as const;
+
+export type AdminAdvertisementResponseTargetGender = typeof AdminAdvertisementResponseTargetGender[keyof typeof AdminAdvertisementResponseTargetGender];
+
+
+export const AdminAdvertisementResponseTargetGender = {
+  MALE: 'MALE',
+  FEMALE: 'FEMALE',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+export interface TargetUniversityInfo {
+  id?: number;
+  name?: string;
+}
+
+export interface TargetOrganizationInfo {
+  id?: number;
+  name?: string;
+}
+
+export interface AdminAdvertisementResponse {
+  id?: number;
+  title?: string;
+  advertisementType?: AdminAdvertisementResponseAdvertisementType;
+  imageUrl?: string;
+  landingUrl?: string;
+  status?: AdminAdvertisementResponseStatus;
+  displayOrder?: number;
+  startAt?: string;
+  endAt?: string;
+  createdAt?: string;
+  targetUniversities?: TargetUniversityInfo[];
+  targetOrganizations?: TargetOrganizationInfo[];
+  targetGender?: AdminAdvertisementResponseTargetGender;
+}
+
+export interface PageResponseAdminAdvertisementResponse {
+  content?: AdminAdvertisementResponse[];
+  pageNumber?: number;
+  pageSize?: number;
+  totalElements?: number;
+  totalPages?: number;
+  sort?: string;
+  last?: boolean;
+}
+
+export interface CommonResponsePageResponseAdminAdvertisementResponse {
+  isSuccess?: boolean;
+  data?: PageResponseAdminAdvertisementResponse;
+}
+
 export type WithdrawRequestReasonsItem = typeof WithdrawRequestReasonsItem[keyof typeof WithdrawRequestReasonsItem];
 
 
@@ -1720,34 +1937,34 @@ export interface WithdrawRequest {
 }
 
 export type GetStoresParams = {
-  /**
-   * 검색 키워드 (상점 이름)
-   */
-  keyword?: string;
-  /**
-   * 카테고리 필터 (복수 선택 가능)
-   */
-  categories?: GetStoresCategoriesItem[];
-  /**
-   * 분위기 필터 (복수 선택 가능)
-   */
-  moods?: GetStoresMoodsItem[];
-  /**
-   * 대학(상권) ID 필터
-   */
-  universityId?: number;
-  /**
-   * 제휴 업체 보유 여부 필터 (true: 있음, false: 없음, 생략: 전체)
-   */
-  hasPartnership?: boolean;
-  /**
-   * 상점 상태 필터 (UNCLAIMED, ACTIVE, BANNED, 생략: 전체)
-   */
-  storeStatus?: GetStoresStoreStatus;
-  /**
-   * 페이징 정보 (page, size, sort)
-   */
-  pageable: Pageable;
+/**
+ * 검색 키워드 (상점 이름)
+ */
+keyword?: string;
+/**
+ * 카테고리 필터 (복수 선택 가능)
+ */
+categories?: GetStoresCategoriesItem[];
+/**
+ * 분위기 필터 (복수 선택 가능)
+ */
+moods?: GetStoresMoodsItem[];
+/**
+ * 대학(상권) ID 필터
+ */
+universityId?: number;
+/**
+ * 제휴 업체 보유 여부 필터 (true: 있음, false: 없음, 생략: 전체)
+ */
+hasPartnership?: boolean;
+/**
+ * 상점 상태 필터 (UNCLAIMED, ACTIVE, BANNED, 생략: 전체)
+ */
+storeStatus?: GetStoresStoreStatus;
+/**
+ * 페이징 정보 (page, size, sort)
+ */
+pageable: Pageable;
 };
 
 export type GetStoresCategoriesItem = typeof GetStoresCategoriesItem[keyof typeof GetStoresCategoriesItem];
@@ -1782,37 +1999,37 @@ export const GetStoresStoreStatus = {
 } as const;
 
 export type GetReviewsParams = {
-  /**
-   * 페이징 정보
-   */
-  pageable: Pageable;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
 };
 
 export type GetStoreNewsListParams = {
-  /**
-   * 페이징 정보 (page, size, sort)
-   */
-  pageable: Pageable;
+/**
+ * 페이징 정보 (page, size, sort)
+ */
+pageable: Pageable;
 };
 
-export type CreateItemCategoryBody = { [key: string]: string };
+export type CreateItemCategoryBody = {[key: string]: string};
 
 export type GetCommentsParams = {
-  /**
-   * 페이징 정보
-   */
-  pageable: Pageable;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
 };
 
 export type GetInquiriesParams = {
-  /**
-   * 페이징 정보
-   */
-  pageable: Pageable;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
 };
 
 export type CompleteSocialSignupParams = {
-  userId: number;
+userId: number;
 };
 
 export type UploadStoreDataBody = {
@@ -1821,10 +2038,10 @@ export type UploadStoreDataBody = {
 };
 
 export type UploadPartnershipDataParams = {
-  /**
-   * 대상 조직 ID (관리자용)
-   */
-  organizationId?: number;
+/**
+ * 대상 조직 ID (관리자용)
+ */
+organizationId?: number;
 };
 
 export type UploadPartnershipDataBody = {
@@ -1832,82 +2049,113 @@ export type UploadPartnershipDataBody = {
   file: Blob;
 };
 
-export type UpdateItemCategoryBody = { [key: string]: string };
+export type GetAdvertisementsParams = {
+/**
+ * 광고 타입 필터 (POPUP / BANNER / FLOATING)
+ */
+type?: GetAdvertisementsType;
+/**
+ * 광고 상태 필터 (SCHEDULED / ACTIVE / INACTIVE / ENDED)
+ */
+status?: GetAdvertisementsStatus;
+pageable: Pageable;
+};
 
-export type HealthCheck200 = { [key: string]: { [key: string]: unknown } };
+export type GetAdvertisementsType = typeof GetAdvertisementsType[keyof typeof GetAdvertisementsType];
+
+
+export const GetAdvertisementsType = {
+  POPUP: 'POPUP',
+  BANNER: 'BANNER',
+  FLOATING: 'FLOATING',
+} as const;
+
+export type GetAdvertisementsStatus = typeof GetAdvertisementsStatus[keyof typeof GetAdvertisementsStatus];
+
+
+export const GetAdvertisementsStatus = {
+  SCHEDULED: 'SCHEDULED',
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  ENDED: 'ENDED',
+} as const;
+
+export type UpdateItemCategoryBody = {[key: string]: string};
+
+export type HealthCheck200 = {[key: string]: { [key: string]: unknown }};
 
 export type GetNearbyStoresParams = {
-  /**
-   * 위도
-   */
-  latitude: number;
-  /**
-   * 경도
-   */
-  longitude: number;
-  /**
-   * 반경(km)
-   */
-  radius: number;
+/**
+ * 위도
+ */
+latitude: number;
+/**
+ * 경도
+ */
+longitude: number;
+/**
+ * 반경(km)
+ */
+radius: number;
 };
 
 export type GetStoreMapParams = {
-  /**
-   * 대학(상권) ID 필터
-   */
-  universityId?: number;
+/**
+ * 대학(상권) ID 필터
+ */
+universityId?: number;
 };
 
 export type GetStoresByLocationParams = {
-  /**
-   * 위도
-   */
-  latitude: number;
-  /**
-   * 경도
-   */
-  longitude: number;
+/**
+ * 위도
+ */
+latitude: number;
+/**
+ * 경도
+ */
+longitude: number;
 };
 
 export type SearchUnclaimedStoresParams = {
-  keyword: string;
+keyword: string;
 };
 
 export type GetMyReviewsParams = {
-  /**
-   * 페이징 정보
-   */
-  pageable: Pageable;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
 };
 
 export type GetMyFavoritesParams = {
-  /**
-   * 페이징 정보
-   */
-  pageable: Pageable;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
 };
 
 export type GetEventsParams = {
-  /**
-   * 검색 키워드 (제목)
-   */
-  keyword?: string;
-  /**
-   * 이벤트 타입 필터 (복수 선택 가능)
-   */
-  eventTypes?: GetEventsEventTypesItem[];
-  /**
-   * 상태 필터
-   */
-  status?: GetEventsStatus;
-  /**
-   * 대학 ID
-   */
-  universityId?: number;
-  /**
-   * 페이징 정보
-   */
-  pageable: Pageable;
+/**
+ * 검색 키워드 (제목)
+ */
+keyword?: string;
+/**
+ * 이벤트 타입 필터 (복수 선택 가능)
+ */
+eventTypes?: GetEventsEventTypesItem[];
+/**
+ * 상태 필터
+ */
+status?: GetEventsStatus;
+/**
+ * 대학 ID
+ */
+universityId?: number;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
 };
 
 export type GetEventsEventTypesItem = typeof GetEventsEventTypesItem[keyof typeof GetEventsEventTypesItem];
@@ -1932,29 +2180,29 @@ export const GetEventsStatus = {
 } as const;
 
 export type CheckUsernameAvailabilityParams = {
-  username: string;
+username: string;
 };
 
 export type GetAllUsersParams = {
-  /**
-   * 페이징 정보
-   */
-  pageable: Pageable;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
 };
 
 export type GetGeocodeParams = {
-  /**
-   * 도로명 주소 (예: 전라북도 전주시 덕진구 명륜3길 22)
-   */
-  address: string;
+/**
+ * 도로명 주소 (예: 전라북도 전주시 덕진구 명륜3길 22)
+ */
+address: string;
 };
 
 export type GetStoreClaimsParams = {
-  /**
-   * 요청 상태 (PENDING, APPROVED, REJECTED, CANCELED)
-   */
-  status?: GetStoreClaimsStatus;
-  pageable: Pageable;
+/**
+ * 요청 상태 (PENDING, APPROVED, REJECTED, CANCELED)
+ */
+status?: GetStoreClaimsStatus;
+pageable: Pageable;
 };
 
 export type GetStoreClaimsStatus = typeof GetStoreClaimsStatus[keyof typeof GetStoreClaimsStatus];
@@ -1968,20 +2216,16 @@ export const GetStoreClaimsStatus = {
 } as const;
 
 export type ExportPartnershipTemplateParams = {
-  /**
-   * 대상 대학 ID
-   */
-  universityId: number;
+/**
+ * 대상 대학 ID
+ */
+universityId: number;
 };
 
 export type GetAllInquiriesParams = {
-  /**
-   * 페이징 정보
-   */
-  pageable: Pageable;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
 };
 
-export interface StoreMenuBoardImageResponse {
-  isSuccess?: boolean;
-  data?: string[];
-}

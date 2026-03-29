@@ -101,7 +101,7 @@ export function HotPlaceSection({ places }: HotPlaceSectionProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: rs(8),
+    gap: rs(2),
   },
   rankingContainer: {
     backgroundColor: Gray.white,
