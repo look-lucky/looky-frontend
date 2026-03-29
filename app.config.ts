@@ -103,6 +103,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           iosUrlScheme: "com.googleusercontent.apps.409232942871-dardm07iqdd0pfmhvjod9gnsets1g520",
         },
       ],
+      "@react-native-firebase/app",
     ],
     experiments: {
       typedRoutes: true,
