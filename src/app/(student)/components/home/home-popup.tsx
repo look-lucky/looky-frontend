@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "flex-end",
     alignItems: "center",
-    paddingBottom: rs(60), // 위치를 하단으로 내리기 위해 간격 조정
+    paddingBottom: rs(30), // 위치를 하단으로 내리기 위해 간격 조정 (60 -> 30)
   },
   carouselWrapper: {
     borderRadius: rs(16),

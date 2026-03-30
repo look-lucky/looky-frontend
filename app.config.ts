@@ -15,7 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     name: IS_DEV ? "Looky (Dev)" : IS_PREVIEW ? "Looky (Preview)" : "Looky",
     slug: "rn-app",
     owner: "looky123",
-    version: "1.0.0",
+    version: "1.1.0",
     orientation: "portrait",
     icon: "./assets/images/logo/ios-looky.png",
     // 구글 로그인 scheme은 아래 플러그인(google-signin)에서 자동으로 추가하므로 중복 방지를 위해 제거
@@ -25,7 +25,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: false,
       bundleIdentifier: bundleId,
+      buildNumber: "2",
       usesAppleSignIn: true,
+      googleServicesFile: process.env.GOOGLE_SERVICES_IOS || "./GoogleService-Info.plist",
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "사용자의 현재 위치를 중심으로 내 주변의 대학 제휴 매장, 실시간 이벤트 팝업, 할인 혜택을 지도상에 표시하고 해당 매장까지의 거리를 안내하기 위해 위치 정보가 필요합니다.",
@@ -46,12 +48,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           "kakaolink",        // 카카오 로그인/공유용 필수
           "kakaotalk",
         ],
-        // GIDClientID: "1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a.apps.googleusercontent.com",
-        // GIDServerClientID: "409232942871-dardm07iqdd0pfmhvjod9gnsets1g520.apps.googleusercontent.com",
+        GIDClientID: "1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a.apps.googleusercontent.com",
+        GIDServerClientID: "409232942871-dardm07iqdd0pfmhvjod9gnsets1g520.apps.googleusercontent.com",
       },
     },
     android: {
       package: bundleId,
+      versionCode: 2,
       adaptiveIcon: {
         backgroundColor: "#FEF5E5",
         foregroundImage: "./assets/images/logo/android-looky.png",
@@ -85,6 +88,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-build-properties",
         {
+          ios: {
+            useFrameworks: "static",
+            buildReactNativeFromSource: true,
+          },
           android: {
             kotlinVersion: "2.1.20",
             extraMavenRepos: [
