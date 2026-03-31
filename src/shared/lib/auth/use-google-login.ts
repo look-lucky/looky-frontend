@@ -4,7 +4,7 @@ import {
   isSuccessResponse,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Platform } from "react-native";
 
 import { googleLogin } from "@/src/api/auth";
@@ -30,26 +30,19 @@ function decodeJwtPayload(token: string): { role?: string; sub?: string } | null
   }
 }
 
-// 전역 싱글톤 설정 플래그 (앱 실행 내내 한 번만 초기화되도록 보장)
-let isConfigured = false;
+// 🔥 [CRITICAL FIX] Hook 내부의 useEffect가 아닌, 파일 최상단(Global)으로 완전히 이동!
+// JS 번들이 켜지자마자 즉시 1회만 설정을 완료하여 버튼 클릭 시점의 타이밍 크래시를 방지합니다.
+GoogleSignin.configure({
+  webClientId: ENV.GOOGLE_WEB_CLIENT_ID,
+  iosClientId: ENV.GOOGLE_IOS_CLIENT_ID,
+});
 
 export function useGoogleLogin() {
   const { handleAuthSuccess } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const isReady = true;
 
-  // 화면이나 훅이 마운트될 때 안전하게 초기화
-  useEffect(() => {
-    if (!isConfigured) {
-      GoogleSignin.configure({
-        webClientId: ENV.GOOGLE_WEB_CLIENT_ID,
-        iosClientId: ENV.GOOGLE_IOS_CLIENT_ID,
-        scopes: ["email", "profile"],
-      });
-      isConfigured = true;
-      console.log("GoogleSignin successfully configured at mount.");
-    }
-  }, []);
+  // ❌ 에러의 원인이었던 useEffect 지연 초기화 블록은 완전히 삭제되었습니다.
 
   const login = useCallback(async (): Promise<SocialLoginResult> => {
     try {
