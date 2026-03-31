@@ -48,8 +48,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           "kakaolink",        // 카카오 로그인/공유용 필수
           "kakaotalk",
         ],
-        GIDClientID: "1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a.apps.googleusercontent.com",
-        GIDServerClientID: "409232942871-dardm07iqdd0pfmhvjod9gnsets1g520.apps.googleusercontent.com",
       },
     },
     android: {
