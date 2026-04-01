@@ -4,6 +4,7 @@ import { AppButton } from "@/src/shared/common/app-button";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
+import { decodeJwtPayload, getToken } from "@/src/shared/lib/auth/token";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Owner, System, Text as TextColors } from "@/src/shared/theme/theme";
@@ -11,6 +12,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { AgreeModal } from "./components/agree-modal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   AppState,
   KeyboardAvoidingView,
@@ -58,12 +60,37 @@ function RadioButton({
 
 export default function SocialSignupFormPage() {
   const router = useRouter();
-  const { userId, provider } = useLocalSearchParams<{
+  const { userId: userIdParam, provider } = useLocalSearchParams<{
     userId: string;
     provider: string;
   }>();
   const { handleLogout, userType } = useAuth();
   const { setSignupFields, userType: storedUserType, gender: storedGender, birthYear: storedBirthYear, birthMonth: storedBirthMonth, birthDay: storedBirthDay, nickname: storedNickname, ownerEmail: storedOwnerEmail } = useSignupStore();
+
+  // URL 파라미터에 userId가 없을 경우(AuthRedirectGuard의 params 없는 리다이렉트) JWT에서 fallback
+  const [userId, setUserId] = useState<string | undefined>(userIdParam);
+  const [isUserIdLoading, setIsUserIdLoading] = useState(!userIdParam);
+  useEffect(() => {
+    if (!userIdParam) {
+      getToken().then((tokenData) => {
+        if (tokenData) {
+          const payload = decodeJwtPayload(tokenData.accessToken);
+          if (payload?.sub) {
+            setUserId(payload.sub);
+            setIsUserIdLoading(false);
+            return;
+          }
+        }
+        // userId를 가져올 수 없으면 에러 처리
+        setIsUserIdLoading(false);
+        Alert.alert(
+          "오류",
+          "로그인 정보를 불러오지 못했습니다. 다시 시도해주세요.",
+          [{ text: "확인", onPress: async () => { await handleLogout(); router.replace("/auth"); } }]
+        );
+      });
+    }
+  }, [userIdParam]);
 
   const sendEmailMutation = useSend();
   const verifyEmailMutation = useVerify();
@@ -206,6 +233,7 @@ export default function SocialSignupFormPage() {
   const isNicknameValid = (nick: string) => /^[가-힣a-zA-Z]{2,10}$/.test(nick);
 
   const isFormValid = () => {
+    if (!userId) return false;
     if (!selectedUserType) return false;
     if (!isBirthValid()) return false;
     if (isStudent) {
@@ -556,12 +584,18 @@ export default function SocialSignupFormPage() {
       </ScrollView>
 
       <View style={styles.bottomContent}>
-        <AppButton
-          label="다음으로"
-          backgroundColor={isFormValid() ? primaryColor : Gray.gray5}
-          onPress={handleNext}
-          disabled={!isFormValid()}
-        />
+        {isUserIdLoading ? (
+          <View style={[styles.loadingButton, { backgroundColor: Gray.gray5 }]}>
+            <ActivityIndicator size="small" color={Gray.white} />
+          </View>
+        ) : (
+          <AppButton
+            label="다음으로"
+            backgroundColor={isFormValid() ? primaryColor : Gray.gray5}
+            onPress={handleNext}
+            disabled={!isFormValid()}
+          />
+        )}
       </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -692,6 +726,12 @@ const styles = StyleSheet.create({
   },
   bottomContent: {
     paddingTop: rs(16),
+  },
+  loadingButton: {
+    height: rs(48),
+    borderRadius: rs(8),
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorText: {
     fontSize: rs(10),
