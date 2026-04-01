@@ -99,18 +99,9 @@ function getEventMarkerIcon(eventType: EventType, status: EventStatus) {
   return EVENT_MARKER_ICONS[eventType] ?? EVENT_MARKER_ICONS.COMMUNITY;
 }
 
-// 이벤트 상태에 따른 opacity
+// 이벤트 상태에 따른 opacity (upcoming: 0.5, live: 1.0)
 function getEventMarkerOpacity(status: EventStatus): number {
-  switch (status) {
-    case 'live':
-      return 1.0;
-    case 'upcoming':
-      return 0.5;
-    case 'ended':
-      return 0.4;
-    default:
-      return 1.0;
-  }
+  return status === 'upcoming' ? 0.5 : 1.0;
 }
 
 // 가게 마커 데이터
@@ -355,6 +346,8 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                 height={markerSize}
                 onTap={() => onEventMarkerClick?.(item.id)}
                 anchor={{ x: 0.5, y: 0.5 }}
+                alpha={opacity}
+                image={getEventMarkerIcon(item.eventType, item.status)}
                 isHideCollidedCaptions
                 caption={showLabel && item.title ? {
                   text: truncateLabel(item.title),
@@ -364,16 +357,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                   requestedWidth: LABEL_REQUESTED_WIDTH,
                   offset: 4,
                 } : undefined}
-              >
-                <View collapsable={false} style={{ width: markerSize, height: markerSize, opacity, backgroundColor: 'transparent' }}>
-                  <RNImage
-                    source={getEventMarkerIcon(item.eventType, item.status)}
-                    style={{ width: markerSize, height: markerSize }}
-                    resizeMode="contain"
-                    fadeDuration={0}
-                  />
-                </View>
-              </NaverMapMarkerOverlay>
+              />
             );
           })}
         </NaverMapView>
