@@ -94,7 +94,7 @@ export default function StudentVerificationPage() {
   const socialUserId = socialUserIdParam || socialUserIdStore;
 
   // Auth
-  const { handleAuthSuccess, saveUserCollegeId, saveUserCollegeName } = useAuth();
+  const { handleAuthSuccess, saveUserUniversityId, saveUserCollegeId, saveUserCollegeName } = useAuth();
 
   // Mutations
   const signupMutation = useSignupStudent();
@@ -365,6 +365,7 @@ export default function StudentVerificationPage() {
                 }
               })();
               const role = (jwtPayload?.role as UserType) ?? "ROLE_STUDENT";
+              await saveUserUniversityId(selectedUniversityId!);
               await saveUserCollegeId(selectedCollegeId!);
               await saveUserCollegeName(selectedCollegeName);
 
@@ -415,6 +416,7 @@ export default function StudentVerificationPage() {
         onSuccess: async (response) => {
           console.log("회원가입 성공:", response);
 
+          await saveUserUniversityId(selectedUniversityId!);
           await saveUserCollegeId(selectedCollegeId!);
           await saveUserCollegeName(selectedCollegeName);
 
