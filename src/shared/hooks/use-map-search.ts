@@ -18,7 +18,7 @@ function getViewportRadiusKm(zoom: number): number {
 // Hook
 // -------------------------------------------------------------------
 export function useMapSearch(permissionReady = true, skipInitialCenterMove = false) {
-  const { collegeId } = useAuth();
+  const { universityId } = useAuth();
   const skipInitialCenterMoveRef = useRef(skipInitialCenterMove);
   skipInitialCenterMoveRef.current = skipInitialCenterMove;
   // 검색
@@ -88,7 +88,7 @@ export function useMapSearch(permissionReady = true, skipInitialCenterMove = fal
     isError,
     refetch,
   } = useGetStoreMap(
-    collegeId != null ? { universityId: collegeId } : undefined,
+    universityId != null ? { universityId } : undefined,
     {
       query: {
         staleTime: 0,
