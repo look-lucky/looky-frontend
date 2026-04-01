@@ -112,9 +112,15 @@ export function EventSection({ events }: EventSectionProps) {
   }).current;
 
   // 표시 가능한 이벤트들 (부모에서 이미 isEventVisible로 필터링되어 넘어옴)
-  const activeEvents = [...events].sort(
-    (a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
-  );
+  // LIVE: 종료일 오름차순(곧 끝나는 것 먼저), UPCOMING: 시작일 오름차순, LIVE가 UPCOMING보다 앞
+  const activeEvents = [...events].sort((a, b) => {
+    const statusOrder = { LIVE: 0, UPCOMING: 1, ENDED: 2 };
+    if (a.status !== b.status) return statusOrder[a.status] - statusOrder[b.status];
+    if (a.status === 'LIVE') {
+      return new Date(a.endDateTime).getTime() - new Date(b.endDateTime).getTime();
+    }
+    return new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime();
+  });
 
   if (activeEvents.length === 0) {
     return null;
