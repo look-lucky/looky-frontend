@@ -5,7 +5,8 @@
   "scripts": {
     "start": "expo start",
     "start:dev": "npx cross-env APP_VARIANT=development expo start --dev-client",
-    "android": "expo run:android",
+    "android": "expo run:android --variant prodDebug",
+    "android:dev": "npx cross-env APP_VARIANT=development expo run:android --variant devDebug",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
