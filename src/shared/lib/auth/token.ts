@@ -4,6 +4,7 @@ import * as SecureStore from "expo-secure-store";
 const ACCESS_TOKEN_KEY = "auth_access_token";
 const EXPIRES_AT_KEY = "auth_expires_at";
 const USER_TYPE_KEY = "auth_user_type";
+const UNIVERSITY_ID_KEY = "user_university_id";
 const COLLEGE_ID_KEY = "user_college_id";
 const COLLEGE_NAME_KEY = "user_college_name";
 const USERNAME_KEY = "auth_username";
@@ -47,6 +48,15 @@ export async function getToken(): Promise<TokenData | null> {
 
 export async function getUserType(): Promise<UserType | null> {
   return (await AsyncStorage.getItem(USER_TYPE_KEY)) as UserType | null;
+}
+
+export async function saveUniversityId(universityId: number): Promise<void> {
+  await AsyncStorage.setItem(UNIVERSITY_ID_KEY, universityId.toString());
+}
+
+export async function getUniversityId(): Promise<number | null> {
+  const value = await AsyncStorage.getItem(UNIVERSITY_ID_KEY);
+  return value ? parseInt(value, 10) : null;
 }
 
 export async function saveCollegeId(collegeId: number): Promise<void> {
@@ -107,6 +117,7 @@ export async function clearToken(): Promise<void> {
     ACCESS_TOKEN_KEY,
     EXPIRES_AT_KEY,
     USER_TYPE_KEY,
+    UNIVERSITY_ID_KEY,
     COLLEGE_ID_KEY,
     COLLEGE_NAME_KEY,
     USERNAME_KEY,

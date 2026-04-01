@@ -86,7 +86,7 @@ export default function SocialSignupPage() {
     userId: string;
     provider: string;
   }>();
-  const { handleAuthSuccess, saveUserCollegeId } = useAuth();
+  const { handleAuthSuccess, saveUserUniversityId, saveUserCollegeId } = useAuth();
   const { setSignupFields } = useSignupStore();
   const completeSocialSignupMutation = useCompleteSocialSignup();
 
@@ -236,6 +236,7 @@ export default function SocialSignupPage() {
             const jwtPayload = decodeJwtPayload(accessToken);
             const role = (jwtPayload?.role as UserType) ?? "ROLE_STUDENT";
 
+            await saveUserUniversityId(selectedUniversityId!);
             await saveUserCollegeId(selectedCollegeId!);
 
             // Store에 회원가입 정보 저장 (sign-up-done 화면에서 표시하기 위함)
