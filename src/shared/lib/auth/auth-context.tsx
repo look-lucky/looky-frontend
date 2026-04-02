@@ -155,11 +155,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleAuthSuccess = useCallback(
     async (accessToken: string, expiresIn: number, userType: UserType) => {
       await saveToken(accessToken, expiresIn, userType);
-      const universityId = await getUniversityId();
+      let universityId = await getUniversityId();
       const collegeId = await getCollegeId();
       const collegeName = await getCollegeName();
       const username = await getUsername();
       const loginProvider = await getLoginProvider();
+      // universityId가 없으면 서버에서 조회 후 저장
+      if (universityId === null) {
+        try {
+          const res = await getStudentInfo();
+          const fetchedId = (res as any)?.data?.data?.universityId;
+          if (fetchedId != null) {
+            await saveUniversityId(fetchedId);
+            universityId = fetchedId;
+          }
+        } catch {}
+      }
       isAuthenticatedRef.current = true;
       setState({ isAuthenticated: true, isLoading: false, userType, universityId, collegeId, collegeName, username, loginProvider });
     },

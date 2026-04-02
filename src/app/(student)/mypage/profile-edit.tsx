@@ -215,6 +215,11 @@ export default function ProfileEditScreen() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetStudentInfoQueryKey() });
+          queryClient.invalidateQueries({
+            predicate: (query) =>
+              typeof query.queryKey[0] === "string" &&
+              query.queryKey[0].includes("/partnerships"),
+          });
           setPopupState({ visible: true, title: "프로필이 수정되었습니다", onClose: () => router.back() });
         },
         onError: (error) => {

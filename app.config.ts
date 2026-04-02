@@ -70,10 +70,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-splash-screen",
         {
-          image: "./assets/images/splash-icon.png",
+          image: "./assets/images/logo/ios-looky.png",
           imageWidth: 200,
           resizeMode: "contain",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#FEF5E5",
         },
       ],
       "expo-secure-store",

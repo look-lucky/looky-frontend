@@ -1,4 +1,5 @@
 import { customFetch } from '@/src/api/mutator';
+import { useAuth } from '@/src/shared/lib/auth/auth-context';
 import type { Event, EventStatus, EventType } from '@/src/shared/types/event';
 import {
   getEventStatus,
@@ -49,6 +50,7 @@ interface EventSearchParams {
   status?: ('UPCOMING' | 'LIVE' | 'ENDED')[];
   page?: number;
   size?: number;
+  universityId?: number;
 }
 
 async function fetchEvents(params: EventSearchParams) {
@@ -58,6 +60,7 @@ async function fetchEvents(params: EventSearchParams) {
   params.status?.forEach((s) => qs.append('status', s));
   qs.append('page', String(params.page ?? 0));
   qs.append('size', String(params.size ?? 50));
+  if (params.universityId != null) qs.append('universityId', String(params.universityId));
 
   const queryString = qs.toString();
   const url = queryString ? `/api/events?${queryString}` : '/api/events';
@@ -134,6 +137,8 @@ export function useEvents({
   viewportSearch = null,
   enabled = true,
 }: UseEventsOptions) {
+  const { collegeId } = useAuth();
+
   // API 호출 (UPCOMING, LIVE 상태만)
   const {
     data: rawData,
@@ -141,8 +146,8 @@ export function useEvents({
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => fetchEvents({ status: ['UPCOMING', 'LIVE'], size: 100 }),
+    queryKey: ['events', collegeId],
+    queryFn: () => fetchEvents({ status: ['UPCOMING', 'LIVE'], size: 100, universityId: collegeId ?? undefined }),
     staleTime: 3 * 60 * 1000,
     enabled,
   });
