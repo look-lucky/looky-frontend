@@ -226,15 +226,17 @@ export function useMapSearch(permissionReady = true, skipInitialCenterMove = fal
         getDistanceKm(center.lat, center.lng, b.lat, b.lng)
       );
     });
-    return sorted.slice(0, MAX_MAP_MARKERS).map((store) => ({
-      id: store.id,
-      lat: store.lat,
-      lng: store.lng,
-      title: store.name,
-      isPartner: store.isPartner,
-      hasCoupon: store.hasCoupon,
-      favoriteCount: store.favoriteCount ?? 0,
-    }));
+    return sorted
+      .filter((store) => store.isPartner || store.hasCoupon)
+      .slice(0, MAX_MAP_MARKERS).map((store) => ({
+        id: store.id,
+        lat: store.lat,
+        lng: store.lng,
+        title: store.name,
+        isPartner: store.isPartner,
+        hasCoupon: store.hasCoupon,
+        favoriteCount: store.favoriteCount ?? 0,
+      }));
   }, [filteredStores, selectedStoreId, viewportSearch, myLocation, mapCenter]);
 
   // 선택된 가게
