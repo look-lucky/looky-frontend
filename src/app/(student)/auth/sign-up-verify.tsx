@@ -710,10 +710,10 @@ export default function StudentVerificationPage() {
       {/* 하단 버튼 */}
       <View style={styles.bottomContent}>
         <AppButton
-          label="완료"
-          backgroundColor={isFormValid ? Brand.primary : Gray.gray5}
+          label={signupMutation.isPending || loginMutation.isPending ? "처리 중..." : "완료"}
+          backgroundColor={isFormValid && !signupMutation.isPending && !loginMutation.isPending ? Brand.primary : Gray.gray5}
           onPress={handleComplete}
-          disabled={!isFormValid}
+          disabled={!isFormValid || signupMutation.isPending || loginMutation.isPending}
         />
       </View>
       </KeyboardAvoidingView>
