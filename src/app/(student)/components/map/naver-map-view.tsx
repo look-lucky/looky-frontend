@@ -68,8 +68,8 @@ function ClusterMarkerIcon({ count, size, icon = CLUSTER_ICON, textColor = Gray.
 }
 
 const MARKER_SIZE = rs(32);
-const EVENT_MARKER_SIZE = rs(40);
-const EVENT_MARKER_SIZE_LIVE = rs(60);
+const EVENT_MARKER_SIZE = rs(32);
+const EVENT_MARKER_SIZE_LIVE = rs(32);
 const CLUSTER_SIZE = rs(60);
 
 // 라벨 표시 최소 줌 레벨
@@ -99,10 +99,6 @@ function getEventMarkerIcon(eventType: EventType, status: EventStatus) {
   return EVENT_MARKER_ICONS[eventType] ?? EVENT_MARKER_ICONS.COMMUNITY;
 }
 
-// 이벤트 상태에 따른 opacity (upcoming: 0.5, live: 1.0)
-function getEventMarkerOpacity(status: EventStatus): number {
-  return status === 'upcoming' ? 0.5 : 1.0;
-}
 
 // 가게 마커 데이터
 interface StoreMarkerData {
@@ -207,20 +203,39 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     // 이벤트 마커를 클러스터/개별 마커로 변환
     const clusteredEventMarkers = useEventCluster(eventMarkers, currentZoom);
 
-    // 가게 마커와 겹치는 이벤트 마커를 위로 살짝 이동
+    // 가게/이벤트 마커와 겹치는 이벤트 마커를 살짝 이동
     // clusteredMarkers 대신 원본 markers를 사용: zoom 변경 시 클러스터 재계산으로 오프셋이 갑자기 바뀌는 현상 방지
     const adjustedEventMarkers = useMemo((): EventClusterPoint[] => {
       const OVERLAP_THRESHOLD = 0.0015;
-      const OFFSET = 0.001;
+      const STORE_OFFSET = 0.001;
+      const EVENT_OFFSET = 0.0008;
+
+      const placed: { lat: number; lng: number }[] = [];
+
       return clusteredEventMarkers.map((ev) => {
         // 클러스터 마커는 위치 조정 불필요
         if (ev.type === 'cluster') return ev;
-        const overlaps = markers.some(
+
+        let { lat, lng } = ev;
+
+        // 가게 마커와 겹치면 위로 이동
+        const overlapsStore = markers.some(
           (st) =>
-            Math.abs(st.lat - ev.lat) < OVERLAP_THRESHOLD &&
-            Math.abs(st.lng - ev.lng) < OVERLAP_THRESHOLD,
+            Math.abs(st.lat - lat) < OVERLAP_THRESHOLD &&
+            Math.abs(st.lng - lng) < OVERLAP_THRESHOLD,
         );
-        return overlaps ? { ...ev, lat: ev.lat + OFFSET } : ev;
+        if (overlapsStore) lat += STORE_OFFSET;
+
+        // 이미 배치된 이벤트 마커와 겹치면 옆으로 이동 (live 먼저 정렬되므로 upcoming이 밀림)
+        const overlapsEvent = placed.some(
+          (p) =>
+            Math.abs(p.lat - lat) < OVERLAP_THRESHOLD &&
+            Math.abs(p.lng - lng) < OVERLAP_THRESHOLD,
+        );
+        if (overlapsEvent) lng += EVENT_OFFSET;
+
+        placed.push({ lat, lng });
+        return { ...ev, lat, lng };
       });
     }, [clusteredEventMarkers, markers]);
 
@@ -336,7 +351,6 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
               );
             }
             const markerSize = item.status === 'live' ? EVENT_MARKER_SIZE_LIVE : EVENT_MARKER_SIZE;
-            const opacity = getEventMarkerOpacity(item.status);
             return (
               <NaverMapMarkerOverlay
                 key={item.id}
@@ -346,7 +360,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                 height={markerSize}
                 onTap={() => onEventMarkerClick?.(item.id)}
                 anchor={{ x: 0.5, y: 0.5 }}
-                alpha={opacity}
+                zIndex={item.status === 'live' ? 2 : 1}
                 image={getEventMarkerIcon(item.eventType, item.status)}
                 isHideCollidedCaptions
                 caption={showLabel && item.title ? {
