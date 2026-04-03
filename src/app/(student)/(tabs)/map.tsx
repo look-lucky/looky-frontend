@@ -1373,8 +1373,11 @@ const styles = StyleSheet.create({
     backgroundColor: Gray.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    shadowOpacity: 0,
-    elevation: 0,
+    shadowColor: Gray.black,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 12,
   },
   bottomSheetContent: {
     flex: 1,
