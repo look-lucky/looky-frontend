@@ -281,6 +281,8 @@ export default function SocialSignupFormPage() {
     setHasSubmitted(true);
     if (!isFormValid() || !selectedUserType) return;
 
+    const resolvedUserId = Array.isArray(userId) ? userId[0] : (userId ?? "");
+
     setSignupFields({
       userType: selectedUserType,
       gender,
@@ -289,8 +291,8 @@ export default function SocialSignupFormPage() {
       birthDay,
       nickname,
       ownerEmail: email,
-      socialUserId: userId ?? "",
-      socialProvider: provider ?? "",
+      socialUserId: resolvedUserId,
+      socialProvider: Array.isArray(provider) ? provider[0] : (provider ?? ""),
     });
 
     if (selectedUserType === "owner") {

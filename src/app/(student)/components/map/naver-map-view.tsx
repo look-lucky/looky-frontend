@@ -57,8 +57,8 @@ function getClusterFontSize(count: number): number {
 }
 
 const MARKER_SIZE = rs(32);
-const EVENT_MARKER_SIZE = rs(32);
-const EVENT_MARKER_SIZE_LIVE = rs(32);
+const EVENT_MARKER_SIZE = rs(52);
+const EVENT_MARKER_SIZE_LIVE = rs(80);
 const CLUSTER_SIZE = rs(60);
 
 // 라벨 표시 최소 줌 레벨
@@ -213,9 +213,9 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     // 가게/이벤트 마커와 겹치는 이벤트 마커를 살짝 이동
     // clusteredMarkers 대신 원본 markers를 사용: zoom 변경 시 클러스터 재계산으로 오프셋이 갑자기 바뀌는 현상 방지
     const adjustedEventMarkers = useMemo((): EventClusterPoint[] => {
-      const OVERLAP_THRESHOLD = 0.0015;
-      const STORE_OFFSET = 0.001;
-      const EVENT_OFFSET = 0.0008;
+      const OVERLAP_THRESHOLD = 0.00015;
+      const STORE_OFFSET = 0.00022;
+      const EVENT_OFFSET = 0.00022;
 
       const placed: { lat: number; lng: number }[] = [];
 

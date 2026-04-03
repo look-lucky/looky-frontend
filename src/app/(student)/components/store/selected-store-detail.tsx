@@ -89,11 +89,13 @@ export function SelectedStoreDetail({
 
           {/* 쿠폰/혜택 */}
           {store.benefits.length > 0 && (
-            <View style={styles.benefitsRow}>
-              <ThemedText style={styles.cloverIcon}>🍀</ThemedText>
-              <ThemedText style={styles.benefitsText}>
-                {store.benefits[0]}
-              </ThemedText>
+            <View style={styles.benefitsContainer}>
+              {store.benefits.map((benefit, index) => (
+                <View key={index} style={styles.benefitsRow}>
+                  <ThemedText style={styles.cloverIcon}>🍀</ThemedText>
+                  <ThemedText style={styles.benefitsText}>{benefit}</ThemedText>
+                </View>
+              ))}
             </View>
           )}
         </View>
@@ -172,6 +174,9 @@ const styles = StyleSheet.create({
   hoursText: {
     fontSize: rs(14),
     color: Text.secondary,
+  },
+  benefitsContainer: {
+    gap: rs(4),
   },
   benefitsRow: {
     flexDirection: 'row',

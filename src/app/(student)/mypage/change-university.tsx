@@ -6,6 +6,7 @@ import { AppPopup } from "@/src/shared/common/app-popup";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
 import { ThemedText } from "@/src/shared/common/themed-text";
+import { useAuth } from "@/src/shared/lib/auth";
 import { isNetworkError } from "@/src/shared/contexts/network-error-context";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Fonts, Gray, System, Text as TextColors } from "@/src/shared/theme/theme";
@@ -39,6 +40,7 @@ function ChevronDownIcon({ color = Gray.gray6 }: { color?: string }) {
 export default function ChangeUniversityScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { saveUserUniversityId } = useAuth();
 
   // Mutations
   const sendEmailMutation = useSend();
@@ -197,8 +199,10 @@ export default function ChangeUniversityScreen() {
     updateUniversityMutation.mutate(
       { data: { universityId: selectedUniversityId } },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          await saveUserUniversityId(selectedUniversityId!);
           queryClient.invalidateQueries({ queryKey: getGetStudentInfoQueryKey() });
+          queryClient.invalidateQueries({ queryKey: ['/api/stores/map'] });
           setPopupState({ visible: true, title: "대학교가 변경되었습니다", onClose: () => router.back() });
         },
         onError: (error) => {

@@ -359,9 +359,11 @@ export default function StoreDetailScreen() {
   const storeCloverGrade = apiStore?.cloverGrade;
 
   // 선택된 단체 기준으로 제휴 여부 및 혜택 내용 계산
-  const currentPartnership = selectedOrgName
-    ? apiPartnerships.find((p) => p.organizationName === selectedOrgName)
-    : apiPartnerships.find((p) => p.isMyBenefit);
+  // 초기 진입 시 사용자 소속 단과대학으로 직접 찾아야 총동연 혜택이 내 혜택으로 오인되지 않음
+  const effectiveOrgName = selectedOrgName ?? resolvedCollegeName;
+  const currentPartnership = effectiveOrgName
+    ? apiPartnerships.find((p) => p.organizationName === effectiveOrgName)
+    : undefined;
   const storeIsPartner = currentPartnership?.isMyBenefit ?? false;
   const storeBenefits: string[] = currentPartnership?.benefit
     ? [currentPartnership.benefit]
