@@ -7,10 +7,10 @@ import {
 import { useGetHotStores } from '@/src/api/store';
 import { EventCard } from '@/src/app/(student)/components/event/event-card';
 import { SelectedEventDetail } from '@/src/app/(student)/components/event/selected-event-detail';
+import { MapAdButton } from '@/src/app/(student)/components/map/map-ad-button';
 import { NaverMap } from '@/src/app/(student)/components/map/naver-map-view';
 import { SelectedStoreDetail } from '@/src/app/(student)/components/map/selected-store-detail';
 import { FilterTab, StoreFilterModal } from '@/src/app/(student)/components/map/store-filter-modal';
-import { MapAdButton } from '@/src/app/(student)/components/map/map-ad-button';
 import { StoreCard } from '@/src/app/(student)/components/store/store-card';
 import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
@@ -369,21 +369,48 @@ export default function MapTab() {
 
   // 이벤트 목록 페이지에서 이벤트 선택 후 지도로 넘어올 때 (크로스-네비게이터 파라미터 전달용)
   const pendingEventId = useMapNavigationStore((s) => s.pendingEventId);
+  const pendingEventLocation = useMapNavigationStore((s) => s.pendingEventLocation);
   const setPendingEventId = useMapNavigationStore((s) => s.setPendingEventId);
   const [activePendingEventId, setActivePendingEventId] = useState<string | null>(null);
+  const [activePendingEventLocation, setActivePendingEventLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   // 포커스 시 store에서 pending 이벤트 ID를 꺼내 로컬 state에 저장
   useFocusEffect(
     useCallback(() => {
       if (!pendingEventId) return;
       setActivePendingEventId(pendingEventId);
-      setPendingEventId(null);
-    }, [pendingEventId, setPendingEventId]),
+      setActivePendingEventLocation(pendingEventLocation);
+      setPendingEventId(null, null);
+    }, [pendingEventId, pendingEventLocation, setPendingEventId]),
   );
 
   // activePendingEventId가 세팅되면 events 로딩 완료 후 이벤트 선택 처리
   useEffect(() => {
-    if (!activePendingEventId || allEvents.length === 0) return;
+    if (!activePendingEventId) return;
+
+    if (activePendingEventLocation) {
+      setActivePendingEventId(null);
+      setActivePendingEventLocation(null);
+      handleMapClick();
+      setSelectedEventId(activePendingEventId);
+      if (naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: activePendingEventLocation.lat,
+          longitude: activePendingEventLocation.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      } else {
+        pendingCameraMove.current = { lat: activePendingEventLocation.lat, lng: activePendingEventLocation.lng };
+      }
+      const timer = setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+
+    if (allEvents.length === 0) return;
     const event = allEvents.find((e) => e.id === activePendingEventId);
     if (event) {
       setActivePendingEventId(null);
@@ -405,7 +432,7 @@ export default function MapTab() {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [activePendingEventId, allEvents, handleMapClick]);
+  }, [activePendingEventId, activePendingEventLocation, allEvents, handleMapClick]);
 
   // 지도 탭 포커스 상태 (NaverMap 크래시 방지용 - 탭 이탈 시 clean unmount)
   const [isTabFocused, setIsTabFocused] = useState(true);
@@ -1191,9 +1218,6 @@ export default function MapTab() {
         selectedMoods={selectedMoods}
         selectedEvents={selectedEvents}
         onTabChange={setActiveFilterTab}
-        onStoreTypeToggle={handleStoreTypeToggle}
-        onMoodToggle={handleMoodToggle}
-        onEventToggle={handleEventToggle}
         onReset={handleFilterReset}
         onClose={() => setShowFilterModal(false)}
         onApply={onFilterApply}
@@ -1373,8 +1397,11 @@ const styles = StyleSheet.create({
     backgroundColor: Gray.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    shadowOpacity: 0,
-    elevation: 0,
+    shadowColor: Gray.black,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 12,
   },
   bottomSheetContent: {
     flex: 1,

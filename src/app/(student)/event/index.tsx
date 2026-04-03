@@ -64,7 +64,7 @@ const EventCard = ({ event }: { event: Event }) => {
     const icon = EVENT_TYPE_IMAGES[event.eventTypes[0]] ?? EVENT_TYPE_IMAGES.COMMUNITY;
 
     const handlePress = () => {
-        setPendingEventId(event.id);
+        setPendingEventId(event.id, { lat: event.lat, lng: event.lng });
         router.push('/(student)/(tabs)/map' as any);
     };
 

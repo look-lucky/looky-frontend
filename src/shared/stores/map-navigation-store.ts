@@ -2,10 +2,12 @@ import { create } from 'zustand';
 
 interface MapNavigationState {
   pendingEventId: string | null;
-  setPendingEventId: (id: string | null) => void;
+  pendingEventLocation: { lat: number; lng: number } | null;
+  setPendingEventId: (id: string | null, location?: { lat: number; lng: number } | null) => void;
 }
 
 export const useMapNavigationStore = create<MapNavigationState>((set) => ({
   pendingEventId: null,
-  setPendingEventId: (id) => set({ pendingEventId: id }),
+  pendingEventLocation: null,
+  setPendingEventId: (id, location = null) => set({ pendingEventId: id, pendingEventLocation: location }),
 }));
