@@ -1,5 +1,3 @@
-import { useGetStorePartnerships } from '@/src/api/partnership';
-import type { StorePartnershipResponse } from '@/src/api/generated.schemas';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray, Owner, System, Text } from '@/src/shared/theme/theme';
@@ -14,46 +12,6 @@ import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 // Re-export type for convenience
 export type { Store };
-
-function PartnershipLabel({ storeId }: { storeId: number }) {
-  const { data: res } = useGetStorePartnerships(storeId, {
-    query: { staleTime: Infinity },
-  });
-  const partnerships = (res as any)?.data?.data as StorePartnershipResponse[] | undefined;
-
-  if (!partnerships?.length) return null;
-
-  const orgNames = partnerships
-    .map((p) => p.organizationName)
-    .filter(Boolean)
-    .join(', ');
-
-  return (
-    <View style={partnershipStyles.row}>
-      <ThemedText style={partnershipStyles.clover}>🍀</ThemedText>
-      <ThemedText style={partnershipStyles.text} numberOfLines={1}>
-        {orgNames} 제휴
-      </ThemedText>
-    </View>
-  );
-}
-
-const partnershipStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-  },
-  clover: {
-    fontSize: rs(14),
-  },
-  text: {
-    fontSize: rs(13),
-    color: Owner.primary,
-    fontWeight: '500',
-    flex: 1,
-  },
-});
 
 interface StoreCardProps {
   store: Store;
@@ -137,7 +95,14 @@ export function StoreCard({ store, onPress, onBookmarkPress }: StoreCardProps) {
         </View>
 
         {/* 제휴 혜택 */}
-        <PartnershipLabel storeId={Number(store.id)} />
+        {store.benefits && store.benefits.length > 0 && (
+          <View style={styles.partnershipRow}>
+            <ThemedText style={styles.cloverIcon}>🍀</ThemedText>
+            <ThemedText style={styles.partnershipText} numberOfLines={1}>
+              {store.benefits.join(', ')} 제휴
+            </ThemedText>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -221,5 +186,19 @@ const styles = StyleSheet.create({
     top: rs(8),
     right: rs(8),
     padding: rs(4),
+  },
+  partnershipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(4),
+  },
+  cloverIcon: {
+    fontSize: rs(14),
+  },
+  partnershipText: {
+    fontSize: rs(13),
+    color: Owner.primary,
+    fontWeight: '500',
+    flex: 1,
   },
 });

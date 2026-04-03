@@ -7,10 +7,10 @@ import {
 import { useGetHotStores } from '@/src/api/store';
 import { EventCard } from '@/src/app/(student)/components/event/event-card';
 import { SelectedEventDetail } from '@/src/app/(student)/components/event/selected-event-detail';
+import { MapAdButton } from '@/src/app/(student)/components/map/map-ad-button';
 import { NaverMap } from '@/src/app/(student)/components/map/naver-map-view';
 import { SelectedStoreDetail } from '@/src/app/(student)/components/map/selected-store-detail';
 import { FilterTab, StoreFilterModal } from '@/src/app/(student)/components/map/store-filter-modal';
-import { MapAdButton } from '@/src/app/(student)/components/map/map-ad-button';
 import { StoreCard } from '@/src/app/(student)/components/store/store-card';
 import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
