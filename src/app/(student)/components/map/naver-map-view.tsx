@@ -173,7 +173,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     }, []);
 
     // ✅ zoom 디바운스 ref 추가 (컴포넌트 최상단에)
-    const zoomTimerRef = useRef<ReturnType<typeof setTimeout>>();
+    const zoomTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useImperativeHandle(ref, () => mapRef.current!, []);
 

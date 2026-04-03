@@ -1218,9 +1218,6 @@ export default function MapTab() {
         selectedMoods={selectedMoods}
         selectedEvents={selectedEvents}
         onTabChange={setActiveFilterTab}
-        onStoreTypeToggle={handleStoreTypeToggle}
-        onMoodToggle={handleMoodToggle}
-        onEventToggle={handleEventToggle}
         onReset={handleFilterReset}
         onClose={() => setShowFilterModal(false)}
         onApply={onFilterApply}
