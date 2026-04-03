@@ -7,7 +7,7 @@ import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
-import type { UserType } from "@/src/shared/lib/auth/token";
+import { saveLoginProvider, type UserType } from "@/src/shared/lib/auth/token";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, System, Text as TextColors } from "@/src/shared/theme/theme";
@@ -87,6 +87,7 @@ export default function StudentVerificationPage() {
     birthMonth,
     birthDay,
     socialUserId: socialUserIdStore,
+    socialProvider,
     setSignupFields,
   } = useSignupStore();
 
@@ -94,7 +95,7 @@ export default function StudentVerificationPage() {
   const socialUserId = socialUserIdParam || socialUserIdStore;
 
   // Auth
-  const { handleAuthSuccess, saveUserCollegeId, saveUserCollegeName } = useAuth();
+  const { handleAuthSuccess, saveUserUniversityId, saveUserCollegeId, saveUserCollegeName } = useAuth();
 
   // Mutations
   const signupMutation = useSignupStudent();
@@ -330,6 +331,7 @@ export default function StudentVerificationPage() {
   // 완료 처리
   const handleComplete = () => {
     if (!isFormValid || !selectedUniversityId || !selectedCollegeId || !selectedDepartmentId) return;
+    if (signupMutation.isPending || loginMutation.isPending || completeSocialSignupMutation.isPending) return;
 
     const birthDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
     const apiGender = gender === "male" ? "MALE" : "FEMALE";
@@ -365,6 +367,7 @@ export default function StudentVerificationPage() {
                 }
               })();
               const role = (jwtPayload?.role as UserType) ?? "ROLE_STUDENT";
+              await saveUserUniversityId(selectedUniversityId!);
               await saveUserCollegeId(selectedCollegeId!);
               await saveUserCollegeName(selectedCollegeName);
 
@@ -380,6 +383,9 @@ export default function StudentVerificationPage() {
                 username: "소셜 로그인", // sign-up-done에서 소셜 로그인 여부 판단용
               });
 
+              if (socialProvider) {
+                await saveLoginProvider(socialProvider as import("@/src/shared/lib/auth/token").LoginProvider);
+              }
               await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
               router.push("/auth/sign-up-done");
             } else {
@@ -415,6 +421,7 @@ export default function StudentVerificationPage() {
         onSuccess: async (response) => {
           console.log("회원가입 성공:", response);
 
+          await saveUserUniversityId(selectedUniversityId!);
           await saveUserCollegeId(selectedCollegeId!);
           await saveUserCollegeName(selectedCollegeName);
 
@@ -708,10 +715,10 @@ export default function StudentVerificationPage() {
       {/* 하단 버튼 */}
       <View style={styles.bottomContent}>
         <AppButton
-          label="완료"
-          backgroundColor={isFormValid ? Brand.primary : Gray.gray5}
+          label={signupMutation.isPending || loginMutation.isPending || completeSocialSignupMutation.isPending ? "처리 중..." : "완료"}
+          backgroundColor={isFormValid && !signupMutation.isPending && !loginMutation.isPending && !completeSocialSignupMutation.isPending ? Brand.primary : Gray.gray5}
           onPress={handleComplete}
-          disabled={!isFormValid}
+          disabled={!isFormValid || signupMutation.isPending || loginMutation.isPending || completeSocialSignupMutation.isPending}
         />
       </View>
       </KeyboardAvoidingView>

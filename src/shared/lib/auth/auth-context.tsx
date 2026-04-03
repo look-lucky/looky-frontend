@@ -9,14 +9,16 @@ import {
 } from "react";
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { clearToken, getCollegeId, getCollegeName, getUsername, getUserType, isTokenValid, saveCollegeId, saveCollegeName, saveToken, UserType, getCredentials, clearCredentials, getLoginProvider, LoginProvider } from "./token";
+import { clearToken, getUniversityId, saveUniversityId, getCollegeId, getCollegeName, getUsername, getUserType, isTokenValid, saveCollegeId, saveCollegeName, saveToken, UserType, getCredentials, clearCredentials, getLoginProvider, LoginProvider } from "./token";
 import { authEvents } from "./auth-events";
 import { setLoggingOut } from "@/src/api/mutator";
+import { getStudentInfo } from "@/src/api/my-page";
 
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   userType: UserType | null;
+  universityId: number | null;
   collegeId: number | null;
   collegeName: string | null;
   username: string | null;
@@ -26,6 +28,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   handleAuthSuccess: (accessToken: string, expiresIn: number, userType: UserType) => Promise<void>;
   handleLogout: () => Promise<void>;
+  saveUserUniversityId: (universityId: number) => Promise<void>;
   saveUserCollegeId: (collegeId: number) => Promise<void>;
   saveUserCollegeName: (collegeName: string) => Promise<void>;
   // 개발용: 로그인 없이 userType 전환
@@ -40,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     isLoading: true,
     userType: null,
+    universityId: null,
     collegeId: null,
     collegeName: null,
     username: null,
@@ -52,12 +56,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       const valid = await isTokenValid();
       const userType = await getUserType();
+      let universityId = await getUniversityId();
       const collegeId = await getCollegeId();
       const collegeName = await getCollegeName();
       const username = await getUsername();
       const loginProvider = await getLoginProvider();
+      // 기존 로그인 유저 마이그레이션: universityId가 없으면 서버에서 조회 후 저장
+      if (valid && universityId === null) {
+        try {
+          const res = await getStudentInfo();
+          const fetchedId = (res as any)?.data?.data?.universityId;
+          if (fetchedId != null) {
+            await saveUniversityId(fetchedId);
+            universityId = fetchedId;
+          }
+        } catch {}
+      }
       isAuthenticatedRef.current = valid;
-      setState({ isAuthenticated: valid, isLoading: false, userType, collegeId, collegeName, username, loginProvider });
+      setState({ isAuthenticated: valid, isLoading: false, userType, universityId, collegeId, collegeName, username, loginProvider });
     })();
   }, []);
 
@@ -92,11 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } catch {}
 
             await saveToken(accessToken, expiresIn ?? 3600, role);
+            const universityId = await getUniversityId();
             const collegeId = await getCollegeId();
             const collegeName = await getCollegeName();
             const username = await getUsername();
             const loginProvider = await getLoginProvider();
-            setState({ isAuthenticated: true, isLoading: false, userType: role, collegeId, collegeName, username, loginProvider });
+            setState({ isAuthenticated: true, isLoading: false, userType: role, universityId, collegeId, collegeName, username, loginProvider });
             console.log("[AuthContext] Auto-login succeeded");
             return;
           }
@@ -113,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: false,
         isLoading: false,
         userType: null,
+        universityId: null,
         collegeId: null,
         collegeName: null,
         username: null,
@@ -137,12 +155,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleAuthSuccess = useCallback(
     async (accessToken: string, expiresIn: number, userType: UserType) => {
       await saveToken(accessToken, expiresIn, userType);
+      let universityId = await getUniversityId();
       const collegeId = await getCollegeId();
       const collegeName = await getCollegeName();
       const username = await getUsername();
       const loginProvider = await getLoginProvider();
+      // universityId가 없으면 서버에서 조회 후 저장
+      if (universityId === null) {
+        try {
+          const res = await getStudentInfo();
+          const fetchedId = (res as any)?.data?.data?.universityId;
+          if (fetchedId != null) {
+            await saveUniversityId(fetchedId);
+            universityId = fetchedId;
+          }
+        } catch {}
+      }
       isAuthenticatedRef.current = true;
-      setState({ isAuthenticated: true, isLoading: false, userType, collegeId, collegeName, username, loginProvider });
+      setState({ isAuthenticated: true, isLoading: false, userType, universityId, collegeId, collegeName, username, loginProvider });
     },
     []
   );
@@ -152,8 +182,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoggingOut(true);
     await clearToken();
     await clearCredentials();
-    setState({ isAuthenticated: false, isLoading: false, userType: null, collegeId: null, collegeName: null, username: null, loginProvider: null });
+    setState({ isAuthenticated: false, isLoading: false, userType: null, universityId: null, collegeId: null, collegeName: null, username: null, loginProvider: null });
     setLoggingOut(false);
+  }, []);
+
+  const saveUserUniversityId = useCallback(async (universityId: number) => {
+    await saveUniversityId(universityId);
+    setState((prev) => ({ ...prev, universityId }));
   }, []);
 
   const saveUserCollegeId = useCallback(async (collegeId: number) => {
@@ -173,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, handleAuthSuccess, handleLogout, saveUserCollegeId, saveUserCollegeName, devSetUserType }}
+      value={{ ...state, handleAuthSuccess, handleLogout, saveUserUniversityId, saveUserCollegeId, saveUserCollegeName, devSetUserType }}
     >
       {children}
     </AuthContext.Provider>

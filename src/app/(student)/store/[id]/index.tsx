@@ -358,14 +358,6 @@ export default function StoreDetailScreen() {
 
   const storeCloverGrade = apiStore?.cloverGrade;
 
-  // 선택된 단체 기준으로 제휴 여부 및 혜택 내용 계산
-  const currentPartnership = selectedOrgName
-    ? apiPartnerships.find((p) => p.organizationName === selectedOrgName)
-    : apiPartnerships.find((p) => p.isMyBenefit);
-  const storeIsPartner = currentPartnership?.isMyBenefit ?? false;
-  const storeBenefits: string[] = currentPartnership?.benefit
-    ? [currentPartnership.benefit]
-    : [];
 
   // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 필터링 포함)
   const storeCoupons = useMemo(() => {
@@ -501,7 +493,28 @@ export default function StoreDetailScreen() {
   // ── 대학 필터 & 쿠폰 필터 ──────────────────────────────────
 
   const resolvedCollegeName = userCollegeName ?? profileCollegeName ?? '';
-  const selectedUniversity = selectedOrgName ?? resolvedCollegeName;
+
+  // 선택된 단체 기준으로 제휴 여부 및 혜택 내용 계산
+  // 초기 진입 시 사용자 소속 단과대학으로 직접 찾아야 총동연 혜택이 내 혜택으로 오인되지 않음
+  // 단과대 제휴 혜택이 없을 경우 총학(UNIVERSITY_COUNCIL) 혜택으로 폴백
+  const collegePartnership = resolvedCollegeName
+    ? apiPartnerships.find((p) => p.organizationName === resolvedCollegeName)
+    : undefined;
+  const universityCouncilPartnership = apiPartnerships.find(
+    (p) => p.organizationCategory === 'UNIVERSITY_COUNCIL' && p.benefit
+  );
+  const defaultOrgName = (!selectedOrgName && !collegePartnership?.benefit && universityCouncilPartnership)
+    ? (universityCouncilPartnership.organizationName ?? resolvedCollegeName)
+    : resolvedCollegeName;
+  const effectiveOrgName = selectedOrgName ?? defaultOrgName;
+  const currentPartnership = effectiveOrgName
+    ? apiPartnerships.find((p) => p.organizationName === effectiveOrgName)
+    : undefined;
+  const storeIsPartner = currentPartnership?.isMyBenefit ?? false;
+  const storeBenefits: string[] = currentPartnership?.benefit
+    ? [currentPartnership.benefit]
+    : [];
+  const selectedUniversity = selectedOrgName ?? defaultOrgName;
 
   const filteredCoupons = storeCoupons;
 
