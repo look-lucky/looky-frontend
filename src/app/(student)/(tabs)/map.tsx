@@ -1349,6 +1349,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: Gray.white,
     gap: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   filterButtonActive: {
     backgroundColor: Gray.black,
