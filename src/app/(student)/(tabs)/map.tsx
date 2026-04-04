@@ -101,7 +101,7 @@ export default function MapTab() {
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
   const pendingCameraMove = useRef<{ lat: number; lng: number } | null>(null);
-  const { category, eventId: eventIdParam, centerOnEvents, hotPlaces: hotPlacesParam } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string; hotPlaces?: string }>();
+  const { category, eventId: eventIdParam, lat: latParam, lng: lngParam, centerOnEvents, hotPlaces: hotPlacesParam } = useLocalSearchParams<{ category?: string; eventId?: string; lat?: string; lng?: string; centerOnEvents?: string; hotPlaces?: string }>();
   const initialEventHandled = useRef(false);
   const centerOnEventsHandledRef = useRef(false);
 
@@ -267,9 +267,36 @@ export default function MapTab() {
   }, [eventIdParam]);
 
   // 홈에서 이벤트 카드 눌러서 진입 시 해당 이벤트 선택 + 지도 중심 이동 + 바텀시트 열기
-  // → 이벤트 마커 클릭(onEventMarkerClick)과 동일한 효과로 처리
+  // → 명시적인 다이렉트 URL 패러미터가 있으면 allEvents 대기 없이 즉시 날아가고, 없으면 기존처럼 이벤트 목록 로딩 대기
   useEffect(() => {
-    if (!eventIdParam || initialEventHandled.current || allEvents.length === 0) return;
+    if (!eventIdParam || initialEventHandled.current) return;
+
+    if (latParam && lngParam) {
+      initialEventHandled.current = true;
+      handleMapClick();
+      setSelectedEventId(eventIdParam as string);
+      
+      const lat = Number(latParam);
+      const lng = Number(lngParam);
+      if (naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: lat,
+          longitude: lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      } else {
+        pendingCameraMove.current = { lat, lng };
+      }
+      const timer = setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        router.setParams({ eventId: undefined, lat: undefined, lng: undefined });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+
+    if (allEvents.length === 0) return;
     const event = allEvents.find((e) => e.id === eventIdParam);
     if (event) {
       initialEventHandled.current = true;
@@ -293,7 +320,7 @@ export default function MapTab() {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [eventIdParam, allEvents, handleMapClick]);
+  }, [eventIdParam, latParam, lngParam, allEvents, handleMapClick]);
 
   // centerOnEvents 파라미터 변경 시 플래그 리셋
   useEffect(() => {
