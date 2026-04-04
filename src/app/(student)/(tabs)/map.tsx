@@ -1313,6 +1313,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: rs(56),
     paddingHorizontal: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchIconButton: {
     width: rs(40),
