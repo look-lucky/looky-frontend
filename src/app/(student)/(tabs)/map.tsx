@@ -489,7 +489,7 @@ export default function MapTab() {
   // 수정 (퍼센트 문자열 방식)
   const collapsedHeight = 130 + 56;
   const snapPoints = useMemo(
-    () => [collapsedHeight, Math.round(screenHeight * 0.5), Math.round(screenHeight * 0.95)],
+    () => [collapsedHeight, Math.round(screenHeight * 0.55), Math.round(screenHeight * 0.8)],
     [screenHeight, collapsedHeight],
   );
   // ← 바로 여기에 추가
