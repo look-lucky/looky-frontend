@@ -68,6 +68,7 @@ const TUTORIAL_IMAGES = [
 
 
 export default function MapTab() {
+  console.log('🗺️ MapTab 실행됨');
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
   const { height: screenHeight } = useWindowDimensions();
@@ -275,7 +276,7 @@ export default function MapTab() {
       initialEventHandled.current = true;
       handleMapClick();
       setSelectedEventId(eventIdParam as string);
-      
+
       const lat = Number(latParam);
       const lng = Number(lngParam);
       if (naverMapRef.current) {
@@ -485,11 +486,14 @@ export default function MapTab() {
   );
 
   // snap points (퍼센트 대신 고정 픽셀값 → 레이아웃 재계산 영향 없음)
+  // 수정 (퍼센트 문자열 방식)
   const collapsedHeight = 130 + 56;
   const snapPoints = useMemo(
-    () => [collapsedHeight, Math.round(screenHeight * 0.6), Math.round(screenHeight * 0.8)],
-    [screenHeight],
+    () => [collapsedHeight, Math.round(screenHeight * 0.5), Math.round(screenHeight * 0.95)],
+    [screenHeight, collapsedHeight],
   );
+  // ← 바로 여기에 추가
+  console.log('snapPoints:', snapPoints, 'screenHeight:', screenHeight);
 
   // 바텀시트 인덱스 변경
   const handleSheetChanges = useCallback(
@@ -581,7 +585,7 @@ export default function MapTab() {
       // 탭바를 먼저 숨긴 후(250ms 애니메이션) 스냅 → 레이아웃 안정 후 snap
       setTabBarVisible(false);
       setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 260);
     },
     [handleMarkerClick, stores, setTabBarVisible],
@@ -1132,6 +1136,7 @@ export default function MapTab() {
 
       {/* 바텀시트 */}
       <BottomSheet
+        key={snapPoints.join('-')}  // ✅ 이 줄 추가
         ref={bottomSheetRef}
         index={SNAP_INDEX.COLLAPSED}
         snapPoints={snapPoints}
