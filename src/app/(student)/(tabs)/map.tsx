@@ -68,6 +68,7 @@ const TUTORIAL_IMAGES = [
 
 
 export default function MapTab() {
+  console.log('🗺️ MapTab 실행됨');
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
   const { height: screenHeight } = useWindowDimensions();
@@ -101,7 +102,7 @@ export default function MapTab() {
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
   const pendingCameraMove = useRef<{ lat: number; lng: number } | null>(null);
-  const { category, eventId: eventIdParam, centerOnEvents, hotPlaces: hotPlacesParam } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string; hotPlaces?: string }>();
+  const { category, eventId: eventIdParam, lat: latParam, lng: lngParam, centerOnEvents, hotPlaces: hotPlacesParam } = useLocalSearchParams<{ category?: string; eventId?: string; lat?: string; lng?: string; centerOnEvents?: string; hotPlaces?: string }>();
   const initialEventHandled = useRef(false);
   const centerOnEventsHandledRef = useRef(false);
 
@@ -267,9 +268,36 @@ export default function MapTab() {
   }, [eventIdParam]);
 
   // 홈에서 이벤트 카드 눌러서 진입 시 해당 이벤트 선택 + 지도 중심 이동 + 바텀시트 열기
-  // → 이벤트 마커 클릭(onEventMarkerClick)과 동일한 효과로 처리
+  // → 명시적인 다이렉트 URL 패러미터가 있으면 allEvents 대기 없이 즉시 날아가고, 없으면 기존처럼 이벤트 목록 로딩 대기
   useEffect(() => {
-    if (!eventIdParam || initialEventHandled.current || allEvents.length === 0) return;
+    if (!eventIdParam || initialEventHandled.current) return;
+
+    if (latParam && lngParam) {
+      initialEventHandled.current = true;
+      handleMapClick();
+      setSelectedEventId(eventIdParam as string);
+
+      const lat = Number(latParam);
+      const lng = Number(lngParam);
+      if (naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: lat,
+          longitude: lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      } else {
+        pendingCameraMove.current = { lat, lng };
+      }
+      const timer = setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        router.setParams({ eventId: undefined, lat: undefined, lng: undefined });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+
+    if (allEvents.length === 0) return;
     const event = allEvents.find((e) => e.id === eventIdParam);
     if (event) {
       initialEventHandled.current = true;
@@ -293,7 +321,7 @@ export default function MapTab() {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [eventIdParam, allEvents, handleMapClick]);
+  }, [eventIdParam, latParam, lngParam, allEvents, handleMapClick]);
 
   // centerOnEvents 파라미터 변경 시 플래그 리셋
   useEffect(() => {
@@ -458,11 +486,14 @@ export default function MapTab() {
   );
 
   // snap points (퍼센트 대신 고정 픽셀값 → 레이아웃 재계산 영향 없음)
+  // 수정 (퍼센트 문자열 방식)
   const collapsedHeight = 130 + 56;
   const snapPoints = useMemo(
-    () => [collapsedHeight, Math.round(screenHeight * 0.6), Math.round(screenHeight * 0.8)],
-    [screenHeight],
+    () => [collapsedHeight, Math.round(screenHeight * 0.55), Math.round(screenHeight * 0.8)],
+    [screenHeight, collapsedHeight],
   );
+  // ← 바로 여기에 추가
+  console.log('snapPoints:', snapPoints, 'screenHeight:', screenHeight);
 
   // 바텀시트 인덱스 변경
   const handleSheetChanges = useCallback(
@@ -554,7 +585,7 @@ export default function MapTab() {
       // 탭바를 먼저 숨긴 후(250ms 애니메이션) 스냅 → 레이아웃 안정 후 snap
       setTabBarVisible(false);
       setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 260);
     },
     [handleMarkerClick, stores, setTabBarVisible],
@@ -1105,6 +1136,7 @@ export default function MapTab() {
 
       {/* 바텀시트 */}
       <BottomSheet
+        key={snapPoints.join('-')}  // ✅ 이 줄 추가
         ref={bottomSheetRef}
         index={SNAP_INDEX.COLLAPSED}
         snapPoints={snapPoints}
@@ -1286,6 +1318,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: rs(56),
     paddingHorizontal: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchIconButton: {
     width: rs(40),
@@ -1317,6 +1354,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: Gray.white,
     gap: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   filterButtonActive: {
     backgroundColor: Gray.black,
