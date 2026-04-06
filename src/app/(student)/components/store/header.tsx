@@ -436,10 +436,16 @@ export function StoreHeader({
 
   // 정렬 로직 및 하이라이트 id 추출
   const sortedOptions = React.useMemo(() => {
+    const myBenefitNames = new Set(
+      partnerships
+        .filter((p) => p.isMyBenefit && p.organizationName)
+        .map((p) => p.organizationName!)
+    );
+
     return [...partnershipOptions].sort((a, b) => {
-      // 1순위: 사용자 소속 단과대
-      const isAUserCollege = a.label === collegeName;
-      const isBUserCollege = b.label === collegeName;
+      // 1순위: 사용자 소속 단과대 (실제 제휴가 있을 때만)
+      const isAUserCollege = a.label === collegeName && myBenefitNames.has(a.id);
+      const isBUserCollege = b.label === collegeName && myBenefitNames.has(b.id);
       if (isAUserCollege && !isBUserCollege) return -1;
       if (!isAUserCollege && isBUserCollege) return 1;
 
@@ -458,7 +464,7 @@ export function StoreHeader({
       // 4순위: 가나다순
       return a.label.localeCompare(b.label, 'ko');
     });
-  }, [partnershipOptions, collegeName]);
+  }, [partnershipOptions, collegeName, partnerships]);
 
   const highlightedIds = React.useMemo(() => {
     const myBenefitNames = new Set(

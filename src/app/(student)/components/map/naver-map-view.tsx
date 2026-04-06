@@ -58,7 +58,7 @@ function getClusterFontSize(count: number): number {
 
 const MARKER_SIZE = rs(32);
 const EVENT_MARKER_SIZE = rs(52);
-const EVENT_MARKER_SIZE_LIVE = rs(80);
+const EVENT_MARKER_SIZE_LIVE = rs(52);
 const CLUSTER_SIZE = rs(60);
 
 // 라벨 표시 최소 줌 레벨
