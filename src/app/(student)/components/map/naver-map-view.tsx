@@ -37,7 +37,7 @@ const EVENT_MARKER_ICONS: Record<EventType, any> = {
   SCHOOL_EVENT: require('@/assets/images/icons/map/event-college.png'),
   FLEA_MARKET: require('@/assets/images/icons/map/event-market.png'),
   PERFORMANCE: require('@/assets/images/icons/map/event-busking.png'),
-  COMMUNITY: require('@/assets/images/icons/map/event-student.png'),
+  STUDENT_EVENT: require('@/assets/images/icons/map/event-student.png'),
 };
 
 // 진행 중(live) 이벤트 마커 아이콘 PNG
@@ -47,7 +47,7 @@ const EVENT_MARKER_ICONS_LIVE: Record<EventType, any> = {
   SCHOOL_EVENT: require('@/assets/images/icons/map/event-college-live.png'),
   FLEA_MARKET: require('@/assets/images/icons/map/event-market-live.png'),
   PERFORMANCE: require('@/assets/images/icons/map/event-busking-live.png'),
-  COMMUNITY: require('@/assets/images/icons/map/event-student-live.png'),
+  STUDENT_EVENT: require('@/assets/images/icons/map/event-student-live.png'),
 };
 
 // ── 클러스터 텍스트 사이즈 계산 헬퍼 ──
@@ -83,9 +83,9 @@ function getStoreMarkerIcon(isPartner: boolean, hasCoupon: boolean) {
 // 이벤트 마커 아이콘 선택 헬퍼
 function getEventMarkerIcon(eventType: EventType, status: EventStatus) {
   if (status === 'live') {
-    return EVENT_MARKER_ICONS_LIVE[eventType] ?? EVENT_MARKER_ICONS_LIVE.COMMUNITY;
+    return EVENT_MARKER_ICONS_LIVE[eventType] ?? EVENT_MARKER_ICONS_LIVE.STUDENT_EVENT;
   }
-  return EVENT_MARKER_ICONS[eventType] ?? EVENT_MARKER_ICONS.COMMUNITY;
+  return EVENT_MARKER_ICONS[eventType] ?? EVENT_MARKER_ICONS.STUDENT_EVENT;
 }
 
 

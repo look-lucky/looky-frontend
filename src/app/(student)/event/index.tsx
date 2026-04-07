@@ -1,11 +1,11 @@
 import { customFetch } from '@/src/api/mutator';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
-import { rs } from '@/src/shared/theme/scale';
 import { useMapNavigationStore } from '@/src/shared/stores/map-navigation-store';
+import { rs } from '@/src/shared/theme/scale';
 import { Fonts, Gray, Primary } from '@/src/shared/theme/theme';
 import type { Event, EventType } from '@/src/shared/types/event';
-import { getDDay, getEventStatus, isEventVisible } from '@/src/shared/types/event';
+import { EVENT_TYPE_LABELS, getDDay, getEventStatus, isEventVisible } from '@/src/shared/types/event';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -29,7 +29,7 @@ const EVENT_TYPE_IMAGES: Record<EventType, ImageSourcePropType> = {
     SCHOOL_EVENT: require('@/assets/images/icons/map/event-college.png'),
     FLEA_MARKET: require('@/assets/images/icons/map/event-market.png'),
     PERFORMANCE: require('@/assets/images/icons/map/event-busking.png'),
-    COMMUNITY: require('@/assets/images/icons/map/event-student.png'),
+    STUDENT_EVENT: require('@/assets/images/icons/map/event-student.png'),
 };
 
 const getEventTheme = (dDay: string | null) => {
@@ -61,7 +61,8 @@ const EventCard = ({ event }: { event: Event }) => {
     const setPendingEventId = useMapNavigationStore((s) => s.setPendingEventId);
     const dDay = event.status === 'live' ? getLiveDDay(event) : getDDay(event);
     const theme = getEventTheme(dDay);
-    const icon = EVENT_TYPE_IMAGES[event.eventTypes[0]] ?? EVENT_TYPE_IMAGES.COMMUNITY;
+    const primaryType = event.eventTypes[0];
+    const icon = EVENT_TYPE_IMAGES[primaryType] ?? EVENT_TYPE_IMAGES.STUDENT_EVENT;
 
     const handlePress = () => {
         router.push(`/(student)/(tabs)/map?eventId=${event.id}&lat=${event.lat}&lng=${event.lng}` as any);
@@ -81,10 +82,19 @@ const EventCard = ({ event }: { event: Event }) => {
             >
                 <View style={styles.cardContent}>
                     <View style={styles.textSection}>
-                        <View style={[styles.badge, { backgroundColor: theme.color }]}>
-                            <ThemedText type="captionSemiBold" lightColor={Gray.white}>
-                                {theme.badge}
-                            </ThemedText>
+                        <View style={styles.badgeRow}>
+                            <View style={[styles.badge, { backgroundColor: theme.color }]}>
+                                <ThemedText type="captionSemiBold" lightColor={Gray.white}>
+                                    {theme.badge}
+                                </ThemedText>
+                            </View>
+                            {event.eventTypes.map((type) => (
+                                <View key={type} style={[styles.badge, styles.typeBadge]}>
+                                    <ThemedText type="captionSemiBold" lightColor="#217c44ff">
+                                        {EVENT_TYPE_LABELS[type] ?? type}
+                                    </ThemedText>
+                                </View>
+                            ))}
                         </View>
                         <ThemedText style={styles.eventTitle} numberOfLines={1}>
                             {event.title}
@@ -229,13 +239,21 @@ const styles = StyleSheet.create({
     textSection: {
         flex: 1,
         paddingRight: rs(8),
-        gap: rs(4),
+        gap: rs(6),
+    },
+    badgeRow: {
+        flexDirection: 'row',
+        gap: rs(6),
+        alignItems: 'center',
     },
     badge: {
         alignSelf: 'flex-start',
         paddingHorizontal: rs(8),
         paddingVertical: rs(2),
         borderRadius: rs(20),
+    },
+    typeBadge: {
+        backgroundColor: '#DCFCE7',
     },
     eventTitle: {
         fontSize: rs(14),
