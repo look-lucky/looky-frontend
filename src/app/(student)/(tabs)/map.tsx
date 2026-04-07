@@ -291,7 +291,7 @@ export default function MapTab() {
         pendingCameraMove.current = { lat, lng };
       }
       const timer = setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
         router.setParams({ eventId: undefined, lat: undefined, lng: undefined });
       }, 300);
       return () => clearTimeout(timer);
@@ -316,7 +316,7 @@ export default function MapTab() {
         pendingCameraMove.current = { lat: event.lat, lng: event.lng };
       }
       const timer = setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
         router.setParams({ eventId: undefined });
       }, 300);
       return () => clearTimeout(timer);
@@ -334,7 +334,7 @@ export default function MapTab() {
       if (hotPlacesParam !== 'true') return;
       setHotPlacesMode(true);
       const timer = setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 300);
       return () => clearTimeout(timer);
     }, [hotPlacesParam]),
@@ -433,7 +433,7 @@ export default function MapTab() {
         pendingCameraMove.current = { lat: activePendingEventLocation.lat, lng: activePendingEventLocation.lng };
       }
       const timer = setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -456,7 +456,7 @@ export default function MapTab() {
         pendingCameraMove.current = { lat: event.lat, lng: event.lng };
       }
       const timer = setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -611,7 +611,7 @@ export default function MapTab() {
       // 탭바를 먼저 숨긴 후(250ms 애니메이션) 스냅 → 레이아웃 안정 후 snap
       setTabBarVisible(false);
       setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 260);
     },
     [events, handleMapClick, setTabBarVisible],
@@ -662,7 +662,7 @@ export default function MapTab() {
           pivot: { x: 0.5, y: 0.35 },
         });
       }
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      bottomSheetRef.current?.snapToIndex(2);
     },
     [events, handleMapClick],
   );
@@ -681,7 +681,7 @@ export default function MapTab() {
           duration: 500,
         });
       }
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      bottomSheetRef.current?.snapToIndex(2);
     },
     [handleStoreSelect, stores],
   );

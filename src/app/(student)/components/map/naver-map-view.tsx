@@ -3,6 +3,7 @@ import { rs } from '@/src/shared/theme/scale';
 import { Gray, Notify, Text as TextColor } from '@/src/shared/theme/theme';
 import type { EventStatus, EventType } from '@/src/shared/types/event';
 import {
+  NaverMapCircleOverlay,
   NaverMapMarkerOverlay,
   NaverMapView,
   type NaverMapViewRef,
@@ -37,7 +38,7 @@ const EVENT_MARKER_ICONS: Record<EventType, any> = {
   SCHOOL_EVENT: require('@/assets/images/icons/map/event-college.png'),
   FLEA_MARKET: require('@/assets/images/icons/map/event-market.png'),
   PERFORMANCE: require('@/assets/images/icons/map/event-busking.png'),
-  COMMUNITY: require('@/assets/images/icons/map/event-student.png'),
+  STUDENT_EVENT: require('@/assets/images/icons/map/event-student.png'),
 };
 
 // 진행 중(live) 이벤트 마커 아이콘 PNG
@@ -47,7 +48,7 @@ const EVENT_MARKER_ICONS_LIVE: Record<EventType, any> = {
   SCHOOL_EVENT: require('@/assets/images/icons/map/event-college-live.png'),
   FLEA_MARKET: require('@/assets/images/icons/map/event-market-live.png'),
   PERFORMANCE: require('@/assets/images/icons/map/event-busking-live.png'),
-  COMMUNITY: require('@/assets/images/icons/map/event-student-live.png'),
+  STUDENT_EVENT: require('@/assets/images/icons/map/event-student-live.png'),
 };
 
 // ── 클러스터 텍스트 사이즈 계산 헬퍼 ──
@@ -83,10 +84,50 @@ function getStoreMarkerIcon(isPartner: boolean, hasCoupon: boolean) {
 // 이벤트 마커 아이콘 선택 헬퍼
 function getEventMarkerIcon(eventType: EventType, status: EventStatus) {
   if (status === 'live') {
-    return EVENT_MARKER_ICONS_LIVE[eventType] ?? EVENT_MARKER_ICONS_LIVE.COMMUNITY;
+    return EVENT_MARKER_ICONS_LIVE[eventType] ?? EVENT_MARKER_ICONS_LIVE.STUDENT_EVENT;
   }
-  return EVENT_MARKER_ICONS[eventType] ?? EVENT_MARKER_ICONS.COMMUNITY;
+  return EVENT_MARKER_ICONS[eventType] ?? EVENT_MARKER_ICONS.STUDENT_EVENT;
 }
+
+// ── 내 위치 펄스 애니메이션 컴포넌트 ──────────────────
+const UserLocationPulse = ({ lat, lng, zoom }: { lat: number; lng: number; zoom: number }) => {
+  const [radius, setRadius] = useState(0);
+  const [opacity, setOpacity] = useState(0.6);
+
+  useEffect(() => {
+    let frameId: number;
+    let start: number | null = null;
+    const duration = 1200; // 1초 주기로 반복 (사용자 수동 수정 반영)
+
+    const animate = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const progress = ((timestamp - start) % duration) / duration;
+
+      // 화면에서 적절한 크기를 유지하도록 줌 레벨에 따라 반지름(m) 조정
+      // 기본 15레벨에서 40m, 1단계 축소 시 2배 확대 (지수적 스케일링)
+      const maxRadius = 40 * Math.pow(2, Math.max(0, 15 - zoom));
+
+      setRadius(progress * maxRadius);
+      setOpacity(0.6 * (1 - progress));
+
+      frameId = requestAnimationFrame(animate);
+    };
+
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [zoom]); // zoom 변경 시 maxRadius 재계산을 위해 의존성 추가
+
+  return (
+    <NaverMapCircleOverlay
+      latitude={lat}
+      longitude={lng}
+      radius={radius}
+      color={`rgba(255, 126, 54, ${opacity})`}
+      outlineWidth={0}
+      zIndex={999}
+    />
+  );
+};
 
 
 // 가게 마커 데이터
@@ -288,18 +329,25 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           }}
         >
           {/* 맵 초기화 완료 후에만 마커 렌더링 (초기화 전 마커 추가 시 IndexOutOfBoundsException 방지) */}
-          {/* 내 위치 마커 */}
+          {/* 내 위치 마커 및 펄스 애니메이션 */}
           {isMapReady && myLocation && (
-            <NaverMapMarkerOverlay
-              key="my-location"
-              latitude={myLocation.lat}
-              longitude={myLocation.lng}
-              width={rs(20)}
-              height={rs(20)}
-              anchor={{ x: 0.5, y: 0.5 }}
-              zIndex={1000}
-              image={MY_LOCATION_ICON}
-            />
+            <>
+              <UserLocationPulse
+                lat={myLocation.lat}
+                lng={myLocation.lng}
+                zoom={currentZoom}
+              />
+              <NaverMapMarkerOverlay
+                key="my-location"
+                latitude={myLocation.lat}
+                longitude={myLocation.lng}
+                width={rs(20)}
+                height={rs(20)}
+                anchor={{ x: 0.5, y: 0.5 }}
+                zIndex={1000}
+                image={MY_LOCATION_ICON}
+              />
+            </>
           )}
 
           {/* 가게 마커 (클러스터 or 개별) */}
