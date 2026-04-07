@@ -790,7 +790,9 @@ export default function MapTab() {
     if (selectedStoreWithFavorite || selectedEvent || isLoading || isEventsLoading) return [];
     const items: ListItem[] = [];
     if (!isEventOnlyMode) {
-      storesWithFavorite.forEach((store) => items.push({ type: 'store', data: store }));
+      storesWithFavorite
+        .filter((store) => store.isPartner || store.hasCoupon)
+        .forEach((store) => items.push({ type: 'store', data: store }));
     }
     // 이벤트 키워드 필터링 (검색 중이면 제목/설명으로 필터, 아니면 전체)
     const filteredEvents = submittedKeyword
@@ -802,8 +804,9 @@ export default function MapTab() {
         );
       })
       : events;
+    const partnerStores = storesWithFavorite.filter((store) => store.isPartner || store.hasCoupon);
     if (showEvents) {
-      if (!isEventOnlyMode && storesWithFavorite.length > 0 && filteredEvents.length > 0) {
+      if (!isEventOnlyMode && partnerStores.length > 0 && filteredEvents.length > 0) {
         items.push({ type: 'divider' });
       }
       filteredEvents.forEach((event) => items.push({ type: 'event', data: event }));
