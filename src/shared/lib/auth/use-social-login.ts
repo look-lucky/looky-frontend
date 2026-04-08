@@ -92,6 +92,7 @@ export function useSocialLogin() {
             expiresIn ? parseInt(expiresIn, 10) : 3600,
             "ROLE_GUEST",
           );
+          await saveLoginProvider(provider);
           const userId = jwtPayload?.sub ? parseInt(jwtPayload.sub, 10) : null;
           if (!userId) {
             return {
@@ -258,6 +259,7 @@ export function useSocialLogin() {
         if (role === "ROLE_GUEST") {
           console.log("신규 소셜 회원 - 추가 정보 입력 필요");
           await handleAuthSuccess(accessToken, expiresIn, "ROLE_GUEST");
+          await saveLoginProvider("apple");
           const subValue = jwtPayload?.sub;
           const userId = subValue ? parseInt(subValue, 10) : null;
 
