@@ -95,7 +95,7 @@ export default function StudentVerificationPage() {
   const socialUserId = socialUserIdParam || socialUserIdStore;
 
   // Auth
-  const { handleAuthSuccess, saveUserUniversityId, saveUserCollegeId, saveUserCollegeName } = useAuth();
+  const { handleAuthSuccess, userType: authUserType, saveUserUniversityId, saveUserCollegeId, saveUserCollegeName } = useAuth();
 
   // Mutations
   const signupMutation = useSignupStudent();
@@ -398,6 +398,12 @@ export default function StudentVerificationPage() {
           },
         }
       );
+      return;
+    }
+
+    // ROLE_GUEST인데 socialUserId가 없으면 일반 가입으로 절대 진행하지 않음
+    if (authUserType === 'ROLE_GUEST') {
+      Alert.alert("오류", "소셜 회원가입 정보를 찾을 수 없습니다. 처음부터 다시 시도해주세요.");
       return;
     }
 
