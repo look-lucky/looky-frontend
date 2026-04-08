@@ -38,8 +38,11 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: "#ffffff",
           borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
+          elevation: 4,
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 4,
           height: tabBarHeight,
           paddingBottom: insets.bottom,
           paddingTop: 8,

@@ -37,7 +37,7 @@ const EVENT_TYPE_ICONS: Record<EventType, ImageSourcePropType> = {
   POPUP_STORE: require('@/assets/images/icons/map/event-brand.png'),
   FLEA_MARKET: require('@/assets/images/icons/map/event-market.png'),
   PERFORMANCE: require('@/assets/images/icons/map/event-busking.png'),
-  COMMUNITY: require('@/assets/images/icons/map/event-student.png'),
+  STUDENT_EVENT: require('@/assets/images/icons/map/event-student.png'),
 };
 
 // D-day 값 기준 스타일 (D-DAY=파란, D-1=분홍, D-N=노란)
@@ -96,7 +96,7 @@ export function EventSection({ events }: EventSectionProps) {
 
   const getEventIcon = (event: EventItem): ImageSourcePropType => {
     const primaryType = event.eventTypes?.[0];
-    return EVENT_TYPE_ICONS[primaryType] ?? EVENT_TYPE_ICONS.COMMUNITY;
+    return EVENT_TYPE_ICONS[primaryType] ?? EVENT_TYPE_ICONS.STUDENT_EVENT;
   };
 
   const onViewableItemsChanged = useRef(

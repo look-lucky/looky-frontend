@@ -65,9 +65,9 @@ export const MOOD_OPTIONS = [
 // 이벤트 타입 (API EventType 매핑)
 export const EVENT_OPTIONS = [
   { id: 'SCHOOL_EVENT', label: '학교 행사' },
-  { id: 'PERFORMANCE', label: '공연·버스킹' },
+  { id: 'PERFORMANCE', label: '공연·전시·버스킹' },
   { id: 'FOOD_EVENT', label: '푸드 이벤트' },
   { id: 'FLEA_MARKET', label: '플리마켓' },
-  { id: 'POPUP_STORE', label: '팝업스토어' },
-  { id: 'COMMUNITY', label: '커뮤니티' },
+  { id: 'POPUP_STORE', label: '브랜드 팝업' },
+  { id: 'STUDENT_EVENT', label: '학생 주관 이벤트' },
 ];

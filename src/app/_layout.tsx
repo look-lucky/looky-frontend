@@ -1,6 +1,7 @@
 import { NetworkErrorProvider } from "@/src/shared/contexts/network-error-context";
 import { TabBarProvider } from "@/src/shared/contexts/tab-bar-context";
 import { AuthProvider, useAuth } from "@/src/shared/lib/auth";
+import { decodeJwtPayload, getToken } from "@/src/shared/lib/auth/token";
 import { useFonts } from "expo-font";
 import { Stack, usePathname, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -95,7 +96,14 @@ function AuthRedirectGuard() {
       const isSocialSignupPage = socialSignupPaths.some((p) => pathname.includes(p));
       if (!isSocialSignupPage) {
         console.log("[AuthRedirectGuard] Redirecting ROLE_GUEST to signup form. Current path:", pathname);
-        router.replace("/auth/sign-up-social-form");
+        getToken().then((tokenData) => {
+          const sub = tokenData ? decodeJwtPayload(tokenData.accessToken)?.sub : undefined;
+          if (sub) {
+            router.replace({ pathname: "/auth/sign-up-social-form", params: { userId: sub } });
+          } else {
+            router.replace("/auth/sign-up-social-form");
+          }
+        });
       }
     }
   }, [isAuthenticated, userType, pathname]);

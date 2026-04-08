@@ -27,7 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       bundleIdentifier: bundleId,
       buildNumber: "2",
       usesAppleSignIn: true,
-      googleServicesFile: process.env.GOOGLE_SERVICES_IOS || "./GoogleService-Info.plist",
+      googleServicesFile: "./GoogleService-Info.plist",
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "사용자의 현재 위치를 중심으로 내 주변의 대학 제휴 매장, 실시간 이벤트 팝업, 할인 혜택을 지도상에 표시하고 해당 매장까지의 거리를 안내하기 위해 위치 정보가 필요합니다.",

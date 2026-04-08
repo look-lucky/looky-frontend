@@ -3,18 +3,22 @@ import { rs } from '@/src/shared/theme/scale';
 import { Gray, Notify, Text as TextColor } from '@/src/shared/theme/theme';
 import type { EventStatus, EventType } from '@/src/shared/types/event';
 import {
+  NaverMapCircleOverlay,
   NaverMapMarkerOverlay,
   NaverMapView,
   type NaverMapViewRef,
 } from '@mj-studio/react-native-naver-map';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Image as RNImage, StyleSheet, Text, View } from 'react-native';
+import { Platform, Image as RNImage, StyleSheet, View } from 'react-native';
 
-// 클러스터 마커 아이콘 PNG
+// ── 클러스터 아이콘 URI를 모듈 로드 시점에 고정 ──────────────────
+// require()는 번들러가 처리하므로 resolveAssetSource는 항상 동기적으로 URI 반환
 const CLUSTER_ICON = require('@/assets/images/icons/map/clover-cluster.png');
-
-// 이벤트 클러스터 마커 아이콘 PNG
 const EVENT_CLUSTER_ICON = require('@/assets/images/icons/map/event-cluster.png');
+
+// ✅ URI 동기적으로 추출 (번들에서 바로 가져오므로 항상 즉시 가능)
+const CLUSTER_ICON_URI = RNImage.resolveAssetSource(CLUSTER_ICON).uri;
+const EVENT_CLUSTER_ICON_URI = RNImage.resolveAssetSource(EVENT_CLUSTER_ICON).uri;
 
 // 가게 마커 아이콘 PNG
 const STORE_MARKER_ICONS = {
@@ -34,7 +38,7 @@ const EVENT_MARKER_ICONS: Record<EventType, any> = {
   SCHOOL_EVENT: require('@/assets/images/icons/map/event-college.png'),
   FLEA_MARKET: require('@/assets/images/icons/map/event-market.png'),
   PERFORMANCE: require('@/assets/images/icons/map/event-busking.png'),
-  COMMUNITY: require('@/assets/images/icons/map/event-student.png'),
+  STUDENT_EVENT: require('@/assets/images/icons/map/event-student.png'),
 };
 
 // 진행 중(live) 이벤트 마커 아이콘 PNG
@@ -44,32 +48,18 @@ const EVENT_MARKER_ICONS_LIVE: Record<EventType, any> = {
   SCHOOL_EVENT: require('@/assets/images/icons/map/event-college-live.png'),
   FLEA_MARKET: require('@/assets/images/icons/map/event-market-live.png'),
   PERFORMANCE: require('@/assets/images/icons/map/event-busking-live.png'),
-  COMMUNITY: require('@/assets/images/icons/map/event-student-live.png'),
+  STUDENT_EVENT: require('@/assets/images/icons/map/event-student-live.png'),
 };
 
-// 클러스터 마커 컴포넌트 (RN Image + Text 오버레이 — iOS SvgImage href 미지원 이슈 회피)
-function ClusterMarkerIcon({ count, size, icon = CLUSTER_ICON, textColor = Gray.white }: { count: number; size: number; icon?: number; textColor?: string }) {
-  const fontSize = count >= 100 ? size * 0.22 : count >= 10 ? size * 0.25 : size * 0.28;
-
-  return (
-    <View collapsable={false} style={{ width: size, height: size, backgroundColor: 'transparent' }}>
-      <RNImage
-        source={icon}
-        style={[StyleSheet.absoluteFillObject, { width: size, height: size }]}
-        resizeMode="contain"
-        fadeDuration={0}
-      />
-      {/* paddingBottom으로 핀 꼬리 영역 제외 — 원형 헤드 중심(~42%)에 텍스트 배치 */}
-      <View style={[StyleSheet.absoluteFillObject, { paddingBottom: size * 0.17, alignItems: 'center', justifyContent: 'center' }]}>
-        <Text style={{ color: textColor, fontSize, fontWeight: '700', includeFontPadding: false }}>{count}</Text>
-      </View>
-    </View>
-  );
+// ── 클러스터 텍스트 사이즈 계산 헬퍼 ──
+// (네이티브 캡션에 전달할 폰트 사이즈)
+function getClusterFontSize(count: number): number {
+  return count >= 100 ? 11.5 : count >= 10 ? 13.5 : 15.5; // 좀 더 과감하게 줄여서 아래로 확실하게 내리기
 }
 
 const MARKER_SIZE = rs(32);
 const EVENT_MARKER_SIZE = rs(52);
-const EVENT_MARKER_SIZE_LIVE = rs(80);
+const EVENT_MARKER_SIZE_LIVE = rs(52);
 const CLUSTER_SIZE = rs(60);
 
 // 라벨 표시 최소 줌 레벨
@@ -94,10 +84,50 @@ function getStoreMarkerIcon(isPartner: boolean, hasCoupon: boolean) {
 // 이벤트 마커 아이콘 선택 헬퍼
 function getEventMarkerIcon(eventType: EventType, status: EventStatus) {
   if (status === 'live') {
-    return EVENT_MARKER_ICONS_LIVE[eventType] ?? EVENT_MARKER_ICONS_LIVE.COMMUNITY;
+    return EVENT_MARKER_ICONS_LIVE[eventType] ?? EVENT_MARKER_ICONS_LIVE.STUDENT_EVENT;
   }
-  return EVENT_MARKER_ICONS[eventType] ?? EVENT_MARKER_ICONS.COMMUNITY;
+  return EVENT_MARKER_ICONS[eventType] ?? EVENT_MARKER_ICONS.STUDENT_EVENT;
 }
+
+// ── 내 위치 펄스 애니메이션 컴포넌트 ──────────────────
+const UserLocationPulse = ({ lat, lng, zoom }: { lat: number; lng: number; zoom: number }) => {
+  const [radius, setRadius] = useState(0);
+  const [opacity, setOpacity] = useState(0.6);
+
+  useEffect(() => {
+    let frameId: number;
+    let start: number | null = null;
+    const duration = 1200; // 1초 주기로 반복 (사용자 수동 수정 반영)
+
+    const animate = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const progress = ((timestamp - start) % duration) / duration;
+
+      // 화면에서 적절한 크기를 유지하도록 줌 레벨에 따라 반지름(m) 조정
+      // 기본 15레벨에서 40m, 1단계 축소 시 2배 확대 (지수적 스케일링)
+      const maxRadius = 40 * Math.pow(2, Math.max(0, 15 - zoom));
+
+      setRadius(progress * maxRadius);
+      setOpacity(0.6 * (1 - progress));
+
+      frameId = requestAnimationFrame(animate);
+    };
+
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [zoom]); // zoom 변경 시 maxRadius 재계산을 위해 의존성 추가
+
+  return (
+    <NaverMapCircleOverlay
+      latitude={lat}
+      longitude={lng}
+      radius={radius}
+      color={`rgba(255, 126, 54, ${opacity})`}
+      outlineWidth={0}
+      zIndex={999}
+    />
+  );
+};
 
 
 // 가게 마커 데이터
@@ -167,6 +197,24 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     const isInitialMount = useRef(true);
     const [currentZoom, setCurrentZoom] = useState<number>(15);
     const [isMapReady, setIsMapReady] = useState(false);
+
+    // ✅ iOS에서 클러스터 아이콘 캐시 완료 후 마커 렌더링 (초기 흰색 방지)
+    const [clusterIconsReady, setClusterIconsReady] = useState(Platform.OS !== 'ios');
+
+    useEffect(() => {
+      if (Platform.OS !== 'ios') return;
+      let cancelled = false;
+      Promise.all([
+        RNImage.prefetch(CLUSTER_ICON_URI),
+        RNImage.prefetch(EVENT_CLUSTER_ICON_URI),
+      ]).finally(() => {
+        if (!cancelled) setClusterIconsReady(true);
+      });
+      return () => { cancelled = true; };
+    }, []);
+
+    // ✅ zoom 디바운스 ref 추가 (컴포넌트 최상단에)
+    const zoomTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useImperativeHandle(ref, () => mapRef.current!, []);
 
@@ -259,11 +307,16 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           }}
           onCameraChanged={(params) => {
             const zoom = params.zoom ?? 15;
-            setCurrentZoom((prev) => {
-              const floored = Math.floor(zoom);
-              if (floored !== prev) return floored;
-              return prev;
-            });
+
+            // ✅ zoom 디바운스 150ms - 확대/축소 중 클러스터 재계산 횟수 줄여 깜빡임 감소
+            if (zoomTimerRef.current) clearTimeout(zoomTimerRef.current);
+            zoomTimerRef.current = setTimeout(() => {
+              setCurrentZoom((prev) => {
+                const floored = Math.floor(zoom);
+                return floored !== prev ? floored : prev;
+              });
+            }, 150);
+
             onCameraChanged?.({
               lat: params.latitude,
               lng: params.longitude,
@@ -276,26 +329,33 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           }}
         >
           {/* 맵 초기화 완료 후에만 마커 렌더링 (초기화 전 마커 추가 시 IndexOutOfBoundsException 방지) */}
-          {/* 내 위치 마커 */}
+          {/* 내 위치 마커 및 펄스 애니메이션 */}
           {isMapReady && myLocation && (
-            <NaverMapMarkerOverlay
-              key="my-location"
-              latitude={myLocation.lat}
-              longitude={myLocation.lng}
-              width={rs(20)}
-              height={rs(20)}
-              anchor={{ x: 0.5, y: 0.5 }}
-              zIndex={1000}
-              image={MY_LOCATION_ICON}
-            />
+            <>
+              <UserLocationPulse
+                lat={myLocation.lat}
+                lng={myLocation.lng}
+                zoom={currentZoom}
+              />
+              <NaverMapMarkerOverlay
+                key="my-location"
+                latitude={myLocation.lat}
+                longitude={myLocation.lng}
+                width={rs(20)}
+                height={rs(20)}
+                anchor={{ x: 0.5, y: 0.5 }}
+                zIndex={1000}
+                image={MY_LOCATION_ICON}
+              />
+            </>
           )}
 
           {/* 가게 마커 (클러스터 or 개별) */}
-          {isMapReady && !hideStoreMarkers && clusteredMarkers.map((item) => {
+          {isMapReady && clusterIconsReady && !hideStoreMarkers && clusteredMarkers.map((item) => {
             if (item.type === 'cluster') {
               return (
                 <NaverMapMarkerOverlay
-                  key={`cluster-${item.clusterId}`}
+                  key={`cluster-${item.clusterId}`}  // ✅ clusterId로 복구 (위치 기반 key 제거)
                   latitude={item.lat}
                   longitude={item.lng}
                   width={CLUSTER_SIZE}
@@ -303,9 +363,18 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                   anchor={{ x: 0.5, y: 1.0 }}
                   zIndex={500}
                   onTap={() => handleClusterClick(item.lat, item.lng)}
-                >
-                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} />
-                </NaverMapMarkerOverlay>
+                  image={CLUSTER_ICON}
+                  caption={{
+                    // 일반 공백(' ')은 네이티브 지도 엔진에서 텍스트 정렬 시 자동으로 잘려나가(trim) 무시됩니다.
+                    // 따라서 절대 잘리지 않는 Non-breaking space('\u00A0')를 사용하여 강제로 텍스트를 왼쪽으로 밀어냅니다.
+                    text: `${item.count}\u00A0\n\u00A0`,
+                    // 가게 숫자 크기도 조금 더 커 보이도록 +1.5 추가
+                    textSize: getClusterFontSize(item.count) + 1.5,
+                    color: Gray.white,
+                    align: 'Center',
+                    offset: 3 // 안전빵으로 offset도 늘려서 아래로 추가 이동
+                  }}
+                />
               );
             }
             return (
@@ -333,11 +402,11 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           })}
 
           {/* 이벤트 마커 (클러스터 or 개별) */}
-          {isMapReady && adjustedEventMarkers.map((item) => {
+          {isMapReady && clusterIconsReady && adjustedEventMarkers.map((item) => {
             if (item.type === 'cluster') {
               return (
                 <NaverMapMarkerOverlay
-                  key={`event-cluster-${item.clusterId}`}
+                  key={`event-cluster-${item.clusterId}`}  // ✅ clusterId로 복구
                   latitude={item.lat}
                   longitude={item.lng}
                   width={CLUSTER_SIZE}
@@ -345,9 +414,17 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                   anchor={{ x: 0.5, y: 1.0 }}
                   zIndex={500}
                   onTap={() => handleClusterClick(item.lat, item.lng)}
-                >
-                  <ClusterMarkerIcon count={item.count} size={CLUSTER_SIZE} icon={EVENT_CLUSTER_ICON} textColor={Notify.event} />
-                </NaverMapMarkerOverlay>
+                  image={EVENT_CLUSTER_ICON}
+                  caption={{
+                    text: `${item.count}\n\u00A0`,
+                    // 폰트 크기를 키워 시인성을 높임
+                    textSize: getClusterFontSize(item.count) + 2,
+                    color: Notify.event,
+                    haloColor: Gray.white, // 흰색 외곽선 추가
+                    align: 'Center',
+                    offset: 15 // 더 아래쪽으로 내리기 위해 offset 증가
+                  }}
+                />
               );
             }
             const markerSize = item.status === 'live' ? EVENT_MARKER_SIZE_LIVE : EVENT_MARKER_SIZE;

@@ -7,10 +7,10 @@ import {
 import { useGetHotStores } from '@/src/api/store';
 import { EventCard } from '@/src/app/(student)/components/event/event-card';
 import { SelectedEventDetail } from '@/src/app/(student)/components/event/selected-event-detail';
+import { MapAdButton } from '@/src/app/(student)/components/map/map-ad-button';
 import { NaverMap } from '@/src/app/(student)/components/map/naver-map-view';
 import { SelectedStoreDetail } from '@/src/app/(student)/components/map/selected-store-detail';
 import { FilterTab, StoreFilterModal } from '@/src/app/(student)/components/map/store-filter-modal';
-import { MapAdButton } from '@/src/app/(student)/components/map/map-ad-button';
 import { StoreCard } from '@/src/app/(student)/components/store/store-card';
 import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
@@ -68,6 +68,7 @@ const TUTORIAL_IMAGES = [
 
 
 export default function MapTab() {
+  console.log('🗺️ MapTab 실행됨');
   const { setTabBarVisible } = useTabBar();
   const router = useRouter();
   const { height: screenHeight } = useWindowDimensions();
@@ -101,7 +102,7 @@ export default function MapTab() {
   const searchInputRef = useRef<TextInput>(null);
   const naverMapRef = useRef<NaverMapViewRef>(null);
   const pendingCameraMove = useRef<{ lat: number; lng: number } | null>(null);
-  const { category, eventId: eventIdParam, centerOnEvents, hotPlaces: hotPlacesParam } = useLocalSearchParams<{ category?: string; eventId?: string; centerOnEvents?: string; hotPlaces?: string }>();
+  const { category, eventId: eventIdParam, lat: latParam, lng: lngParam, centerOnEvents, hotPlaces: hotPlacesParam } = useLocalSearchParams<{ category?: string; eventId?: string; lat?: string; lng?: string; centerOnEvents?: string; hotPlaces?: string }>();
   const initialEventHandled = useRef(false);
   const centerOnEventsHandledRef = useRef(false);
 
@@ -267,9 +268,36 @@ export default function MapTab() {
   }, [eventIdParam]);
 
   // 홈에서 이벤트 카드 눌러서 진입 시 해당 이벤트 선택 + 지도 중심 이동 + 바텀시트 열기
-  // → 이벤트 마커 클릭(onEventMarkerClick)과 동일한 효과로 처리
+  // → 명시적인 다이렉트 URL 패러미터가 있으면 allEvents 대기 없이 즉시 날아가고, 없으면 기존처럼 이벤트 목록 로딩 대기
   useEffect(() => {
-    if (!eventIdParam || initialEventHandled.current || allEvents.length === 0) return;
+    if (!eventIdParam || initialEventHandled.current) return;
+
+    if (latParam && lngParam) {
+      initialEventHandled.current = true;
+      handleMapClick();
+      setSelectedEventId(eventIdParam as string);
+
+      const lat = Number(latParam);
+      const lng = Number(lngParam);
+      if (naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: lat,
+          longitude: lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      } else {
+        pendingCameraMove.current = { lat, lng };
+      }
+      const timer = setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(2);
+        router.setParams({ eventId: undefined, lat: undefined, lng: undefined });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+
+    if (allEvents.length === 0) return;
     const event = allEvents.find((e) => e.id === eventIdParam);
     if (event) {
       initialEventHandled.current = true;
@@ -288,12 +316,12 @@ export default function MapTab() {
         pendingCameraMove.current = { lat: event.lat, lng: event.lng };
       }
       const timer = setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
         router.setParams({ eventId: undefined });
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [eventIdParam, allEvents, handleMapClick]);
+  }, [eventIdParam, latParam, lngParam, allEvents, handleMapClick]);
 
   // centerOnEvents 파라미터 변경 시 플래그 리셋
   useEffect(() => {
@@ -306,7 +334,7 @@ export default function MapTab() {
       if (hotPlacesParam !== 'true') return;
       setHotPlacesMode(true);
       const timer = setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 300);
       return () => clearTimeout(timer);
     }, [hotPlacesParam]),
@@ -369,21 +397,48 @@ export default function MapTab() {
 
   // 이벤트 목록 페이지에서 이벤트 선택 후 지도로 넘어올 때 (크로스-네비게이터 파라미터 전달용)
   const pendingEventId = useMapNavigationStore((s) => s.pendingEventId);
+  const pendingEventLocation = useMapNavigationStore((s) => s.pendingEventLocation);
   const setPendingEventId = useMapNavigationStore((s) => s.setPendingEventId);
   const [activePendingEventId, setActivePendingEventId] = useState<string | null>(null);
+  const [activePendingEventLocation, setActivePendingEventLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   // 포커스 시 store에서 pending 이벤트 ID를 꺼내 로컬 state에 저장
   useFocusEffect(
     useCallback(() => {
       if (!pendingEventId) return;
       setActivePendingEventId(pendingEventId);
-      setPendingEventId(null);
-    }, [pendingEventId, setPendingEventId]),
+      setActivePendingEventLocation(pendingEventLocation);
+      setPendingEventId(null, null);
+    }, [pendingEventId, pendingEventLocation, setPendingEventId]),
   );
 
   // activePendingEventId가 세팅되면 events 로딩 완료 후 이벤트 선택 처리
   useEffect(() => {
-    if (!activePendingEventId || allEvents.length === 0) return;
+    if (!activePendingEventId) return;
+
+    if (activePendingEventLocation) {
+      setActivePendingEventId(null);
+      setActivePendingEventLocation(null);
+      handleMapClick();
+      setSelectedEventId(activePendingEventId);
+      if (naverMapRef.current) {
+        naverMapRef.current.animateCameraTo({
+          latitude: activePendingEventLocation.lat,
+          longitude: activePendingEventLocation.lng,
+          zoom: 17,
+          duration: 400,
+          pivot: { x: 0.5, y: 0.35 },
+        });
+      } else {
+        pendingCameraMove.current = { lat: activePendingEventLocation.lat, lng: activePendingEventLocation.lng };
+      }
+      const timer = setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(2);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+
+    if (allEvents.length === 0) return;
     const event = allEvents.find((e) => e.id === activePendingEventId);
     if (event) {
       setActivePendingEventId(null);
@@ -401,11 +456,11 @@ export default function MapTab() {
         pendingCameraMove.current = { lat: event.lat, lng: event.lng };
       }
       const timer = setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [activePendingEventId, allEvents, handleMapClick]);
+  }, [activePendingEventId, activePendingEventLocation, allEvents, handleMapClick]);
 
   // 지도 탭 포커스 상태 (NaverMap 크래시 방지용 - 탭 이탈 시 clean unmount)
   const [isTabFocused, setIsTabFocused] = useState(true);
@@ -431,11 +486,14 @@ export default function MapTab() {
   );
 
   // snap points (퍼센트 대신 고정 픽셀값 → 레이아웃 재계산 영향 없음)
+  // 수정 (퍼센트 문자열 방식)
   const collapsedHeight = 130 + 56;
   const snapPoints = useMemo(
-    () => [collapsedHeight, Math.round(screenHeight * 0.6), Math.round(screenHeight * 0.8)],
-    [screenHeight],
+    () => [collapsedHeight, Math.round(screenHeight * 0.55), Math.round(screenHeight * 0.8)],
+    [screenHeight, collapsedHeight],
   );
+  // ← 바로 여기에 추가
+  console.log('snapPoints:', snapPoints, 'screenHeight:', screenHeight);
 
   // 바텀시트 인덱스 변경
   const handleSheetChanges = useCallback(
@@ -527,7 +585,7 @@ export default function MapTab() {
       // 탭바를 먼저 숨긴 후(250ms 애니메이션) 스냅 → 레이아웃 안정 후 snap
       setTabBarVisible(false);
       setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 260);
     },
     [handleMarkerClick, stores, setTabBarVisible],
@@ -553,7 +611,7 @@ export default function MapTab() {
       // 탭바를 먼저 숨긴 후(250ms 애니메이션) 스냅 → 레이아웃 안정 후 snap
       setTabBarVisible(false);
       setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+        bottomSheetRef.current?.snapToIndex(2);
       }, 260);
     },
     [events, handleMapClick, setTabBarVisible],
@@ -604,7 +662,7 @@ export default function MapTab() {
           pivot: { x: 0.5, y: 0.35 },
         });
       }
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      bottomSheetRef.current?.snapToIndex(2);
     },
     [events, handleMapClick],
   );
@@ -623,7 +681,7 @@ export default function MapTab() {
           duration: 500,
         });
       }
-      bottomSheetRef.current?.snapToIndex(SNAP_INDEX.HALF);
+      bottomSheetRef.current?.snapToIndex(2);
     },
     [handleStoreSelect, stores],
   );
@@ -732,7 +790,9 @@ export default function MapTab() {
     if (selectedStoreWithFavorite || selectedEvent || isLoading || isEventsLoading) return [];
     const items: ListItem[] = [];
     if (!isEventOnlyMode) {
-      storesWithFavorite.forEach((store) => items.push({ type: 'store', data: store }));
+      storesWithFavorite
+        .filter((store) => store.isPartner || store.hasCoupon)
+        .forEach((store) => items.push({ type: 'store', data: store }));
     }
     // 이벤트 키워드 필터링 (검색 중이면 제목/설명으로 필터, 아니면 전체)
     const filteredEvents = submittedKeyword
@@ -744,8 +804,9 @@ export default function MapTab() {
         );
       })
       : events;
+    const partnerStores = storesWithFavorite.filter((store) => store.isPartner || store.hasCoupon);
     if (showEvents) {
-      if (!isEventOnlyMode && storesWithFavorite.length > 0 && filteredEvents.length > 0) {
+      if (!isEventOnlyMode && partnerStores.length > 0 && filteredEvents.length > 0) {
         items.push({ type: 'divider' });
       }
       filteredEvents.forEach((event) => items.push({ type: 'event', data: event }));
@@ -1078,6 +1139,7 @@ export default function MapTab() {
 
       {/* 바텀시트 */}
       <BottomSheet
+        key={snapPoints.join('-')}  // ✅ 이 줄 추가
         ref={bottomSheetRef}
         index={SNAP_INDEX.COLLAPSED}
         snapPoints={snapPoints}
@@ -1191,9 +1253,6 @@ export default function MapTab() {
         selectedMoods={selectedMoods}
         selectedEvents={selectedEvents}
         onTabChange={setActiveFilterTab}
-        onStoreTypeToggle={handleStoreTypeToggle}
-        onMoodToggle={handleMoodToggle}
-        onEventToggle={handleEventToggle}
         onReset={handleFilterReset}
         onClose={() => setShowFilterModal(false)}
         onApply={onFilterApply}
@@ -1262,6 +1321,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: rs(56),
     paddingHorizontal: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchIconButton: {
     width: rs(40),
@@ -1293,6 +1357,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: Gray.white,
     gap: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   filterButtonActive: {
     backgroundColor: Gray.black,
@@ -1373,8 +1442,11 @@ const styles = StyleSheet.create({
     backgroundColor: Gray.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    shadowOpacity: 0,
-    elevation: 0,
+    shadowColor: Gray.black,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 12,
   },
   bottomSheetContent: {
     flex: 1,
