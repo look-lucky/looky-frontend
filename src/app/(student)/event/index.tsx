@@ -134,7 +134,15 @@ export default function EventListScreen() {
             place: r.place,
             createdAt: new Date(r.createdAt),
         }))
-        .filter(isEventVisible);
+        .filter(isEventVisible)
+        .sort((a, b) => {
+            const statusOrder = { live: 0, upcoming: 1, ended: 2 };
+            if (a.status !== b.status) return statusOrder[a.status] - statusOrder[b.status];
+            if (a.status === 'live') {
+                return a.endDateTime.getTime() - b.endDateTime.getTime();
+            }
+            return a.startDateTime.getTime() - b.startDateTime.getTime();
+        });
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
