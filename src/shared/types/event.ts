@@ -8,7 +8,7 @@ export type EventType =
   | 'SCHOOL_EVENT'
   | 'FLEA_MARKET'
   | 'PERFORMANCE'
-  | 'COMMUNITY';
+  | 'STUDENT_EVENT';
 
 export type EventStatus = 'upcoming' | 'live' | 'ended';
 
@@ -106,14 +106,14 @@ export const EVENT_TYPE_ICONS: Record<EventType, string> = {
   SCHOOL_EVENT: 'event-college',
   FLEA_MARKET: 'event-market',
   PERFORMANCE: 'event-busking',
-  COMMUNITY: 'event-student',
+  STUDENT_EVENT: 'event-student',
 };
 
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   FOOD_EVENT: '푸드 이벤트',
-  POPUP_STORE: '팝업스토어',
+  POPUP_STORE: '브랜드 팝업',
   SCHOOL_EVENT: '학교 행사',
   FLEA_MARKET: '플리마켓',
-  PERFORMANCE: '공연/버스킹',
-  COMMUNITY: '커뮤니티',
+  PERFORMANCE: '공연·전시·버스킹',
+  STUDENT_EVENT: '학생 주관 이벤트',
 };
