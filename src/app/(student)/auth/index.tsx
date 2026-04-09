@@ -110,7 +110,6 @@ export default function SignInPage() {
           </ThemedText>
         </Pressable>
 
-        {/* 
         <Pressable
           style={[styles.socialButton, styles.googleButton, googleLoading && styles.disabledButton]}
           onPress={handleGoogleLogin}
@@ -120,8 +119,7 @@ export default function SignInPage() {
           <ThemedText lightColor={Gray.black} style={styles.socialButtonText}>
             Google로 시작하기
           </ThemedText>
-        </Pressable> 
-        */}
+        </Pressable>
 
         {Platform.OS === "ios" && (
           <Pressable
