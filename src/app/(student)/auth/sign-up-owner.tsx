@@ -77,7 +77,7 @@ export default function SignupOwnerPage() {
   } = useSignupStore();
 
   // Auth
-  const { handleAuthSuccess } = useAuth();
+  const { handleAuthSuccess, userType: authUserType } = useAuth();
 
   // API 훅
   const signupOwnerMutation = useSignupOwner();
@@ -217,6 +217,12 @@ export default function SignupOwnerPage() {
         // 별도 store 생성 API 연동 필요
         Alert.alert("회원가입 완료", "관리자 승인 후 서비스를 이용하실 수 있습니다.");
         router.replace("/(shopowner)/auth/pending-approval");
+        return;
+      }
+
+      // ROLE_GUEST인데 socialUserId가 없으면 일반 가입으로 절대 진행하지 않음
+      if (authUserType === 'ROLE_GUEST') {
+        Alert.alert("오류", "소셜 회원가입 정보를 찾을 수 없습니다. 처음부터 다시 시도해주세요.");
         return;
       }
 

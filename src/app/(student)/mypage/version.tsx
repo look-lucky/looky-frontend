@@ -2,12 +2,37 @@ import { rs } from '@/src/shared/theme/scale';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const TAP_COUNT_REQUIRED = 5;
 
 export default function VersionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const tapCount = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [tapHint, setTapHint] = useState(0);
+
+  const handleVersionTap = () => {
+    tapCount.current += 1;
+    setTapHint(tapCount.current);
+
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+
+    if (tapCount.current >= TAP_COUNT_REQUIRED) {
+      tapCount.current = 0;
+      setTapHint(0);
+      router.push('/mypage/debug-info' as any);
+      return;
+    }
+
+    tapTimer.current = setTimeout(() => {
+      tapCount.current = 0;
+      setTapHint(0);
+    }, 2000);
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -22,10 +47,15 @@ export default function VersionScreen() {
           <Text style={styles.pageTitle}>버전 정보</Text>
         </View>
 
-        <View style={styles.versionRow}>
-          <Text style={styles.versionLabel}>버전</Text>
-          <Text style={styles.versionValue}>{Constants.expoConfig?.version ?? '1.0.0'}</Text>
-        </View>
+        <TouchableOpacity onPress={handleVersionTap} activeOpacity={1}>
+          <View style={styles.versionRow}>
+            <Text style={styles.versionLabel}>버전</Text>
+            <Text style={styles.versionValue}>
+              {Constants.expoConfig?.version ?? '1.0.0'}
+              {tapHint > 0 && tapHint < TAP_COUNT_REQUIRED ? `  (${tapHint}/${TAP_COUNT_REQUIRED})` : ''}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         <View style={styles.divider} />
       </View>
