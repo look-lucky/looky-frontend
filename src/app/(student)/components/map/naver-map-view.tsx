@@ -97,7 +97,7 @@ const UserLocationPulse = ({ lat, lng, zoom }: { lat: number; lng: number; zoom:
   useEffect(() => {
     let frameId: number;
     let start: number | null = null;
-    const duration = 1200; // 1초 주기로 반복 (사용자 수동 수정 반영)
+    const duration = 1200; // 1.2초 주기로 반복
 
     const animate = (timestamp: number) => {
       if (!start) start = timestamp;

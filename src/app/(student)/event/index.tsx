@@ -90,7 +90,7 @@ const EventCard = ({ event }: { event: Event }) => {
                             </View>
                             {event.eventTypes.map((type) => (
                                 <View key={type} style={[styles.badge, styles.typeBadge]}>
-                                    <ThemedText type="captionSemiBold" lightColor="#217c44ff">
+                                    <ThemedText type="captionSemiBold" style={styles.typeBadgeText}>
                                         {EVENT_TYPE_LABELS[type] ?? type}
                                     </ThemedText>
                                 </View>
@@ -261,7 +261,10 @@ const styles = StyleSheet.create({
         borderRadius: rs(20),
     },
     typeBadge: {
-        backgroundColor: '#DCFCE7',
+        backgroundColor: '#383838',
+    },
+    typeBadgeText: {
+        color: '#FFFFFF',
     },
     eventTitle: {
         fontSize: rs(14),

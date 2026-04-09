@@ -112,8 +112,8 @@ export const EVENT_TYPE_ICONS: Record<EventType, string> = {
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   FOOD_EVENT: '푸드 이벤트',
   POPUP_STORE: '브랜드 팝업',
-  SCHOOL_EVENT: '학교 행사',
+  SCHOOL_EVENT: '학교 주관',
   FLEA_MARKET: '플리마켓',
   PERFORMANCE: '공연·전시·버스킹',
-  STUDENT_EVENT: '학생 주관 이벤트',
+  STUDENT_EVENT: '학생 주관',
 };
