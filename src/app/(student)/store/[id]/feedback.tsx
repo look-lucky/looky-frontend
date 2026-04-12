@@ -151,7 +151,7 @@ export default function StoreFeedbackScreen() {
 
         {/* 피드백 정책 */}
         <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>니어딜 피드백 정책</ThemedText>
+          <ThemedText style={styles.sectionTitle}>루키 피드백 정책</ThemedText>
           <ThemedText style={styles.policyText}>
             등록하신 정보는 검수 과정을 거친 후 반영됩니다.
           </ThemedText>
