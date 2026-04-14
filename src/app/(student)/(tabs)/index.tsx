@@ -8,6 +8,7 @@ import { EventSection } from '@/src/app/(student)/components/home/event-section'
 import { HomePopup } from '@/src/app/(student)/components/home/home-popup';
 import { HotPlaceItem, HotPlaceSection } from '@/src/app/(student)/components/home/hot-place-section';
 import { WelcomeBanner } from '@/src/app/(student)/components/home/welcome-banner';
+import { logAppOpen } from '@/src/shared/lib/analytics';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray } from '@/src/shared/theme/theme';
@@ -40,6 +41,15 @@ export default function HomePage() {
   const { data: studentInfoRes } = useGetStudentInfo();
   const studentInfo = (studentInfoRes as any)?.data?.data;
   const universityId = studentInfo?.universityId;
+
+  useFocusEffect(
+    useCallback(() => {
+      logAppOpen({
+        university: studentInfo?.universityName ?? '',
+        college: studentInfo?.collegeName ?? '',
+      });
+    }, [studentInfo?.universityName, studentInfo?.collegeName]),
+  );
 
   const { data: myCouponsRes } = useGetMyCoupons();
   const rawCoupons = (myCouponsRes as any)?.data?.data;

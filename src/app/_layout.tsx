@@ -92,7 +92,7 @@ function AuthRedirectGuard() {
 
   useEffect(() => {
     if (isAuthenticated && userType === 'ROLE_GUEST') {
-      const socialSignupPaths = ['sign-up-social-form', 'sign-up-verify', 'sign-up-owner', 'sign-up-done'];
+      const socialSignupPaths = ['sign-up-social-form', 'sign-up-verify', 'sign-up-owner', 'sign-up-done', 'store-select', 'store-search', 'store-register'];
       const isSocialSignupPage = socialSignupPaths.some((p) => pathname.includes(p));
       if (!isSocialSignupPage) {
         console.log("[AuthRedirectGuard] Redirecting ROLE_GUEST to signup form. Current path:", pathname);

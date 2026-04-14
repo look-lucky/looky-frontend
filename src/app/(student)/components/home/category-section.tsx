@@ -1,4 +1,5 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
+import { logCategoryFilterClick } from '@/src/shared/lib/analytics';
 import { rs } from '@/src/shared/theme/scale';
 import { Fonts, Gray, Text as TextColor } from '@/src/shared/theme/theme';
 import { useRouter } from 'expo-router';
@@ -40,6 +41,7 @@ export function CategorySection() {
   const router = useRouter();
 
   const handleCategoryPress = (categoryId: string) => {
+    logCategoryFilterClick({ category: categoryId, screen: 'home' });
     router.push(`/map?category=${categoryId}`);
   };
 

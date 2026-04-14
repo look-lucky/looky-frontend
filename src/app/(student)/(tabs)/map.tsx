@@ -24,6 +24,13 @@ import {
 import { useTabBar } from '@/src/shared/contexts/tab-bar-context';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { useMapSearch } from '@/src/shared/hooks/use-map-search';
+import {
+  logCategoryFilterClick,
+  logMapEventListCardClick,
+  logMapEventMarkerClick,
+  logMapStorePinClick,
+  logSearchExecute,
+} from '@/src/shared/lib/analytics';
 import { useMapNavigationStore } from '@/src/shared/stores/map-navigation-store';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Owner, Text } from '@/src/shared/theme/theme';
@@ -573,6 +580,9 @@ export default function MapTab() {
       setSelectedEventId(null);
       handleMarkerClick(markerId);
       const store = stores.find((s) => s.id === markerId);
+      if (store) {
+        logMapStorePinClick({ storeId: store.id, storeName: store.name });
+      }
       if (store?.lat && store?.lng) {
         naverMapRef.current?.animateCameraTo({
           latitude: store.lat,
@@ -599,6 +609,9 @@ export default function MapTab() {
       handleMapClick(); // 가게 선택 해제
       setSelectedEventId(eventId);
       const event = events.find((e) => e.id === eventId);
+      if (event) {
+        logMapEventMarkerClick({ eventId: event.id, eventTitle: event.title, status: event.status });
+      }
       if (event) {
         naverMapRef.current?.animateCameraTo({
           latitude: event.lat,
@@ -654,6 +667,9 @@ export default function MapTab() {
       handleMapClick(); // 가게 선택 해제
       const event = events.find((e) => e.id === eventId);
       if (event) {
+        logMapEventListCardClick({ eventId: event.id, eventTitle: event.title });
+      }
+      if (event) {
         naverMapRef.current?.animateCameraTo({
           latitude: event.lat,
           longitude: event.lng,
@@ -694,6 +710,7 @@ export default function MapTab() {
   // 검색 실행
   const onSearchSubmit = useCallback(() => {
     if (!keyword.trim()) return;
+    logSearchExecute({ keyword: keyword.trim() });
     handleMapClick(); // 선택된 마커/가게 초기화
     setSelectedEventId(null);
     handleSearch();
@@ -941,7 +958,7 @@ export default function MapTab() {
             styles.filterButton,
             selectedCategory === category.id && styles.filterButtonActive,
           ]}
-          onPress={() => { handleCategorySelect(category.id); setSelectedEventId(null); router.setParams({ eventId: undefined } as any); }}
+          onPress={() => { logCategoryFilterClick({ category: category.id, screen: 'map' }); handleCategorySelect(category.id); setSelectedEventId(null); router.setParams({ eventId: undefined } as any); }}
         >
           {selectedCategory === category.id && (
             <Ionicons
