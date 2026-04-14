@@ -391,7 +391,7 @@ export const getVerifyCouponUrl = (storeId: number,) => {
 
   
 
-  return `/api/stores/${storeId}/coupons/verify `
+  return `/api/stores/${storeId}/coupons/verify`
 }
 
 export const verifyCoupon = async (storeId: number,
