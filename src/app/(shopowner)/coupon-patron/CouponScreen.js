@@ -1227,7 +1227,7 @@ export default function CouponScreen({ navigation, route }) {
                       ======================================================= */}
                     {isPeriodModalVisible && (
                         <View style={[StyleSheet.absoluteFill, styles.modalOverlay, { zIndex: 100 }]}>
-                            <View style={styles.periodModalContainer}>
+                            <View style={[styles.periodModalContainer, { maxHeight: '90%' }]}>
                                 {/* 탭 헤더: 시작 / 종료 */}
                                 <View style={styles.periodTabRow}>
                                     <TouchableOpacity
@@ -1258,6 +1258,7 @@ export default function CouponScreen({ navigation, route }) {
                                     </TouchableOpacity>
                                 </View>
 
+                                <ScrollView showsVerticalScrollIndicator={false} style={{ width: '100%' }}>
                                 {/* 캘린더 영역 */}
                                 <View style={styles.calendarContainer}>
                                     <View style={styles.calendarHeader}>
@@ -1375,6 +1376,7 @@ export default function CouponScreen({ navigation, route }) {
                                     </TouchableOpacity>
                                     <TouchableOpacity><Ionicons name="chevron-down" size={rs(16)} color="#34B262" /></TouchableOpacity>
                                 </View>
+                                </ScrollView>
 
                                 {/* 하단 버튼 */}
                                 <View style={styles.periodModalBtnRow}>
@@ -1440,9 +1442,9 @@ export default function CouponScreen({ navigation, route }) {
                     <View style={styles.modalOverlay}>
                         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                             <KeyboardAvoidingView
-                                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                                behavior={Platform.OS === "ios" ? "padding" : undefined}
                             >
-                                <View style={styles.usageModalContainer}>
+                                <View style={styles.usageModalContainer} onStartShouldSetResponder={() => true}>
                                     {/* 닫기 버튼 */}
                                     <TouchableOpacity
                                         style={styles.modalCloseBtn}
