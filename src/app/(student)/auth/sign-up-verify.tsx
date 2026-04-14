@@ -7,6 +7,7 @@ import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
+import { logStudentSignUpComplete, setUserProperties } from "@/src/shared/lib/analytics";
 import { saveLoginProvider, type UserType } from "@/src/shared/lib/auth/token";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
@@ -387,6 +388,22 @@ export default function StudentVerificationPage() {
                 await saveLoginProvider(socialProvider as import("@/src/shared/lib/auth/token").LoginProvider);
               }
               await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
+
+              // 애널리틱스: 학생 소셜 가입 완료
+              await Promise.all([
+                logStudentSignUpComplete({
+                  universityName: selectedUniversityName,
+                  collegeName: selectedCollegeName,
+                  departmentName: selectedDepartmentName,
+                  hasStudentUnion: isClubMember ?? false,
+                }),
+                setUserProperties({
+                  university: selectedUniversityName,
+                  college: selectedCollegeName,
+                  hasStudentUnion: isClubMember ?? false,
+                }),
+              ]);
+
               router.push("/auth/sign-up-done");
             } else {
               Alert.alert("오류", "회원가입 처리 중 문제가 발생했습니다.");
@@ -456,6 +473,22 @@ export default function StudentVerificationPage() {
                     );
                   }
                 }
+
+                // 애널리틱스: 학생 일반 가입 완료
+                await Promise.all([
+                  logStudentSignUpComplete({
+                    universityName: selectedUniversityName,
+                    collegeName: selectedCollegeName,
+                    departmentName: selectedDepartmentName,
+                    hasStudentUnion: isClubMember ?? false,
+                  }),
+                  setUserProperties({
+                    university: selectedUniversityName,
+                    college: selectedCollegeName,
+                    hasStudentUnion: isClubMember ?? false,
+                  }),
+                ]);
+
                 router.push("/auth/sign-up-done");
               },
               onError: (loginError) => {

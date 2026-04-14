@@ -6,6 +6,7 @@ import { rs } from "@/src/shared/theme/scale";
 import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
 import { useSignupOwner, useCompleteSocialSignup, login } from "@/src/api/auth";
 import { useAuth } from "@/src/shared/lib/auth";
+import { logOwnerSignUpComplete } from "@/src/shared/lib/analytics";
 import { saveCredentials, saveToken } from "@/src/shared/lib/auth/token";
 import type { UserType } from "@/src/shared/lib/auth/token";
 import { useVerifyBizRegNo, useCreateStoreClaims } from "@/src/api/store-claim";
@@ -300,6 +301,9 @@ export default function SignupOwnerPage() {
       // 5️⃣ handleAuthSuccess 호출 → isAuthenticated = true → _layout에서 화면 전환
       // (store claim 생성 완료 후에 호출해야 중간에 언마운트되지 않음)
       await handleAuthSuccess(loginData.accessToken, loginData.expiresIn ?? 3600, "ROLE_OWNER");
+
+      // 애널리틱스: 점주 가입 완료
+      logOwnerSignUpComplete();
     } catch (error: any) {
       console.error("❌ 회원가입 실패:", error);
       Alert.alert(
