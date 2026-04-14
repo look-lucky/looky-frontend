@@ -1,4 +1,5 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
+import { logHomeEventCardClick } from '@/src/shared/lib/analytics';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray } from '@/src/shared/theme/theme';
 import type { EventType } from '@/src/shared/types/event';
@@ -68,7 +69,8 @@ export function EventSection({ events }: EventSectionProps) {
     router.push('/event' as any);
   };
 
-  const handleEventPress = (eventId: number) => {
+  const handleEventPress = (eventId: number, eventTitle: string) => {
+    logHomeEventCardClick({ eventId, eventTitle });
     router.push(`/(student)/(tabs)/map?eventId=${eventId}` as any);
   };
 
@@ -133,7 +135,7 @@ export function EventSection({ events }: EventSectionProps) {
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => handleEventPress(item.id)}
+        onPress={() => handleEventPress(item.id, item.title)}
         activeOpacity={0.8}
       >
         {/* 상단 컬러 영역 */}
