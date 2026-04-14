@@ -9,8 +9,9 @@ import { EVENT_TYPE_LABELS, getDDay, getEventStatus } from '@/src/shared/types/e
 import LocationIcon from '@/assets/images/icons/event/location.svg';
 import CalendarIcon from '@/assets/images/icons/event/calendar.svg';
 import ClockIcon from '@/assets/images/icons/event/clock.svg';
+import { logEventDetailView, logEventViewOnMap } from '@/src/shared/lib/analytics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -114,7 +115,19 @@ export default function EventDetailScreen() {
     ? transformEventResponse(eventRes.data.data)
     : null;
 
+  // 애널리틱스: 이벤트 상세 페이지 진입
+  useEffect(() => {
+    if (!event) return;
+    logEventDetailView({
+      eventId: eventId,
+      eventTitle: event.title,
+      status: event.status,
+      eventTypes: event.eventTypes,
+    });
+  }, [eventId, event?.title]);
+
   const handleViewOnMap = () => {
+    logEventViewOnMap({ eventId });
     router.push(`/map?category=EVENT&eventId=${id}` as any);
   };
 
