@@ -2411,9 +2411,10 @@ export default function StoreScreen() {
                 <EditSection icon="grid" label="가게 종류"><View style={styles.selectionGrid}>{ALL_CATEGORIES.map((cat) => (<TouchableOpacity key={cat} style={[styles.selectChip, editBasicData.categories.includes(cat) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(cat, 'categories')}><Text style={[styles.chipText, editBasicData.categories.includes(cat) ? styles.chipTextActive : styles.chipTextInactive]}>{cat}</Text></TouchableOpacity>))}</View></EditSection>
                 <EditSection icon="sparkles" label="가게 분위기"><View style={styles.selectionGrid}>{ALL_VIBES.map((vibe) => (<TouchableOpacity key={vibe} style={[styles.selectChip, editBasicData.vibes.includes(vibe) ? styles.selectChipActive : styles.selectChipInactive]} onPress={() => toggleSelection(vibe, 'vibes')}><Text style={[styles.chipText, editBasicData.vibes.includes(vibe) ? styles.chipTextActive : styles.chipTextInactive]}>{vibe}</Text></TouchableOpacity>))}</View></EditSection>
                 <EditSection icon="information-circle" label="가게 소개">
-                  <View style={styles.inputWrapper}>
+                  <View style={[styles.inputWrapper, { height: rs(80), alignItems: 'flex-start', paddingVertical: rs(10) }]}>
                     <TextInput
-                      style={styles.textInput}
+                      style={[styles.textInput, { height: '100%', textAlignVertical: 'top' }]}
+                      multiline
                       placeholder="가게를 소개하는 글을 적어주세요"
                       placeholderTextColor="#999"
                       value={editBasicData.intro}
@@ -2426,7 +2427,7 @@ export default function StoreScreen() {
                         }
                       }}
                     />
-                    <Text style={styles.charCount}>{editBasicData.intro.length}/50</Text>
+                    <Text style={[styles.charCount, { position: 'absolute', bottom: rs(8), right: rs(12) }]}>{editBasicData.intro.length}/50</Text>
                   </View>
                 </EditSection>
                 <EditSection icon="image" label="가게 프로필 이미지(1:1 비율)">
