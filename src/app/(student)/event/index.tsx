@@ -32,7 +32,8 @@ const EVENT_TYPE_IMAGES: Record<EventType, ImageSourcePropType> = {
     STUDENT_EVENT: require('@/assets/images/icons/map/event-student.png'),
 };
 
-const getEventTheme = (dDay: string | null) => {
+const getEventTheme = (dDay: string | null, isLive?: boolean) => {
+    if (isLive) return { badge: '🔥 진행중', color: '#FF6B35', gradient: ['#FFF0EB', '#FFF5F2'] as [string, string] };
     if (dDay === 'D-DAY') return { badge: 'D-DAY', color: '#61ADE3', gradient: ['#E3EFF9', '#EFF9FE'] as [string, string] };
     if (dDay !== null) {
         const num = parseInt(dDay.replace('D-', ''), 10);
@@ -46,21 +47,24 @@ const getEventTheme = (dDay: string | null) => {
 const formatDate = (date: Date) =>
     `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 
-const getLiveDDay = (event: Event): string | null => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const endDate = new Date(event.endDateTime);
-    endDate.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays <= 0) return 'D-DAY';
-    return `D-${diffDays}`;
-};
+/**
+ * 서버가 timezone 없는 LocalDateTime 문자열(예: "2026-04-16T22:00:00")을 반환하므로
+ * KST(UTC+9) 기준으로 명시적으로 파싱한다.
+ */
+function parseKSTDateTime(dateTimeStr: string): Date {
+    if (dateTimeStr.includes('Z') || dateTimeStr.includes('+') || dateTimeStr.lastIndexOf('-') > 7) {
+        return new Date(dateTimeStr);
+    }
+    return new Date(`${dateTimeStr}+09:00`);
+}
+
 
 const EventCard = ({ event }: { event: Event }) => {
     const router = useRouter();
     const setPendingEventId = useMapNavigationStore((s) => s.setPendingEventId);
-    const dDay = event.status === 'live' ? getLiveDDay(event) : getDDay(event);
-    const theme = getEventTheme(dDay);
+    const isLive = event.status === 'live';
+    const dDay = isLive ? null : getDDay(event);
+    const theme = getEventTheme(dDay, isLive);
     const primaryType = event.eventTypes[0];
     const icon = EVENT_TYPE_IMAGES[primaryType] ?? EVENT_TYPE_IMAGES.STUDENT_EVENT;
 
@@ -136,13 +140,13 @@ export default function EventListScreen() {
             eventTypes: r.eventTypes as EventType[],
             lat: r.latitude,
             lng: r.longitude,
-            startDateTime: new Date(r.startDateTime),
-            endDateTime: new Date(r.endDateTime),
-            status: getEventStatus({ startDateTime: new Date(r.startDateTime), endDateTime: new Date(r.endDateTime) } as Event),
+            startDateTime: parseKSTDateTime(r.startDateTime),
+            endDateTime: parseKSTDateTime(r.endDateTime),
+            status: getEventStatus({ startDateTime: parseKSTDateTime(r.startDateTime), endDateTime: parseKSTDateTime(r.endDateTime) } as Event),
             bannerImageUrl: r.bannerImageUrl,
             imageUrls: r.imageUrls ?? [],
             place: r.place,
-            createdAt: new Date(r.createdAt),
+            createdAt: parseKSTDateTime(r.createdAt),
         }))
         .filter(isEventVisible)
         .sort((a, b) => {

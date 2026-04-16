@@ -75,12 +75,25 @@ async function fetchEvents(params: EventSearchParams) {
 // -------------------------------------------------------------------
 // Response → Event 변환
 // -------------------------------------------------------------------
+/**
+ * 서버가 timezone 없는 LocalDateTime 문자열(예: "2026-04-16T22:00:00")을 반환하므로
+ * KST(UTC+9) 기준으로 명시적으로 파싱한다.
+ */
+function parseKSTDateTime(dateTimeStr: string): Date {
+  // 이미 timezone 정보가 포함된 경우(Z, +09:00 등)는 그대로 파싱
+  if (dateTimeStr.includes('Z') || dateTimeStr.includes('+') || (dateTimeStr.lastIndexOf('-') > 7)) {
+    return new Date(dateTimeStr);
+  }
+  // timezone 없는 LocalDateTime → KST(+09:00)로 해석
+  return new Date(`${dateTimeStr}+09:00`);
+}
+
 function transformEventResponse(
   response: EventResponse,
   myLocation: { lat: number; lng: number } | null,
 ): Event {
-  const startDateTime = new Date(response.startDateTime);
-  const endDateTime = new Date(response.endDateTime);
+  const startDateTime = parseKSTDateTime(response.startDateTime);
+  const endDateTime = parseKSTDateTime(response.endDateTime);
 
   // 거리 계산
   let distance: string | undefined;
@@ -108,7 +121,7 @@ function transformEventResponse(
     imageUrls: response.imageUrls ?? [],
     place: response.place,
     distance,
-    createdAt: new Date(response.createdAt),
+    createdAt: parseKSTDateTime(response.createdAt),
   };
 }
 
