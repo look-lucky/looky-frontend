@@ -57,18 +57,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const valid = await isTokenValid();
       const userType = await getUserType();
       let universityId = await getUniversityId();
-      const collegeId = await getCollegeId();
+      let collegeId = await getCollegeId();
       const collegeName = await getCollegeName();
       const username = await getUsername();
       const loginProvider = await getLoginProvider();
-      // 기존 로그인 유저 마이그레이션: universityId가 없으면 서버에서 조회 후 저장
-      if (valid && universityId === null) {
+      // 기존 로그인 유저 마이그레이션: universityId/collegeId가 없으면 서버에서 조회 후 저장
+      if (valid && (universityId === null || collegeId === null)) {
         try {
           const res = await getStudentInfo();
-          const fetchedId = (res as any)?.data?.data?.universityId;
-          if (fetchedId != null) {
-            await saveUniversityId(fetchedId);
-            universityId = fetchedId;
+          const info = (res as any)?.data?.data;
+          if (info?.universityId != null && universityId === null) {
+            await saveUniversityId(info.universityId);
+            universityId = info.universityId;
+          }
+          if (info?.collegeId != null && collegeId === null) {
+            await saveCollegeId(info.collegeId);
+            collegeId = info.collegeId;
           }
         } catch {}
       }
@@ -156,18 +160,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (accessToken: string, expiresIn: number, userType: UserType) => {
       await saveToken(accessToken, expiresIn, userType);
       let universityId = await getUniversityId();
-      const collegeId = await getCollegeId();
+      let collegeId = await getCollegeId();
       const collegeName = await getCollegeName();
       const username = await getUsername();
       const loginProvider = await getLoginProvider();
-      // universityId가 없으면 서버에서 조회 후 저장
-      if (universityId === null) {
+      // universityId/collegeId가 없으면 서버에서 조회 후 저장
+      if (universityId === null || collegeId === null) {
         try {
           const res = await getStudentInfo();
-          const fetchedId = (res as any)?.data?.data?.universityId;
-          if (fetchedId != null) {
-            await saveUniversityId(fetchedId);
-            universityId = fetchedId;
+          const info = (res as any)?.data?.data;
+          if (info?.universityId != null && universityId === null) {
+            await saveUniversityId(info.universityId);
+            universityId = info.universityId;
+          }
+          if (info?.collegeId != null && collegeId === null) {
+            await saveCollegeId(info.collegeId);
+            collegeId = info.collegeId;
           }
         } catch {}
       }

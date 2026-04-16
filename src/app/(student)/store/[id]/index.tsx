@@ -363,11 +363,12 @@ export default function StoreDetailScreen() {
     ? [currentPartnership.benefit]
     : [];
 
-  // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 필터링 포함)
+  // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 + 상태 필터링 포함)
   const storeCoupons = useMemo(() => {
     const now = new Date();
     return apiCoupons
       .filter((c) => {
+        if (c.status !== 'ACTIVE') return false;
         if (c.issueStartsAt && new Date(c.issueStartsAt) > now) return false;
         if (c.issueEndsAt && new Date(c.issueEndsAt) < now) return false;
         return true;
