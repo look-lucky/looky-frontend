@@ -272,52 +272,6 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     // 이벤트 마커를 클러스터/개별 마커로 변환
     const clusteredEventMarkers = useEventCluster(eventMarkers, currentZoom);
 
-    // 같은 위치(동일 건물)에 겹치는 가게 마커를 원형으로 퍼뜨림
-    const adjustedStoreMarkers = useMemo((): typeof clusteredMarkers => {
-      const OVERLAP_THRESHOLD = 0.00005; // 건물 수준 동일 좌표 임계값
-      const SPREAD_RADIUS = 0.00012; // 마커 rs(32) 기준 겹치지 않는 반지름
-
-      const singles = clusteredMarkers.filter((m) => m.type === 'single') as Extract<typeof clusteredMarkers[number], { type: 'single' }>[];
-      const clusters = clusteredMarkers.filter((m) => m.type === 'cluster');
-
-      // 그룹핑: 임계값 이내 좌표끼리 같은 그룹
-      const visited = new Set<number>();
-      const groups: (typeof singles[number])[][] = [];
-
-      for (let i = 0; i < singles.length; i++) {
-        if (visited.has(i)) continue;
-        const group: typeof singles[number][] = [singles[i]];
-        visited.add(i);
-        for (let j = i + 1; j < singles.length; j++) {
-          if (visited.has(j)) continue;
-          if (
-            Math.abs(singles[i].lat - singles[j].lat) < OVERLAP_THRESHOLD &&
-            Math.abs(singles[i].lng - singles[j].lng) < OVERLAP_THRESHOLD
-          ) {
-            group.push(singles[j]);
-            visited.add(j);
-          }
-        }
-        groups.push(group);
-      }
-
-      // 그룹 내 마커를 원형 배치
-      const adjusted = groups.flatMap((group) => {
-        if (group.length === 1) return group;
-        const centerLat = group.reduce((s, m) => s + m.lat, 0) / group.length;
-        const centerLng = group.reduce((s, m) => s + m.lng, 0) / group.length;
-        return group.map((m, idx) => {
-          const angle = (2 * Math.PI * idx) / group.length - Math.PI / 2;
-          return {
-            ...m,
-            lat: centerLat + SPREAD_RADIUS * Math.cos(angle),
-            lng: centerLng + SPREAD_RADIUS * Math.sin(angle),
-          };
-        });
-      });
-
-      return [...clusters, ...adjusted];
-    }, [clusteredMarkers]);
 
     // 가게/이벤트 마커와 겹치는 이벤트 마커를 살짝 이동
     // clusteredMarkers 대신 원본 markers를 사용: zoom 변경 시 클러스터 재계산으로 오프셋이 갑자기 바뀌는 현상 방지
@@ -419,7 +373,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
           )}
 
           {/* 가게 마커 (클러스터 or 개별) */}
-          {isMapReady && clusterIconsReady && !hideStoreMarkers && adjustedStoreMarkers.map((item) => {
+          {isMapReady && clusterIconsReady && !hideStoreMarkers && clusteredMarkers.map((item) => {
             if (item.type === 'cluster') {
               return (
                 <NaverMapMarkerOverlay
