@@ -63,25 +63,26 @@ const formatDiscount = (benefitType?: string, benefitValue?: string) => {
   }
 };
 
+function parseKSTDate(dateStr: string): Date {
+  // timezone 정보가 이미 있으면 그대로 파싱
+  if (dateStr.includes('Z') || dateStr.includes('+') || dateStr.lastIndexOf('-') > 7) {
+    return new Date(dateStr);
+  }
+  // timezone 없는 문자열 → KST(+09:00)로 해석
+  const normalized = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T');
+  return new Date(`${normalized}+09:00`);
+}
+
 const formatIssueEndDate = (dateStr?: string) => {
   if (!dateStr) return '';
 
-  let normalized = dateStr;
-  if (dateStr && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
-    normalized = dateStr.replace(' ', 'T') + 'Z';
-  }
-  const d = new Date(normalized);
+  const d = parseKSTDate(dateStr);
 
-  // 9시간 보정 (KST: UTC보다 9시간 앞섬)
-  // 서버에서 UTC 06:00을 보내면 한국 시간 15:00이므로, 9시간을 더해줘야 현지 시간이 나옴.
-  // 하지만 사용자 피드백에 따르면 9시간을 뺌으로써 '방금 전'이 정확해졌으므로 동일하게 적용.
-  const adjusted = new Date(d.getTime() - 32400000);
-
-  const y = adjusted.getFullYear();
-  const m = String(adjusted.getMonth() + 1).padStart(2, '0');
-  const day = String(adjusted.getDate()).padStart(2, '0');
-  const h = adjusted.getHours();
-  const min = adjusted.getMinutes();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = d.getHours();
+  const min = d.getMinutes();
   const period = h < 12 ? '오전' : '오후';
   const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
   const timeStr = min > 0
@@ -93,16 +94,8 @@ const formatIssueEndDate = (dateStr?: string) => {
 const getTimeAgo = (dateStr?: string) => {
   if (!dateStr) return '';
   const now = new Date();
-
-  let normalized = dateStr;
-  if (dateStr && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
-    normalized = dateStr.replace(' ', 'T') + 'Z';
-  }
-  const created = new Date(normalized);
-
-  // 무조건 9시간 보정 (KST 9시간 차이 상시 적용)
-  // 1시간 전이 10시간 전으로 나오는 경우, 전체 차이(10h)에서 9시간을 빼서 1시간으로 만듦.
-  const diffMs = (now.getTime() - created.getTime()) - 32400000;
+  const created = parseKSTDate(dateStr);
+  const diffMs = now.getTime() - created.getTime();
   
   if (diffMs < 0) return '방금 전';
   const diffMinutes = Math.floor(diffMs / (1000 * 60));
@@ -131,16 +124,8 @@ export default function TodayCouponsPage() {
   const rawCoupons = useMemo(() => {
     const isWithin24HoursRaw = (dateString?: string) => {
       if (!dateString) return false;
-      let dateToParse = dateString;
-      if (dateString && !dateString.includes('T') && !dateString.includes('Z') && !dateString.includes('+')) {
-        dateToParse = dateString.replace(' ', 'T') + 'Z';
-      }
-      const created = new Date(dateToParse);
-      const now = new Date();
-      
-      // 무조건 9시간 보정
-      const diffMs = (now.getTime() - created.getTime()) - 32400000;
-      
+      const created = parseKSTDate(dateString);
+      const diffMs = new Date().getTime() - created.getTime();
       return diffMs >= 0 && diffMs <= 24 * 60 * 60 * 1000;
     };
 
