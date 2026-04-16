@@ -1,5 +1,6 @@
 import { OrganizationResponseCategory } from "@/src/api/generated.schemas";
 import { getGetStudentInfoQueryKey, useGetStudentInfo, useUpdateStudentProfile } from "@/src/api/my-page";
+import { getGetStoreMapQueryKey } from "@/src/api/store";
 import { useGetDepartmentsByCollege, useGetOrganizations } from "@/src/api/organization";
 import { AppButton } from "@/src/shared/common/app-button";
 import { AppPopup } from "@/src/shared/common/app-popup";
@@ -215,6 +216,7 @@ export default function ProfileEditScreen() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetStudentInfoQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetStoreMapQueryKey() });
           queryClient.invalidateQueries({
             predicate: (query) =>
               typeof query.queryKey[0] === "string" &&
