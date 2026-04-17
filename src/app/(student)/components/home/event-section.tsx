@@ -1,4 +1,5 @@
 import { ThemedText } from '@/src/shared/common/themed-text';
+import { logHomeEventCardClick } from '@/src/shared/lib/analytics';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray } from '@/src/shared/theme/theme';
 import type { EventType } from '@/src/shared/types/event';
@@ -68,24 +69,24 @@ export function EventSection({ events }: EventSectionProps) {
     router.push('/event' as any);
   };
 
-  const handleEventPress = (eventId: number) => {
+  const handleEventPress = (eventId: number, eventTitle: string) => {
+    logHomeEventCardClick({ eventId, eventTitle });
     router.push(`/(student)/(tabs)/map?eventId=${eventId}` as any);
   };
 
-  const getDDayInfo = (event: EventItem) => {
-    const now = new Date();
+  const LIVE_STYLE = {
+    background: '#FFF0EB',
+    badge: '#FF6B35',
+    highlight: '#D94F1A',
+  };
 
+  const getDDayInfo = (event: EventItem) => {
     if (event.status === 'LIVE') {
-      // 진행중 이벤트는 종료일까지 카운트다운
-      const end = new Date(event.endDateTime);
-      const diffTime = end.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays <= 0) return { text: 'D-DAY', style: DDAY_STYLES.TODAY };
-      if (diffDays === 1) return { text: 'D-1', style: DDAY_STYLES.ONE };
-      return { text: `D-${diffDays}`, style: DDAY_STYLES.FUTURE };
+      return { text: '🔥 진행중', style: LIVE_STYLE };
     }
 
     // UPCOMING 이벤트는 시작일까지 카운트다운
+    const now = new Date();
     const start = new Date(event.startDateTime);
     const diffTime = start.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -133,7 +134,7 @@ export function EventSection({ events }: EventSectionProps) {
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => handleEventPress(item.id)}
+        onPress={() => handleEventPress(item.id, item.title)}
         activeOpacity={0.8}
       >
         {/* 상단 컬러 영역 */}

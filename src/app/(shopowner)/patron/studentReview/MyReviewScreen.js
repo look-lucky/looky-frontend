@@ -97,7 +97,7 @@ export default function MyReviewScreen({ navigation }) {
                 <Ionicons name="pencil" size={rs(14)} color="#34B262" /> 
             </View>
             <Text style={styles.summaryText}>
-                <Text style={{fontWeight:'600'}}>니어딜</Text>님은 지금까지 <Text style={{fontWeight:'700', color:'#34B262'}}>{reviews.length}번</Text>의 소중한 기록을{'\n'}남겨주셨어요! ✍🏻
+                <Text style={{fontWeight:'600'}}>루키</Text>님은 지금까지 <Text style={{fontWeight:'700', color:'#34B262'}}>{reviews.length}번</Text>의 소중한 기록을{'\n'}남겨주셨어요! ✍🏻
             </Text>
         </View>
 

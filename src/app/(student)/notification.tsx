@@ -58,17 +58,18 @@ export default function NotificationScreen() {
 
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
 
+  const parseKSTDate = (dateStr: string): Date => {
+    if (dateStr.includes('Z') || dateStr.includes('+') || dateStr.lastIndexOf('-') > 7) {
+      return new Date(dateStr);
+    }
+    const normalized = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T');
+    return new Date(`${normalized}+09:00`);
+  };
+
   const getTimeAgo = (dateString: string) => {
     const now = new Date();
-    
-    let dateToParse = dateString;
-    if (dateString && !dateString.includes('T') && !dateString.includes('Z') && !dateString.includes('+')) {
-      dateToParse = dateString.replace(' ', 'T') + 'Z';
-    }
-    const created = new Date(dateToParse);
-    
-    // 무조건 9시간 보정 (KST 9시간 차이 상시 적용)
-    const diffMs = (now.getTime() - created.getTime()) - 32400000;
+    const created = parseKSTDate(dateString);
+    const diffMs = now.getTime() - created.getTime();
     
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));

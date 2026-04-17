@@ -260,7 +260,7 @@ export default function ReviewWriteScreen() {
 
         {/* 리뷰 정책 */}
         <View style={styles.section}>
-          <ThemedText type="defaultSemiBold">니어딜 리뷰 정책</ThemedText>
+          <ThemedText type="defaultSemiBold">루키 리뷰 정책</ThemedText>
           <ThemedText lightColor={COLORS.textSecondary} style={styles.policyText}>
             * 매장 이용과 무관한 내용이나 허위 및 과장, 저작물 무단 도용, 초상권
             및 사생활 침해 비방 등이 포함된 내용은 삭제될 수 있습니다.

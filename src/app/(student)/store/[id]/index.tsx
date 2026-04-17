@@ -1,5 +1,6 @@
 import { useDownloadCoupon, useGetCouponsByStore } from '@/src/api/coupon';
 import { useAddFavorite, useCountFavorites, useGetMyFavorites, useRemoveFavorite } from '@/src/api/favorite';
+import { logCouponBoxOpen, logCouponDownloadComplete, logCouponDownloadStart, logFavoriteToggle, logStoreDetailView, logStoreTabClick } from '@/src/shared/lib/analytics';
 import type {
   CouponResponse,
   ItemResponse,
@@ -165,6 +166,16 @@ export default function StoreDetailScreen() {
       setIsLikeInitialized(true);
     }
   }, [myFavoritesRes, myFavoriteStoreIds, storeId, isLikeInitialized]);
+
+  // 애널리틱스: 가게 상세 페이지 진입
+  React.useEffect(() => {
+    if (!apiStore) return;
+    logStoreDetailView({
+      storeId,
+      storeName: apiStore.name ?? '',
+      category: (apiStore as any).categories?.[0] ?? '',
+    });
+  }, [storeId, apiStore?.name]);
 
   // 쿠폰 바로가기 처리
   useEffect(() => {
@@ -352,11 +363,12 @@ export default function StoreDetailScreen() {
     ? [currentPartnership.benefit]
     : [];
 
-  // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 필터링 포함)
+  // 쿠폰: API CouponResponse → 컴포넌트 Coupon 타입 (발급 기간 + 상태 필터링 포함)
   const storeCoupons = useMemo(() => {
     const now = new Date();
     return apiCoupons
       .filter((c) => {
+        if (c.status !== 'ACTIVE') return false;
         if (c.issueStartsAt && new Date(c.issueStartsAt) > now) return false;
         if (c.issueEndsAt && new Date(c.issueEndsAt) < now) return false;
         return true;
@@ -506,16 +518,25 @@ export default function StoreDetailScreen() {
     if (isLiked) {
       setIsLiked(false);
       removeFavoriteMutation.mutate({ storeId });
+      logFavoriteToggle({ storeId, storeName, action: 'remove' });
     } else {
       setIsLiked(true);
       addFavoriteMutation.mutate({ storeId });
+      logFavoriteToggle({ storeId, storeName, action: 'add' });
     }
   };
   const handleCouponPress = () => {
     setIsCouponModalVisible(true);
+    logCouponBoxOpen({ storeId, storeName });
   };
   const handleIssueCoupon = (couponId: string) => {
-    issueCouponMutation.mutate({ couponId: Number(couponId) });
+    logCouponDownloadStart({ couponId, storeId, storeName });
+    issueCouponMutation.mutate(
+      { couponId: Number(couponId) },
+      {
+        onSuccess: () => logCouponDownloadComplete({ couponId, storeId, storeName }),
+      },
+    );
   };
   const handleReviewPress = () => {
     setActiveTab('review');
@@ -659,7 +680,10 @@ export default function StoreDetailScreen() {
             <StoreContent
               storeId={String(id)}
               activeTab={activeTab}
-              onTabChange={setActiveTab}
+              onTabChange={(newTab) => {
+                setActiveTab(newTab);
+                logStoreTabClick({ storeId, tab: newTab });
+              }}
               news={storeNews}
               menu={storeMenu}
               menuImageUrls={menuImageUrls}

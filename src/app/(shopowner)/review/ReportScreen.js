@@ -191,7 +191,7 @@ export default function ReportScreen({ navigation, route }) {
           )}
 
           <View style={styles.policySection}>
-            <Text style={styles.policyTitle}>니어딜 신고 정책</Text>
+            <Text style={styles.policyTitle}>루키 신고 정책</Text>
             <Text style={styles.policyInfo}>* 근거 없는 허위 신고 시 서비스 이용이 제한될 수 있습니다.</Text>
           </View>
         </ScrollView>

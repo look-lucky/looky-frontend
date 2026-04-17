@@ -288,7 +288,7 @@ export default function EditReview() {
           <View style={styles.divider} />
 
           <View style={styles.policyContainer}>
-            <Text style={styles.policyTitle}>니어딜 리뷰 정책</Text>
+            <Text style={styles.policyTitle}>루키 리뷰 정책</Text>
             <Text style={styles.policyText}>
               * 매장 이용과 무관한 내용이나 허위 및 과장, 저작물 무단 도용, 초상권
               및 사생활 침해 비방 등이 포함된 내용은 삭제될 수 있습니다.

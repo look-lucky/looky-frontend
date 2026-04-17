@@ -119,8 +119,8 @@ export const DUMMY_STORE_DETAILS: StoreDetail[] = [
     announcements: [
       {
         id: '1',
-        title: '니어딜 제휴 할인',
-        content: '니어딜 앱으로 주문 시 추가 5% 할인!',
+        title: '루키 제휴 할인',
+        content: '루키 앱으로 주문 시 추가 5% 할인!',
       },
     ],
     recommendStores: [
@@ -286,8 +286,8 @@ export const DUMMY_STORE_DETAILS: StoreDetail[] = [
     announcements: [
       {
         id: '1',
-        title: '니어딜 스탬프 이벤트',
-        content: '니어딜로 5번 구매 시 붕어빵 5개 무료!',
+        title: '루키 스탬프 이벤트',
+        content: '루키로 5번 구매 시 붕어빵 5개 무료!',
       },
     ],
     recommendStores: [

@@ -82,7 +82,28 @@ function getStoreMarkerIcon(isPartner: boolean, hasCoupon: boolean) {
 }
 
 // 이벤트 마커 아이콘 선택 헬퍼
+const ANDROID_EVENT_ASSET_NAMES: Record<EventType, string> = {
+  FOOD_EVENT: 'event_food',
+  POPUP_STORE: 'event_brand',
+  SCHOOL_EVENT: 'event_college',
+  FLEA_MARKET: 'event_market',
+  PERFORMANCE: 'event_busking',
+  STUDENT_EVENT: 'event_student',
+};
+const ANDROID_EVENT_ASSET_NAMES_LIVE: Record<EventType, string> = {
+  FOOD_EVENT: 'event_food_live',
+  POPUP_STORE: 'event_brand_live',
+  SCHOOL_EVENT: 'event_college_live',
+  FLEA_MARKET: 'event_market_live',
+  PERFORMANCE: 'event_busking_live',
+  STUDENT_EVENT: 'event_student_live',
+};
+
 function getEventMarkerIcon(eventType: EventType, status: EventStatus) {
+  if (Platform.OS === 'android') {
+    const nameMap = status === 'live' ? ANDROID_EVENT_ASSET_NAMES_LIVE : ANDROID_EVENT_ASSET_NAMES;
+    return { assetName: nameMap[eventType] ?? nameMap.STUDENT_EVENT };
+  }
   if (status === 'live') {
     return EVENT_MARKER_ICONS_LIVE[eventType] ?? EVENT_MARKER_ICONS_LIVE.STUDENT_EVENT;
   }
@@ -250,6 +271,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     const clusteredMarkers = useMapCluster(markers, currentZoom);
     // 이벤트 마커를 클러스터/개별 마커로 변환
     const clusteredEventMarkers = useEventCluster(eventMarkers, currentZoom);
+
 
     // 가게/이벤트 마커와 겹치는 이벤트 마커를 살짝 이동
     // clusteredMarkers 대신 원본 markers를 사용: zoom 변경 시 클러스터 재계산으로 오프셋이 갑자기 바뀌는 현상 방지
