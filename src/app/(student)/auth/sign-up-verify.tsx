@@ -7,6 +7,7 @@ import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
+import { logStudentSignUpComplete, setUserProperties } from "@/src/shared/lib/analytics";
 import { saveLoginProvider, type UserType } from "@/src/shared/lib/auth/token";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
@@ -88,6 +89,7 @@ export default function StudentVerificationPage() {
     birthDay,
     socialUserId: socialUserIdStore,
     socialProvider,
+    studentEmail: storedStudentEmail,
     setSignupFields,
   } = useSignupStore();
 
@@ -108,8 +110,8 @@ export default function StudentVerificationPage() {
   const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null);
   const [universityModalVisible, setUniversityModalVisible] = useState(false);
 
-  // 이메일 인증 상태
-  const [email, setEmail] = useState("");
+  // 이메일 인증 상태 (닉네임 중복으로 뒤로 갔다 돌아온 경우 store에서 복원)
+  const [email, setEmail] = useState(storedStudentEmail);
   const [verificationCode, setVerificationCode] = useState("");
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [timer, setTimer] = useState(295); // 4:55
@@ -387,6 +389,22 @@ export default function StudentVerificationPage() {
                 await saveLoginProvider(socialProvider as import("@/src/shared/lib/auth/token").LoginProvider);
               }
               await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
+
+              // 애널리틱스: 학생 소셜 가입 완료
+              await Promise.all([
+                logStudentSignUpComplete({
+                  universityName: selectedUniversityName,
+                  collegeName: selectedCollegeName,
+                  departmentName: selectedDepartmentName,
+                  hasStudentUnion: isClubMember ?? false,
+                }),
+                setUserProperties({
+                  university: selectedUniversityName,
+                  college: selectedCollegeName,
+                  hasStudentUnion: isClubMember ?? false,
+                }),
+              ]);
+
               router.push("/auth/sign-up-done");
             } else {
               Alert.alert("오류", "회원가입 처리 중 문제가 발생했습니다.");
@@ -456,6 +474,22 @@ export default function StudentVerificationPage() {
                     );
                   }
                 }
+
+                // 애널리틱스: 학생 일반 가입 완료
+                await Promise.all([
+                  logStudentSignUpComplete({
+                    universityName: selectedUniversityName,
+                    collegeName: selectedCollegeName,
+                    departmentName: selectedDepartmentName,
+                    hasStudentUnion: isClubMember ?? false,
+                  }),
+                  setUserProperties({
+                    university: selectedUniversityName,
+                    college: selectedCollegeName,
+                    hasStudentUnion: isClubMember ?? false,
+                  }),
+                ]);
+
                 router.push("/auth/sign-up-done");
               },
               onError: (loginError) => {
@@ -490,7 +524,7 @@ export default function StudentVerificationPage() {
                 }]
               );
             } else {
-              // 아이디 중복 → 이전 화면으로
+              // 기타 중복 → 이전 화면으로
               Alert.alert(
                 "회원가입 실패",
                 errorMessage || "이미 존재하는 아이디입니다. 다른 아이디로 다시 시도해주세요.",

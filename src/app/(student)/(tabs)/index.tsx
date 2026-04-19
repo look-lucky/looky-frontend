@@ -1,18 +1,18 @@
 import { useGetMyCoupons, useGetTodayCoupons } from '@/src/api/coupon';
 import { useGetStudentInfo } from '@/src/api/my-page';
 import { useGetHotStores } from '@/src/api/store';
+import { AdBannerSection } from '@/src/app/(student)/components/home/ad-banner-section';
 import { CategorySection } from '@/src/app/(student)/components/home/category-section';
 import { CouponSection } from '@/src/app/(student)/components/home/coupon-section';
 import { EventSection } from '@/src/app/(student)/components/home/event-section';
-import { HotPlaceItem, HotPlaceSection } from '@/src/app/(student)/components/home/hot-place-section';
 import { HomePopup } from '@/src/app/(student)/components/home/home-popup';
-import { AdBannerSection } from '@/src/app/(student)/components/home/ad-banner-section';
+import { HotPlaceItem, HotPlaceSection } from '@/src/app/(student)/components/home/hot-place-section';
 import { WelcomeBanner } from '@/src/app/(student)/components/home/welcome-banner';
+import { logAppOpen } from '@/src/shared/lib/analytics';
 import { useEvents } from '@/src/shared/hooks/use-events';
 import { rs } from '@/src/shared/theme/scale';
 import { Gray } from '@/src/shared/theme/theme';
 import { useScrollToTop } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef } from 'react';
 import { Alert, BackHandler, ScrollView, StyleSheet, View } from 'react-native';
@@ -41,6 +41,15 @@ export default function HomePage() {
   const { data: studentInfoRes } = useGetStudentInfo();
   const studentInfo = (studentInfoRes as any)?.data?.data;
   const universityId = studentInfo?.universityId;
+
+  useFocusEffect(
+    useCallback(() => {
+      logAppOpen({
+        university: studentInfo?.universityName ?? '',
+        college: studentInfo?.collegeName ?? '',
+      });
+    }, [studentInfo?.universityName, studentInfo?.collegeName]),
+  );
 
   const { data: myCouponsRes } = useGetMyCoupons();
   const rawCoupons = (myCouponsRes as any)?.data?.data;
