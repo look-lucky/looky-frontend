@@ -507,7 +507,6 @@ export default function StudentVerificationPage() {
 
           if (errorCode === "DUPLICATE_RESOURCE" || error?.status === 409) {
             const isEmailDuplicate = errorMessage?.includes("이메일") || errorMessage?.toLowerCase().includes("email");
-            const isNicknameDuplicate = errorMessage?.includes("닉네임") || errorMessage?.toLowerCase().includes("nickname");
             if (isEmailDuplicate) {
               // 이메일 중복 → 현재 화면에서 이메일 재인증 유도
               Alert.alert(
@@ -524,18 +523,10 @@ export default function StudentVerificationPage() {
                   },
                 }]
               );
-            } else if (isNicknameDuplicate) {
-              // 닉네임 중복 → 이전 화면으로, 이메일은 store에 저장해서 돌아왔을 때 복원
-              setSignupFields({ studentEmail: email });
-              Alert.alert(
-                "닉네임 중복",
-                errorMessage || "이미 사용 중인 닉네임입니다. 다른 닉네임으로 변경해주세요.",
-                [{ text: "확인", onPress: () => router.canGoBack() ? router.back() : router.replace("/auth") }]
-              );
             } else {
-              // 아이디 중복 → 이전 화면으로
+              // 기타 중복 → 이전 화면으로
               Alert.alert(
-                "아이디 중복",
+                "회원가입 실패",
                 errorMessage || "이미 존재하는 아이디입니다. 다른 아이디로 다시 시도해주세요.",
                 [{ text: "확인", onPress: () => router.canGoBack() ? router.back() : router.replace("/auth") }]
               );
