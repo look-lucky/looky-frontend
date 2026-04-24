@@ -9,6 +9,7 @@ import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Text } from "@/src/shared/theme/theme";
 import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
+import * as Sentry from "@sentry/react-native";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -38,7 +39,8 @@ export default function SignInPage() {
         router.replace("/(student)/(tabs)");
       }
     } else if (result.error !== "cancelled") {
-      Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
+      Sentry.captureMessage(`소셜 로그인 실패 [${provider}]: ${result.error ?? "알 수 없는 오류"}`, "error");
+      Alert.alert("로그인 실패", "다시 시도해주세요.");
     }
   };
 
