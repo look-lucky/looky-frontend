@@ -40,7 +40,7 @@ export default function SignInPage() {
       }
     } else if (result.error !== "cancelled") {
       Sentry.captureMessage(`소셜 로그인 실패 [${provider}]: ${result.error ?? "알 수 없는 오류"}`, "error");
-      Alert.alert("로그인 실패", "다시 시도해주세요.");
+      Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
     }
   };
 
