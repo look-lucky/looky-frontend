@@ -38,10 +38,10 @@ export function MapAdButton({ bottomPosition }: MapAdButtonProps) {
 
       setIsVisible(true);
 
-      // 10초 뒤에 자동으로 가리도록 타이머 설정
+      // 20초 뒤에 자동으로 가리도록 타이머 설정
       const timer = setTimeout(() => {
         setIsVisible(false);
-      }, 10000);
+      }, 20000);
 
       // 다른 화면(탭)으로 넘어갔을 때 중복 타이머 해제
       return () => clearTimeout(timer);
