@@ -115,6 +115,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       "@react-native-firebase/app",
+      [
+        "@sentry/react-native/expo",
+        {
+          url: "https://sentry.io/",
+          project: "react-native",
+          organization: "looky-ub",
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,

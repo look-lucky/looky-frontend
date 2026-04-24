@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react-native";
 import { NetworkErrorProvider } from "@/src/shared/contexts/network-error-context";
 import { TabBarProvider } from "@/src/shared/contexts/tab-bar-context";
 import { AuthProvider, useAuth } from "@/src/shared/lib/auth";
@@ -18,6 +19,11 @@ import ShopOwnerApp from "@/src/app/(shopowner)/ShopOwnerNavigator";
 import PendingApprovalScreen from "@/src/app/(shopowner)/auth/pending-approval";
 
 SplashScreen.preventAutoHideAsync();
+
+Sentry.init({
+  dsn: "https://dc7de4ac2d9548135f767a72c5437d19@o4511273691643904.ingest.us.sentry.io/4511273694003200",
+  sendDefaultPii: false,
+});
 
 
 // 👇 새로운 컴포넌트: userType 체크
