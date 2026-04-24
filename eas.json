@@ -9,7 +9,11 @@
       "distribution": "internal",
       "env": {
         "APP_VARIANT": "development",
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.looky.kr"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.looky.kr",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "824850984674-speljhjen159d0f585vq744nnh0c2qqb.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "824850984674-435honkftnb8g5qfrni5s78g40jda00h.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "824850984674-4gvq65pvtt4a68nuomqs16dpj50i9emr.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.824850984674-4gvq65pvtt4a68nuomqs16dpj50i9emr"
       }
     },
     "preview": {
@@ -17,14 +21,22 @@
       "channel": "preview",
       "env": {
         "APP_VARIANT": "preview",
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.looky.kr"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.looky.kr",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1002437073594-rn4nvk4bjgpj04768a29or7edeirou7h.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "1002437073594-5e0cgtqakcn04lu7c47k0pds2j41qcam.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a"
       }
     },
     "production": {
       "autoIncrement": true,
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.looky.kr"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.looky.kr",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1002437073594-rn4nvk4bjgpj04768a29or7edeirou7h.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "1002437073594-5e0cgtqakcn04lu7c47k0pds2j41qcam.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a"
       }
     }
   },

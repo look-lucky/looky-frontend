@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { clearToken, getUniversityId, saveUniversityId, getCollegeId, getCollegeName, getUsername, getUserType, isTokenValid, saveCollegeId, saveCollegeName, saveToken, UserType, getCredentials, clearCredentials, getLoginProvider, LoginProvider } from "./token";
 import { authEvents } from "./auth-events";
 import { setLoggingOut } from "@/src/api/mutator";
+import { queryClient } from "@/src/shared/contexts/network-error-context";
 import { getStudentInfo } from "@/src/api/my-page";
 
 interface AuthState {
@@ -191,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoggingOut(true);
     await clearToken();
     await clearCredentials();
+    queryClient?.clear();
     setState({ isAuthenticated: false, isLoading: false, userType: null, universityId: null, collegeId: null, collegeName: null, username: null, loginProvider: null });
     setLoggingOut(false);
   }, []);

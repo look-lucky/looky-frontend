@@ -91,6 +91,7 @@ export function useMapSearch(permissionReady = true, skipInitialCenterMove = fal
     universityId != null ? { universityId } : undefined,
     {
       query: {
+        enabled: universityId != null,
         staleTime: 0,
         gcTime: 24 * 60 * 60 * 1000,
       },

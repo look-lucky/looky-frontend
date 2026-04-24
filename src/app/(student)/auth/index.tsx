@@ -9,7 +9,7 @@ import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, Text } from "@/src/shared/theme/theme";
 import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { Alert, Pressable, Share, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // 소셜 로그인 브랜드 공식 색상 (플랫폼 가이드라인 준수)
@@ -38,10 +38,19 @@ export default function SignInPage() {
         router.replace("/(student)/(tabs)");
       }
     } else if (result.error !== "cancelled") {
-      Alert.alert("로그인 실패", result.error || "다시 시도해주세요.");
+      const errorDetail = `[${provider}] ${result.error ?? "알 수 없는 오류"}`;
+      Alert.alert(
+        "로그인 실패",
+        "다시 시도해주세요.",
+        [
+          { text: "확인", style: "cancel" },
+          { text: "오류 내용 공유", onPress: () => Share.share({ message: errorDetail }) },
+        ]
+      );
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleGoogleLogin = async () => {
     const result = await googleLogin();
     handleSocialResult(result, "google");
@@ -110,7 +119,7 @@ export default function SignInPage() {
           </ThemedText>
         </Pressable>
 
-        {/* 
+        {/* iOS에서 구글 로그인 미지원으로 임시 비활성화
         <Pressable
           style={[styles.socialButton, styles.googleButton, googleLoading && styles.disabledButton]}
           onPress={handleGoogleLogin}
@@ -120,7 +129,7 @@ export default function SignInPage() {
           <ThemedText lightColor={Gray.black} style={styles.socialButtonText}>
             Google로 시작하기
           </ThemedText>
-        </Pressable> 
+        </Pressable>
         */}
 
         <Pressable
@@ -158,6 +167,21 @@ export default function SignInPage() {
         <ThemedText lightColor={Gray.gray4} style={styles.updateIdText}>
           {Updates.updateId ? `upd: ${Updates.updateId.slice(-8)}` : "upd: dev"}
         </ThemedText>
+
+        {__DEV__ && (
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: "/auth/sign-up-social-form",
+                params: { userId: 0, provider: "kakao" },
+              })
+            }
+          >
+            <ThemedText lightColor={Gray.gray4} style={styles.updateIdText}>
+              [DEV] 회원가입 폼 테스트
+            </ThemedText>
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   );
