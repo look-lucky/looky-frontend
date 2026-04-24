@@ -5,10 +5,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const IS_DEV = variant === "development";
   const IS_PREVIEW = variant === "preview";
 
-  // [CRITICAL FIX] 구글 로그인 iOS SDK는 클라이언트 ID 생성 시 등록된 정확한 Bundle ID(kr.looky.looky)와 
-  // 실제 빌드된 앱의 Bundle ID가 1글자라도 다르면 앱을 강제 종료(Crash)시킵니다.
-  // 프리뷰 버전을 위해 .preview를 붙이면 구글 콘솔에 새로 등록해야 하므로, 테스트를 위해 production과 동일하게 맞춥니다.
-  const bundleId = "kr.looky.looky";
+  // dev 빌드는 별도 Bundle ID를 사용하여 기기에 prod/dev 동시 설치 가능
+  // 단, Google Cloud Console에 kr.looky.looky.dev 로 등록된 OAuth 클라이언트 ID가 있어야 함
+  const bundleId = IS_DEV ? "kr.looky.looky.dev" : "kr.looky.looky";
 
   return {
     ...config,
@@ -112,10 +111,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "@react-native-google-signin/google-signin",
         {
-          iosUrlScheme: "com.googleusercontent.apps.1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a",
+          iosUrlScheme: process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME ?? "com.googleusercontent.apps.1002437073594-iqpa9gs2j1nse2bs8fupb323hp7qia7a",
         },
       ],
       "@react-native-firebase/app",
+      [
+        "@sentry/react-native/expo",
+        {
+          url: "https://sentry.io/",
+          project: "react-native",
+          organization: "looky-ub",
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,

@@ -32,6 +32,9 @@ export const isNetworkError = (error: unknown): boolean => {
   return false;
 };
 
+// 모듈 레벨 싱글톤 — auth-context 등 Provider 외부에서도 직접 접근 가능
+export let queryClient: QueryClient | null = null;
+
 export function NetworkErrorProvider({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -50,6 +53,7 @@ export function NetworkErrorProvider({ children }: { children: React.ReactNode }
         onError: (error) => { if (isNetworkError(error)) setVisible(true); },
       }),
     });
+    queryClient = queryClientRef.current;
   }
 
   const handleRefresh = async () => {

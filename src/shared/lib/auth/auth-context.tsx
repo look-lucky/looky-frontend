@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { clearToken, getUniversityId, saveUniversityId, getCollegeId, getCollegeName, getUsername, getUserType, isTokenValid, saveCollegeId, saveCollegeName, saveToken, UserType, getCredentials, clearCredentials, getLoginProvider, LoginProvider } from "./token";
 import { authEvents } from "./auth-events";
 import { setLoggingOut } from "@/src/api/mutator";
+import { queryClient } from "@/src/shared/contexts/network-error-context";
 import { getStudentInfo } from "@/src/api/my-page";
 
 interface AuthState {
@@ -62,7 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const username = await getUsername();
       const loginProvider = await getLoginProvider();
       // 기존 로그인 유저 마이그레이션: universityId/collegeId가 없으면 서버에서 조회 후 저장
-      if (valid && (universityId === null || collegeId === null)) {
+      // ROLE_GUEST는 회원가입 미완료 상태이므로 학생 정보 조회 제외
+      if (valid && userType !== "ROLE_GUEST" && (universityId === null || collegeId === null)) {
         try {
           const res = await getStudentInfo();
           const info = (res as any)?.data?.data;
@@ -164,8 +166,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const collegeName = await getCollegeName();
       const username = await getUsername();
       const loginProvider = await getLoginProvider();
-      // universityId/collegeId가 없으면 서버에서 조회 후 저장
-      if (universityId === null || collegeId === null) {
+      // ROLE_GUEST는 아직 회원가입 미완료 상태이므로 학생 정보 조회 불가
+      if (userType !== "ROLE_GUEST" && (universityId === null || collegeId === null)) {
         try {
           const res = await getStudentInfo();
           const info = (res as any)?.data?.data;
@@ -190,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoggingOut(true);
     await clearToken();
     await clearCredentials();
+    queryClient?.clear();
     setState({ isAuthenticated: false, isLoading: false, userType: null, universityId: null, collegeId: null, collegeName: null, username: null, loginProvider: null });
     setLoggingOut(false);
   }, []);

@@ -1,5 +1,6 @@
 import { useSend, useVerify } from "@/src/api/auth";
 import { getGetStudentInfoQueryKey, useUpdateUniversity } from "@/src/api/my-page";
+import { getGetStoreMapQueryKey } from "@/src/api/store";
 import { useGetUniversities } from "@/src/api/university";
 import { AppButton } from "@/src/shared/common/app-button";
 import { AppPopup } from "@/src/shared/common/app-popup";
@@ -202,7 +203,8 @@ export default function ChangeUniversityScreen() {
         onSuccess: async () => {
           await saveUserUniversityId(selectedUniversityId!);
           queryClient.invalidateQueries({ queryKey: getGetStudentInfoQueryKey() });
-          queryClient.invalidateQueries({ queryKey: ['/api/stores/map'] });
+          queryClient.invalidateQueries({ queryKey: getGetStoreMapQueryKey() });
+          queryClient.invalidateQueries({ queryKey: ['events'] });
           setPopupState({ visible: true, title: "대학교가 변경되었습니다", onClose: () => router.back() });
         },
         onError: (error) => {
