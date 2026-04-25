@@ -113,7 +113,6 @@ export default function SignInPage() {
           </ThemedText>
         </Pressable>
 
-        {/* iOS에서 구글 로그인 미지원으로 임시 비활성화
         <Pressable
           style={[styles.socialButton, styles.googleButton, googleLoading && styles.disabledButton]}
           onPress={handleGoogleLogin}
@@ -124,7 +123,6 @@ export default function SignInPage() {
             Google로 시작하기
           </ThemedText>
         </Pressable>
-        */}
 
         <Pressable
           style={[styles.socialButton, styles.appleButton, appleLoading && styles.disabledButton]}
