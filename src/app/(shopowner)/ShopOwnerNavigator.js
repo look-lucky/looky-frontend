@@ -5,6 +5,9 @@ import React from 'react';
 import { Platform } from 'react-native';
 
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+
 import InquiryCompleteScreen from '../../shared/screens/inquiry/InquiryCompleteScreen';
 import InquiryScreen from '../../shared/screens/inquiry/InquiryScreen';
 import CouponListScreen from './coupon-patron/CouponListScreen';
@@ -38,6 +41,10 @@ const Stack = createNativeStackNavigator();
 
 // 기존 탭 네비게이터를 별도 함수로 분리 MainTabNavigator
 function MainTabNavigator() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'ios' ? 28 : 12);
+  const tabBarHeight = 56 + bottomPadding;
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -47,9 +54,9 @@ function MainTabNavigator() {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: {
-          height: Platform.OS === 'ios' ? 88 : 60,
+          height: tabBarHeight,
           paddingTop: 12,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+          paddingBottom: bottomPadding,
         },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;

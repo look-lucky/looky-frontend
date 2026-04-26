@@ -14,7 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     name: IS_DEV ? "Looky (Dev)" : IS_PREVIEW ? "Looky (Preview)" : "Looky",
     slug: "rn-app",
     owner: "looky123",
-    version: "1.1.0",
+    version: "1.1.1",
     orientation: "portrait",
     icon: "./assets/images/logo/ios-looky.png",
     // 구글 로그인 scheme은 아래 플러그인(google-signin)에서 자동으로 추가하므로 중복 방지를 위해 제거
