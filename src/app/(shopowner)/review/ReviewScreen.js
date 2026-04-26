@@ -9,6 +9,7 @@ import { ActivityIndicator, Alert, Image, Platform, SafeAreaView, ScrollView, St
 // [API] 훅 임포트
 import { useDeleteReview, useGetReviews, useGetReviewStats, useUpdateReview } from '@/src/api/review';
 import { useGetMyStores } from '@/src/api/store';
+import { logReviewReplyComplete } from '@/src/shared/lib/analytics';
 import { ErrorPopup } from '@/src/shared/common/error-popup';
 import { getToken } from '@/src/shared/lib/auth/token';
 
@@ -329,6 +330,7 @@ export default function ReviewScreen({ navigation }) {
       console.log("📩 [답글 응답]", response.status, textResponse);
 
       if (response.ok) {
+        logReviewReplyComplete({ storeId: myStoreId });
         // [핵심] 성공 시 UI 즉시 강제 업데이트 (서버 응답 기다리지 않음)
         setTempReplies(prev => ({
           ...prev,

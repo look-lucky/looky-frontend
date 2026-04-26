@@ -250,3 +250,137 @@ export async function logEventViewOnMap(params: {
     event_id: params.eventId,
   });
 }
+
+/**
+ * 이벤트 더보기 페이지 카드 클릭
+ */
+export async function logEventMoreCardClick(params: {
+  eventId: string;
+  eventTitle: string;
+}) {
+  await analytics().logEvent('event_more_card_click', {
+    event_id: params.eventId,
+    event_title: params.eventTitle,
+  });
+}
+
+/**
+ * 쿠폰 사용하기 버튼 클릭 (사용 시작)
+ */
+export async function logCouponUseStart(params: {
+  couponId: string;
+  storeId?: number;
+  storeName?: string;
+}) {
+  await analytics().logEvent('coupon_use_start', {
+    coupon_id: params.couponId,
+    store_id: params.storeId ?? '',
+    store_name: params.storeName ?? '',
+  });
+}
+
+/**
+ * 쿠폰 사용 코드 발급 완료 (사용 완료)
+ */
+export async function logCouponUseComplete(params: {
+  couponId: string;
+  storeId?: number;
+  storeName?: string;
+}) {
+  await analytics().logEvent('coupon_use_complete', {
+    coupon_id: params.couponId,
+    store_id: params.storeId ?? '',
+    store_name: params.storeName ?? '',
+  });
+}
+
+/**
+ * 서비스 체류 시간 (앱 실행 ~ 백그라운드 전환)
+ */
+export async function logSessionEnd(params: {
+  durationSeconds: number;
+  userType: 'student' | 'owner';
+}) {
+  await analytics().logEvent('session_end', {
+    duration_seconds: params.durationSeconds,
+    user_type: params.userType,
+  });
+}
+
+// ─── P1 Owner Events ────────────────────────────────────────────────────────
+
+/**
+ * 점주 앱 실행 — 점주 DAU / WAU / MAU
+ */
+export async function logOwnerAppOpen() {
+  await analytics().logEvent('owner_app_open', {});
+}
+
+/**
+ * 점주 로그인 완료
+ */
+export async function logOwnerLoginComplete() {
+  await analytics().logEvent('owner_login_complete', {});
+}
+
+/**
+ * 점주 쿠폰 등록 완료
+ */
+export async function logOwnerCouponRegisterComplete() {
+  await analytics().logEvent('owner_coupon_register_complete', {});
+}
+
+/**
+ * 점주 쿠폰 종료 버튼 클릭
+ */
+export async function logOwnerCouponEnd(params: {
+  couponId: string | number;
+}) {
+  await analytics().logEvent('owner_coupon_end', {
+    coupon_id: String(params.couponId),
+  });
+}
+
+// ─── P2 Events ─────────────────────────────────────────────────────────────
+
+/**
+ * 학생 리뷰 작성 완료
+ */
+export async function logReviewWriteComplete(params: {
+  storeId: string | number;
+}) {
+  await analytics().logEvent('review_write_complete', {
+    store_id: String(params.storeId),
+  });
+}
+
+/**
+ * 점주 리뷰 답글 작성 완료
+ */
+export async function logReviewReplyComplete(params: {
+  storeId: string | number;
+}) {
+  await analytics().logEvent('review_reply_complete', {
+    store_id: String(params.storeId),
+  });
+}
+
+/**
+ * 점주 메뉴 등록 완료
+ */
+export async function logOwnerMenuRegisterComplete() {
+  await analytics().logEvent('owner_menu_register_complete', {});
+}
+
+/**
+ * 가입 후 최초 쿠폰 다운 완료 — 도달 비율 + 경과 시간
+ */
+export async function logFirstCouponDownload(params: {
+  daysSinceSignup: number;
+  hoursSinceSignup: number;
+}) {
+  await analytics().logEvent('first_coupon_download', {
+    days_since_signup: params.daysSinceSignup,
+    hours_since_signup: params.hoursSinceSignup,
+  });
+}

@@ -1,6 +1,7 @@
 import LookyLogo from "@/assets/images/logo/looky-logo.svg";
 import { useLogin } from "@/src/api/auth";
 import { ArrowLeft } from "@/src/shared/common/arrow-left";
+import { logOwnerLoginComplete } from "@/src/shared/lib/analytics";
 import { useAuth } from "@/src/shared/lib/auth";
 import type { UserType } from "@/src/shared/lib/auth/token";
 import { saveCredentials, saveLoginProvider, saveUsername } from "@/src/shared/lib/auth/token";
@@ -105,8 +106,10 @@ export default function LoginPage() {
             await saveCredentials(username, password);
             console.log("[Login] handleAuthSuccess completed - token should be stored");
 
-            // ROLE_OWNER는 _layout.tsx에서 PendingApprovalScreen/ShopOwnerApp을 직접 렌더링
-            if (role !== "ROLE_OWNER") {
+            if (role === "ROLE_OWNER") {
+              logOwnerLoginComplete();
+            } else {
+              // ROLE_OWNER는 _layout.tsx에서 PendingApprovalScreen/ShopOwnerApp을 직접 렌더링
               router.replace("/(student)/(tabs)");
             }
           } else {

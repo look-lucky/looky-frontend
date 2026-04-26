@@ -4,6 +4,7 @@ import PriceTagDollarIcon from "@/assets/images/icons/coupon/price-tag-dollar.sv
 import LocationIcon from "@/assets/images/icons/home/location-icon.svg";
 import { getGetMyCouponsQueryKey, useActivateCoupon, useGetMyCoupons } from "@/src/api/coupon";
 import type { DownloadCouponResponse } from "@/src/api/generated.schemas";
+import { logCouponUseStart, logCouponUseComplete } from "@/src/shared/lib/analytics";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { rs } from "@/src/shared/theme/scale";
@@ -225,6 +226,11 @@ export default function BenefitsTab() {
   const handleUseCoupon = () => {
     if (!selectedCoupon?.studentCouponId) return;
     if (couponCode && !codeExpired) return;
+    logCouponUseStart({
+      couponId: String(selectedCoupon.studentCouponId),
+      storeId: (selectedCoupon as any).storeId,
+      storeName: selectedCoupon.storeName ?? '',
+    });
     activateCoupon(
       { studentCouponId: selectedCoupon.studentCouponId },
       {
@@ -241,6 +247,11 @@ export default function BenefitsTab() {
             setCodeExpired(remaining <= 0);
             setRemainingSeconds(remaining > 0 ? Math.ceil(remaining / 1000) : 0);
             queryClient.invalidateQueries({ queryKey: getGetMyCouponsQueryKey() });
+            logCouponUseComplete({
+              couponId: String(selectedCoupon.studentCouponId),
+              storeId: (selectedCoupon as any).storeId,
+              storeName: selectedCoupon.storeName ?? '',
+            });
           }
         },
         onError: (err: any) => {
