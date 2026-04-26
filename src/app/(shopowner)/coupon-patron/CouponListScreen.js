@@ -20,6 +20,7 @@ import {
 // [API] 함수 임포트
 import { expireCoupon, getCouponsByStore } from '@/src/api/coupon';
 import { getMyStores } from '@/src/api/store';
+import { logOwnerCouponEnd } from '@/src/shared/lib/analytics';
 import { ErrorPopup } from '@/src/shared/common/error-popup';
 
 const { width } = Dimensions.get('window');
@@ -186,6 +187,7 @@ export default function CouponListScreen({ navigation, route }) {
             const res = await expireCoupon(selectedCouponId);
 
             if (res.status === 200) {
+                logOwnerCouponEnd({ couponId: selectedCouponId });
                 setConfirmModalVisible(false);
                 setSelectedCouponId(null);
                 fetchData(); // 종료 후 데이터 새로고침

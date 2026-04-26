@@ -9,6 +9,7 @@ import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
 import type { UserType } from "@/src/shared/lib/auth/token";
 import { logStudentSignUpComplete, setUserProperties } from "@/src/shared/lib/analytics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSignupStore } from "@/src/shared/stores/signup-store";
 import { rs } from "@/src/shared/theme/scale";
 import { Brand, Gray, System, Text as TextColors } from "@/src/shared/theme/theme";
@@ -254,6 +255,9 @@ export default function SocialSignupPage() {
             });
 
             await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
+
+            // 가입 시각 저장 (첫 쿠폰 다운 경과 시간 측정용)
+            await AsyncStorage.setItem('signup_at', String(Date.now()));
 
             // 애널리틱스: 학생 소셜 가입 완료
             await Promise.all([

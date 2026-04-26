@@ -7,11 +7,12 @@ import { useFonts } from "expo-font";
 import { Stack, usePathname, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { ActivityIndicator, AppState, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useGetMyStoreClaims } from "@/src/api/store-claim";
+import { logSessionEnd } from "@/src/shared/lib/analytics";
 import "react-native-reanimated";
 
 // 점주용 앱 import
@@ -31,6 +32,30 @@ function AppContent() {
   const { userType, isLoading: authLoading, isAuthenticated } = useAuth();
 
   const isOwner = isAuthenticated && userType === 'ROLE_OWNER';
+
+  // 체류 시간 추적
+  const sessionStartRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    sessionStartRef.current = Date.now();
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'background' || nextState === 'inactive') {
+        if (sessionStartRef.current) {
+          const durationSeconds = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+          if (durationSeconds > 0) {
+            logSessionEnd({
+              durationSeconds,
+              userType: isOwner ? 'owner' : 'student',
+            });
+          }
+          sessionStartRef.current = null;
+        }
+      } else if (nextState === 'active') {
+        sessionStartRef.current = Date.now();
+      }
+    });
+    return () => subscription.remove();
+  }, [isAuthenticated, isOwner]);
 
   const { data: claimsData, isLoading: claimsLoading } = useGetMyStoreClaims({
     query: { enabled: isOwner },

@@ -23,6 +23,7 @@ import { useNavigation } from 'expo-router';
 // [필수] 토큰 가져오기 (Direct Fetch용)
 import { customFetch } from '@/src/api/mutator';
 import { getToken } from '@/src/shared/lib/auth/token';
+import { logOwnerMenuRegisterComplete } from '@/src/shared/lib/analytics';
 
 // [API] Hooks Import
 import { useCreateItem, useDeleteItem, useGetItems, useUpdateItem } from '@/src/api/item';
@@ -915,6 +916,7 @@ export default function StoreScreen() {
         headers: { 'Content-Type': 'application/json' },
       });
 
+      if (!isEditMode) logOwnerMenuRegisterComplete();
       Alert.alert("성공", isEditMode ? "메뉴가 수정되었습니다." : "새 메뉴가 등록되었습니다.");
       setMenuModalVisible(false);
       refetchItems();
