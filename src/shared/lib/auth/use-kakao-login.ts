@@ -1,5 +1,6 @@
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useCallback, useState } from "react";
+import * as Sentry from "@sentry/react-native";
 
 import { kakaoLogin } from "@/src/api/auth";
 import { useAuth } from "./auth-context";
@@ -83,7 +84,7 @@ export function useKakaoLogin() {
       if (error.code === "E_CANCELLED_OPERATION") {
         return { success: false, error: "cancelled" };
       }
-      console.error("카카오 로그인 에러:", error);
+      Sentry.captureException(error, { extra: { provider: "kakao" } });
       return {
         success: false,
         error: error instanceof Error ? error.message : "알 수 없는 오류",
