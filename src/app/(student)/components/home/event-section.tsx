@@ -205,16 +205,27 @@ function formatEventDate(start: string, end: string): string {
   const endDate = new Date(end);
 
   const formatTime = (date: Date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const period = hours < 12 ? '오전' : '오후';
-    const displayHours = hours <= 12 ? hours : hours - 12;
-    return `${period} ${displayHours}시${minutes > 0 ? ` ${minutes}분` : ''}`;
+    const parts = new Intl.DateTimeFormat('ko-KR', {
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true,
+      timeZone: 'Asia/Seoul',
+    }).formatToParts(date);
+    const period = parts.find((p) => p.type === 'dayPeriod')?.value ?? '';
+    const hour = parts.find((p) => p.type === 'hour')?.value ?? '';
+    const minute = parts.find((p) => p.type === 'minute')?.value;
+    return `${period} ${hour}시${minute && minute !== '00' ? ` ${minute}분` : ''}`;
   };
 
-  const year = startDate.getFullYear();
-  const month = String(startDate.getMonth() + 1).padStart(2, '0');
-  const day = String(startDate.getDate()).padStart(2, '0');
+  const dateParts = new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Seoul',
+  }).formatToParts(startDate);
+  const year = dateParts.find((p) => p.type === 'year')?.value ?? '';
+  const month = dateParts.find((p) => p.type === 'month')?.value ?? '';
+  const day = dateParts.find((p) => p.type === 'day')?.value ?? '';
 
   return `${year}.${month}.${day} ${formatTime(startDate)} ~ ${formatTime(endDate)}`;
 }

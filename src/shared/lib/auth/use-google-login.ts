@@ -6,6 +6,7 @@ import {
 } from "@react-native-google-signin/google-signin";
 import { useCallback, useState } from "react";
 import { Platform } from "react-native";
+import * as Sentry from "@sentry/react-native";
 
 import { googleLogin } from "@/src/api/auth";
 import { ENV } from "@/src/shared/constants/env";
@@ -96,7 +97,7 @@ export function useGoogleLogin() {
             return { success: false, error: "Play Services를 사용할 수 없습니다" };
         }
       }
-      console.error("구글 로그인 에러:", error);
+      Sentry.captureException(error, { extra: { provider: "google" } });
       return {
         success: false,
         error: error instanceof Error ? error.message : "알 수 없는 오류",

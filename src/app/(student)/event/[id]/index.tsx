@@ -57,9 +57,16 @@ async function fetchEvent(eventId: number) {
   }>(`/api/events/${eventId}`, { method: 'GET' });
 }
 
+function parseKSTDateTime(dateTimeStr: string): Date {
+  if (dateTimeStr.includes('Z') || dateTimeStr.includes('+') || dateTimeStr.lastIndexOf('-') > 7) {
+    return new Date(dateTimeStr);
+  }
+  return new Date(`${dateTimeStr}+09:00`);
+}
+
 function transformEventResponse(response: EventResponse): Event {
-  const startDateTime = new Date(response.startDateTime);
-  const endDateTime = new Date(response.endDateTime);
+  const startDateTime = parseKSTDateTime(response.startDateTime);
+  const endDateTime = parseKSTDateTime(response.endDateTime);
 
   return {
     id: String(response.id),
@@ -74,7 +81,7 @@ function transformEventResponse(response: EventResponse): Event {
     status: getEventStatus({ startDateTime, endDateTime } as Event),
     bannerImageUrl: response.bannerImageUrl,
     imageUrls: response.imageUrls ?? [],
-    createdAt: new Date(response.createdAt),
+    createdAt: parseKSTDateTime(response.createdAt),
   };
 }
 
@@ -83,6 +90,7 @@ function formatDate(date: Date) {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'Asia/Seoul',
   });
 }
 
@@ -91,6 +99,7 @@ function formatTime(date: Date) {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
+    timeZone: 'Asia/Seoul',
   });
 }
 

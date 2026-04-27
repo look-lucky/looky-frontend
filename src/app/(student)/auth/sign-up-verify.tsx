@@ -1,5 +1,6 @@
 import { useCompleteSocialSignup, useLogin, useSend, useSignupStudent, useVerify } from "@/src/api/auth";
 import { CommonResponseLoginResponse, OrganizationResponseCategory } from "@/src/api/generated.schemas";
+import * as Sentry from "@sentry/react-native";
 import { useGetDepartmentsByCollege, useGetOrganizations } from "@/src/api/organization";
 import { useGetUniversities } from "@/src/api/university";
 import { AppButton } from "@/src/shared/common/app-button";
@@ -414,8 +415,19 @@ export default function StudentVerificationPage() {
               Alert.alert("오류", "회원가입 처리 중 문제가 발생했습니다.");
             }
           },
-          onError: (error) => {
-            console.error("소셜 회원가입 실패:", error);
+          onError: (error: any) => {
+            Sentry.withScope((scope) => {
+              scope.setTag('flow', 'social_signup');
+              scope.setTag('provider', socialProvider ?? 'unknown');
+              scope.setContext('signup_data', {
+                userId: socialUserId,
+                provider: socialProvider,
+                errorCode: error?.data?.data?.code,
+                errorMessage: error?.data?.data?.message ?? error?.data?.message,
+                httpStatus: error?.status,
+              });
+              Sentry.captureException(error);
+            });
             Alert.alert("오류", "회원가입에 실패했습니다. 다시 시도해주세요.");
           },
         }
@@ -504,10 +516,20 @@ export default function StudentVerificationPage() {
           );
         },
         onError: (error: any) => {
-          console.error("회원가입 실패:", error);
           const errorData = error?.data?.data || error?.data || error;
           const errorCode = errorData?.code;
           const errorMessage = errorData?.message;
+
+          Sentry.withScope((scope) => {
+            scope.setTag('flow', 'email_signup');
+            scope.setTag('error_code', errorCode ?? 'unknown');
+            scope.setContext('signup_data', {
+              errorCode,
+              errorMessage,
+              httpStatus: error?.status,
+            });
+            Sentry.captureException(error);
+          });
 
           if (errorCode === "DUPLICATE_RESOURCE" || error?.status === 409) {
             const isEmailDuplicate = errorMessage?.includes("이메일") || errorMessage?.toLowerCase().includes("email");
