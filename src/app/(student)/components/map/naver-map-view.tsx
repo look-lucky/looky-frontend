@@ -22,9 +22,9 @@ const EVENT_CLUSTER_ICON_URI = RNImage.resolveAssetSource(EVENT_CLUSTER_ICON).ur
 
 // 가게 마커 아이콘 PNG
 const STORE_MARKER_ICONS = {
-  partnerWithCoupon: require('@/assets/images/icons/map/clover-heart.png'),
+  partnerWithCoupon: require('@/assets/images/icons/map/heart-store.png'),
   partnerNoCoupon: require('@/assets/images/icons/map/clover.png'),
-  nonPartnerWithCoupon: require('@/assets/images/icons/map/clover-gray-heart.png'),
+  nonPartnerWithCoupon: require('@/assets/images/icons/map/heart-store.png'),
   nonPartnerNoCoupon: require('@/assets/images/icons/map/clover-gray.png'),
 };
 
