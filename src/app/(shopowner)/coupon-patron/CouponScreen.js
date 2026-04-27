@@ -25,6 +25,7 @@ import {
 import { createCoupon, getCouponsByStore, verifyCoupon } from '@/src/api/coupon';
 import { countFavorites } from '@/src/api/favorite';
 import { getMyStores } from '@/src/api/store';
+import { logOwnerCouponRegisterComplete } from '@/src/shared/lib/analytics';
 import { ErrorPopup } from '@/src/shared/common/error-popup';
 
 // 서버에서 오는 날짜 문자열을 보정하는 헬퍼 (T 구분자 추가 및 UTC 명시)
@@ -333,6 +334,7 @@ export default function CouponScreen({ navigation, route }) {
             const res = await createCoupon(storeId, requestBody);
 
             if (res.status === 201) {
+                logOwnerCouponRegisterComplete();
                 // 성공 캐시 무효화 및 데이터 새로고침
                 await fetchData();
                 setCreateModalVisible(false);

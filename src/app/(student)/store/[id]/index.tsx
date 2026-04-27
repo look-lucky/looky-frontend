@@ -1,6 +1,7 @@
 import { useDownloadCoupon, useGetCouponsByStore } from '@/src/api/coupon';
 import { useAddFavorite, useCountFavorites, useGetMyFavorites, useRemoveFavorite } from '@/src/api/favorite';
-import { logCouponBoxOpen, logCouponDownloadComplete, logCouponDownloadStart, logFavoriteToggle, logStoreDetailView, logStoreTabClick } from '@/src/shared/lib/analytics';
+import { logCouponBoxOpen, logCouponDownloadComplete, logCouponDownloadStart, logFavoriteToggle, logFirstCouponDownload, logStoreDetailView, logStoreTabClick } from '@/src/shared/lib/analytics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   CouponResponse,
   ItemResponse,
@@ -213,12 +214,25 @@ export default function StoreDetailScreen() {
   // 쿠폰 발급 mutation
   const issueCouponMutation = useDownloadCoupon({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
         Alert.alert('쿠폰 발급 완료', '내 쿠폰함에서 확인하세요');
         // 스토어 쿠폰 목록 갱신 (isDownloaded 반영) + 내 쿠폰함 + 지도 마커 hasCoupon 반영
         queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/coupons`] });
         queryClient.invalidateQueries({ queryKey: ['/api/my-coupons'] });
         queryClient.invalidateQueries({ queryKey: ['/api/stores/map'] });
+        // 첫 쿠폰 다운 여부 확인
+        const alreadyDownloaded = await AsyncStorage.getItem('first_coupon_downloaded');
+        if (!alreadyDownloaded) {
+          const signupAt = await AsyncStorage.getItem('signup_at');
+          if (signupAt) {
+            const elapsedMs = Date.now() - Number(signupAt);
+            logFirstCouponDownload({
+              daysSinceSignup: Math.floor(elapsedMs / (1000 * 60 * 60 * 24)),
+              hoursSinceSignup: Math.floor(elapsedMs / (1000 * 60 * 60)),
+            });
+          }
+          await AsyncStorage.setItem('first_coupon_downloaded', '1');
+        }
       },
       onError: (error: any) => {
         const errorMessage =

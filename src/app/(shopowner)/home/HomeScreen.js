@@ -13,6 +13,7 @@ import { verifyCoupon } from '@/src/api/coupon';
 import { getItems } from '@/src/api/item';
 import { getMyStores, getStore, getStoreStats } from '@/src/api/store';
 import { getMyStoreClaims } from '@/src/api/store-claim';
+import { logOwnerAppOpen } from '@/src/shared/lib/analytics';
 import { ErrorPopup } from '@/src/shared/common/error-popup';
 
 export default function HomeScreen({ navigation }) {
@@ -175,6 +176,7 @@ export default function HomeScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
+      logOwnerAppOpen();
       fetchData();
     }, [])
   );

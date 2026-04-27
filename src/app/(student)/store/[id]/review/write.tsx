@@ -1,5 +1,6 @@
 import { useCreateReview } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
+import { logReviewWriteComplete } from '@/src/shared/lib/analytics';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { uploadImageAssets, validateImageAsset } from '@/src/shared/hooks/use-upload-image';
@@ -65,6 +66,7 @@ export default function ReviewWriteScreen() {
   const { mutate: createReview, isPending } = useCreateReview({
     mutation: {
       onSuccess: () => {
+        logReviewWriteComplete({ storeId: id });
         queryClient.invalidateQueries({ queryKey: [`/api/stores/${id}/reviews`] });
         queryClient.invalidateQueries({ queryKey: [`/api/stores/${id}/reviews/stats`] });
         setSuccessVisible(true);

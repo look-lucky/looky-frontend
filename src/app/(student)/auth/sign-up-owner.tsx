@@ -205,18 +205,60 @@ export default function SignupOwnerPage() {
         });
 
         const socialData = (socialResponse as any)?.data?.data;
-        if (socialData?.accessToken) {
-          const { accessToken, expiresIn } = socialData;
-          const jwtPayload = (() => {
-            try { return JSON.parse(atob(accessToken.split(".")[1])); } catch { return null; }
-          })();
-          const role = (jwtPayload?.role as UserType) ?? "ROLE_OWNER";
-          await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
+        if (!socialData?.accessToken) {
+          throw new Error("소셜 회원가입 처리 중 오류가 발생했습니다.");
         }
 
-        // TODO: 소셜 점주는 useCompleteSocialSignup이 store 생성을 포함하지 않아
-        // 별도 store 생성 API 연동 필요
-        Alert.alert("회원가입 완료", "관리자 승인 후 서비스를 이용하실 수 있습니다.");
+        const { accessToken, expiresIn } = socialData;
+        const jwtPayload = (() => {
+          try { return JSON.parse(atob(accessToken.split(".")[1])); } catch { return null; }
+        })();
+        const role = (jwtPayload?.role as UserType) ?? "ROLE_OWNER";
+        const userId = jwtPayload?.sub ? parseInt(jwtPayload.sub, 10) : null;
+
+        if (!userId) {
+          throw new Error("사용자 정보를 확인할 수 없습니다.");
+        }
+
+        if (!savedStoreId) {
+          throw new Error("가게 정보를 찾을 수 없습니다. 가게 검색 후 다시 시도해주세요.");
+        }
+
+        // 사업자등록증 업로드
+        let licenseImageUrl: string | undefined;
+        if (businessImageUri) {
+          const asset: ImagePicker.ImagePickerAsset = {
+            uri: businessImageUri,
+            mimeType: 'image/jpeg',
+            fileName: 'business-registration.jpg',
+            width: 0,
+            height: 0,
+            assetId: null,
+            base64: null,
+            exif: null,
+            duration: null,
+            fileSize: undefined,
+            type: 'image',
+            pairedVideoAsset: undefined,
+          };
+          licenseImageUrl = await uploadImageAsset(asset);
+        }
+
+        // 점유신청 API 호출
+        await createStoreClaimsMutation.mutateAsync({
+          data: {
+            storeId: savedStoreId,
+            userId,
+            bizRegNo: businessNumber,
+            representativeName,
+            storeName,
+            storePhone,
+            licenseImageUrl,
+          },
+        });
+
+        await handleAuthSuccess(accessToken, expiresIn ?? 3600, role);
+        logOwnerSignUpComplete();
         router.replace("/(shopowner)/auth/pending-approval");
         return;
       }

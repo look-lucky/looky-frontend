@@ -1,6 +1,7 @@
 import { customFetch } from '@/src/api/mutator';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
+import { logEventMoreCardClick } from '@/src/shared/lib/analytics';
 import { useMapNavigationStore } from '@/src/shared/stores/map-navigation-store';
 import { rs } from '@/src/shared/theme/scale';
 import { Fonts, Gray, Primary } from '@/src/shared/theme/theme';
@@ -69,6 +70,7 @@ const EventCard = ({ event }: { event: Event }) => {
     const icon = EVENT_TYPE_IMAGES[primaryType] ?? EVENT_TYPE_IMAGES.STUDENT_EVENT;
 
     const handlePress = () => {
+        logEventMoreCardClick({ eventId: event.id, eventTitle: event.title });
         router.push(`/(student)/(tabs)/map?eventId=${event.id}&lat=${event.lat}&lng=${event.lng}` as any);
     };
 
