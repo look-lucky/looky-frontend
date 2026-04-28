@@ -27,6 +27,10 @@ import type {
 import type {
   AppleLoginRequest,
   CheckUsernameAvailabilityParams,
+  CommonResponseBoolean,
+  CommonResponseLoginResponse,
+  CommonResponseString,
+  CommonResponseVoid,
   CompleteSocialSignupParams,
   CompleteSocialSignupRequest,
   CouncilSignupRequest,
@@ -38,6 +42,7 @@ import type {
   ResetPasswordRequest,
   SendEmailCodeRequest,
   StudentSignupRequest,
+  SwaggerErrorResponse,
   VerifyEmailCodeRequest,
   WithdrawRequest
 } from './generated.schemas';
@@ -55,7 +60,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [학생] 학생 회원가입
  */
 export type signupStudentResponse200 = {
-  data: Blob
+  data: CommonResponseLoginResponse
   status: 200
 }
     
@@ -138,7 +143,7 @@ export const useSignupStudent = <TError = unknown,
  * @summary [점주] 점주 회원가입
  */
 export type signupOwnerResponse200 = {
-  data: Blob
+  data: CommonResponseLoginResponse
   status: 200
 }
     
@@ -221,7 +226,7 @@ export const useSignupOwner = <TError = unknown,
  * @summary [학생회] 학생회 회원가입
  */
 export type signupcouncilResponse200 = {
-  data: Blob
+  data: CommonResponseLoginResponse
   status: 200
 }
     
@@ -304,17 +309,17 @@ export const useSignupcouncil = <TError = unknown,
  * @summary [공통] 토큰 갱신
  */
 export type refreshResponse200 = {
-  data: Blob
+  data: CommonResponseLoginResponse
   status: 200
 }
 
 export type refreshResponse401 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 401
 }
 
 export type refreshResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -349,7 +354,7 @@ export const refresh = async ( options?: RequestInit): Promise<refreshResponse> 
 
 
 
-export const getRefreshMutationOptions = <TError = Blob,
+export const getRefreshMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refresh>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof refresh>>, TError,void, TContext> => {
 
@@ -378,12 +383,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type RefreshMutationResult = NonNullable<Awaited<ReturnType<typeof refresh>>>
     
-    export type RefreshMutationError = Blob
+    export type RefreshMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 토큰 갱신
  */
-export const useRefresh = <TError = Blob,
+export const useRefresh = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refresh>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof refresh>>,
@@ -398,7 +403,7 @@ export const useRefresh = <TError = Blob,
  * @summary [공통] 로그아웃
  */
 export type logoutResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -480,17 +485,17 @@ export const useLogout = <TError = unknown,
  * @summary [공통] 로그인
  */
 export type loginResponse200 = {
-  data: Blob
+  data: CommonResponseLoginResponse
   status: 200
 }
 
 export type loginResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type loginResponse401 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 401
 }
     
@@ -526,7 +531,7 @@ export const login = async (loginRequest: LoginRequest, options?: RequestInit): 
 
 
 
-export const getLoginMutationOptions = <TError = Blob,
+export const getLoginMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext> => {
 
@@ -555,12 +560,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
     export type LoginMutationBody = LoginRequest
-    export type LoginMutationError = Blob
+    export type LoginMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 로그인
  */
-export const useLogin = <TError = Blob,
+export const useLogin = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof login>>,
@@ -575,17 +580,17 @@ export const useLogin = <TError = Blob,
  * @summary [공통] 카카오 로그인 (네이티브)
  */
 export type kakaoLoginResponse200 = {
-  data: Blob
+  data: CommonResponseLoginResponse
   status: 200
 }
 
 export type kakaoLoginResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type kakaoLoginResponse401 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 401
 }
     
@@ -621,7 +626,7 @@ export const kakaoLogin = async (kakaoLoginRequest: KakaoLoginRequest, options?:
 
 
 
-export const getKakaoLoginMutationOptions = <TError = Blob,
+export const getKakaoLoginMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof kakaoLogin>>, TError,{data: KakaoLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof kakaoLogin>>, TError,{data: KakaoLoginRequest}, TContext> => {
 
@@ -650,12 +655,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type KakaoLoginMutationResult = NonNullable<Awaited<ReturnType<typeof kakaoLogin>>>
     export type KakaoLoginMutationBody = KakaoLoginRequest
-    export type KakaoLoginMutationError = Blob
+    export type KakaoLoginMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 카카오 로그인 (네이티브)
  */
-export const useKakaoLogin = <TError = Blob,
+export const useKakaoLogin = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof kakaoLogin>>, TError,{data: KakaoLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof kakaoLogin>>,
@@ -670,17 +675,17 @@ export const useKakaoLogin = <TError = Blob,
  * @summary [공통] 구글 로그인 (네이티브)
  */
 export type googleLoginResponse200 = {
-  data: Blob
+  data: CommonResponseLoginResponse
   status: 200
 }
 
 export type googleLoginResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type googleLoginResponse401 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 401
 }
     
@@ -716,7 +721,7 @@ export const googleLogin = async (googleLoginRequest: GoogleLoginRequest, option
 
 
 
-export const getGoogleLoginMutationOptions = <TError = Blob,
+export const getGoogleLoginMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof googleLogin>>, TError,{data: GoogleLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof googleLogin>>, TError,{data: GoogleLoginRequest}, TContext> => {
 
@@ -745,12 +750,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type GoogleLoginMutationResult = NonNullable<Awaited<ReturnType<typeof googleLogin>>>
     export type GoogleLoginMutationBody = GoogleLoginRequest
-    export type GoogleLoginMutationError = Blob
+    export type GoogleLoginMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 구글 로그인 (네이티브)
  */
-export const useGoogleLogin = <TError = Blob,
+export const useGoogleLogin = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof googleLogin>>, TError,{data: GoogleLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof googleLogin>>,
@@ -765,7 +770,7 @@ export const useGoogleLogin = <TError = Blob,
  * @summary [공통] 비밀번호 재설정 - 인증 확인 및 임시 토큰 반환
  */
 export type verifyCodeForFindPasswordResponse200 = {
-  data: Blob
+  data: CommonResponseString
   status: 200
 }
     
@@ -848,7 +853,7 @@ export const useVerifyCodeForFindPassword = <TError = unknown,
  * @summary [공통] 비밀번호 찾기 - 인증번호 발송
  */
 export type sendCodeForFindPasswordResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -931,7 +936,7 @@ export const useSendCodeForFindPassword = <TError = unknown,
  * @summary [공통] 비밀번호 재설정
  */
 export type resetPasswordResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -1014,7 +1019,7 @@ export const useResetPassword = <TError = unknown,
  * @summary [공통] 아이디 찾기 - 인증 확인 및 아이디 반환
  */
 export type verifyCodeForFindIdResponse200 = {
-  data: Blob
+  data: CommonResponseString
   status: 200
 }
     
@@ -1097,7 +1102,7 @@ export const useVerifyCodeForFindId = <TError = unknown,
  * @summary [공통] 아이디 찾기 - 인증번호 발송
  */
 export type sendCodeForFindIdResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -1180,7 +1185,7 @@ export const useSendCodeForFindId = <TError = unknown,
  * @summary [공통] 회원 가입용 이메일 인증 확인
  */
 export type verifyResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -1263,7 +1268,7 @@ export const useVerify = <TError = unknown,
  * @summary [공통] 회원 가입용 이메일 인증 발송
  */
 export type sendResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -1346,22 +1351,22 @@ export const useSend = <TError = unknown,
  * @summary [공통] 소셜 회원가입 완료
  */
 export type completeSocialSignupResponse200 = {
-  data: Blob
+  data: CommonResponseLoginResponse
   status: 200
 }
 
 export type completeSocialSignupResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type completeSocialSignupResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
 
 export type completeSocialSignupResponse409 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 409
 }
     
@@ -1405,7 +1410,7 @@ export const completeSocialSignup = async (completeSocialSignupRequest: Complete
 
 
 
-export const getCompleteSocialSignupMutationOptions = <TError = Blob,
+export const getCompleteSocialSignupMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}, TContext> => {
 
@@ -1434,12 +1439,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CompleteSocialSignupMutationResult = NonNullable<Awaited<ReturnType<typeof completeSocialSignup>>>
     export type CompleteSocialSignupMutationBody = CompleteSocialSignupRequest
-    export type CompleteSocialSignupMutationError = Blob
+    export type CompleteSocialSignupMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 소셜 회원가입 완료
  */
-export const useCompleteSocialSignup = <TError = Blob,
+export const useCompleteSocialSignup = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof completeSocialSignup>>,
@@ -1454,17 +1459,17 @@ export const useCompleteSocialSignup = <TError = Blob,
  * @summary [공통] 애플 로그인 (네이티브)
  */
 export type appleLoginResponse200 = {
-  data: Blob
+  data: CommonResponseLoginResponse
   status: 200
 }
 
 export type appleLoginResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type appleLoginResponse401 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 401
 }
     
@@ -1500,7 +1505,7 @@ export const appleLogin = async (appleLoginRequest: AppleLoginRequest, options?:
 
 
 
-export const getAppleLoginMutationOptions = <TError = Blob,
+export const getAppleLoginMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof appleLogin>>, TError,{data: AppleLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof appleLogin>>, TError,{data: AppleLoginRequest}, TContext> => {
 
@@ -1529,12 +1534,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type AppleLoginMutationResult = NonNullable<Awaited<ReturnType<typeof appleLogin>>>
     export type AppleLoginMutationBody = AppleLoginRequest
-    export type AppleLoginMutationError = Blob
+    export type AppleLoginMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 애플 로그인 (네이티브)
  */
-export const useAppleLogin = <TError = Blob,
+export const useAppleLogin = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof appleLogin>>, TError,{data: AppleLoginRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof appleLogin>>,
@@ -1549,7 +1554,7 @@ export const useAppleLogin = <TError = Blob,
  * @summary [공통] 아이디 중복 확인
  */
 export type checkUsernameAvailabilityResponse200 = {
-  data: Blob
+  data: CommonResponseBoolean
   status: 200
 }
     
@@ -1667,17 +1672,17 @@ export function useCheckUsernameAvailability<TData = Awaited<ReturnType<typeof c
  * @summary [공통] 회원 탈퇴
  */
 export type withdrawResponse204 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 204
 }
 
 export type withdrawResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type withdrawResponse401 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 401
 }
     
@@ -1713,7 +1718,7 @@ export const withdraw = async (withdrawRequest: WithdrawRequest, options?: Reque
 
 
 
-export const getWithdrawMutationOptions = <TError = Blob,
+export const getWithdrawMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdraw>>, TError,{data: WithdrawRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof withdraw>>, TError,{data: WithdrawRequest}, TContext> => {
 
@@ -1742,12 +1747,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type WithdrawMutationResult = NonNullable<Awaited<ReturnType<typeof withdraw>>>
     export type WithdrawMutationBody = WithdrawRequest
-    export type WithdrawMutationError = Blob
+    export type WithdrawMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 회원 탈퇴
  */
-export const useWithdraw = <TError = Blob,
+export const useWithdraw = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdraw>>, TError,{data: WithdrawRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof withdraw>>,

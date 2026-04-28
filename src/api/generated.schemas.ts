@@ -45,6 +45,9 @@ export interface CommonResponseVoid {
 export interface CreateUniversityRequest {
   name: string;
   emailDomains: string[];
+  allowGeneralEmail?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CommonResponseLong {
@@ -654,10 +657,15 @@ export interface CreateEventRequest {
   /** 장소 */
   place: string;
   /**
-   * 대학교 ID (null이면 모든 학교 대상)
+   * 대상 대학 ID 목록 (null이면 모든 대학 대상)
    * @nullable
    */
-  universityId?: number | null;
+  targetUniversityIds?: (number | null)[] | null;
+  /**
+   * 대상 조직 ID 목록 (COLLEGE / DEPARTMENT, 하위 조직은 상위 조직과 함께 지정해야 함)
+   * @nullable
+   */
+  targetOrganizationIds?: (number | null)[] | null;
   /** 배너 이미지 URL */
   bannerImageUrl?: string;
   /** 일반 이미지 URL 목록 */
@@ -732,6 +740,20 @@ export interface CreateAdvertisementRequest {
 }
 
 /**
+ * 일반 이메일(gmail 등) 허용 여부 - 학교 웹메일을 거의 사용하지 않는 대학용
+ */
+export interface JsonNullableBoolean {
+  present?: boolean;
+}
+
+/**
+ * 대학 중심 경도
+ */
+export interface JsonNullableDouble {
+  present?: boolean;
+}
+
+/**
  * 학교 이메일 도메인 목록
  */
 export interface JsonNullableListString {
@@ -742,20 +764,6 @@ export interface JsonNullableListString {
  * 대학교 이름
  */
 export interface JsonNullableString {
-  present?: boolean;
-}
-
-/**
- * 영업 중지 여부
- */
-export interface JsonNullableBoolean {
-  present?: boolean;
-}
-
-/**
- * 경도
- */
-export interface JsonNullableDouble {
   present?: boolean;
 }
 
@@ -958,6 +966,14 @@ export interface JsonNullableListEventType {
 }
 
 /**
+ * 대상 조직 ID 목록 (null 전송 시 대상 전체 제거, 빈 배열도 전체 제거)
+ * @nullable
+ */
+export type JsonNullableListLong = {
+  present?: boolean;
+} | null | null;
+
+/**
  * 이벤트 수정 요청
  */
 export interface UpdateEventRequest {
@@ -971,7 +987,8 @@ export interface UpdateEventRequest {
   startDateTime?: JsonNullableLocalDateTime;
   endDateTime?: JsonNullableLocalDateTime;
   status?: JsonNullableEventStatus;
-  universityId?: JsonNullableLong;
+  targetUniversityIds?: JsonNullableListLong | null;
+  targetOrganizationIds?: JsonNullableListLong | null;
   bannerImageUrl?: JsonNullableString;
   imageUrls?: JsonNullableListString;
 }
@@ -988,14 +1005,6 @@ export interface JsonNullableAdvertisementStatus {
  * @nullable
  */
 export type JsonNullableGender = {
-  present?: boolean;
-} | null | null;
-
-/**
- * 타겟 단과대 ID 목록 (null 전송 시 타겟 전체 제거, 빈 배열도 전체 제거)
- * @nullable
- */
-export type JsonNullableListLong = {
   present?: boolean;
 } | null | null;
 
@@ -1019,6 +1028,9 @@ export interface UniversityResponse {
   id?: number;
   name?: string;
   emailDomains?: string[];
+  allowGeneralEmail?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CommonResponseListUniversityResponse {
@@ -1059,6 +1071,87 @@ export interface Pageable {
   /** @minimum 1 */
   size?: number;
   sort?: string[];
+}
+
+export type EventResponseEventTypesItem = typeof EventResponseEventTypesItem[keyof typeof EventResponseEventTypesItem];
+
+
+export const EventResponseEventTypesItem = {
+  SCHOOL_EVENT: 'SCHOOL_EVENT',
+  STUDENT_EVENT: 'STUDENT_EVENT',
+  FOOD_EVENT: 'FOOD_EVENT',
+  FLEA_MARKET: 'FLEA_MARKET',
+  PERFORMANCE: 'PERFORMANCE',
+  BRAND_POPUP: 'BRAND_POPUP',
+} as const;
+
+export type EventResponseStatus = typeof EventResponseStatus[keyof typeof EventResponseStatus];
+
+
+export const EventResponseStatus = {
+  UPCOMING: 'UPCOMING',
+  LIVE: 'LIVE',
+  ENDED: 'ENDED',
+} as const;
+
+export interface TargetUniversityInfo {
+  id?: number;
+  name?: string;
+}
+
+export type TargetOrganizationInfoCategory = typeof TargetOrganizationInfoCategory[keyof typeof TargetOrganizationInfoCategory];
+
+
+export const TargetOrganizationInfoCategory = {
+  COLLEGE: 'COLLEGE',
+  DEPARTMENT: 'DEPARTMENT',
+  UNIVERSITY_COUNCIL: 'UNIVERSITY_COUNCIL',
+  CLUB_ASSOCIATION: 'CLUB_ASSOCIATION',
+} as const;
+
+export interface TargetOrganizationInfo {
+  id?: number;
+  name?: string;
+  category?: TargetOrganizationInfoCategory;
+}
+
+export interface EventResponse {
+  id?: number;
+  title?: string;
+  description?: string;
+  subtitle?: string;
+  eventTypes?: EventResponseEventTypesItem[];
+  latitude?: number;
+  longitude?: number;
+  startDateTime?: string;
+  endDateTime?: string;
+  place?: string;
+  status?: EventResponseStatus;
+  bannerImageUrl?: string;
+  imageUrls?: string[];
+  createdAt?: string;
+  targetUniversities?: TargetUniversityInfo[];
+  targetOrganizations?: TargetOrganizationInfo[];
+}
+
+export interface PageResponseEventResponse {
+  content?: EventResponse[];
+  pageNumber?: number;
+  pageSize?: number;
+  totalElements?: number;
+  totalPages?: number;
+  sort?: string;
+  last?: boolean;
+}
+
+export interface CommonResponsePageResponseEventResponse {
+  isSuccess?: boolean;
+  data?: PageResponseEventResponse;
+}
+
+export interface CommonResponseEventResponse {
+  isSuccess?: boolean;
+  data?: EventResponse;
 }
 
 export type StoreResponseStoreCategoriesItem = typeof StoreResponseStoreCategoriesItem[keyof typeof StoreResponseStoreCategoriesItem];
@@ -1613,7 +1706,7 @@ export interface FavoriteStoreResponse {
   roadAddress?: string;
   jibunAddress?: string;
   storeCategories?: FavoriteStoreResponseStoreCategoriesItem[];
-  imageUrl?: string;
+  profileImageUrl?: string;
   averageRating?: number;
   reviewCount?: number;
   createdAt?: string;
@@ -1632,65 +1725,6 @@ export interface PageResponseFavoriteStoreResponse {
 export interface CommonResponsePageResponseFavoriteStoreResponse {
   isSuccess?: boolean;
   data?: PageResponseFavoriteStoreResponse;
-}
-
-export type EventResponseEventTypesItem = typeof EventResponseEventTypesItem[keyof typeof EventResponseEventTypesItem];
-
-
-export const EventResponseEventTypesItem = {
-  SCHOOL_EVENT: 'SCHOOL_EVENT',
-  STUDENT_EVENT: 'STUDENT_EVENT',
-  FOOD_EVENT: 'FOOD_EVENT',
-  FLEA_MARKET: 'FLEA_MARKET',
-  PERFORMANCE: 'PERFORMANCE',
-  BRAND_POPUP: 'BRAND_POPUP',
-} as const;
-
-export type EventResponseStatus = typeof EventResponseStatus[keyof typeof EventResponseStatus];
-
-
-export const EventResponseStatus = {
-  UPCOMING: 'UPCOMING',
-  LIVE: 'LIVE',
-  ENDED: 'ENDED',
-} as const;
-
-export interface EventResponse {
-  id?: number;
-  universityId?: number;
-  title?: string;
-  description?: string;
-  subtitle?: string;
-  eventTypes?: EventResponseEventTypesItem[];
-  latitude?: number;
-  longitude?: number;
-  startDateTime?: string;
-  endDateTime?: string;
-  place?: string;
-  status?: EventResponseStatus;
-  bannerImageUrl?: string;
-  imageUrls?: string[];
-  createdAt?: string;
-}
-
-export interface PageResponseEventResponse {
-  content?: EventResponse[];
-  pageNumber?: number;
-  pageSize?: number;
-  totalElements?: number;
-  totalPages?: number;
-  sort?: string;
-  last?: boolean;
-}
-
-export interface CommonResponsePageResponseEventResponse {
-  isSuccess?: boolean;
-  data?: PageResponseEventResponse;
-}
-
-export interface CommonResponseEventResponse {
-  isSuccess?: boolean;
-  data?: EventResponse;
 }
 
 export interface CommonResponseBoolean {
@@ -1877,16 +1911,6 @@ export const AdminAdvertisementResponseTargetGender = {
   FEMALE: 'FEMALE',
   UNKNOWN: 'UNKNOWN',
 } as const;
-
-export interface TargetUniversityInfo {
-  id?: number;
-  name?: string;
-}
-
-export interface TargetOrganizationInfo {
-  id?: number;
-  name?: string;
-}
 
 export interface AdminAdvertisementResponse {
   id?: number;
@@ -2084,6 +2108,46 @@ export type UpdateItemCategoryBody = {[key: string]: string};
 
 export type HealthCheck200 = {[key: string]: { [key: string]: unknown }};
 
+export type GetEventsParams = {
+/**
+ * 검색 키워드 (제목)
+ */
+keyword?: string;
+/**
+ * 이벤트 타입 필터 (복수 선택 가능)
+ */
+eventTypes?: GetEventsEventTypesItem[];
+/**
+ * 상태 필터
+ */
+status?: GetEventsStatus;
+/**
+ * 페이징 정보
+ */
+pageable: Pageable;
+};
+
+export type GetEventsEventTypesItem = typeof GetEventsEventTypesItem[keyof typeof GetEventsEventTypesItem];
+
+
+export const GetEventsEventTypesItem = {
+  SCHOOL_EVENT: 'SCHOOL_EVENT',
+  STUDENT_EVENT: 'STUDENT_EVENT',
+  FOOD_EVENT: 'FOOD_EVENT',
+  FLEA_MARKET: 'FLEA_MARKET',
+  PERFORMANCE: 'PERFORMANCE',
+  BRAND_POPUP: 'BRAND_POPUP',
+} as const;
+
+export type GetEventsStatus = typeof GetEventsStatus[keyof typeof GetEventsStatus];
+
+
+export const GetEventsStatus = {
+  UPCOMING: 'UPCOMING',
+  LIVE: 'LIVE',
+  ENDED: 'ENDED',
+} as const;
+
 export type GetNearbyStoresParams = {
 /**
  * 위도
@@ -2135,7 +2199,7 @@ export type GetMyFavoritesParams = {
 pageable: Pageable;
 };
 
-export type GetEventsParams = {
+export type GetEvents1Params = {
 /**
  * 검색 키워드 (제목)
  */
@@ -2143,11 +2207,11 @@ keyword?: string;
 /**
  * 이벤트 타입 필터 (복수 선택 가능)
  */
-eventTypes?: GetEventsEventTypesItem[];
+eventTypes?: GetEvents1EventTypesItem[];
 /**
  * 상태 필터
  */
-status?: GetEventsStatus;
+status?: GetEvents1Status;
 /**
  * 대학 ID
  */
@@ -2158,10 +2222,10 @@ universityId?: number;
 pageable: Pageable;
 };
 
-export type GetEventsEventTypesItem = typeof GetEventsEventTypesItem[keyof typeof GetEventsEventTypesItem];
+export type GetEvents1EventTypesItem = typeof GetEvents1EventTypesItem[keyof typeof GetEvents1EventTypesItem];
 
 
-export const GetEventsEventTypesItem = {
+export const GetEvents1EventTypesItem = {
   SCHOOL_EVENT: 'SCHOOL_EVENT',
   STUDENT_EVENT: 'STUDENT_EVENT',
   FOOD_EVENT: 'FOOD_EVENT',
@@ -2170,10 +2234,10 @@ export const GetEventsEventTypesItem = {
   BRAND_POPUP: 'BRAND_POPUP',
 } as const;
 
-export type GetEventsStatus = typeof GetEventsStatus[keyof typeof GetEventsStatus];
+export type GetEvents1Status = typeof GetEvents1Status[keyof typeof GetEvents1Status];
 
 
-export const GetEventsStatus = {
+export const GetEvents1Status = {
   UPCOMING: 'UPCOMING',
   LIVE: 'LIVE',
   ENDED: 'ENDED',

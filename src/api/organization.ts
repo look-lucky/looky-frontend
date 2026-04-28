@@ -25,6 +25,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseListOrganizationResponse,
+  CommonResponseLong,
+  CommonResponseVoid,
   CreateOrganizationRequest,
   UpdateOrganizationRequest
 } from './generated.schemas';
@@ -42,7 +45,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [공통] 특정 대학의 소속 목록 조회
  */
 export type getOrganizationsResponse200 = {
-  data: Blob
+  data: CommonResponseListOrganizationResponse
   status: 200
 }
     
@@ -153,7 +156,7 @@ export function useGetOrganizations<TData = Awaited<ReturnType<typeof getOrganiz
  * @summary [학생회] 특정 대학에 소속 등록
  */
 export type createOrganizationResponse200 = {
-  data: Blob
+  data: CommonResponseLong
   status: 200
 }
     
@@ -237,7 +240,7 @@ export const useCreateOrganization = <TError = unknown,
  * @summary [학생] 소속 가입
  */
 export type joinOrganizationResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -319,7 +322,7 @@ export const useJoinOrganization = <TError = unknown,
  * @summary [학생] 소속 탈퇴
  */
 export type leaveOrganizationResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -401,7 +404,7 @@ export const useLeaveOrganization = <TError = unknown,
  * @summary [학생] 소속 변경
  */
 export type changeOrganizationResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -483,7 +486,7 @@ export const useChangeOrganization = <TError = unknown,
  * @summary [학생회] 소속 삭제
  */
 export type deleteOrganizationResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -565,7 +568,7 @@ export const useDeleteOrganization = <TError = unknown,
  * @summary [학생회] 소속 수정
  */
 export type updateOrganizationResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -649,7 +652,7 @@ export const useUpdateOrganization = <TError = unknown,
  * @summary [공통] 특정 단과대학의 학과 목록 조회
  */
 export type getDepartmentsByCollegeResponse200 = {
-  data: Blob
+  data: CommonResponseListOrganizationResponse
   status: 200
 }
     

@@ -25,10 +25,16 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseLong,
+  CommonResponsePageResponseStoreNewsCommentResponse,
+  CommonResponsePageResponseStoreNewsResponse,
+  CommonResponseStoreNewsResponse,
+  CommonResponseVoid,
   CreateStoreNewsCommentRequest,
   CreateStoreNewsRequest,
   GetCommentsParams,
   GetStoreNewsListParams,
+  SwaggerErrorResponse,
   UpdateStoreNewsRequest
 } from './generated.schemas';
 
@@ -45,7 +51,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [공통] 소식 목록 조회
  */
 export type getStoreNewsListResponse200 = {
-  data: Blob
+  data: CommonResponsePageResponseStoreNewsResponse
   status: 200
 }
     
@@ -171,17 +177,17 @@ export function useGetStoreNewsList<TData = Awaited<ReturnType<typeof getStoreNe
  * @summary [점주] 소식 등록
  */
 export type createStoreNewsResponse201 = {
-  data: Blob
+  data: CommonResponseLong
   status: 201
 }
 
 export type createStoreNewsResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type createStoreNewsResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -218,7 +224,7 @@ export const createStoreNews = async (storeId: number,
 
 
 
-export const getCreateStoreNewsMutationOptions = <TError = Blob,
+export const getCreateStoreNewsMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsRequest}, TContext> => {
 
@@ -247,12 +253,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof createStoreNews>>>
     export type CreateStoreNewsMutationBody = CreateStoreNewsRequest
-    export type CreateStoreNewsMutationError = Blob
+    export type CreateStoreNewsMutationError = SwaggerErrorResponse
 
     /**
  * @summary [점주] 소식 등록
  */
-export const useCreateStoreNews = <TError = Blob,
+export const useCreateStoreNews = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreNews>>, TError,{storeId: number;data: CreateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createStoreNews>>,
@@ -267,12 +273,12 @@ export const useCreateStoreNews = <TError = Blob,
  * @summary [공통] 소식 좋아요 토글
  */
 export type toggleLikeResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type toggleLikeResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -307,7 +313,7 @@ export const toggleLike = async (newsId: number, options?: RequestInit): Promise
 
 
 
-export const getToggleLikeMutationOptions = <TError = Blob,
+export const getToggleLikeMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext> => {
 
@@ -336,12 +342,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ToggleLikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleLike>>>
     
-    export type ToggleLikeMutationError = Blob
+    export type ToggleLikeMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 소식 좋아요 토글
  */
-export const useToggleLike = <TError = Blob,
+export const useToggleLike = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof toggleLike>>,
@@ -356,7 +362,7 @@ export const useToggleLike = <TError = Blob,
  * @summary [공통] 댓글 목록 조회
  */
 export type getCommentsResponse200 = {
-  data: Blob
+  data: CommonResponsePageResponseStoreNewsCommentResponse
   status: 200
 }
     
@@ -482,12 +488,12 @@ export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, 
  * @summary [공통] 댓글 작성
  */
 export type createCommentResponse201 = {
-  data: Blob
+  data: CommonResponseLong
   status: 201
 }
 
 export type createCommentResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -524,7 +530,7 @@ export const createComment = async (newsId: number,
 
 
 
-export const getCreateCommentMutationOptions = <TError = Blob,
+export const getCreateCommentMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext> => {
 
@@ -553,12 +559,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateCommentMutationResult = NonNullable<Awaited<ReturnType<typeof createComment>>>
     export type CreateCommentMutationBody = CreateStoreNewsCommentRequest
-    export type CreateCommentMutationError = Blob
+    export type CreateCommentMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 댓글 작성
  */
-export const useCreateComment = <TError = Blob,
+export const useCreateComment = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createComment>>,
@@ -573,7 +579,7 @@ export const useCreateComment = <TError = Blob,
  * @summary [공통] 소식 상세 조회
  */
 export type getStoreNewsResponse200 = {
-  data: Blob
+  data: CommonResponseStoreNewsResponse
   status: 200
 }
     
@@ -684,17 +690,17 @@ export function useGetStoreNews<TData = Awaited<ReturnType<typeof getStoreNews>>
  * @summary [점주] 소식 삭제
  */
 export type deleteStoreNewsResponse204 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 204
 }
 
 export type deleteStoreNewsResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type deleteStoreNewsResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -729,7 +735,7 @@ export const deleteStoreNews = async (newsId: number, options?: RequestInit): Pr
 
 
 
-export const getDeleteStoreNewsMutationOptions = <TError = Blob,
+export const getDeleteStoreNewsMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreNews>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteStoreNews>>, TError,{newsId: number}, TContext> => {
 
@@ -758,12 +764,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStoreNews>>>
     
-    export type DeleteStoreNewsMutationError = Blob
+    export type DeleteStoreNewsMutationError = SwaggerErrorResponse
 
     /**
  * @summary [점주] 소식 삭제
  */
-export const useDeleteStoreNews = <TError = Blob,
+export const useDeleteStoreNews = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStoreNews>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteStoreNews>>,
@@ -778,17 +784,17 @@ export const useDeleteStoreNews = <TError = Blob,
  * @summary [점주] 소식 수정
  */
 export type updateStoreNewsResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type updateStoreNewsResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type updateStoreNewsResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -825,7 +831,7 @@ export const updateStoreNews = async (newsId: number,
 
 
 
-export const getUpdateStoreNewsMutationOptions = <TError = Blob,
+export const getUpdateStoreNewsMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsRequest}, TContext> => {
 
@@ -854,12 +860,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateStoreNewsMutationResult = NonNullable<Awaited<ReturnType<typeof updateStoreNews>>>
     export type UpdateStoreNewsMutationBody = UpdateStoreNewsRequest
-    export type UpdateStoreNewsMutationError = Blob
+    export type UpdateStoreNewsMutationError = SwaggerErrorResponse
 
     /**
  * @summary [점주] 소식 수정
  */
-export const useUpdateStoreNews = <TError = Blob,
+export const useUpdateStoreNews = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStoreNews>>, TError,{newsId: number;data: UpdateStoreNewsRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateStoreNews>>,
@@ -874,17 +880,17 @@ export const useUpdateStoreNews = <TError = Blob,
  * @summary [공통] 댓글 삭제
  */
 export type deleteCommentResponse204 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 204
 }
 
 export type deleteCommentResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type deleteCommentResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -921,7 +927,7 @@ export const deleteComment = async (newsId: number,
 
 
 
-export const getDeleteCommentMutationOptions = <TError = Blob,
+export const getDeleteCommentMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext> => {
 
@@ -950,12 +956,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteCommentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteComment>>>
     
-    export type DeleteCommentMutationError = Blob
+    export type DeleteCommentMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 댓글 삭제
  */
-export const useDeleteComment = <TError = Blob,
+export const useDeleteComment = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteComment>>,

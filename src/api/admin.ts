@@ -25,8 +25,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseCoordinate,
+  CommonResponsePageResponseUserResponse,
+  CommonResponseString,
+  CommonResponseVoid,
   GetAllUsersParams,
   GetGeocodeParams,
+  SwaggerErrorResponse,
   UploadStoreDataBody,
   UserRoleUpdateRequest
 } from './generated.schemas';
@@ -44,17 +49,17 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [관리자] 상점 데이터 엑셀 업로드
  */
 export type uploadStoreDataResponse200 = {
-  data: Blob
+  data: CommonResponseString
   status: 200
 }
 
 export type uploadStoreDataResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type uploadStoreDataResponse500 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 500
 }
     
@@ -92,7 +97,7 @@ formData.append(`file`, uploadStoreDataBody.file);
 
 
 
-export const getUploadStoreDataMutationOptions = <TError = Blob,
+export const getUploadStoreDataMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadStoreData>>, TError,{data: UploadStoreDataBody}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof uploadStoreData>>, TError,{data: UploadStoreDataBody}, TContext> => {
 
@@ -121,12 +126,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UploadStoreDataMutationResult = NonNullable<Awaited<ReturnType<typeof uploadStoreData>>>
     export type UploadStoreDataMutationBody = UploadStoreDataBody
-    export type UploadStoreDataMutationError = Blob
+    export type UploadStoreDataMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 상점 데이터 엑셀 업로드
  */
-export const useUploadStoreData = <TError = Blob,
+export const useUploadStoreData = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadStoreData>>, TError,{data: UploadStoreDataBody}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof uploadStoreData>>,
@@ -141,17 +146,17 @@ export const useUploadStoreData = <TError = Blob,
  * @summary [관리자] 사용자 권한 수정
  */
 export type updateUserRoleResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type updateUserRoleResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type updateUserRoleResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -188,7 +193,7 @@ export const updateUserRole = async (userId: number,
 
 
 
-export const getUpdateUserRoleMutationOptions = <TError = Blob,
+export const getUpdateUserRoleMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUserRole>>, TError,{userId: number;data: UserRoleUpdateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateUserRole>>, TError,{userId: number;data: UserRoleUpdateRequest}, TContext> => {
 
@@ -217,12 +222,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateUserRoleMutationResult = NonNullable<Awaited<ReturnType<typeof updateUserRole>>>
     export type UpdateUserRoleMutationBody = UserRoleUpdateRequest
-    export type UpdateUserRoleMutationError = Blob
+    export type UpdateUserRoleMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 사용자 권한 수정
  */
-export const useUpdateUserRole = <TError = Blob,
+export const useUpdateUserRole = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUserRole>>, TError,{userId: number;data: UserRoleUpdateRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateUserRole>>,
@@ -237,12 +242,12 @@ export const useUpdateUserRole = <TError = Blob,
  * @summary [관리자] 전체 사용자 목록 조회
  */
 export type getAllUsersResponse200 = {
-  data: Blob
+  data: CommonResponsePageResponseUserResponse
   status: 200
 }
 
 export type getAllUsersResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
     
@@ -292,7 +297,7 @@ export const getGetAllUsersQueryKey = (params?: GetAllUsersParams,) => {
     }
 
     
-export const getGetAllUsersQueryOptions = <TData = Awaited<ReturnType<typeof getAllUsers>>, TError = Blob>(params: GetAllUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetAllUsersQueryOptions = <TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(params: GetAllUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -311,10 +316,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAllUsersQueryResult = NonNullable<Awaited<ReturnType<typeof getAllUsers>>>
-export type GetAllUsersQueryError = Blob
+export type GetAllUsersQueryError = SwaggerErrorResponse
 
 
-export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = Blob>(
+export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(
  params: GetAllUsersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAllUsers>>,
@@ -324,7 +329,7 @@ export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, 
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = Blob>(
+export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(
  params: GetAllUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAllUsers>>,
@@ -334,7 +339,7 @@ export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, 
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = Blob>(
+export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(
  params: GetAllUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -342,7 +347,7 @@ export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, 
  * @summary [관리자] 전체 사용자 목록 조회
  */
 
-export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = Blob>(
+export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, TError = SwaggerErrorResponse>(
  params: GetAllUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllUsers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -362,17 +367,17 @@ export function useGetAllUsers<TData = Awaited<ReturnType<typeof getAllUsers>>, 
  * @summary [관리자] 주소로 위경도 변환
  */
 export type getGeocodeResponse200 = {
-  data: Blob
+  data: CommonResponseCoordinate
   status: 200
 }
 
 export type getGeocodeResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type getGeocodeResponse500 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 500
 }
     
@@ -422,7 +427,7 @@ export const getGetGeocodeQueryKey = (params?: GetGeocodeParams,) => {
     }
 
     
-export const getGetGeocodeQueryOptions = <TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(params: GetGeocodeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetGeocodeQueryOptions = <TData = Awaited<ReturnType<typeof getGeocode>>, TError = SwaggerErrorResponse>(params: GetGeocodeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -441,10 +446,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetGeocodeQueryResult = NonNullable<Awaited<ReturnType<typeof getGeocode>>>
-export type GetGeocodeQueryError = Blob
+export type GetGeocodeQueryError = SwaggerErrorResponse
 
 
-export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(
+export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = SwaggerErrorResponse>(
  params: GetGeocodeParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getGeocode>>,
@@ -454,7 +459,7 @@ export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TE
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(
+export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = SwaggerErrorResponse>(
  params: GetGeocodeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getGeocode>>,
@@ -464,7 +469,7 @@ export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TE
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(
+export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = SwaggerErrorResponse>(
  params: GetGeocodeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -472,7 +477,7 @@ export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TE
  * @summary [관리자] 주소로 위경도 변환
  */
 
-export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = Blob>(
+export function useGetGeocode<TData = Awaited<ReturnType<typeof getGeocode>>, TError = SwaggerErrorResponse>(
  params: GetGeocodeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeocode>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

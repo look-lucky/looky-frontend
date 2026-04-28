@@ -20,6 +20,10 @@ import type {
   UseQueryResult
 } from '@tanstack/react-query';
 
+import type {
+  CommonResponseListAdvertisementResponse
+} from './generated.schemas';
+
 import { customFetch } from './mutator';
 
 
@@ -33,7 +37,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [공통] 팝업 광고 목록 조회
  */
 export type getPopupAdvertisementsResponse200 = {
-  data: Blob
+  data: CommonResponseListAdvertisementResponse
   status: 200
 }
     
@@ -144,7 +148,7 @@ export function useGetPopupAdvertisements<TData = Awaited<ReturnType<typeof getP
  * @summary [공통] 플로팅 배너 목록 조회
  */
 export type getFloatingAdvertisementsResponse200 = {
-  data: Blob
+  data: CommonResponseListAdvertisementResponse
   status: 200
 }
     
@@ -255,7 +259,7 @@ export function useGetFloatingAdvertisements<TData = Awaited<ReturnType<typeof g
  * @summary [공통] 배너 광고 목록 조회
  */
 export type getBannerAdvertisementsResponse200 = {
-  data: Blob
+  data: CommonResponseListAdvertisementResponse
   status: 200
 }
     

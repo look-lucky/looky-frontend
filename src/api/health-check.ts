@@ -20,6 +20,10 @@ import type {
   UseQueryResult
 } from '@tanstack/react-query';
 
+import type {
+  HealthCheck200
+} from './generated.schemas';
+
 import { customFetch } from './mutator';
 
 
@@ -33,7 +37,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [공통] 서버 헬스 체크
  */
 export type healthCheckResponse200 = {
-  data: Blob
+  data: HealthCheck200
   status: 200
 }
     

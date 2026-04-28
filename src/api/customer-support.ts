@@ -25,8 +25,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseInquiryResponse,
+  CommonResponseLong,
+  CommonResponsePageInquiryResponse,
   CreateInquiryRequest,
-  GetInquiriesParams
+  GetInquiriesParams,
+  SwaggerErrorResponse
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -42,7 +46,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary 내 문의 목록 조회
  */
 export type getInquiriesResponse200 = {
-  data: Blob
+  data: CommonResponsePageInquiryResponse
   status: 200
 }
     
@@ -160,12 +164,12 @@ export function useGetInquiries<TData = Awaited<ReturnType<typeof getInquiries>>
  * @summary 문의하기
  */
 export type createInquiryResponse200 = {
-  data: Blob
+  data: CommonResponseLong
   status: 200
 }
 
 export type createInquiryResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
     
@@ -201,7 +205,7 @@ export const createInquiry = async (createInquiryRequest: CreateInquiryRequest, 
 
 
 
-export const getCreateInquiryMutationOptions = <TError = Blob,
+export const getCreateInquiryMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: CreateInquiryRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: CreateInquiryRequest}, TContext> => {
 
@@ -230,12 +234,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateInquiryMutationResult = NonNullable<Awaited<ReturnType<typeof createInquiry>>>
     export type CreateInquiryMutationBody = CreateInquiryRequest
-    export type CreateInquiryMutationError = Blob
+    export type CreateInquiryMutationError = SwaggerErrorResponse
 
     /**
  * @summary 문의하기
  */
-export const useCreateInquiry = <TError = Blob,
+export const useCreateInquiry = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: CreateInquiryRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createInquiry>>,
@@ -250,17 +254,17 @@ export const useCreateInquiry = <TError = Blob,
  * @summary 문의 상세 조회
  */
 export type getInquiryResponse200 = {
-  data: Blob
+  data: CommonResponseInquiryResponse
   status: 200
 }
 
 export type getInquiryResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type getInquiryResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -303,7 +307,7 @@ export const getGetInquiryQueryKey = (inquiryId?: number,) => {
     }
 
     
-export const getGetInquiryQueryOptions = <TData = Awaited<ReturnType<typeof getInquiry>>, TError = Blob>(inquiryId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInquiry>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetInquiryQueryOptions = <TData = Awaited<ReturnType<typeof getInquiry>>, TError = SwaggerErrorResponse>(inquiryId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInquiry>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -322,10 +326,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetInquiryQueryResult = NonNullable<Awaited<ReturnType<typeof getInquiry>>>
-export type GetInquiryQueryError = Blob
+export type GetInquiryQueryError = SwaggerErrorResponse
 
 
-export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TError = Blob>(
+export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TError = SwaggerErrorResponse>(
  inquiryId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInquiry>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getInquiry>>,
@@ -335,7 +339,7 @@ export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TE
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TError = Blob>(
+export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TError = SwaggerErrorResponse>(
  inquiryId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInquiry>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getInquiry>>,
@@ -345,7 +349,7 @@ export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TE
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TError = Blob>(
+export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TError = SwaggerErrorResponse>(
  inquiryId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInquiry>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -353,7 +357,7 @@ export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TE
  * @summary 문의 상세 조회
  */
 
-export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TError = Blob>(
+export function useGetInquiry<TData = Awaited<ReturnType<typeof getInquiry>>, TError = SwaggerErrorResponse>(
  inquiryId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInquiry>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

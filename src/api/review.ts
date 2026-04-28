@@ -25,10 +25,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseLong,
+  CommonResponsePageResponseReviewResponse,
+  CommonResponseReviewStatsResponse,
+  CommonResponseVoid,
   CreateReviewRequest,
   GetMyReviewsParams,
   GetReviewsParams,
   ReportRequest,
+  SwaggerErrorResponse,
   UpdateReviewRequest
 } from './generated.schemas';
 
@@ -45,12 +50,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [공통] 상점 리뷰 목록 조회
  */
 export type getReviewsResponse200 = {
-  data: Blob
+  data: CommonResponsePageResponseReviewResponse
   status: 200
 }
 
 export type getReviewsResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -103,7 +108,7 @@ export const getGetReviewsQueryKey = (storeId?: number,
     }
 
     
-export const getGetReviewsQueryOptions = <TData = Awaited<ReturnType<typeof getReviews>>, TError = Blob>(storeId: number,
+export const getGetReviewsQueryOptions = <TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(storeId: number,
     params: GetReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
@@ -123,10 +128,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof getReviews>>>
-export type GetReviewsQueryError = Blob
+export type GetReviewsQueryError = SwaggerErrorResponse
 
 
-export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = Blob>(
+export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(
  storeId: number,
     params: GetReviewsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
@@ -137,7 +142,7 @@ export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TE
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = Blob>(
+export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(
  storeId: number,
     params: GetReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
@@ -148,7 +153,7 @@ export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TE
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = Blob>(
+export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(
  storeId: number,
     params: GetReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
@@ -157,7 +162,7 @@ export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TE
  * @summary [공통] 상점 리뷰 목록 조회
  */
 
-export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = Blob>(
+export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TError = SwaggerErrorResponse>(
  storeId: number,
     params: GetReviewsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviews>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
@@ -178,27 +183,27 @@ export function useGetReviews<TData = Awaited<ReturnType<typeof getReviews>>, TE
  * @summary [공통] 리뷰 및 답글 작성
  */
 export type createReviewResponse201 = {
-  data: Blob
+  data: CommonResponseLong
   status: 201
 }
 
 export type createReviewResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type createReviewResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type createReviewResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
 
 export type createReviewResponse409 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 409
 }
     
@@ -235,7 +240,7 @@ export const createReview = async (storeId: number,
 
 
 
-export const getCreateReviewMutationOptions = <TError = Blob,
+export const getCreateReviewMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewRequest}, TContext> => {
 
@@ -264,12 +269,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createReview>>>
     export type CreateReviewMutationBody = CreateReviewRequest
-    export type CreateReviewMutationError = Blob
+    export type CreateReviewMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 리뷰 및 답글 작성
  */
-export const useCreateReview = <TError = Blob,
+export const useCreateReview = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReview>>, TError,{storeId: number;data: CreateReviewRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createReview>>,
@@ -284,12 +289,12 @@ export const useCreateReview = <TError = Blob,
  * @summary [공통] 리뷰 신고 
  */
 export type reportReviewResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type reportReviewResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -326,7 +331,7 @@ export const reportReview = async (reviewId: number,
 
 
 
-export const getReportReviewMutationOptions = <TError = Blob,
+export const getReportReviewMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportReview>>, TError,{reviewId: number;data: ReportRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof reportReview>>, TError,{reviewId: number;data: ReportRequest}, TContext> => {
 
@@ -355,12 +360,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ReportReviewMutationResult = NonNullable<Awaited<ReturnType<typeof reportReview>>>
     export type ReportReviewMutationBody = ReportRequest
-    export type ReportReviewMutationError = Blob
+    export type ReportReviewMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 리뷰 신고 
  */
-export const useReportReview = <TError = Blob,
+export const useReportReview = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportReview>>, TError,{reviewId: number;data: ReportRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof reportReview>>,
@@ -375,22 +380,22 @@ export const useReportReview = <TError = Blob,
  * @summary [공통] 리뷰 좋아요
  */
 export type addLikeResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type addLikeResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type addLikeResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
 
 export type addLikeResponse409 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 409
 }
     
@@ -425,7 +430,7 @@ export const addLike = async (reviewId: number, options?: RequestInit): Promise<
 
 
 
-export const getAddLikeMutationOptions = <TError = Blob,
+export const getAddLikeMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addLike>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof addLike>>, TError,{reviewId: number}, TContext> => {
 
@@ -454,12 +459,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type AddLikeMutationResult = NonNullable<Awaited<ReturnType<typeof addLike>>>
     
-    export type AddLikeMutationError = Blob
+    export type AddLikeMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 리뷰 좋아요
  */
-export const useAddLike = <TError = Blob,
+export const useAddLike = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addLike>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof addLike>>,
@@ -474,12 +479,12 @@ export const useAddLike = <TError = Blob,
  * @summary [공통] 리뷰 좋아요 취소
  */
 export type removeLikeResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type removeLikeResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -514,7 +519,7 @@ export const removeLike = async (reviewId: number, options?: RequestInit): Promi
 
 
 
-export const getRemoveLikeMutationOptions = <TError = Blob,
+export const getRemoveLikeMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeLike>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof removeLike>>, TError,{reviewId: number}, TContext> => {
 
@@ -543,12 +548,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type RemoveLikeMutationResult = NonNullable<Awaited<ReturnType<typeof removeLike>>>
     
-    export type RemoveLikeMutationError = Blob
+    export type RemoveLikeMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 리뷰 좋아요 취소
  */
-export const useRemoveLike = <TError = Blob,
+export const useRemoveLike = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeLike>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof removeLike>>,
@@ -563,17 +568,17 @@ export const useRemoveLike = <TError = Blob,
  * @summary [공통] 리뷰 삭제
  */
 export type deleteReviewResponse204 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 204
 }
 
 export type deleteReviewResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type deleteReviewResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -608,7 +613,7 @@ export const deleteReview = async (reviewId: number, options?: RequestInit): Pro
 
 
 
-export const getDeleteReviewMutationOptions = <TError = Blob,
+export const getDeleteReviewMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReview>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteReview>>, TError,{reviewId: number}, TContext> => {
 
@@ -637,12 +642,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteReviewMutationResult = NonNullable<Awaited<ReturnType<typeof deleteReview>>>
     
-    export type DeleteReviewMutationError = Blob
+    export type DeleteReviewMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 리뷰 삭제
  */
-export const useDeleteReview = <TError = Blob,
+export const useDeleteReview = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReview>>, TError,{reviewId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteReview>>,
@@ -657,17 +662,17 @@ export const useDeleteReview = <TError = Blob,
  * @summary [공통] 리뷰 수정
  */
 export type updateReviewResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type updateReviewResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type updateReviewResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -704,7 +709,7 @@ export const updateReview = async (reviewId: number,
 
 
 
-export const getUpdateReviewMutationOptions = <TError = Blob,
+export const getUpdateReviewMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewRequest}, TContext> => {
 
@@ -733,12 +738,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateReviewMutationResult = NonNullable<Awaited<ReturnType<typeof updateReview>>>
     export type UpdateReviewMutationBody = UpdateReviewRequest
-    export type UpdateReviewMutationError = Blob
+    export type UpdateReviewMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 리뷰 수정
  */
-export const useUpdateReview = <TError = Blob,
+export const useUpdateReview = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReview>>, TError,{reviewId: number;data: UpdateReviewRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateReview>>,
@@ -753,12 +758,12 @@ export const useUpdateReview = <TError = Blob,
  * @summary [공통] 상점 리뷰 통계
  */
 export type getReviewStatsResponse200 = {
-  data: Blob
+  data: CommonResponseReviewStatsResponse
   status: 200
 }
 
 export type getReviewStatsResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -801,7 +806,7 @@ export const getGetReviewStatsQueryKey = (storeId?: number,) => {
     }
 
     
-export const getGetReviewStatsQueryOptions = <TData = Awaited<ReturnType<typeof getReviewStats>>, TError = Blob>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetReviewStatsQueryOptions = <TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -820,10 +825,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetReviewStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getReviewStats>>>
-export type GetReviewStatsQueryError = Blob
+export type GetReviewStatsQueryError = SwaggerErrorResponse
 
 
-export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = Blob>(
+export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(
  storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getReviewStats>>,
@@ -833,7 +838,7 @@ export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewSta
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = Blob>(
+export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(
  storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getReviewStats>>,
@@ -843,7 +848,7 @@ export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewSta
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = Blob>(
+export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(
  storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -851,7 +856,7 @@ export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewSta
  * @summary [공통] 상점 리뷰 통계
  */
 
-export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = Blob>(
+export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewStats>>, TError = SwaggerErrorResponse>(
  storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReviewStats>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -871,7 +876,7 @@ export function useGetReviewStats<TData = Awaited<ReturnType<typeof getReviewSta
  * @summary [공통] 내 리뷰 목록 조회
  */
 export type getMyReviewsResponse200 = {
-  data: Blob
+  data: CommonResponsePageResponseReviewResponse
   status: 200
 }
     

@@ -21,7 +21,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  GetAllInquiriesParams
+  CommonResponsePageResponseInquiryResponse,
+  GetAllInquiriesParams,
+  SwaggerErrorResponse
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -37,12 +39,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [관리자] 문의 전체 목록 조회
  */
 export type getAllInquiriesResponse200 = {
-  data: Blob
+  data: CommonResponsePageResponseInquiryResponse
   status: 200
 }
 
 export type getAllInquiriesResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
     
@@ -92,7 +94,7 @@ export const getGetAllInquiriesQueryKey = (params?: GetAllInquiriesParams,) => {
     }
 
     
-export const getGetAllInquiriesQueryOptions = <TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = Blob>(params: GetAllInquiriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllInquiries>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetAllInquiriesQueryOptions = <TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = SwaggerErrorResponse>(params: GetAllInquiriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllInquiries>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -111,10 +113,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAllInquiriesQueryResult = NonNullable<Awaited<ReturnType<typeof getAllInquiries>>>
-export type GetAllInquiriesQueryError = Blob
+export type GetAllInquiriesQueryError = SwaggerErrorResponse
 
 
-export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = Blob>(
+export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = SwaggerErrorResponse>(
  params: GetAllInquiriesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllInquiries>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAllInquiries>>,
@@ -124,7 +126,7 @@ export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInqui
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = Blob>(
+export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = SwaggerErrorResponse>(
  params: GetAllInquiriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllInquiries>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAllInquiries>>,
@@ -134,7 +136,7 @@ export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInqui
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = Blob>(
+export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = SwaggerErrorResponse>(
  params: GetAllInquiriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllInquiries>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -142,7 +144,7 @@ export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInqui
  * @summary [관리자] 문의 전체 목록 조회
  */
 
-export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = Blob>(
+export function useGetAllInquiries<TData = Awaited<ReturnType<typeof getAllInquiries>>, TError = SwaggerErrorResponse>(
  params: GetAllInquiriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllInquiries>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

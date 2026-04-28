@@ -16,7 +16,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseLong,
+  CommonResponseVoid,
   CreateEventRequest,
+  SwaggerErrorResponse,
   UpdateEventRequest
 } from './generated.schemas';
 
@@ -33,17 +36,17 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [관리자] 이벤트 등록
  */
 export type createEventResponse201 = {
-  data: Blob
+  data: CommonResponseLong
   status: 201
 }
 
 export type createEventResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type createEventResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
     
@@ -79,7 +82,7 @@ export const createEvent = async (createEventRequest: CreateEventRequest, option
 
 
 
-export const getCreateEventMutationOptions = <TError = Blob,
+export const getCreateEventMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: CreateEventRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: CreateEventRequest}, TContext> => {
 
@@ -108,12 +111,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateEventMutationResult = NonNullable<Awaited<ReturnType<typeof createEvent>>>
     export type CreateEventMutationBody = CreateEventRequest
-    export type CreateEventMutationError = Blob
+    export type CreateEventMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 이벤트 등록
  */
-export const useCreateEvent = <TError = Blob,
+export const useCreateEvent = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: CreateEventRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createEvent>>,
@@ -128,17 +131,17 @@ export const useCreateEvent = <TError = Blob,
  * @summary [관리자] 이벤트 삭제
  */
 export type deleteEventResponse204 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 204
 }
 
 export type deleteEventResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type deleteEventResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -173,7 +176,7 @@ export const deleteEvent = async (eventId: number, options?: RequestInit): Promi
 
 
 
-export const getDeleteEventMutationOptions = <TError = Blob,
+export const getDeleteEventMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEvent>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteEvent>>, TError,{eventId: number}, TContext> => {
 
@@ -202,12 +205,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteEventMutationResult = NonNullable<Awaited<ReturnType<typeof deleteEvent>>>
     
-    export type DeleteEventMutationError = Blob
+    export type DeleteEventMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 이벤트 삭제
  */
-export const useDeleteEvent = <TError = Blob,
+export const useDeleteEvent = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEvent>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteEvent>>,
@@ -222,17 +225,17 @@ export const useDeleteEvent = <TError = Blob,
  * @summary [관리자] 이벤트 수정
  */
 export type updateEventResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type updateEventResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type updateEventResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -269,7 +272,7 @@ export const updateEvent = async (eventId: number,
 
 
 
-export const getUpdateEventMutationOptions = <TError = Blob,
+export const getUpdateEventMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvent>>, TError,{eventId: number;data: UpdateEventRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateEvent>>, TError,{eventId: number;data: UpdateEventRequest}, TContext> => {
 
@@ -298,12 +301,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateEventMutationResult = NonNullable<Awaited<ReturnType<typeof updateEvent>>>
     export type UpdateEventMutationBody = UpdateEventRequest
-    export type UpdateEventMutationError = Blob
+    export type UpdateEventMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 이벤트 수정
  */
-export const useUpdateEvent = <TError = Blob,
+export const useUpdateEvent = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvent>>, TError,{eventId: number;data: UpdateEventRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateEvent>>,
