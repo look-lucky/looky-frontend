@@ -25,6 +25,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseListUniversityResponse,
+  CommonResponseLong,
+  CommonResponseVoid,
   CreateUniversityRequest,
   UpdateUniversityRequest
 } from './generated.schemas';
@@ -42,7 +45,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [공통] 대학 목록 조회
  */
 export type getUniversitiesResponse200 = {
-  data: Blob
+  data: CommonResponseListUniversityResponse
   status: 200
 }
     
@@ -153,7 +156,7 @@ export function useGetUniversities<TData = Awaited<ReturnType<typeof getUniversi
  * @summary [관리자] 대학 등록
  */
 export type createUniversityResponse200 = {
-  data: Blob
+  data: CommonResponseLong
   status: 200
 }
     
@@ -236,7 +239,7 @@ export const useCreateUniversity = <TError = unknown,
  * @summary [관리자] 대학 삭제
  */
 export type deleteUniversityResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -318,7 +321,7 @@ export const useDeleteUniversity = <TError = unknown,
  * @summary [관리자] 대학 수정
  */
 export type updateUniversity1Response200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     

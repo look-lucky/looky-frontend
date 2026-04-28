@@ -20,6 +20,11 @@ import type {
   UseQueryResult
 } from '@tanstack/react-query';
 
+import type {
+  CommonResponseListStorePartnershipResponse,
+  SwaggerErrorResponse
+} from './generated.schemas';
+
 import { customFetch } from './mutator';
 
 
@@ -33,12 +38,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [학생] 특정 상점의 제휴 혜택 목록 조회
  */
 export type getStorePartnershipsResponse200 = {
-  data: Blob
+  data: CommonResponseListStorePartnershipResponse
   status: 200
 }
 
 export type getStorePartnershipsResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -81,7 +86,7 @@ export const getGetStorePartnershipsQueryKey = (storeId?: number,) => {
     }
 
     
-export const getGetStorePartnershipsQueryOptions = <TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = Blob>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorePartnerships>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetStorePartnershipsQueryOptions = <TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = SwaggerErrorResponse>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorePartnerships>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -100,10 +105,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetStorePartnershipsQueryResult = NonNullable<Awaited<ReturnType<typeof getStorePartnerships>>>
-export type GetStorePartnershipsQueryError = Blob
+export type GetStorePartnershipsQueryError = SwaggerErrorResponse
 
 
-export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = Blob>(
+export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = SwaggerErrorResponse>(
  storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorePartnerships>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getStorePartnerships>>,
@@ -113,7 +118,7 @@ export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getSto
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = Blob>(
+export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = SwaggerErrorResponse>(
  storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorePartnerships>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getStorePartnerships>>,
@@ -123,7 +128,7 @@ export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getSto
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = Blob>(
+export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = SwaggerErrorResponse>(
  storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorePartnerships>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -131,7 +136,7 @@ export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getSto
  * @summary [학생] 특정 상점의 제휴 혜택 목록 조회
  */
 
-export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = Blob>(
+export function useGetStorePartnerships<TData = Awaited<ReturnType<typeof getStorePartnerships>>, TError = SwaggerErrorResponse>(
  storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorePartnerships>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

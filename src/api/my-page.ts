@@ -27,6 +27,10 @@ import type {
 import type {
   ChangePasswordRequest,
   ChangeUsernameRequest,
+  CommonResponseOwnerInfoResponse,
+  CommonResponseStudentInfoResponse,
+  CommonResponseVoid,
+  SwaggerErrorResponse,
   UpdateStudentProfileRequest,
   UpdateUniversityRequest
 } from './generated.schemas';
@@ -44,17 +48,17 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [학생] 내 정보 조회
  */
 export type getStudentInfoResponse200 = {
-  data: Blob
+  data: CommonResponseStudentInfoResponse
   status: 200
 }
 
 export type getStudentInfoResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type getStudentInfoResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -97,7 +101,7 @@ export const getGetStudentInfoQueryKey = () => {
     }
 
     
-export const getGetStudentInfoQueryOptions = <TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetStudentInfoQueryOptions = <TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = SwaggerErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -116,10 +120,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetStudentInfoQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentInfo>>>
-export type GetStudentInfoQueryError = Blob
+export type GetStudentInfoQueryError = SwaggerErrorResponse
 
 
-export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>(
+export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = SwaggerErrorResponse>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getStudentInfo>>,
@@ -129,7 +133,7 @@ export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentIn
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>(
+export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = SwaggerErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getStudentInfo>>,
@@ -139,7 +143,7 @@ export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentIn
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>(
+export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = SwaggerErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -147,7 +151,7 @@ export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentIn
  * @summary [학생] 내 정보 조회
  */
 
-export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = Blob>(
+export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentInfo>>, TError = SwaggerErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -167,17 +171,17 @@ export function useGetStudentInfo<TData = Awaited<ReturnType<typeof getStudentIn
  * @summary [학생] 프로필 수정
  */
 export type updateStudentProfileResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type updateStudentProfileResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type updateStudentProfileResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
     
@@ -213,7 +217,7 @@ export const updateStudentProfile = async (updateStudentProfileRequest: UpdateSt
 
 
 
-export const getUpdateStudentProfileMutationOptions = <TError = Blob,
+export const getUpdateStudentProfileMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudentProfile>>, TError,{data: UpdateStudentProfileRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateStudentProfile>>, TError,{data: UpdateStudentProfileRequest}, TContext> => {
 
@@ -242,12 +246,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateStudentProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateStudentProfile>>>
     export type UpdateStudentProfileMutationBody = UpdateStudentProfileRequest
-    export type UpdateStudentProfileMutationError = Blob
+    export type UpdateStudentProfileMutationError = SwaggerErrorResponse
 
     /**
  * @summary [학생] 프로필 수정
  */
-export const useUpdateStudentProfile = <TError = Blob,
+export const useUpdateStudentProfile = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudentProfile>>, TError,{data: UpdateStudentProfileRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateStudentProfile>>,
@@ -262,17 +266,17 @@ export const useUpdateStudentProfile = <TError = Blob,
  * @summary [학생] 대학 변경
  */
 export type updateUniversityResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type updateUniversityResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type updateUniversityResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -308,7 +312,7 @@ export const updateUniversity = async (updateUniversityRequest: UpdateUniversity
 
 
 
-export const getUpdateUniversityMutationOptions = <TError = Blob,
+export const getUpdateUniversityMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUniversity>>, TError,{data: UpdateUniversityRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateUniversity>>, TError,{data: UpdateUniversityRequest}, TContext> => {
 
@@ -337,12 +341,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateUniversityMutationResult = NonNullable<Awaited<ReturnType<typeof updateUniversity>>>
     export type UpdateUniversityMutationBody = UpdateUniversityRequest
-    export type UpdateUniversityMutationError = Blob
+    export type UpdateUniversityMutationError = SwaggerErrorResponse
 
     /**
  * @summary [학생] 대학 변경
  */
-export const useUpdateUniversity = <TError = Blob,
+export const useUpdateUniversity = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUniversity>>, TError,{data: UpdateUniversityRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateUniversity>>,
@@ -357,17 +361,17 @@ export const useUpdateUniversity = <TError = Blob,
  * @summary [공통] 아이디 변경
  */
 export type changeUsernameResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type changeUsernameResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type changeUsernameResponse409 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 409
 }
     
@@ -403,7 +407,7 @@ export const changeUsername = async (changeUsernameRequest: ChangeUsernameReques
 
 
 
-export const getChangeUsernameMutationOptions = <TError = Blob,
+export const getChangeUsernameMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeUsername>>, TError,{data: ChangeUsernameRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof changeUsername>>, TError,{data: ChangeUsernameRequest}, TContext> => {
 
@@ -432,12 +436,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ChangeUsernameMutationResult = NonNullable<Awaited<ReturnType<typeof changeUsername>>>
     export type ChangeUsernameMutationBody = ChangeUsernameRequest
-    export type ChangeUsernameMutationError = Blob
+    export type ChangeUsernameMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 아이디 변경
  */
-export const useChangeUsername = <TError = Blob,
+export const useChangeUsername = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeUsername>>, TError,{data: ChangeUsernameRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof changeUsername>>,
@@ -452,12 +456,12 @@ export const useChangeUsername = <TError = Blob,
  * @summary [공통] 비밀번호 변경
  */
 export type changePasswordResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type changePasswordResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
     
@@ -493,7 +497,7 @@ export const changePassword = async (changePasswordRequest: ChangePasswordReques
 
 
 
-export const getChangePasswordMutationOptions = <TError = Blob,
+export const getChangePasswordMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: ChangePasswordRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: ChangePasswordRequest}, TContext> => {
 
@@ -522,12 +526,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changePassword>>>
     export type ChangePasswordMutationBody = ChangePasswordRequest
-    export type ChangePasswordMutationError = Blob
+    export type ChangePasswordMutationError = SwaggerErrorResponse
 
     /**
  * @summary [공통] 비밀번호 변경
  */
-export const useChangePassword = <TError = Blob,
+export const useChangePassword = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: ChangePasswordRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof changePassword>>,
@@ -542,17 +546,17 @@ export const useChangePassword = <TError = Blob,
  * @summary [점주] 내 정보 조회
  */
 export type getOwnerInfoResponse200 = {
-  data: Blob
+  data: CommonResponseOwnerInfoResponse
   status: 200
 }
 
 export type getOwnerInfoResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type getOwnerInfoResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -595,7 +599,7 @@ export const getGetOwnerInfoQueryKey = () => {
     }
 
     
-export const getGetOwnerInfoQueryOptions = <TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = Blob>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOwnerInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetOwnerInfoQueryOptions = <TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = SwaggerErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOwnerInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -614,10 +618,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetOwnerInfoQueryResult = NonNullable<Awaited<ReturnType<typeof getOwnerInfo>>>
-export type GetOwnerInfoQueryError = Blob
+export type GetOwnerInfoQueryError = SwaggerErrorResponse
 
 
-export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = Blob>(
+export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = SwaggerErrorResponse>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOwnerInfo>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getOwnerInfo>>,
@@ -627,7 +631,7 @@ export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = Blob>(
+export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = SwaggerErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOwnerInfo>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getOwnerInfo>>,
@@ -637,7 +641,7 @@ export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = Blob>(
+export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = SwaggerErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOwnerInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -645,7 +649,7 @@ export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>
  * @summary [점주] 내 정보 조회
  */
 
-export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = Blob>(
+export function useGetOwnerInfo<TData = Awaited<ReturnType<typeof getOwnerInfo>>, TError = SwaggerErrorResponse>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOwnerInfo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

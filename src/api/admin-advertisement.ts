@@ -25,8 +25,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseLong,
+  CommonResponsePageResponseAdminAdvertisementResponse,
+  CommonResponseVoid,
   CreateAdvertisementRequest,
   GetAdvertisementsParams,
+  SwaggerErrorResponse,
   UpdateAdvertisementRequest
 } from './generated.schemas';
 
@@ -43,12 +47,12 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [관리자] 광고 목록 조회
  */
 export type getAdvertisementsResponse200 = {
-  data: Blob
+  data: CommonResponsePageResponseAdminAdvertisementResponse
   status: 200
 }
 
 export type getAdvertisementsResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
     
@@ -98,7 +102,7 @@ export const getGetAdvertisementsQueryKey = (params?: GetAdvertisementsParams,) 
     }
 
     
-export const getGetAdvertisementsQueryOptions = <TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = Blob>(params: GetAdvertisementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdvertisements>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetAdvertisementsQueryOptions = <TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = SwaggerErrorResponse>(params: GetAdvertisementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdvertisements>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -117,10 +121,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetAdvertisementsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdvertisements>>>
-export type GetAdvertisementsQueryError = Blob
+export type GetAdvertisementsQueryError = SwaggerErrorResponse
 
 
-export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = Blob>(
+export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = SwaggerErrorResponse>(
  params: GetAdvertisementsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdvertisements>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAdvertisements>>,
@@ -130,7 +134,7 @@ export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvert
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = Blob>(
+export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = SwaggerErrorResponse>(
  params: GetAdvertisementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdvertisements>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAdvertisements>>,
@@ -140,7 +144,7 @@ export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvert
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = Blob>(
+export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = SwaggerErrorResponse>(
  params: GetAdvertisementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdvertisements>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -148,7 +152,7 @@ export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvert
  * @summary [관리자] 광고 목록 조회
  */
 
-export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = Blob>(
+export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvertisements>>, TError = SwaggerErrorResponse>(
  params: GetAdvertisementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdvertisements>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -168,17 +172,17 @@ export function useGetAdvertisements<TData = Awaited<ReturnType<typeof getAdvert
  * @summary [관리자] 광고 등록
  */
 export type createAdvertisementResponse201 = {
-  data: Blob
+  data: CommonResponseLong
   status: 201
 }
 
 export type createAdvertisementResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type createAdvertisementResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
     
@@ -214,7 +218,7 @@ export const createAdvertisement = async (createAdvertisementRequest: CreateAdve
 
 
 
-export const getCreateAdvertisementMutationOptions = <TError = Blob,
+export const getCreateAdvertisementMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdvertisement>>, TError,{data: CreateAdvertisementRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createAdvertisement>>, TError,{data: CreateAdvertisementRequest}, TContext> => {
 
@@ -243,12 +247,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateAdvertisementMutationResult = NonNullable<Awaited<ReturnType<typeof createAdvertisement>>>
     export type CreateAdvertisementMutationBody = CreateAdvertisementRequest
-    export type CreateAdvertisementMutationError = Blob
+    export type CreateAdvertisementMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 광고 등록
  */
-export const useCreateAdvertisement = <TError = Blob,
+export const useCreateAdvertisement = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdvertisement>>, TError,{data: CreateAdvertisementRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createAdvertisement>>,
@@ -263,17 +267,17 @@ export const useCreateAdvertisement = <TError = Blob,
  * @summary [관리자] 광고 삭제
  */
 export type deleteAdvertisementResponse204 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 204
 }
 
 export type deleteAdvertisementResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type deleteAdvertisementResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -308,7 +312,7 @@ export const deleteAdvertisement = async (advertisementId: number, options?: Req
 
 
 
-export const getDeleteAdvertisementMutationOptions = <TError = Blob,
+export const getDeleteAdvertisementMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdvertisement>>, TError,{advertisementId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAdvertisement>>, TError,{advertisementId: number}, TContext> => {
 
@@ -337,12 +341,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteAdvertisementMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdvertisement>>>
     
-    export type DeleteAdvertisementMutationError = Blob
+    export type DeleteAdvertisementMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 광고 삭제
  */
-export const useDeleteAdvertisement = <TError = Blob,
+export const useDeleteAdvertisement = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdvertisement>>, TError,{advertisementId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAdvertisement>>,
@@ -357,22 +361,22 @@ export const useDeleteAdvertisement = <TError = Blob,
  * @summary [관리자] 광고 수정
  */
 export type updateAdvertisementResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type updateAdvertisementResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type updateAdvertisementResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type updateAdvertisementResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -409,7 +413,7 @@ export const updateAdvertisement = async (advertisementId: number,
 
 
 
-export const getUpdateAdvertisementMutationOptions = <TError = Blob,
+export const getUpdateAdvertisementMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdvertisement>>, TError,{advertisementId: number;data: UpdateAdvertisementRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateAdvertisement>>, TError,{advertisementId: number;data: UpdateAdvertisementRequest}, TContext> => {
 
@@ -438,12 +442,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateAdvertisementMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdvertisement>>>
     export type UpdateAdvertisementMutationBody = UpdateAdvertisementRequest
-    export type UpdateAdvertisementMutationError = Blob
+    export type UpdateAdvertisementMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 광고 수정
  */
-export const useUpdateAdvertisement = <TError = Blob,
+export const useUpdateAdvertisement = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdvertisement>>, TError,{advertisementId: number;data: UpdateAdvertisementRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateAdvertisement>>,

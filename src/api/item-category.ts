@@ -25,7 +25,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseListItemCategoryResponse,
+  CommonResponseLong,
+  CommonResponseVoid,
   CreateItemCategoryBody,
+  SwaggerErrorResponse,
   UpdateItemCategoryBody
 } from './generated.schemas';
 
@@ -42,7 +46,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [공통] 상품 카테고리 목록 조회
  */
 export type getItemCategoriesResponse200 = {
-  data: Blob
+  data: CommonResponseListItemCategoryResponse
   status: 200
 }
     
@@ -153,17 +157,17 @@ export function useGetItemCategories<TData = Awaited<ReturnType<typeof getItemCa
  * @summary [점주] 상품 카테고리 등록
  */
 export type createItemCategoryResponse201 = {
-  data: Blob
+  data: CommonResponseLong
   status: 201
 }
 
 export type createItemCategoryResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type createItemCategoryResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -200,7 +204,7 @@ export const createItemCategory = async (storeId: number,
 
 
 
-export const getCreateItemCategoryMutationOptions = <TError = Blob,
+export const getCreateItemCategoryMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItemCategory>>, TError,{storeId: number;data: CreateItemCategoryBody}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createItemCategory>>, TError,{storeId: number;data: CreateItemCategoryBody}, TContext> => {
 
@@ -229,12 +233,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateItemCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof createItemCategory>>>
     export type CreateItemCategoryMutationBody = CreateItemCategoryBody
-    export type CreateItemCategoryMutationError = Blob
+    export type CreateItemCategoryMutationError = SwaggerErrorResponse
 
     /**
  * @summary [점주] 상품 카테고리 등록
  */
-export const useCreateItemCategory = <TError = Blob,
+export const useCreateItemCategory = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItemCategory>>, TError,{storeId: number;data: CreateItemCategoryBody}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createItemCategory>>,
@@ -249,12 +253,12 @@ export const useCreateItemCategory = <TError = Blob,
  * @summary [점주] 상품 카테고리 삭제
  */
 export type deleteItemCategoryResponse204 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 204
 }
 
 export type deleteItemCategoryResponse409 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 409
 }
     
@@ -291,7 +295,7 @@ export const deleteItemCategory = async (storeId: number,
 
 
 
-export const getDeleteItemCategoryMutationOptions = <TError = Blob,
+export const getDeleteItemCategoryMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItemCategory>>, TError,{storeId: number;categoryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteItemCategory>>, TError,{storeId: number;categoryId: number}, TContext> => {
 
@@ -320,12 +324,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteItemCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteItemCategory>>>
     
-    export type DeleteItemCategoryMutationError = Blob
+    export type DeleteItemCategoryMutationError = SwaggerErrorResponse
 
     /**
  * @summary [점주] 상품 카테고리 삭제
  */
-export const useDeleteItemCategory = <TError = Blob,
+export const useDeleteItemCategory = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItemCategory>>, TError,{storeId: number;categoryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteItemCategory>>,
@@ -340,7 +344,7 @@ export const useDeleteItemCategory = <TError = Blob,
  * @summary [점주] 상품 카테고리 수정
  */
 export type updateItemCategoryResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     

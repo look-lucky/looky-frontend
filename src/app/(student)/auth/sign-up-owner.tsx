@@ -224,6 +224,9 @@ export default function SignupOwnerPage() {
           throw new Error("가게 정보를 찾을 수 없습니다. 가게 검색 후 다시 시도해주세요.");
         }
 
+        // createStoreClaims는 인증이 필요하므로 토큰을 먼저 저장
+        await saveToken(accessToken, expiresIn ?? 3600, role);
+
         // 사업자등록증 업로드
         let licenseImageUrl: string | undefined;
         if (businessImageUri) {

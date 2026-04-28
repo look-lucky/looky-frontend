@@ -25,8 +25,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseListPartnershipResponse,
+  CommonResponseLong,
+  CommonResponseVoid,
   CreatePartnershipRequest,
   ExportPartnershipTemplateParams,
+  SwaggerErrorResponse,
   UpdatePartnershipRequest,
   UploadPartnershipDataBody,
   UploadPartnershipDataParams
@@ -45,7 +49,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary 조직별 제휴 목록 조회
  */
 export type getPartnershipsByOrganizationResponse200 = {
-  data: Blob
+  data: CommonResponseListPartnershipResponse
   status: 200
 }
     
@@ -164,27 +168,27 @@ export function useGetPartnershipsByOrganization<TData = Awaited<ReturnType<type
  * @summary [관리자] 제휴 단건 등록
  */
 export type createPartnershipResponse201 = {
-  data: Blob
+  data: CommonResponseLong
   status: 201
 }
 
 export type createPartnershipResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type createPartnershipResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type createPartnershipResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
 
 export type createPartnershipResponse409 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 409
 }
     
@@ -223,7 +227,7 @@ export const createPartnership = async (universityId: number,
 
 
 
-export const getCreatePartnershipMutationOptions = <TError = Blob,
+export const getCreatePartnershipMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPartnership>>, TError,{universityId: number;organizationId: number;data: CreatePartnershipRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createPartnership>>, TError,{universityId: number;organizationId: number;data: CreatePartnershipRequest}, TContext> => {
 
@@ -252,12 +256,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreatePartnershipMutationResult = NonNullable<Awaited<ReturnType<typeof createPartnership>>>
     export type CreatePartnershipMutationBody = CreatePartnershipRequest
-    export type CreatePartnershipMutationError = Blob
+    export type CreatePartnershipMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 제휴 단건 등록
  */
-export const useCreatePartnership = <TError = Blob,
+export const useCreatePartnership = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPartnership>>, TError,{universityId: number;organizationId: number;data: CreatePartnershipRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createPartnership>>,
@@ -272,17 +276,17 @@ export const useCreatePartnership = <TError = Blob,
  * @summary [학생회/관리자] 제휴 엑셀로 등록
  */
 export type uploadPartnershipDataResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type uploadPartnershipDataResponse400 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 400
 }
 
 export type uploadPartnershipDataResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
     
@@ -328,7 +332,7 @@ formData.append(`file`, uploadPartnershipDataBody.file);
 
 
 
-export const getUploadPartnershipDataMutationOptions = <TError = Blob,
+export const getUploadPartnershipDataMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPartnershipData>>, TError,{data: UploadPartnershipDataBody;params?: UploadPartnershipDataParams}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof uploadPartnershipData>>, TError,{data: UploadPartnershipDataBody;params?: UploadPartnershipDataParams}, TContext> => {
 
@@ -357,12 +361,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UploadPartnershipDataMutationResult = NonNullable<Awaited<ReturnType<typeof uploadPartnershipData>>>
     export type UploadPartnershipDataMutationBody = UploadPartnershipDataBody
-    export type UploadPartnershipDataMutationError = Blob
+    export type UploadPartnershipDataMutationError = SwaggerErrorResponse
 
     /**
  * @summary [학생회/관리자] 제휴 엑셀로 등록
  */
-export const useUploadPartnershipData = <TError = Blob,
+export const useUploadPartnershipData = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPartnershipData>>, TError,{data: UploadPartnershipDataBody;params?: UploadPartnershipDataParams}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof uploadPartnershipData>>,
@@ -377,17 +381,17 @@ export const useUploadPartnershipData = <TError = Blob,
  * @summary [관리자] 제휴 삭제
  */
 export type deletePartnershipResponse204 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 204
 }
 
 export type deletePartnershipResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type deletePartnershipResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -422,7 +426,7 @@ export const deletePartnership = async (partnershipId: number, options?: Request
 
 
 
-export const getDeletePartnershipMutationOptions = <TError = Blob,
+export const getDeletePartnershipMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePartnership>>, TError,{partnershipId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deletePartnership>>, TError,{partnershipId: number}, TContext> => {
 
@@ -451,12 +455,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeletePartnershipMutationResult = NonNullable<Awaited<ReturnType<typeof deletePartnership>>>
     
-    export type DeletePartnershipMutationError = Blob
+    export type DeletePartnershipMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 제휴 삭제
  */
-export const useDeletePartnership = <TError = Blob,
+export const useDeletePartnership = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePartnership>>, TError,{partnershipId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deletePartnership>>,
@@ -471,17 +475,17 @@ export const useDeletePartnership = <TError = Blob,
  * @summary [관리자] 제휴 혜택 수정
  */
 export type updatePartnershipBenefitResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
 
 export type updatePartnershipBenefitResponse403 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 403
 }
 
 export type updatePartnershipBenefitResponse404 = {
-  data: Blob
+  data: SwaggerErrorResponse
   status: 404
 }
     
@@ -518,7 +522,7 @@ export const updatePartnershipBenefit = async (partnershipId: number,
 
 
 
-export const getUpdatePartnershipBenefitMutationOptions = <TError = Blob,
+export const getUpdatePartnershipBenefitMutationOptions = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePartnershipBenefit>>, TError,{partnershipId: number;data: UpdatePartnershipRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updatePartnershipBenefit>>, TError,{partnershipId: number;data: UpdatePartnershipRequest}, TContext> => {
 
@@ -547,12 +551,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdatePartnershipBenefitMutationResult = NonNullable<Awaited<ReturnType<typeof updatePartnershipBenefit>>>
     export type UpdatePartnershipBenefitMutationBody = UpdatePartnershipRequest
-    export type UpdatePartnershipBenefitMutationError = Blob
+    export type UpdatePartnershipBenefitMutationError = SwaggerErrorResponse
 
     /**
  * @summary [관리자] 제휴 혜택 수정
  */
-export const useUpdatePartnershipBenefit = <TError = Blob,
+export const useUpdatePartnershipBenefit = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePartnershipBenefit>>, TError,{partnershipId: number;data: UpdatePartnershipRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updatePartnershipBenefit>>,
@@ -567,7 +571,7 @@ export const useUpdatePartnershipBenefit = <TError = Blob,
  * @summary 대학별 제휴 목록 조회
  */
 export type getPartnershipsByUniversityResponse200 = {
-  data: Blob
+  data: CommonResponseListPartnershipResponse
   status: 200
 }
     

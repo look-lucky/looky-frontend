@@ -16,6 +16,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponsePresignedUrlResponse,
   PresignedUrlRequest
 } from './generated.schemas';
 
@@ -32,7 +33,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary Presigned URL 발급
  */
 export type getPresignedUrlResponse200 = {
-  data: Blob
+  data: CommonResponsePresignedUrlResponse
   status: 200
 }
     

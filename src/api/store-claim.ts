@@ -26,6 +26,12 @@ import type {
 
 import type {
   BizVerificationRequest,
+  CommonResponseBizVerificationResponse,
+  CommonResponseListMyStoreClaimResponse,
+  CommonResponseListStoreResponse,
+  CommonResponseLong,
+  CommonResponsePageStoreClaimResponse,
+  CommonResponseVoid,
   GetStoreClaimsParams,
   SearchUnclaimedStoresParams,
   StoreClaimRejectionRequest,
@@ -45,7 +51,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary [점주] 상점 소유 요청 등록
  */
 export type createStoreClaimsResponse200 = {
-  data: Blob
+  data: CommonResponseLong
   status: 200
 }
     
@@ -128,7 +134,7 @@ export const useCreateStoreClaims = <TError = unknown,
  * @summary [점주] 사업자등록번호 유효성 검증
  */
 export type verifyBizRegNoResponse200 = {
-  data: Blob
+  data: CommonResponseBizVerificationResponse
   status: 200
 }
     
@@ -211,7 +217,7 @@ export const useVerifyBizRegNo = <TError = unknown,
  * @summary [관리자] 상점 소유권 요청 반려
  */
 export type rejectResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -295,7 +301,7 @@ export const useReject = <TError = unknown,
  * @summary [관리자] 상점 소유권 요청 승인
  */
 export type approveResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -377,7 +383,7 @@ export const useApprove = <TError = unknown,
  * @summary [관리자] 상점 소유권 요청 관리자 메모 등록 및 수정
  */
 export type updateMemoResponse200 = {
-  data: Blob
+  data: CommonResponseVoid
   status: 200
 }
     
@@ -461,7 +467,7 @@ export const useUpdateMemo = <TError = unknown,
  * @summary [점주] 미등록 상점 검색
  */
 export type searchUnclaimedStoresResponse200 = {
-  data: Blob
+  data: CommonResponseListStoreResponse
   status: 200
 }
     
@@ -579,7 +585,7 @@ export function useSearchUnclaimedStores<TData = Awaited<ReturnType<typeof searc
  * @summary [점주] 내 상점 소유 요청 목록 조회
  */
 export type getMyStoreClaimsResponse200 = {
-  data: Blob
+  data: CommonResponseListMyStoreClaimResponse
   status: 200
 }
     
@@ -690,7 +696,7 @@ export function useGetMyStoreClaims<TData = Awaited<ReturnType<typeof getMyStore
  * @summary [관리자] 상점 소유권 요청 목록 조회
  */
 export type getStoreClaimsResponse200 = {
-  data: Blob
+  data: CommonResponsePageStoreClaimResponse
   status: 200
 }
     
