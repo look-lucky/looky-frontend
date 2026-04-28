@@ -162,12 +162,11 @@ interface StoreMarkerData {
   favoriteCount?: number;
 }
 
-// 마커 우선순위 zIndex 계산 (제휴 > 쿠폰 > 찜 많은 순)
+// 마커 우선순위 zIndex: 이벤트(40/30) > 쿠폰(20) > 제휴(10) > 일반(0)
 function getStoreMarkerZIndex(isPartner: boolean, hasCoupon: boolean, favoriteCount: number): number {
-  let z = favoriteCount; // 찜 수를 기본값으로
-  if (hasCoupon) z += 10000;
-  if (isPartner) z += 100000;
-  return z;
+  if (hasCoupon) return 20;
+  if (isPartner) return 10;
+  return 0;
 }
 
 // 이벤트 마커 데이터
@@ -271,6 +270,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
     const clusteredMarkers = useMapCluster(markers, currentZoom);
     // 이벤트 마커를 클러스터/개별 마커로 변환
     const clusteredEventMarkers = useEventCluster(eventMarkers, currentZoom);
+
 
 
     // 가게/이벤트 마커와 겹치는 이벤트 마커를 살짝 이동
@@ -459,7 +459,7 @@ export const NaverMap = forwardRef<NaverMapViewRef, NaverMapProps>(
                 height={markerSize}
                 onTap={() => onEventMarkerClick?.(item.id)}
                 anchor={{ x: 0.5, y: 0.5 }}
-                zIndex={item.status === 'live' ? 2 : 1}
+                zIndex={item.status === 'live' ? 40 : 30}
                 image={getEventMarkerIcon(item.eventType, item.status)}
                 isHideCollidedCaptions
                 caption={showLabel && item.title ? {
