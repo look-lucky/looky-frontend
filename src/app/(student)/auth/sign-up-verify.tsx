@@ -340,6 +340,19 @@ export default function StudentVerificationPage() {
     const birthDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
     const apiGender = gender === "male" ? "MALE" : "FEMALE";
 
+    Sentry.addBreadcrumb({
+      category: 'signup',
+      message: 'handleComplete called',
+      level: 'info',
+      data: {
+        socialUserIdParam,
+        socialUserIdStore,
+        socialUserId,
+        socialProvider,
+        authUserType,
+      },
+    });
+
     // 소셜 회원가입 흐름
     if (socialUserId) {
       completeSocialSignupMutation.mutate(
