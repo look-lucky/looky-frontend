@@ -81,7 +81,13 @@ export function useKakaoLogin() {
       await handleAuthSuccess(accessToken, expiresIn, role ?? "ROLE_CUSTOMER");
       return { success: true };
     } catch (error: any) {
-      if (error.code === "E_CANCELLED_OPERATION") {
+      if (
+        error.code === "E_CANCELLED_OPERATION" ||
+        // iOS Kakao SDK: 카카오톡 미설치 기기에서 Safari 인증 취소 시 SdkError error 0 발생
+        (error.code === "RNKakaoLogins" &&
+          typeof error.message === "string" &&
+          error.message.includes("authorization attempt failed"))
+      ) {
         return { success: false, error: "cancelled" };
       }
       Sentry.captureException(error, { extra: { provider: "kakao" } });
