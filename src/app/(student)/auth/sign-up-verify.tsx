@@ -416,19 +416,24 @@ export default function StudentVerificationPage() {
             }
           },
           onError: (error: any) => {
+            const errorCode = error?.data?.data?.code ?? error?.data?.code;
+            const errorMessage = error?.data?.data?.message ?? error?.data?.message ?? error?.message;
             Sentry.withScope((scope) => {
               scope.setTag('flow', 'social_signup');
               scope.setTag('provider', socialProvider ?? 'unknown');
+              scope.setTag('error_code', errorCode ?? 'unknown');
               scope.setContext('signup_data', {
                 userId: socialUserId,
                 provider: socialProvider,
-                errorCode: error?.data?.data?.code,
-                errorMessage: error?.data?.data?.message ?? error?.data?.message,
+                nickname,
+                errorCode,
+                errorMessage,
                 httpStatus: error?.status,
+                rawData: JSON.stringify(error?.data),
               });
               Sentry.captureException(error);
             });
-            Alert.alert("오류", "회원가입에 실패했습니다. 다시 시도해주세요.");
+            Alert.alert("오류", errorMessage || "회원가입에 실패했습니다. 다시 시도해주세요.");
           },
         }
       );
