@@ -2053,7 +2053,7 @@ pageable: Pageable;
 };
 
 export type CompleteSocialSignupParams = {
-userId: number;
+userId?: number;
 };
 
 export type UploadStoreDataBody = {

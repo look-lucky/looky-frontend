@@ -18,7 +18,6 @@ const PUBLIC_ENDPOINTS = [
   "/api/auth/check-username",
   "/api/auth/email",
   "/api/auth/find-",
-  "/api/auth/complete-social-signup",
   "/api/universities",
   "/api/organizations",
 ];

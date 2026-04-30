@@ -599,7 +599,7 @@ export default function StoreScreen() {
               : (mappedMoods.length > 0 ? mappedMoods : (prev.vibes || [])),
             intro: detailedStore?.introduction || myStore.introduction || prev.intro || '',
             address: detailedStore?.roadAddress || detailedStore?.jibunAddress || myStore.roadAddress || myStore.jibunAddress || prev.address || '',
-            detailAddress: detailedStore?.addressDetail || prev.detailAddress || '',
+            detailAddress: (detailedStore?.addressDetail != null && detailedStore.addressDetail !== '') ? detailedStore.addressDetail : (prev.detailAddress || ''),
             phone: detailedStore?.phone || myStore.phone || prev.phone || '',
             logoImage: detailedStore?.profileImageUrl || myStore.profileImageUrl || myStore.logoImage || myStore.imageUrl || prev.logoImage,
             bannerImages: (detailedStore?.imageUrls && detailedStore.imageUrls.length > 0) ? detailedStore.imageUrls : (myStore.imageUrls && myStore.imageUrls.length > 0 ? myStore.imageUrls : (prev.bannerImages || [])),
