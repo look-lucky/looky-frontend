@@ -43,10 +43,11 @@ export function useSocialLogin() {
   const redirectUri = Linking.createURL("auth/callback");
 
   useEffect(() => {
-    // 브라우저 세션 정리
-    WebBrowser.warmUpAsync();
+    WebBrowser.warmUpAsync().catch(() => {});
     return () => {
-      WebBrowser.coolDownAsync();
+      WebBrowser.coolDownAsync().catch(() => {
+        // 브라우저가 이미 닫혀있을 때 발생하는 무해한 에러 — Sentry 전송 불필요
+      });
     };
   }, []);
 
@@ -57,7 +58,13 @@ export function useSocialLogin() {
 
       const error = params.get("error");
       if (error) {
-        Sentry.captureMessage(`OAuth 콜백 에러 [${provider}]: ${error}`, "error");
+        Sentry.withScope((scope) => {
+          scope.setTag("feature", "social-login");
+          scope.setTag("provider", provider);
+          scope.setTag("step", "oauth-callback");
+          scope.setContext("social_login", { error, callbackUrl });
+          Sentry.captureMessage(`[소셜로그인] OAuth 콜백 에러 (${provider})`, "error");
+        });
         return { success: false, error };
       }
 
@@ -164,7 +171,13 @@ export function useSocialLogin() {
 
         return processCallbackUrl(callbackUrl, provider);
       } catch (error) {
-        Sentry.captureException(error, { extra: { provider } });
+        Sentry.withScope((scope) => {
+          scope.setTag("feature", "social-login");
+          scope.setTag("provider", provider);
+          scope.setTag("step", "oauth-browser");
+          scope.setContext("social_login", { provider, redirectUri });
+          Sentry.captureException(error);
+        });
         return {
           success: false,
           error: error instanceof Error ? error.message : "알 수 없는 오류",
@@ -212,7 +225,13 @@ export function useSocialLogin() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        Sentry.captureMessage(`Apple 백엔드 로그인 실패: ${response.status} ${errorText}`, "error");
+        Sentry.withScope((scope) => {
+          scope.setTag("feature", "social-login");
+          scope.setTag("provider", "apple");
+          scope.setTag("step", "backend-login");
+          scope.setContext("social_login", { httpStatus: response.status, errorText });
+          Sentry.captureMessage(`[소셜로그인] Apple 백엔드 인증 실패 (${response.status})`, "error");
+        });
         return { success: false, error: "서버 로그인 실패" };
       }
 
@@ -231,7 +250,13 @@ export function useSocialLogin() {
           const userId = subValue ? parseInt(subValue, 10) : null;
 
           if (!userId) {
-            Sentry.captureMessage(`Apple 로그인 userId 파싱 실패. sub: ${subValue}`, "error");
+            Sentry.withScope((scope) => {
+              scope.setTag("feature", "social-login");
+              scope.setTag("provider", "apple");
+              scope.setTag("step", "jwt-parse");
+              scope.setContext("social_login", { sub: subValue });
+              Sentry.captureMessage("[소셜로그인] Apple userId 파싱 실패", "error");
+            });
             return {
               success: false,
               error: `사용자 정보를 가져올 수 없습니다. (ID: ${subValue})`,
@@ -262,7 +287,13 @@ export function useSocialLogin() {
       if (error.code === "ERR_REQUEST_CANCELED") {
         return { success: false, error: "cancelled" };
       }
-      Sentry.captureException(error, { extra: { provider: "apple" } });
+      Sentry.withScope((scope) => {
+        scope.setTag("feature", "social-login");
+        scope.setTag("provider", "apple");
+        scope.setTag("step", "apple-auth");
+        scope.setContext("social_login", { errorCode: error.code });
+        Sentry.captureException(error);
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : "알 수 없는 오류",

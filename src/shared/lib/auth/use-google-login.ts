@@ -97,7 +97,13 @@ export function useGoogleLogin() {
             return { success: false, error: "Play Services를 사용할 수 없습니다" };
         }
       }
-      Sentry.captureException(error, { extra: { provider: "google" } });
+      Sentry.withScope((scope) => {
+        scope.setTag("feature", "social-login");
+        scope.setTag("provider", "google");
+        scope.setTag("step", "google-signin");
+        scope.setContext("social_login", { errorCode: error.code });
+        Sentry.captureException(error);
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : "알 수 없는 오류",

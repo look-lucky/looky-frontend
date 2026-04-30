@@ -1328,7 +1328,9 @@ export default function CouponScreen({ navigation, route }) {
                                     </View>
                                 </View>
 
-                                {/* 시간 선택기 */}
+                                </ScrollView>
+
+                                {/* 시간 선택기 - ScrollView 밖에 배치해야 터치 이벤트 충돌 없음 */}
                                 <View style={styles.timePickerRow}>
                                     <TouchableOpacity onPress={() => {
                                         const newDate = new Date(activePeriodTab === 'start' ? customStartDate : customEndDate);
@@ -1378,7 +1380,6 @@ export default function CouponScreen({ navigation, route }) {
                                     </TouchableOpacity>
                                     <TouchableOpacity><Ionicons name="chevron-down" size={rs(16)} color="#34B262" /></TouchableOpacity>
                                 </View>
-                                </ScrollView>
 
                                 {/* 하단 버튼 */}
                                 <View style={styles.periodModalBtnRow}>

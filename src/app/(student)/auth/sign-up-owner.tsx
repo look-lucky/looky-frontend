@@ -7,7 +7,7 @@ import { Gray, Owner, Text as TextColors } from "@/src/shared/theme/theme";
 import { useSignupOwner, useCompleteSocialSignup, login } from "@/src/api/auth";
 import { useAuth } from "@/src/shared/lib/auth";
 import { logOwnerSignUpComplete } from "@/src/shared/lib/analytics";
-import { saveCredentials, saveToken } from "@/src/shared/lib/auth/token";
+import { clearToken, saveCredentials, saveToken } from "@/src/shared/lib/auth/token";
 import type { UserType } from "@/src/shared/lib/auth/token";
 import { useVerifyBizRegNo, useCreateStoreClaims } from "@/src/api/store-claim";
 import * as ImagePicker from "expo-image-picker";
@@ -194,9 +194,7 @@ export default function SignupOwnerPage() {
       // 소셜 회원가입 흐름
       if (socialUserId) {
         const socialResponse = await completeSocialSignupMutation.mutateAsync({
-          params: {
-            userId: parseInt(socialUserId, 10),
-          },
+          params: {},
           data: {
             role: "ROLE_OWNER",
             gender: apiGender as "MALE" | "FEMALE",
@@ -351,6 +349,11 @@ export default function SignupOwnerPage() {
       logOwnerSignUpComplete();
     } catch (error: any) {
       console.error("❌ 회원가입 실패:", error);
+      if (error?.status === 404) {
+        await clearToken();
+        router.replace("/auth");
+        return;
+      }
       Alert.alert(
         "회원가입 실패",
         error?.message || "회원가입 중 오류가 발생했습니다."

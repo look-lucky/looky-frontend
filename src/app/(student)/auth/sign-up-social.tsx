@@ -7,6 +7,7 @@ import { ArrowLeft } from "@/src/shared/common/arrow-left";
 import { SelectModal, SelectOption } from "@/src/shared/common/select-modal";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
+import { clearToken } from "@/src/shared/lib/auth/token";
 import type { UserType } from "@/src/shared/lib/auth/token";
 import { logStudentSignUpComplete, setUserProperties } from "@/src/shared/lib/analytics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -216,9 +217,7 @@ export default function SocialSignupPage() {
 
     completeSocialSignupMutation.mutate(
       {
-        params: {
-          userId: parseInt(userId, 10),
-        },
+        params: {},
         data: {
           role: "ROLE_STUDENT",
           gender: apiGender,
@@ -280,8 +279,13 @@ export default function SocialSignupPage() {
             Alert.alert("오류", "회원가입 처리 중 문제가 발생했습니다.");
           }
         },
-        onError: (error) => {
+        onError: async (error: any) => {
           console.error("소셜 회원가입 실패:", error);
+          if (error?.status === 404) {
+            await clearToken();
+            router.replace("/auth");
+            return;
+          }
           Alert.alert("오류", "회원가입에 실패했습니다. 다시 시도해주세요.");
         },
       }

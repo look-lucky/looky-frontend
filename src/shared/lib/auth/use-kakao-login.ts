@@ -81,16 +81,23 @@ export function useKakaoLogin() {
       await handleAuthSuccess(accessToken, expiresIn, role ?? "ROLE_CUSTOMER");
       return { success: true };
     } catch (error: any) {
-      if (
+      const message: string = typeof error.message === "string" ? error.message : "";
+      const isCancelled =
         error.code === "E_CANCELLED_OPERATION" ||
-        // iOS Kakao SDK: 카카오톡 미설치 기기에서 Safari 인증 취소 시 SdkError error 0 발생
-        (error.code === "RNKakaoLogins" &&
-          typeof error.message === "string" &&
-          error.message.includes("authorization attempt failed"))
-      ) {
+        // iOS: 카카오톡 미설치 기기에서 Safari 인증 취소 시 SdkError error 0 발생
+        message.includes("authorization attempt failed") ||
+        // iOS: SdkError error 0 (KakaoSDKCommon)
+        message.includes("SdkError error 0");
+      if (isCancelled) {
         return { success: false, error: "cancelled" };
       }
-      Sentry.captureException(error, { extra: { provider: "kakao" } });
+      Sentry.withScope((scope) => {
+        scope.setTag("feature", "social-login");
+        scope.setTag("provider", "kakao");
+        scope.setTag("step", "kakao-sdk");
+        scope.setContext("social_login", { errorCode: error.code, errorMessage: message });
+        Sentry.captureException(error);
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : "알 수 없는 오류",
