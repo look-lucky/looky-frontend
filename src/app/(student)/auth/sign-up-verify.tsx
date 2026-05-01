@@ -446,6 +446,14 @@ export default function StudentVerificationPage() {
               });
               Sentry.captureException(error);
             });
+            if (errorCode === 'USER_NOT_FOUND' || error?.status === 404) {
+              Alert.alert(
+                "세션 만료",
+                "소셜 로그인 세션이 만료되었습니다. 다시 로그인해주세요.",
+                [{ text: "확인", onPress: () => router.replace("/auth") }]
+              );
+              return;
+            }
             Alert.alert("오류", errorMessage || "회원가입에 실패했습니다. 다시 시도해주세요.");
           },
         }
