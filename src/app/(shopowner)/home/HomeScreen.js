@@ -165,10 +165,6 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchData();
@@ -189,6 +185,7 @@ export default function HomeScreen({ navigation }) {
 
   // 날짜 포맷 헬퍼
   const formatDate = (dateString) => {
+    const date = new Date(dateString);
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}까지`;
   };
 
