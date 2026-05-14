@@ -161,7 +161,7 @@ export function useEvents({
   } = useQuery({
     queryKey: ['events', collegeId],
     queryFn: () => fetchEvents({ status: ['UPCOMING', 'LIVE'], size: 100, universityId: collegeId ?? undefined }),
-    staleTime: 3 * 60 * 1000,
+    staleTime: 0,
     enabled,
   });
 
