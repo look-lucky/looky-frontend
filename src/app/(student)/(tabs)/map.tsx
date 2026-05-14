@@ -793,12 +793,13 @@ export default function MapTab() {
     const camera = latestCameraRef.current;
     if (!camera) return;
     handleViewportSearch({ lat: camera.lat, lng: camera.lng }, camera.zoom);
+    refetchEvents();
     setShowSearchHereButton(false);
     // 토스트 표시
     setShowToast(true);
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     toastTimeoutRef.current = setTimeout(() => setShowToast(false), 2000);
-  }, [handleViewportSearch]);
+  }, [handleViewportSearch, refetchEvents]);
 
   // ────────────────────────────────────────────
   // 바텀시트 FlatList 데이터 (가상화)
