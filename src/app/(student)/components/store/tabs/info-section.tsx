@@ -73,22 +73,22 @@ export function InfoSection({
     setActiveAnchor(anchorId);
     if (!containerRef.current || !scrollViewRef?.current) return;
 
-    // container의 절대 screen 좌표와 scrollView의 절대 screen 좌표를 측정해서
-    // container의 ScrollView content 내 offset을 구한 뒤 섹션 Y를 더함
-    containerRef.current.measure((_x, _y, _w, _h, _pageX, containerPageY) => {
-      const currentOffset = scrollOffsetY?.current ?? 0;
-      // container가 현재 화면에서 containerPageY에 위치
-      // scrollView 상단이 화면에서 svPageY에 위치한다고 하면
-      // containerContentY = currentOffset + (containerPageY - svPageY)
-      // svPageY를 모르므로 scrollView도 measure
-      (scrollViewRef.current as any)?.measure?.(
-        (_sx: number, _sy: number, _sw: number, _sh: number, _spx: number, svPageY: number) => {
-          const containerContentY = currentOffset + (containerPageY - svPageY);
-          const targetY = containerContentY + sectionY.current[anchorId];
-          scrollViewRef.current?.scrollTo({ y: Math.max(0, targetY), animated: true });
-        },
-      );
-    });
+    try {
+      containerRef.current.measure((_x, _y, _w, _h, _pageX, containerPageY) => {
+        if (containerPageY == null) return;
+        const currentOffset = scrollOffsetY?.current ?? 0;
+        (scrollViewRef.current as any)?.measure?.(
+          (_sx: number, _sy: number, _sw: number, _sh: number, _spx: number, svPageY: number) => {
+            if (svPageY == null) return;
+            const containerContentY = currentOffset + (containerPageY - svPageY);
+            const targetY = containerContentY + sectionY.current[anchorId];
+            scrollViewRef.current?.scrollTo({ y: Math.max(0, targetY), animated: true });
+          },
+        );
+      });
+    } catch {
+      // ref detach 또는 레이아웃 패스 미완료 시 스크롤 생략
+    }
   };
 
   const handlePhonePress = () => {
@@ -179,18 +179,21 @@ export function InfoSection({
 
         <View style={styles.detailItem}>
           <ThemedText style={styles.detailLabel} lightColor={TextColors.primary} darkColor={TextColors.primary}>영업시간</ThemedText>
-          {parseAllOperatingHours(operatingHours).length > 0 ? (
-            parseAllOperatingHours(operatingHours).map(({ day, hours }) => (
-              <View key={day} style={styles.hoursRow}>
-                <ThemedText style={styles.dayLabel} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>{day}</ThemedText>
-                <ThemedText style={styles.hoursText} lightColor={TextColors.primary} darkColor={TextColors.primary}>{hours}</ThemedText>
-              </View>
-            ))
-          ) : (
-            <ThemedText style={styles.body} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>
-              {formatOperatingHours(operatingHours) || '정보없음'}
-            </ThemedText>
-          )}
+          {(() => {
+            const allHours = parseAllOperatingHours(operatingHours);
+            return allHours.length > 0 ? (
+              allHours.map(({ day, hours }) => (
+                <View key={day} style={styles.hoursRow}>
+                  <ThemedText style={styles.dayLabel} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>{day}</ThemedText>
+                  <ThemedText style={styles.hoursText} lightColor={TextColors.primary} darkColor={TextColors.primary}>{hours}</ThemedText>
+                </View>
+              ))
+            ) : (
+              <ThemedText style={styles.body} lightColor={TextColors.secondary} darkColor={TextColors.secondary}>
+                {formatOperatingHours(operatingHours) || '정보없음'}
+              </ThemedText>
+            );
+          })()}
         </View>
       </View>
     </View>

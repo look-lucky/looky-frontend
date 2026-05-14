@@ -95,14 +95,16 @@ function MainImageSection({
     if (displayImages.length <= 1) return;
 
     timerRef.current = setInterval(() => {
-      const nextIndex = (activeIndex + 1) % displayImages.length;
-      flatListRef.current?.scrollToIndex({
-        index: nextIndex,
-        animated: true,
+      setActiveIndex((prev) => {
+        const nextIndex = (prev + 1) % displayImages.length;
+        flatListRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true,
+        });
+        return nextIndex;
       });
-      setActiveIndex(nextIndex);
     }, 10000); // 10 seconds
-  }, [activeIndex, displayImages.length]);
+  }, [displayImages.length]);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {

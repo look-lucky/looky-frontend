@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_GAP = rs(12);
 const CARD_WIDTH = SCREEN_WIDTH - rs(32);
 
 interface AnnouncementCarouselProps {
@@ -16,7 +17,7 @@ export function AnnouncementCarousel({ announcements }: AnnouncementCarouselProp
 
   const handleScroll = (event: any) => {
     const contentOffset = event.nativeEvent.contentOffset.x;
-    const index = Math.round(contentOffset / CARD_WIDTH);
+    const index = Math.round(contentOffset / (CARD_WIDTH + CARD_GAP));
     setActiveIndex(index);
   };
 
@@ -26,8 +27,9 @@ export function AnnouncementCarousel({ announcements }: AnnouncementCarouselProp
     <View style={styles.carouselContainer}>
       <ScrollView
         horizontal
-        pagingEnabled
         showsHorizontalScrollIndicator={false}
+        snapToInterval={CARD_WIDTH + CARD_GAP}
+        decelerationRate="fast"
         onScroll={handleScroll}
         scrollEventThrottle={16}
         contentContainerStyle={styles.carouselScrollContent}

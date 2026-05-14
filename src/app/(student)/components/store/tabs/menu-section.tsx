@@ -176,6 +176,12 @@ function CategorySelector({ categories, activeId, onSelect }: CategorySelectorPr
 export function MenuSection({ categories, menuImageUrls = [], scrollViewRef }: MenuSectionProps) {
   const [activeCategoryId, setActiveCategoryId] = React.useState(categories[0]?.id || '');
   const [viewerImageUrl, setViewerImageUrl] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!activeCategoryId && categories[0]?.id) {
+      setActiveCategoryId(categories[0].id);
+    }
+  }, [categories]);
   const categoryPositions = React.useRef<Record<string, number>>({});
   const containerRef = React.useRef<View>(null);
 
