@@ -36,22 +36,22 @@ export default function ReviewScreen({ navigation }) {
   const [storeName, setStoreName] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
+
     const initStore = async () => {
-      // 1. AsyncStorage에서 선택된 가게 ID 가져오기
       const savedStoreId = await AsyncStorage.getItem('SELECTED_STORE_ID');
+      if (cancelled) return;
 
       const rawData = storeDataResponse?.data;
       const myStoresList = (Array.isArray(rawData) ? rawData : rawData?.data) || [];
 
       if (savedStoreId) {
         setMyStoreId(parseInt(savedStoreId, 10));
-        // 상점 이름 찾기
         const currentStore = myStoresList.find(s => s.id === parseInt(savedStoreId, 10));
         if (currentStore) {
           setStoreName(currentStore.name || '');
         }
       } else if (myStoresList.length > 0) {
-        // 저장된 게 없으면 첫 번째 가게 사용
         const firstStore = myStoresList[0];
         setMyStoreId(firstStore.id);
         setStoreName(firstStore.name || '');
@@ -60,6 +60,7 @@ export default function ReviewScreen({ navigation }) {
     };
 
     initStore();
+    return () => { cancelled = true; };
   }, [storeDataResponse]);
 
   // 2. 리뷰 목록 조회
@@ -126,10 +127,8 @@ export default function ReviewScreen({ navigation }) {
         : null;
 
       // 2. [핵심] 서버에 없으면, 방금 내가 쓴 임시 답글(tempReplies) 확인
-      const localReplyContent = tempReplies[parent.reviewId];
-      // serverReply가 있으면 그걸 쓰고, 없으면 로컬 임시 답글을 씀
-      // 단, 로컬 답글은 content만 있으므로 객체로 만들어줌
-      const finalReply = serverReply || (localReplyContent ? { content: localReplyContent, isLocal: true } : null);
+      const localReply = tempReplies[parent.reviewId];
+      const finalReply = serverReply || (localReply ? { content: localReply.content, createdAt: localReply.createdAt, isLocal: true } : null);
 
       return {
         ...parent,
@@ -148,7 +147,6 @@ export default function ReviewScreen({ navigation }) {
     : topLevelReviews;
 
   const totalCount = topLevelReviews.length;
-  // 미답변 개수 계산 시에도 임시 답글 반영
   const unansweredCount = topLevelReviews.filter(r => (!r.replies || r.replies.length === 0)).length;
 
   // =================================================================
@@ -334,7 +332,7 @@ export default function ReviewScreen({ navigation }) {
         // [핵심] 성공 시 UI 즉시 강제 업데이트 (서버 응답 기다리지 않음)
         setTempReplies(prev => ({
           ...prev,
-          [selectedReviewId]: replyText.trim()
+          [selectedReviewId]: { content: replyText.trim(), createdAt: new Date().toISOString() }
         }));
 
         setReplyText('');
@@ -344,9 +342,15 @@ export default function ReviewScreen({ navigation }) {
         // 안내 없이 바로 반영하거나, 짧은 토스트만 띄움
         // Alert.alert 대신 UI가 바뀌는 것을 바로 보여줌
 
-        // 백그라운드에서 진짜 데이터 갱신 요청
+        // 백그라운드에서 진짜 데이터 갱신 후 임시 답글 제거 (중복 표시 방지)
         setTimeout(() => {
-          refetchReviews();
+          refetchReviews().then(() => {
+            setTempReplies(prev => {
+              const next = { ...prev };
+              delete next[selectedReviewId];
+              return next;
+            });
+          });
         }, 500);
 
       } else {
