@@ -125,6 +125,7 @@ export default function StudentVerificationPage() {
   const [verifyFailCount, setVerifyFailCount] = useState(0);
   const sendCodeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSendingRef = useRef(false);
+  const isSubmittingRef = useRef(false);
 
   // 동아리 가입 여부
   const [isClubMember, setIsClubMember] = useState<boolean | null>(null);
@@ -336,6 +337,8 @@ export default function StudentVerificationPage() {
   const handleComplete = () => {
     if (!isFormValid || !selectedUniversityId || !selectedCollegeId || !selectedDepartmentId) return;
     if (signupMutation.isPending || loginMutation.isPending || completeSocialSignupMutation.isPending) return;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
 
     const birthDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
     const apiGender = gender === "male" ? "MALE" : "FEMALE";
@@ -374,6 +377,7 @@ export default function StudentVerificationPage() {
         },
         {
           onSuccess: async (response) => {
+            isSubmittingRef.current = false;
             if (response.status === 200 && response.data?.data?.accessToken) {
               const { accessToken, expiresIn } = response.data.data;
               const jwtPayload = (() => {
@@ -429,6 +433,7 @@ export default function StudentVerificationPage() {
             }
           },
           onError: (error: any) => {
+            isSubmittingRef.current = false;
             const errorCode = error?.data?.data?.code ?? error?.data?.code;
             const errorMessage = error?.data?.data?.message ?? error?.data?.message ?? error?.message;
             Sentry.withScope((scope) => {
@@ -444,7 +449,7 @@ export default function StudentVerificationPage() {
                 httpStatus: error?.status,
                 rawData: JSON.stringify(error?.data),
               });
-              Sentry.captureException(error);
+              Sentry.captureException(new Error(`[소셜 회원가입 실패] ${errorCode ?? error?.status}: ${errorMessage}`));
             });
             if (errorCode === 'USER_NOT_FOUND' || error?.status === 404) {
               Alert.alert(
@@ -542,6 +547,7 @@ export default function StudentVerificationPage() {
           );
         },
         onError: (error: any) => {
+          isSubmittingRef.current = false;
           const errorData = error?.data?.data || error?.data || error;
           const errorCode = errorData?.code;
           const errorMessage = errorData?.message;
