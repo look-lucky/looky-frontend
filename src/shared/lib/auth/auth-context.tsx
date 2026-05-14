@@ -132,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticatedRef.current = false;
       await clearToken();
       await clearCredentials();
+      queryClient?.clear();
       setState({
         isAuthenticated: false,
         isLoading: false,
@@ -140,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         collegeId: null,
         collegeName: null,
         username: null,
+        loginProvider: null,
       });
 
       router.replace("/landing");

@@ -50,6 +50,13 @@ export function useKakaoLogin() {
         return { success: false, error: "Expo Go에서는 카카오 로그인을 지원하지 않습니다. 빌드된 앱에서 확인해주세요." };
       }
 
+      Sentry.addBreadcrumb({
+        category: "auth",
+        message: "카카오 로그인 SDK 호출 시작",
+        level: "info",
+        data: { step: "kakao-sdk-login-start" },
+      });
+
       const result = await KakaoLogin.login();
       const res = await kakaoLogin({
         accessToken: result.accessToken,
@@ -88,7 +95,11 @@ export function useKakaoLogin() {
         message.includes("authorization attempt failed") ||
         // iOS: SdkError error 0 (KakaoSDKCommon)
         message.includes("SdkError error 0");
-      if (isCancelled) {
+      // iOS: SdkError 2 = NetworkError — 앱 전환·네트워크 끊김 등 사용자 환경 문제로 Sentry 불필요
+      const isNetworkError =
+        message.includes("SdkError error 2") ||
+        message.includes("SdkError 오류 2");
+      if (isCancelled || isNetworkError) {
         return { success: false, error: "cancelled" };
       }
       Sentry.withScope((scope) => {
