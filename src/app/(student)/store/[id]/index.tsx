@@ -100,6 +100,7 @@ export default function StoreDetailScreen() {
 
   // 리뷰 페이지네이션 상태
   const [reviewPage, setReviewPage] = useState(0);
+  const reviewPageRef = useRef(0);
   const [allReviews, setAllReviews] = useState<any[]>([]);
   const [hasMoreReviews, setHasMoreReviews] = useState(true);
 
@@ -290,26 +291,24 @@ export default function StoreDetailScreen() {
   const apiItems = (Array.isArray(rawItems) ? rawItems : []) as ItemResponse[];
 
   // 리뷰 목록 (paginated)
-  const { data: reviewsRes, isLoading: isReviewsLoading, isFetching: isReviewsFetching } = useGetReviews(
+  const { data: reviewsRes, isLoading: isReviewsLoading, isFetching: isReviewsFetching, isError: isReviewsError } = useGetReviews(
     storeId,
     { page: reviewPage, size: 20 } as any,
   );
   const apiReviewsPage = (reviewsRes as any)?.data?.data as PageResponseReviewResponse | undefined;
 
-  // 리뷰 데이터 누적 처리
+  // 리뷰 데이터 누적 처리 — 응답이 도착한 시점의 page 번호로 검증해 race condition 방지
   useEffect(() => {
-    if (apiReviewsPage?.content) {
-      if (reviewPage === 0) {
-        // 첫 페이지는 덮어쓰기
-        setAllReviews(apiReviewsPage.content);
-      } else {
-        // 이후 페이지는 추가
-        setAllReviews((prev) => [...prev, ...(apiReviewsPage.content ?? [])]);
-      }
-      // 마지막 페이지 체크
-      setHasMoreReviews(!apiReviewsPage.last);
+    if (!apiReviewsPage?.content) return;
+    const arrivedPage = (apiReviewsPage as any).number ?? reviewPage;
+    if (arrivedPage !== reviewPageRef.current) return;
+    if (arrivedPage === 0) {
+      setAllReviews(apiReviewsPage.content);
+    } else {
+      setAllReviews((prev) => [...prev, ...(apiReviewsPage.content ?? [])]);
     }
-  }, [apiReviewsPage, reviewPage]);
+    setHasMoreReviews(!apiReviewsPage.last);
+  }, [apiReviewsPage]);
 
   // ── 데이터 변환 ─────────────────────────────────────────────
 
@@ -582,6 +581,7 @@ export default function StoreDetailScreen() {
             { reviewId: Number(reviewId) },
             {
               onSuccess: () => {
+                reviewPageRef.current = 0;
                 setReviewPage(0);
                 queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
                 queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews/stats`] });
@@ -610,7 +610,11 @@ export default function StoreDetailScreen() {
   };
   const handleLoadMoreReviews = () => {
     if (!isReviewsFetching && hasMoreReviews) {
-      setReviewPage((prev) => prev + 1);
+      setReviewPage((prev) => {
+        const next = prev + 1;
+        reviewPageRef.current = next;
+        return next;
+      });
     }
   };
 
@@ -716,6 +720,7 @@ export default function StoreDetailScreen() {
               onLoadMoreReviews={handleLoadMoreReviews}
               hasMoreReviews={hasMoreReviews}
               isLoadingMoreReviews={isReviewsFetching && reviewPage > 0}
+              isReviewsError={isReviewsError}
             />
           </View>
         )}

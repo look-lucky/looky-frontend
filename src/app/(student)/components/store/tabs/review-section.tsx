@@ -39,6 +39,7 @@ interface ReviewSectionProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
+  isError?: boolean;
 }
 
 // ============================================
@@ -378,6 +379,7 @@ export function ReviewSection({
   onLoadMore,
   hasMore,
   isLoadingMore,
+  isError,
 }: ReviewSectionProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('recent');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -422,7 +424,13 @@ export function ReviewSection({
           </View>
 
           <View style={styles.reviewList}>
-            {sortedReviews.length === 0 ? (
+            {isError ? (
+              <View style={styles.emptyReview}>
+                <ThemedText style={styles.emptyReviewText} lightColor="#999" darkColor="#999">
+                  리뷰를 불러오지 못했습니다.
+                </ThemedText>
+              </View>
+            ) : sortedReviews.length === 0 ? (
               <View style={styles.emptyReview}>
                 <ThemedText style={styles.emptyReviewText} lightColor="#999" darkColor="#999">
                   아직 리뷰가 없습니다.

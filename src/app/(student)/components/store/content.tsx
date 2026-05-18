@@ -42,6 +42,7 @@ interface StoreContentProps {
   onLoadMoreReviews?: () => void;
   hasMoreReviews?: boolean;
   isLoadingMoreReviews?: boolean;
+  isReviewsError?: boolean;
 }
 
 export function StoreContent({
@@ -66,6 +67,7 @@ export function StoreContent({
   onLoadMoreReviews,
   hasMoreReviews,
   isLoadingMoreReviews,
+  isReviewsError,
 }: StoreContentProps) {
   return (
     <View style={styles.container}>
@@ -92,6 +94,7 @@ export function StoreContent({
           onLoadMore={onLoadMoreReviews}
           hasMore={hasMoreReviews}
           isLoadingMore={isLoadingMoreReviews}
+          isError={isReviewsError}
         />
       )}
 
