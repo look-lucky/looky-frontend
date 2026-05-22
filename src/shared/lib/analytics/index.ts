@@ -1,5 +1,7 @@
 import analytics from '@react-native-firebase/analytics';
 
+const IS_DEV = process.env.EXPO_PUBLIC_API_BASE_URL?.includes('dev-api');
+
 // ─── User Properties ───────────────────────────────────────────────────────
 
 /**
@@ -11,6 +13,7 @@ export async function setUserProperties(params: {
   college: string;
   hasStudentUnion: boolean;
 }) {
+  if (IS_DEV) return;
   await Promise.all([
     analytics().setUserProperty('university', params.university),
     analytics().setUserProperty('college', params.college),
@@ -27,6 +30,7 @@ export async function logAppOpen(params: {
   university?: string;
   college?: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('app_open_custom', {
     university: params.university ?? '',
     college: params.college ?? '',
@@ -42,6 +46,7 @@ export async function logStudentSignUpComplete(params: {
   departmentName: string;
   hasStudentUnion: boolean;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('student_sign_up_complete', {
     university: params.universityName,
     college: params.collegeName,
@@ -54,6 +59,7 @@ export async function logStudentSignUpComplete(params: {
  * 점주 가입 완료
  */
 export async function logOwnerSignUpComplete() {
+  if (IS_DEV) return;
   await analytics().logEvent('owner_sign_up_complete', {});
 }
 
@@ -65,6 +71,7 @@ export async function logStoreDetailView(params: {
   storeName: string;
   category?: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('store_detail_view', {
     store_id: params.storeId,
     store_name: params.storeName,
@@ -81,6 +88,7 @@ export async function logEventDetailView(params: {
   status: string;
   eventTypes?: string[];
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('event_detail_view', {
     event_id: params.eventId,
     event_title: params.eventTitle,
@@ -97,6 +105,7 @@ export async function logEventDetailView(params: {
 export async function logSearchExecute(params: {
   keyword: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('search_execute', {
     keyword: params.keyword,
   });
@@ -109,6 +118,7 @@ export async function logCategoryFilterClick(params: {
   category: string;
   screen: 'home' | 'map';
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('category_filter_click', {
     category: params.category,
     screen: params.screen,
@@ -122,6 +132,7 @@ export async function logMapStorePinClick(params: {
   storeId: string;
   storeName: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('map_store_pin_click', {
     store_id: params.storeId,
     store_name: params.storeName,
@@ -136,6 +147,7 @@ export async function logMapEventMarkerClick(params: {
   eventTitle: string;
   status: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('map_event_marker_click', {
     event_id: params.eventId,
     event_title: params.eventTitle,
@@ -151,6 +163,7 @@ export async function logFavoriteToggle(params: {
   storeName: string;
   action: 'add' | 'remove';
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('favorite_toggle', {
     store_id: params.storeId,
     store_name: params.storeName,
@@ -165,6 +178,7 @@ export async function logCouponBoxOpen(params: {
   storeId: number;
   storeName: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('coupon_box_open', {
     store_id: params.storeId,
     store_name: params.storeName,
@@ -179,6 +193,7 @@ export async function logCouponDownloadStart(params: {
   storeId: number;
   storeName: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('coupon_download_start', {
     coupon_id: params.couponId,
     store_id: params.storeId,
@@ -194,6 +209,7 @@ export async function logCouponDownloadComplete(params: {
   storeId: number;
   storeName: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('coupon_download_complete', {
     coupon_id: params.couponId,
     store_id: params.storeId,
@@ -208,6 +224,7 @@ export async function logStoreTabClick(params: {
   storeId: number;
   tab: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('store_tab_click', {
     store_id: params.storeId,
     tab: params.tab,
@@ -221,6 +238,7 @@ export async function logHomeEventCardClick(params: {
   eventId: number;
   eventTitle: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('home_event_card_click', {
     event_id: params.eventId,
     event_title: params.eventTitle,
@@ -234,6 +252,7 @@ export async function logMapEventListCardClick(params: {
   eventId: string;
   eventTitle: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('map_event_list_card_click', {
     event_id: params.eventId,
     event_title: params.eventTitle,
@@ -246,6 +265,7 @@ export async function logMapEventListCardClick(params: {
 export async function logEventViewOnMap(params: {
   eventId: number;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('event_view_on_map', {
     event_id: params.eventId,
   });
@@ -258,6 +278,7 @@ export async function logEventMoreCardClick(params: {
   eventId: string;
   eventTitle: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('event_more_card_click', {
     event_id: params.eventId,
     event_title: params.eventTitle,
@@ -272,6 +293,7 @@ export async function logCouponUseStart(params: {
   storeId?: number;
   storeName?: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('coupon_use_start', {
     coupon_id: params.couponId,
     store_id: params.storeId ?? '',
@@ -287,6 +309,7 @@ export async function logCouponUseComplete(params: {
   storeId?: number;
   storeName?: string;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('coupon_use_complete', {
     coupon_id: params.couponId,
     store_id: params.storeId ?? '',
@@ -301,6 +324,7 @@ export async function logSessionEnd(params: {
   durationSeconds: number;
   userType: 'student' | 'owner';
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('session_end', {
     duration_seconds: params.durationSeconds,
     user_type: params.userType,
@@ -313,6 +337,7 @@ export async function logSessionEnd(params: {
  * 점주 앱 실행 — 점주 DAU / WAU / MAU
  */
 export async function logOwnerAppOpen() {
+  if (IS_DEV) return;
   await analytics().logEvent('owner_app_open', {});
 }
 
@@ -320,6 +345,7 @@ export async function logOwnerAppOpen() {
  * 점주 로그인 완료
  */
 export async function logOwnerLoginComplete() {
+  if (IS_DEV) return;
   await analytics().logEvent('owner_login_complete', {});
 }
 
@@ -327,6 +353,7 @@ export async function logOwnerLoginComplete() {
  * 점주 쿠폰 등록 완료
  */
 export async function logOwnerCouponRegisterComplete() {
+  if (IS_DEV) return;
   await analytics().logEvent('owner_coupon_register_complete', {});
 }
 
@@ -336,6 +363,7 @@ export async function logOwnerCouponRegisterComplete() {
 export async function logOwnerCouponEnd(params: {
   couponId: string | number;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('owner_coupon_end', {
     coupon_id: String(params.couponId),
   });
@@ -349,6 +377,7 @@ export async function logOwnerCouponEnd(params: {
 export async function logReviewWriteComplete(params: {
   storeId: string | number;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('review_write_complete', {
     store_id: String(params.storeId),
   });
@@ -360,6 +389,7 @@ export async function logReviewWriteComplete(params: {
 export async function logReviewReplyComplete(params: {
   storeId: string | number;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('review_reply_complete', {
     store_id: String(params.storeId),
   });
@@ -369,6 +399,7 @@ export async function logReviewReplyComplete(params: {
  * 점주 메뉴 등록 완료
  */
 export async function logOwnerMenuRegisterComplete() {
+  if (IS_DEV) return;
   await analytics().logEvent('owner_menu_register_complete', {});
 }
 
@@ -379,6 +410,7 @@ export async function logFirstCouponDownload(params: {
   daysSinceSignup: number;
   hoursSinceSignup: number;
 }) {
+  if (IS_DEV) return;
   await analytics().logEvent('first_coupon_download', {
     days_since_signup: params.daysSinceSignup,
     hours_since_signup: params.hoursSinceSignup,
