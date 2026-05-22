@@ -25,7 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  CommonResponseListPartnershipResponse,
+  CommonResponseListAdminPartnershipResponse,
   CommonResponseLong,
   CommonResponseVoid,
   CreatePartnershipRequest,
@@ -46,10 +46,10 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * 특정 대학의 특정 조직의 모든 제휴를 조회합니다.
- * @summary 조직별 제휴 목록 조회
+ * @summary [관리자] 조직별 제휴 목록 조회
  */
 export type getPartnershipsByOrganizationResponse200 = {
-  data: CommonResponseListPartnershipResponse
+  data: CommonResponseListAdminPartnershipResponse
   status: 200
 }
     
@@ -144,7 +144,7 @@ export function useGetPartnershipsByOrganization<TData = Awaited<ReturnType<type
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary 조직별 제휴 목록 조회
+ * @summary [관리자] 조직별 제휴 목록 조회
  */
 
 export function useGetPartnershipsByOrganization<TData = Awaited<ReturnType<typeof getPartnershipsByOrganization>>, TError = unknown>(
@@ -273,7 +273,7 @@ export const useCreatePartnership = <TError = SwaggerErrorResponse,
     }
     /**
  * 엑셀 파일을 업로드하여 제휴 정보를 일괄 등록/수정합니다.
- * @summary [학생회/관리자] 제휴 엑셀로 등록
+ * @summary [관리자] 제휴 엑셀로 등록
  */
 export type uploadPartnershipDataResponse200 = {
   data: CommonResponseVoid
@@ -364,7 +364,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UploadPartnershipDataMutationError = SwaggerErrorResponse
 
     /**
- * @summary [학생회/관리자] 제휴 엑셀로 등록
+ * @summary [관리자] 제휴 엑셀로 등록
  */
 export const useUploadPartnershipData = <TError = SwaggerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPartnershipData>>, TError,{data: UploadPartnershipDataBody;params?: UploadPartnershipDataParams}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -568,10 +568,10 @@ export const useUpdatePartnershipBenefit = <TError = SwaggerErrorResponse,
     }
     /**
  * 특정 대학의 모든 제휴를 조회합니다.
- * @summary 대학별 제휴 목록 조회
+ * @summary [관리자] 대학별 제휴 목록 조회
  */
 export type getPartnershipsByUniversityResponse200 = {
-  data: CommonResponseListPartnershipResponse
+  data: CommonResponseListAdminPartnershipResponse
   status: 200
 }
     
@@ -659,7 +659,7 @@ export function useGetPartnershipsByUniversity<TData = Awaited<ReturnType<typeof
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary 대학별 제휴 목록 조회
+ * @summary [관리자] 대학별 제휴 목록 조회
  */
 
 export function useGetPartnershipsByUniversity<TData = Awaited<ReturnType<typeof getPartnershipsByUniversity>>, TError = unknown>(

@@ -7,7 +7,9 @@ const fs = require("fs");
 const path = require("path");
 
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://api.looky.kr";
+  process.env.OPENAPI_BASE_URL ??
+  process.env.EXPO_PUBLIC_API_BASE_URL ??
+  "https://api.looky.kr";
 const OPENAPI_ENDPOINT = "/v3/api-docs";
 const OUTPUT_PATH = path.resolve(__dirname, "../openapi.json");
 

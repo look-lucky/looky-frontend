@@ -26,9 +26,9 @@ import type {
 
 import type {
   CommonResponseLong,
-  CommonResponsePageResponseFavoriteStoreResponse,
+  CommonResponsePageResponseStudentFavoriteStoreResponse,
   CommonResponseVoid,
-  GetMyFavoritesParams,
+  GetMyFavorites1Params,
   SwaggerErrorResponse
 } from './generated.schemas';
 
@@ -42,38 +42,39 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * 특정 상점을 단골 상점으로 등록합니다.
+ * @deprecated
  * @summary [학생] 상점 즐겨찾기 추가
  */
-export type addFavoriteResponse201 = {
+export type addFavorite1Response201 = {
   data: CommonResponseVoid
   status: 201
 }
 
-export type addFavoriteResponse400 = {
+export type addFavorite1Response400 = {
   data: SwaggerErrorResponse
   status: 400
 }
 
-export type addFavoriteResponse404 = {
+export type addFavorite1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
 
-export type addFavoriteResponse409 = {
+export type addFavorite1Response409 = {
   data: SwaggerErrorResponse
   status: 409
 }
     
-export type addFavoriteResponseSuccess = (addFavoriteResponse201) & {
+export type addFavorite1ResponseSuccess = (addFavorite1Response201) & {
   headers: Headers;
 };
-export type addFavoriteResponseError = (addFavoriteResponse400 | addFavoriteResponse404 | addFavoriteResponse409) & {
+export type addFavorite1ResponseError = (addFavorite1Response400 | addFavorite1Response404 | addFavorite1Response409) & {
   headers: Headers;
 };
 
-export type addFavoriteResponse = (addFavoriteResponseSuccess | addFavoriteResponseError)
+export type addFavorite1Response = (addFavorite1ResponseSuccess | addFavorite1ResponseError)
 
-export const getAddFavoriteUrl = (storeId: number,) => {
+export const getAddFavorite1Url = (storeId: number,) => {
 
 
   
@@ -81,9 +82,9 @@ export const getAddFavoriteUrl = (storeId: number,) => {
   return `/api/stores/${storeId}/favorites`
 }
 
-export const addFavorite = async (storeId: number, options?: RequestInit): Promise<addFavoriteResponse> => {
+export const addFavorite1 = async (storeId: number, options?: RequestInit): Promise<addFavorite1Response> => {
   
-  return customFetch<addFavoriteResponse>(getAddFavoriteUrl(storeId),
+  return customFetch<addFavorite1Response>(getAddFavorite1Url(storeId),
   {      
     ...options,
     method: 'POST'
@@ -95,11 +96,11 @@ export const addFavorite = async (storeId: number, options?: RequestInit): Promi
 
 
 
-export const getAddFavoriteMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,{storeId: number}, TContext> => {
+export const getAddFavorite1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite1>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addFavorite1>>, TError,{storeId: number}, TContext> => {
 
-const mutationKey = ['addFavorite'];
+const mutationKey = ['addFavorite1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -109,10 +110,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addFavorite>>, {storeId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addFavorite1>>, {storeId: number}> = (props) => {
           const {storeId} = props ?? {};
 
-          return  addFavorite(storeId,requestOptions)
+          return  addFavorite1(storeId,requestOptions)
         }
 
 
@@ -122,47 +123,49 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AddFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof addFavorite>>>
+    export type AddFavorite1MutationResult = NonNullable<Awaited<ReturnType<typeof addFavorite1>>>
     
-    export type AddFavoriteMutationError = SwaggerErrorResponse
+    export type AddFavorite1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [학생] 상점 즐겨찾기 추가
  */
-export const useAddFavorite = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useAddFavorite1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite1>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof addFavorite>>,
+        Awaited<ReturnType<typeof addFavorite1>>,
         TError,
         {storeId: number},
         TContext
       > => {
-      return useMutation(getAddFavoriteMutationOptions(options), queryClient);
+      return useMutation(getAddFavorite1MutationOptions(options), queryClient);
     }
     /**
  * 단골 상점 등록을 취소합니다.
+ * @deprecated
  * @summary [학생] 상점 즐겨찾기 취소
  */
-export type removeFavoriteResponse204 = {
+export type removeFavorite1Response204 = {
   data: CommonResponseVoid
   status: 204
 }
 
-export type removeFavoriteResponse404 = {
+export type removeFavorite1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type removeFavoriteResponseSuccess = (removeFavoriteResponse204) & {
+export type removeFavorite1ResponseSuccess = (removeFavorite1Response204) & {
   headers: Headers;
 };
-export type removeFavoriteResponseError = (removeFavoriteResponse404) & {
+export type removeFavorite1ResponseError = (removeFavorite1Response404) & {
   headers: Headers;
 };
 
-export type removeFavoriteResponse = (removeFavoriteResponseSuccess | removeFavoriteResponseError)
+export type removeFavorite1Response = (removeFavorite1ResponseSuccess | removeFavorite1ResponseError)
 
-export const getRemoveFavoriteUrl = (storeId: number,) => {
+export const getRemoveFavorite1Url = (storeId: number,) => {
 
 
   
@@ -170,9 +173,9 @@ export const getRemoveFavoriteUrl = (storeId: number,) => {
   return `/api/stores/${storeId}/favorites`
 }
 
-export const removeFavorite = async (storeId: number, options?: RequestInit): Promise<removeFavoriteResponse> => {
+export const removeFavorite1 = async (storeId: number, options?: RequestInit): Promise<removeFavorite1Response> => {
   
-  return customFetch<removeFavoriteResponse>(getRemoveFavoriteUrl(storeId),
+  return customFetch<removeFavorite1Response>(getRemoveFavorite1Url(storeId),
   {      
     ...options,
     method: 'DELETE'
@@ -184,11 +187,11 @@ export const removeFavorite = async (storeId: number, options?: RequestInit): Pr
 
 
 
-export const getRemoveFavoriteMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,{storeId: number}, TContext> => {
+export const getRemoveFavorite1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite1>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeFavorite1>>, TError,{storeId: number}, TContext> => {
 
-const mutationKey = ['removeFavorite'];
+const mutationKey = ['removeFavorite1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -198,10 +201,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFavorite>>, {storeId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFavorite1>>, {storeId: number}> = (props) => {
           const {storeId} = props ?? {};
 
-          return  removeFavorite(storeId,requestOptions)
+          return  removeFavorite1(storeId,requestOptions)
         }
 
 
@@ -211,47 +214,49 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type RemoveFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof removeFavorite>>>
+    export type RemoveFavorite1MutationResult = NonNullable<Awaited<ReturnType<typeof removeFavorite1>>>
     
-    export type RemoveFavoriteMutationError = SwaggerErrorResponse
+    export type RemoveFavorite1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [학생] 상점 즐겨찾기 취소
  */
-export const useRemoveFavorite = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useRemoveFavorite1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite1>>, TError,{storeId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof removeFavorite>>,
+        Awaited<ReturnType<typeof removeFavorite1>>,
         TError,
         {storeId: number},
         TContext
       > => {
-      return useMutation(getRemoveFavoriteMutationOptions(options), queryClient);
+      return useMutation(getRemoveFavorite1MutationOptions(options), queryClient);
     }
     /**
  * 특정 상점의 총 단골 수를 조회합니다.
+ * @deprecated
  * @summary [공통] 상점 즐겨찾기 수 조회
  */
-export type countFavoritesResponse200 = {
+export type countFavorites1Response200 = {
   data: CommonResponseLong
   status: 200
 }
 
-export type countFavoritesResponse404 = {
+export type countFavorites1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type countFavoritesResponseSuccess = (countFavoritesResponse200) & {
+export type countFavorites1ResponseSuccess = (countFavorites1Response200) & {
   headers: Headers;
 };
-export type countFavoritesResponseError = (countFavoritesResponse404) & {
+export type countFavorites1ResponseError = (countFavorites1Response404) & {
   headers: Headers;
 };
 
-export type countFavoritesResponse = (countFavoritesResponseSuccess | countFavoritesResponseError)
+export type countFavorites1Response = (countFavorites1ResponseSuccess | countFavorites1ResponseError)
 
-export const getCountFavoritesUrl = (storeId: number,) => {
+export const getCountFavorites1Url = (storeId: number,) => {
 
 
   
@@ -259,9 +264,9 @@ export const getCountFavoritesUrl = (storeId: number,) => {
   return `/api/stores/${storeId}/favorites/count`
 }
 
-export const countFavorites = async (storeId: number, options?: RequestInit): Promise<countFavoritesResponse> => {
+export const countFavorites1 = async (storeId: number, options?: RequestInit): Promise<countFavorites1Response> => {
   
-  return customFetch<countFavoritesResponse>(getCountFavoritesUrl(storeId),
+  return customFetch<countFavorites1Response>(getCountFavorites1Url(storeId),
   {      
     ...options,
     method: 'GET'
@@ -274,69 +279,70 @@ export const countFavorites = async (storeId: number, options?: RequestInit): Pr
 
 
 
-export const getCountFavoritesQueryKey = (storeId?: number,) => {
+export const getCountFavorites1QueryKey = (storeId?: number,) => {
     return [
     `/api/stores/${storeId}/favorites/count`
     ] as const;
     }
 
     
-export const getCountFavoritesQueryOptions = <TData = Awaited<ReturnType<typeof countFavorites>>, TError = SwaggerErrorResponse>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getCountFavorites1QueryOptions = <TData = Awaited<ReturnType<typeof countFavorites1>>, TError = SwaggerErrorResponse>(storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCountFavoritesQueryKey(storeId);
+  const queryKey =  queryOptions?.queryKey ?? getCountFavorites1QueryKey(storeId);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof countFavorites>>> = ({ signal }) => countFavorites(storeId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof countFavorites1>>> = ({ signal }) => countFavorites1(storeId, { signal, ...requestOptions });
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countFavorites>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(storeId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countFavorites1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type CountFavoritesQueryResult = NonNullable<Awaited<ReturnType<typeof countFavorites>>>
-export type CountFavoritesQueryError = SwaggerErrorResponse
+export type CountFavorites1QueryResult = NonNullable<Awaited<ReturnType<typeof countFavorites1>>>
+export type CountFavorites1QueryError = SwaggerErrorResponse
 
 
-export function useCountFavorites<TData = Awaited<ReturnType<typeof countFavorites>>, TError = SwaggerErrorResponse>(
- storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites>>, TError, TData>> & Pick<
+export function useCountFavorites1<TData = Awaited<ReturnType<typeof countFavorites1>>, TError = SwaggerErrorResponse>(
+ storeId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites1>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countFavorites>>,
+          Awaited<ReturnType<typeof countFavorites1>>,
           TError,
-          Awaited<ReturnType<typeof countFavorites>>
+          Awaited<ReturnType<typeof countFavorites1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountFavorites<TData = Awaited<ReturnType<typeof countFavorites>>, TError = SwaggerErrorResponse>(
- storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites>>, TError, TData>> & Pick<
+export function useCountFavorites1<TData = Awaited<ReturnType<typeof countFavorites1>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites1>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countFavorites>>,
+          Awaited<ReturnType<typeof countFavorites1>>,
           TError,
-          Awaited<ReturnType<typeof countFavorites>>
+          Awaited<ReturnType<typeof countFavorites1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountFavorites<TData = Awaited<ReturnType<typeof countFavorites>>, TError = SwaggerErrorResponse>(
- storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useCountFavorites1<TData = Awaited<ReturnType<typeof countFavorites1>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [공통] 상점 즐겨찾기 수 조회
  */
 
-export function useCountFavorites<TData = Awaited<ReturnType<typeof countFavorites>>, TError = SwaggerErrorResponse>(
- storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useCountFavorites1<TData = Awaited<ReturnType<typeof countFavorites1>>, TError = SwaggerErrorResponse>(
+ storeId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countFavorites1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCountFavoritesQueryOptions(storeId,options)
+  const queryOptions = getCountFavorites1QueryOptions(storeId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -348,21 +354,22 @@ export function useCountFavorites<TData = Awaited<ReturnType<typeof countFavorit
 
 /**
  * 내가 등록한 단골 상점 목록을 페이징하여 조회합니다.<br>정렬 기능: 찜한최신순(sort=createdAt,desc), 별점높은순(sort=store.averageRating,desc)
+ * @deprecated
  * @summary [학생] 내 단골 상점 목록 조회
  */
-export type getMyFavoritesResponse200 = {
-  data: CommonResponsePageResponseFavoriteStoreResponse
+export type getMyFavorites1Response200 = {
+  data: CommonResponsePageResponseStudentFavoriteStoreResponse
   status: 200
 }
     
-export type getMyFavoritesResponseSuccess = (getMyFavoritesResponse200) & {
+export type getMyFavorites1ResponseSuccess = (getMyFavorites1Response200) & {
   headers: Headers;
 };
 ;
 
-export type getMyFavoritesResponse = (getMyFavoritesResponseSuccess)
+export type getMyFavorites1Response = (getMyFavorites1ResponseSuccess)
 
-export const getGetMyFavoritesUrl = (params: GetMyFavoritesParams,) => {
+export const getGetMyFavorites1Url = (params: GetMyFavorites1Params,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -377,9 +384,9 @@ export const getGetMyFavoritesUrl = (params: GetMyFavoritesParams,) => {
   return stringifiedParams.length > 0 ? `/api/favorites?${stringifiedParams}` : `/api/favorites`
 }
 
-export const getMyFavorites = async (params: GetMyFavoritesParams, options?: RequestInit): Promise<getMyFavoritesResponse> => {
+export const getMyFavorites1 = async (params: GetMyFavorites1Params, options?: RequestInit): Promise<getMyFavorites1Response> => {
   
-  return customFetch<getMyFavoritesResponse>(getGetMyFavoritesUrl(params),
+  return customFetch<getMyFavorites1Response>(getGetMyFavorites1Url(params),
   {      
     ...options,
     method: 'GET'
@@ -392,69 +399,70 @@ export const getMyFavorites = async (params: GetMyFavoritesParams, options?: Req
 
 
 
-export const getGetMyFavoritesQueryKey = (params?: GetMyFavoritesParams,) => {
+export const getGetMyFavorites1QueryKey = (params?: GetMyFavorites1Params,) => {
     return [
     `/api/favorites`, ...(params ? [params] : [])
     ] as const;
     }
 
     
-export const getGetMyFavoritesQueryOptions = <TData = Awaited<ReturnType<typeof getMyFavorites>>, TError = unknown>(params: GetMyFavoritesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetMyFavorites1QueryOptions = <TData = Awaited<ReturnType<typeof getMyFavorites1>>, TError = unknown>(params: GetMyFavorites1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMyFavoritesQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetMyFavorites1QueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyFavorites>>> = ({ signal }) => getMyFavorites(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyFavorites1>>> = ({ signal }) => getMyFavorites1(params, { signal, ...requestOptions });
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetMyFavoritesQueryResult = NonNullable<Awaited<ReturnType<typeof getMyFavorites>>>
-export type GetMyFavoritesQueryError = unknown
+export type GetMyFavorites1QueryResult = NonNullable<Awaited<ReturnType<typeof getMyFavorites1>>>
+export type GetMyFavorites1QueryError = unknown
 
 
-export function useGetMyFavorites<TData = Awaited<ReturnType<typeof getMyFavorites>>, TError = unknown>(
- params: GetMyFavoritesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites>>, TError, TData>> & Pick<
+export function useGetMyFavorites1<TData = Awaited<ReturnType<typeof getMyFavorites1>>, TError = unknown>(
+ params: GetMyFavorites1Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites1>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyFavorites>>,
+          Awaited<ReturnType<typeof getMyFavorites1>>,
           TError,
-          Awaited<ReturnType<typeof getMyFavorites>>
+          Awaited<ReturnType<typeof getMyFavorites1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyFavorites<TData = Awaited<ReturnType<typeof getMyFavorites>>, TError = unknown>(
- params: GetMyFavoritesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites>>, TError, TData>> & Pick<
+export function useGetMyFavorites1<TData = Awaited<ReturnType<typeof getMyFavorites1>>, TError = unknown>(
+ params: GetMyFavorites1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites1>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyFavorites>>,
+          Awaited<ReturnType<typeof getMyFavorites1>>,
           TError,
-          Awaited<ReturnType<typeof getMyFavorites>>
+          Awaited<ReturnType<typeof getMyFavorites1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyFavorites<TData = Awaited<ReturnType<typeof getMyFavorites>>, TError = unknown>(
- params: GetMyFavoritesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetMyFavorites1<TData = Awaited<ReturnType<typeof getMyFavorites1>>, TError = unknown>(
+ params: GetMyFavorites1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [학생] 내 단골 상점 목록 조회
  */
 
-export function useGetMyFavorites<TData = Awaited<ReturnType<typeof getMyFavorites>>, TError = unknown>(
- params: GetMyFavoritesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetMyFavorites1<TData = Awaited<ReturnType<typeof getMyFavorites1>>, TError = unknown>(
+ params: GetMyFavorites1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyFavorites1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetMyFavoritesQueryOptions(params,options)
+  const queryOptions = getGetMyFavorites1QueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

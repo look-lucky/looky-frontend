@@ -32,7 +32,7 @@ import type {
   CommonResponseVoid,
   CreateStoreNewsCommentRequest,
   CreateStoreNewsRequest,
-  GetCommentsParams,
+  GetComments1Params,
   GetStoreNewsListParams,
   SwaggerErrorResponse,
   UpdateStoreNewsRequest
@@ -48,6 +48,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * 가게의 소식 목록을 조회합니다.
+ * @deprecated
  * @summary [공통] 소식 목록 조회
  */
 export type getStoreNewsListResponse200 = {
@@ -153,6 +154,7 @@ export function useGetStoreNewsList<TData = Awaited<ReturnType<typeof getStoreNe
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [공통] 소식 목록 조회
  */
 
@@ -174,6 +176,7 @@ export function useGetStoreNewsList<TData = Awaited<ReturnType<typeof getStoreNe
 
 /**
  * 가게에 새로운 소식을 등록합니다.
+ * @deprecated
  * @summary [점주] 소식 등록
  */
 export type createStoreNewsResponse201 = {
@@ -256,6 +259,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateStoreNewsMutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 소식 등록
  */
 export const useCreateStoreNews = <TError = SwaggerErrorResponse,
@@ -270,28 +274,29 @@ export const useCreateStoreNews = <TError = SwaggerErrorResponse,
     }
     /**
  * 소식에 좋아요를 누르거나 취소합니다.
+ * @deprecated
  * @summary [공통] 소식 좋아요 토글
  */
-export type toggleLikeResponse200 = {
+export type toggleLike1Response200 = {
   data: CommonResponseVoid
   status: 200
 }
 
-export type toggleLikeResponse404 = {
+export type toggleLike1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type toggleLikeResponseSuccess = (toggleLikeResponse200) & {
+export type toggleLike1ResponseSuccess = (toggleLike1Response200) & {
   headers: Headers;
 };
-export type toggleLikeResponseError = (toggleLikeResponse404) & {
+export type toggleLike1ResponseError = (toggleLike1Response404) & {
   headers: Headers;
 };
 
-export type toggleLikeResponse = (toggleLikeResponseSuccess | toggleLikeResponseError)
+export type toggleLike1Response = (toggleLike1ResponseSuccess | toggleLike1ResponseError)
 
-export const getToggleLikeUrl = (newsId: number,) => {
+export const getToggleLike1Url = (newsId: number,) => {
 
 
   
@@ -299,9 +304,9 @@ export const getToggleLikeUrl = (newsId: number,) => {
   return `/api/store-news/${newsId}/likes`
 }
 
-export const toggleLike = async (newsId: number, options?: RequestInit): Promise<toggleLikeResponse> => {
+export const toggleLike1 = async (newsId: number, options?: RequestInit): Promise<toggleLike1Response> => {
   
-  return customFetch<toggleLikeResponse>(getToggleLikeUrl(newsId),
+  return customFetch<toggleLike1Response>(getToggleLike1Url(newsId),
   {      
     ...options,
     method: 'POST'
@@ -313,11 +318,11 @@ export const toggleLike = async (newsId: number, options?: RequestInit): Promise
 
 
 
-export const getToggleLikeMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext> => {
+export const getToggleLike1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike1>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleLike1>>, TError,{newsId: number}, TContext> => {
 
-const mutationKey = ['toggleLike'];
+const mutationKey = ['toggleLike1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -327,10 +332,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleLike>>, {newsId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleLike1>>, {newsId: number}> = (props) => {
           const {newsId} = props ?? {};
 
-          return  toggleLike(newsId,requestOptions)
+          return  toggleLike1(newsId,requestOptions)
         }
 
 
@@ -340,41 +345,43 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ToggleLikeMutationResult = NonNullable<Awaited<ReturnType<typeof toggleLike>>>
+    export type ToggleLike1MutationResult = NonNullable<Awaited<ReturnType<typeof toggleLike1>>>
     
-    export type ToggleLikeMutationError = SwaggerErrorResponse
+    export type ToggleLike1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [공통] 소식 좋아요 토글
  */
-export const useToggleLike = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useToggleLike1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleLike1>>, TError,{newsId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof toggleLike>>,
+        Awaited<ReturnType<typeof toggleLike1>>,
         TError,
         {newsId: number},
         TContext
       > => {
-      return useMutation(getToggleLikeMutationOptions(options), queryClient);
+      return useMutation(getToggleLike1MutationOptions(options), queryClient);
     }
     /**
  * 소식의 댓글 목록을 조회합니다.
+ * @deprecated
  * @summary [공통] 댓글 목록 조회
  */
-export type getCommentsResponse200 = {
+export type getComments1Response200 = {
   data: CommonResponsePageResponseStoreNewsCommentResponse
   status: 200
 }
     
-export type getCommentsResponseSuccess = (getCommentsResponse200) & {
+export type getComments1ResponseSuccess = (getComments1Response200) & {
   headers: Headers;
 };
 ;
 
-export type getCommentsResponse = (getCommentsResponseSuccess)
+export type getComments1Response = (getComments1ResponseSuccess)
 
-export const getGetCommentsUrl = (newsId: number,
-    params: GetCommentsParams,) => {
+export const getGetComments1Url = (newsId: number,
+    params: GetComments1Params,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -389,10 +396,10 @@ export const getGetCommentsUrl = (newsId: number,
   return stringifiedParams.length > 0 ? `/api/store-news/${newsId}/comments?${stringifiedParams}` : `/api/store-news/${newsId}/comments`
 }
 
-export const getComments = async (newsId: number,
-    params: GetCommentsParams, options?: RequestInit): Promise<getCommentsResponse> => {
+export const getComments1 = async (newsId: number,
+    params: GetComments1Params, options?: RequestInit): Promise<getComments1Response> => {
   
-  return customFetch<getCommentsResponse>(getGetCommentsUrl(newsId,params),
+  return customFetch<getComments1Response>(getGetComments1Url(newsId,params),
   {      
     ...options,
     method: 'GET'
@@ -405,75 +412,76 @@ export const getComments = async (newsId: number,
 
 
 
-export const getGetCommentsQueryKey = (newsId?: number,
-    params?: GetCommentsParams,) => {
+export const getGetComments1QueryKey = (newsId?: number,
+    params?: GetComments1Params,) => {
     return [
     `/api/store-news/${newsId}/comments`, ...(params ? [params] : [])
     ] as const;
     }
 
     
-export const getGetCommentsQueryOptions = <TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(newsId: number,
-    params: GetCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetComments1QueryOptions = <TData = Awaited<ReturnType<typeof getComments1>>, TError = unknown>(newsId: number,
+    params: GetComments1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetCommentsQueryKey(newsId,params);
+  const queryKey =  queryOptions?.queryKey ?? getGetComments1QueryKey(newsId,params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getComments>>> = ({ signal }) => getComments(newsId,params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getComments1>>> = ({ signal }) => getComments1(newsId,params, { signal, ...requestOptions });
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(newsId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(newsId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getComments1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof getComments>>>
-export type GetCommentsQueryError = unknown
+export type GetComments1QueryResult = NonNullable<Awaited<ReturnType<typeof getComments1>>>
+export type GetComments1QueryError = unknown
 
 
-export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(
+export function useGetComments1<TData = Awaited<ReturnType<typeof getComments1>>, TError = unknown>(
  newsId: number,
-    params: GetCommentsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>> & Pick<
+    params: GetComments1Params, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments1>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getComments>>,
+          Awaited<ReturnType<typeof getComments1>>,
           TError,
-          Awaited<ReturnType<typeof getComments>>
+          Awaited<ReturnType<typeof getComments1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(
+export function useGetComments1<TData = Awaited<ReturnType<typeof getComments1>>, TError = unknown>(
  newsId: number,
-    params: GetCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>> & Pick<
+    params: GetComments1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments1>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getComments>>,
+          Awaited<ReturnType<typeof getComments1>>,
           TError,
-          Awaited<ReturnType<typeof getComments>>
+          Awaited<ReturnType<typeof getComments1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(
+export function useGetComments1<TData = Awaited<ReturnType<typeof getComments1>>, TError = unknown>(
  newsId: number,
-    params: GetCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+    params: GetComments1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [공통] 댓글 목록 조회
  */
 
-export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = unknown>(
+export function useGetComments1<TData = Awaited<ReturnType<typeof getComments1>>, TError = unknown>(
  newsId: number,
-    params: GetCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+    params: GetComments1Params, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetCommentsQueryOptions(newsId,params,options)
+  const queryOptions = getGetComments1QueryOptions(newsId,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -485,28 +493,29 @@ export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, 
 
 /**
  * 소식에 댓글을 작성합니다.
+ * @deprecated
  * @summary [공통] 댓글 작성
  */
-export type createCommentResponse201 = {
+export type createComment1Response201 = {
   data: CommonResponseLong
   status: 201
 }
 
-export type createCommentResponse404 = {
+export type createComment1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type createCommentResponseSuccess = (createCommentResponse201) & {
+export type createComment1ResponseSuccess = (createComment1Response201) & {
   headers: Headers;
 };
-export type createCommentResponseError = (createCommentResponse404) & {
+export type createComment1ResponseError = (createComment1Response404) & {
   headers: Headers;
 };
 
-export type createCommentResponse = (createCommentResponseSuccess | createCommentResponseError)
+export type createComment1Response = (createComment1ResponseSuccess | createComment1ResponseError)
 
-export const getCreateCommentUrl = (newsId: number,) => {
+export const getCreateComment1Url = (newsId: number,) => {
 
 
   
@@ -514,10 +523,10 @@ export const getCreateCommentUrl = (newsId: number,) => {
   return `/api/store-news/${newsId}/comments`
 }
 
-export const createComment = async (newsId: number,
-    createStoreNewsCommentRequest: CreateStoreNewsCommentRequest, options?: RequestInit): Promise<createCommentResponse> => {
+export const createComment1 = async (newsId: number,
+    createStoreNewsCommentRequest: CreateStoreNewsCommentRequest, options?: RequestInit): Promise<createComment1Response> => {
   
-  return customFetch<createCommentResponse>(getCreateCommentUrl(newsId),
+  return customFetch<createComment1Response>(getCreateComment1Url(newsId),
   {      
     ...options,
     method: 'POST',
@@ -530,11 +539,11 @@ export const createComment = async (newsId: number,
 
 
 
-export const getCreateCommentMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext> => {
+export const getCreateComment1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment1>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createComment1>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext> => {
 
-const mutationKey = ['createComment'];
+const mutationKey = ['createComment1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -544,10 +553,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createComment>>, {newsId: number;data: CreateStoreNewsCommentRequest}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createComment1>>, {newsId: number;data: CreateStoreNewsCommentRequest}> = (props) => {
           const {newsId,data} = props ?? {};
 
-          return  createComment(newsId,data,requestOptions)
+          return  createComment1(newsId,data,requestOptions)
         }
 
 
@@ -557,25 +566,27 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreateCommentMutationResult = NonNullable<Awaited<ReturnType<typeof createComment>>>
-    export type CreateCommentMutationBody = CreateStoreNewsCommentRequest
-    export type CreateCommentMutationError = SwaggerErrorResponse
+    export type CreateComment1MutationResult = NonNullable<Awaited<ReturnType<typeof createComment1>>>
+    export type CreateComment1MutationBody = CreateStoreNewsCommentRequest
+    export type CreateComment1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [공통] 댓글 작성
  */
-export const useCreateComment = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useCreateComment1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createComment1>>, TError,{newsId: number;data: CreateStoreNewsCommentRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createComment>>,
+        Awaited<ReturnType<typeof createComment1>>,
         TError,
         {newsId: number;data: CreateStoreNewsCommentRequest},
         TContext
       > => {
-      return useMutation(getCreateCommentMutationOptions(options), queryClient);
+      return useMutation(getCreateComment1MutationOptions(options), queryClient);
     }
     /**
  * 소식 상세 정보를 조회합니다.
+ * @deprecated
  * @summary [공통] 소식 상세 조회
  */
 export type getStoreNewsResponse200 = {
@@ -667,6 +678,7 @@ export function useGetStoreNews<TData = Awaited<ReturnType<typeof getStoreNews>>
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [공통] 소식 상세 조회
  */
 
@@ -687,6 +699,7 @@ export function useGetStoreNews<TData = Awaited<ReturnType<typeof getStoreNews>>
 
 /**
  * 소식을 삭제합니다.
+ * @deprecated
  * @summary [점주] 소식 삭제
  */
 export type deleteStoreNewsResponse204 = {
@@ -767,6 +780,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteStoreNewsMutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 소식 삭제
  */
 export const useDeleteStoreNews = <TError = SwaggerErrorResponse,
@@ -781,6 +795,7 @@ export const useDeleteStoreNews = <TError = SwaggerErrorResponse,
     }
     /**
  * 소식을 수정합니다.
+ * @deprecated
  * @summary [점주] 소식 수정
  */
 export type updateStoreNewsResponse200 = {
@@ -863,6 +878,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateStoreNewsMutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 소식 수정
  */
 export const useUpdateStoreNews = <TError = SwaggerErrorResponse,
@@ -877,33 +893,34 @@ export const useUpdateStoreNews = <TError = SwaggerErrorResponse,
     }
     /**
  * 자신의 댓글을 삭제합니다.
+ * @deprecated
  * @summary [공통] 댓글 삭제
  */
-export type deleteCommentResponse204 = {
+export type deleteComment1Response204 = {
   data: CommonResponseVoid
   status: 204
 }
 
-export type deleteCommentResponse403 = {
+export type deleteComment1Response403 = {
   data: SwaggerErrorResponse
   status: 403
 }
 
-export type deleteCommentResponse404 = {
+export type deleteComment1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type deleteCommentResponseSuccess = (deleteCommentResponse204) & {
+export type deleteComment1ResponseSuccess = (deleteComment1Response204) & {
   headers: Headers;
 };
-export type deleteCommentResponseError = (deleteCommentResponse403 | deleteCommentResponse404) & {
+export type deleteComment1ResponseError = (deleteComment1Response403 | deleteComment1Response404) & {
   headers: Headers;
 };
 
-export type deleteCommentResponse = (deleteCommentResponseSuccess | deleteCommentResponseError)
+export type deleteComment1Response = (deleteComment1ResponseSuccess | deleteComment1ResponseError)
 
-export const getDeleteCommentUrl = (newsId: number,
+export const getDeleteComment1Url = (newsId: number,
     commentId: number,) => {
 
 
@@ -912,10 +929,10 @@ export const getDeleteCommentUrl = (newsId: number,
   return `/api/store-news/${newsId}/comments/${commentId}`
 }
 
-export const deleteComment = async (newsId: number,
-    commentId: number, options?: RequestInit): Promise<deleteCommentResponse> => {
+export const deleteComment1 = async (newsId: number,
+    commentId: number, options?: RequestInit): Promise<deleteComment1Response> => {
   
-  return customFetch<deleteCommentResponse>(getDeleteCommentUrl(newsId,commentId),
+  return customFetch<deleteComment1Response>(getDeleteComment1Url(newsId,commentId),
   {      
     ...options,
     method: 'DELETE'
@@ -927,11 +944,11 @@ export const deleteComment = async (newsId: number,
 
 
 
-export const getDeleteCommentMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext> => {
+export const getDeleteComment1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment1>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteComment1>>, TError,{newsId: number;commentId: number}, TContext> => {
 
-const mutationKey = ['deleteComment'];
+const mutationKey = ['deleteComment1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -941,10 +958,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteComment>>, {newsId: number;commentId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteComment1>>, {newsId: number;commentId: number}> = (props) => {
           const {newsId,commentId} = props ?? {};
 
-          return  deleteComment(newsId,commentId,requestOptions)
+          return  deleteComment1(newsId,commentId,requestOptions)
         }
 
 
@@ -954,21 +971,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteCommentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteComment>>>
+    export type DeleteComment1MutationResult = NonNullable<Awaited<ReturnType<typeof deleteComment1>>>
     
-    export type DeleteCommentMutationError = SwaggerErrorResponse
+    export type DeleteComment1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [공통] 댓글 삭제
  */
-export const useDeleteComment = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useDeleteComment1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteComment1>>, TError,{newsId: number;commentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteComment>>,
+        Awaited<ReturnType<typeof deleteComment1>>,
         TError,
         {newsId: number;commentId: number},
         TContext
       > => {
-      return useMutation(getDeleteCommentMutationOptions(options), queryClient);
+      return useMutation(getDeleteComment1MutationOptions(options), queryClient);
     }
     

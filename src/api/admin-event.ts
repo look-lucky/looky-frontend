@@ -6,19 +6,31 @@
  * OpenAPI spec version: v1.0.0
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
-  UseMutationResult
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  CommonResponseAdminEventResponse,
   CommonResponseLong,
+  CommonResponsePageResponseAdminEventResponse,
   CommonResponseVoid,
   CreateEventRequest,
+  GetEventsParams,
   SwaggerErrorResponse,
   UpdateEventRequest
 } from './generated.schemas';
@@ -28,6 +40,131 @@ import { customFetch } from './mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
+
+/**
+ * 이벤트 목록을 페이징 조회합니다. 대학 ID 미입력 시 전체 조회합니다.
+ * @summary [관리자] 이벤트 목록 조회
+ */
+export type getEventsResponse200 = {
+  data: CommonResponsePageResponseAdminEventResponse
+  status: 200
+}
+
+export type getEventsResponse403 = {
+  data: SwaggerErrorResponse
+  status: 403
+}
+    
+export type getEventsResponseSuccess = (getEventsResponse200) & {
+  headers: Headers;
+};
+export type getEventsResponseError = (getEventsResponse403) & {
+  headers: Headers;
+};
+
+export type getEventsResponse = (getEventsResponseSuccess | getEventsResponseError)
+
+export const getGetEventsUrl = (params: GetEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/events?${stringifiedParams}` : `/api/admin/events`
+}
+
+export const getEvents = async (params: GetEventsParams, options?: RequestInit): Promise<getEventsResponse> => {
+  
+  return customFetch<getEventsResponse>(getGetEventsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetEventsQueryKey = (params?: GetEventsParams,) => {
+    return [
+    `/api/admin/events`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getGetEventsQueryOptions = <TData = Awaited<ReturnType<typeof getEvents>>, TError = SwaggerErrorResponse>(params: GetEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvents>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEventsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEvents>>> = ({ signal }) => getEvents(params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEvents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetEventsQueryResult = NonNullable<Awaited<ReturnType<typeof getEvents>>>
+export type GetEventsQueryError = SwaggerErrorResponse
+
+
+export function useGetEvents<TData = Awaited<ReturnType<typeof getEvents>>, TError = SwaggerErrorResponse>(
+ params: GetEventsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvents>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEvents>>,
+          TError,
+          Awaited<ReturnType<typeof getEvents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetEvents<TData = Awaited<ReturnType<typeof getEvents>>, TError = SwaggerErrorResponse>(
+ params: GetEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvents>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEvents>>,
+          TError,
+          Awaited<ReturnType<typeof getEvents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetEvents<TData = Awaited<ReturnType<typeof getEvents>>, TError = SwaggerErrorResponse>(
+ params: GetEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvents>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [관리자] 이벤트 목록 조회
+ */
+
+export function useGetEvents<TData = Awaited<ReturnType<typeof getEvents>>, TError = SwaggerErrorResponse>(
+ params: GetEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvents>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetEventsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
 
 
 
@@ -127,6 +264,124 @@ export const useCreateEvent = <TError = SwaggerErrorResponse,
       return useMutation(getCreateEventMutationOptions(options), queryClient);
     }
     /**
+ * 이벤트 ID로 상세 정보를 조회합니다.
+ * @summary [관리자] 이벤트 단건 조회
+ */
+export type getEventResponse200 = {
+  data: CommonResponseAdminEventResponse
+  status: 200
+}
+
+export type getEventResponse404 = {
+  data: SwaggerErrorResponse
+  status: 404
+}
+    
+export type getEventResponseSuccess = (getEventResponse200) & {
+  headers: Headers;
+};
+export type getEventResponseError = (getEventResponse404) & {
+  headers: Headers;
+};
+
+export type getEventResponse = (getEventResponseSuccess | getEventResponseError)
+
+export const getGetEventUrl = (eventId: number,) => {
+
+
+  
+
+  return `/api/admin/events/${eventId}`
+}
+
+export const getEvent = async (eventId: number, options?: RequestInit): Promise<getEventResponse> => {
+  
+  return customFetch<getEventResponse>(getGetEventUrl(eventId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetEventQueryKey = (eventId?: number,) => {
+    return [
+    `/api/admin/events/${eventId}`
+    ] as const;
+    }
+
+    
+export const getGetEventQueryOptions = <TData = Awaited<ReturnType<typeof getEvent>>, TError = SwaggerErrorResponse>(eventId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEventQueryKey(eventId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEvent>>> = ({ signal }) => getEvent(eventId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(eventId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetEventQueryResult = NonNullable<Awaited<ReturnType<typeof getEvent>>>
+export type GetEventQueryError = SwaggerErrorResponse
+
+
+export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = SwaggerErrorResponse>(
+ eventId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEvent>>,
+          TError,
+          Awaited<ReturnType<typeof getEvent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = SwaggerErrorResponse>(
+ eventId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEvent>>,
+          TError,
+          Awaited<ReturnType<typeof getEvent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = SwaggerErrorResponse>(
+ eventId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary [관리자] 이벤트 단건 조회
+ */
+
+export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = SwaggerErrorResponse>(
+ eventId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetEventQueryOptions(eventId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
  * 이벤트를 삭제합니다.
  * @summary [관리자] 이벤트 삭제
  */

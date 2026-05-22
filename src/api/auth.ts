@@ -31,7 +31,6 @@ import type {
   CommonResponseLoginResponse,
   CommonResponseString,
   CommonResponseVoid,
-  CompleteSocialSignupParams,
   CompleteSocialSignupRequest,
   CouncilSignupRequest,
   FindPasswordSendCodeRequest,
@@ -43,8 +42,7 @@ import type {
   SendEmailCodeRequest,
   StudentSignupRequest,
   SwaggerErrorResponse,
-  VerifyEmailCodeRequest,
-  WithdrawRequest
+  VerifyEmailCodeRequest
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
@@ -1379,25 +1377,17 @@ export type completeSocialSignupResponseError = (completeSocialSignupResponse400
 
 export type completeSocialSignupResponse = (completeSocialSignupResponseSuccess | completeSocialSignupResponseError)
 
-export const getCompleteSocialSignupUrl = (params: CompleteSocialSignupParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getCompleteSocialSignupUrl = () => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
+  
 
-  return stringifiedParams.length > 0 ? `/api/auth/complete-social-signup?${stringifiedParams}` : `/api/auth/complete-social-signup`
+  return `/api/auth/complete-social-signup`
 }
 
-export const completeSocialSignup = async (completeSocialSignupRequest: CompleteSocialSignupRequest,
-    params: CompleteSocialSignupParams, options?: RequestInit): Promise<completeSocialSignupResponse> => {
+export const completeSocialSignup = async (completeSocialSignupRequest: CompleteSocialSignupRequest, options?: RequestInit): Promise<completeSocialSignupResponse> => {
   
-  return customFetch<completeSocialSignupResponse>(getCompleteSocialSignupUrl(params),
+  return customFetch<completeSocialSignupResponse>(getCompleteSocialSignupUrl(),
   {      
     ...options,
     method: 'POST',
@@ -1411,8 +1401,8 @@ export const completeSocialSignup = async (completeSocialSignupRequest: Complete
 
 
 export const getCompleteSocialSignupMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest}, TContext> => {
 
 const mutationKey = ['completeSocialSignup'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1424,10 +1414,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeSocialSignup>>, {data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}> = (props) => {
-          const {data,params} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeSocialSignup>>, {data: CompleteSocialSignupRequest}> = (props) => {
+          const {data} = props ?? {};
 
-          return  completeSocialSignup(data,params,requestOptions)
+          return  completeSocialSignup(data,requestOptions)
         }
 
 
@@ -1445,11 +1435,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary [공통] 소셜 회원가입 완료
  */
 export const useCompleteSocialSignup = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSocialSignup>>, TError,{data: CompleteSocialSignupRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof completeSocialSignup>>,
         TError,
-        {data: CompleteSocialSignupRequest;params: CompleteSocialSignupParams},
+        {data: CompleteSocialSignupRequest},
         TContext
       > => {
       return useMutation(getCompleteSocialSignupMutationOptions(options), queryClient);
@@ -1667,99 +1657,3 @@ export function useCheckUsernameAvailability<TData = Awaited<ReturnType<typeof c
 
 
 
-/**
- * 회원을 탈퇴 처리합니다. (Soft Delete)
- * @summary [공통] 회원 탈퇴
- */
-export type withdrawResponse204 = {
-  data: CommonResponseVoid
-  status: 204
-}
-
-export type withdrawResponse400 = {
-  data: SwaggerErrorResponse
-  status: 400
-}
-
-export type withdrawResponse401 = {
-  data: SwaggerErrorResponse
-  status: 401
-}
-    
-export type withdrawResponseSuccess = (withdrawResponse204) & {
-  headers: Headers;
-};
-export type withdrawResponseError = (withdrawResponse400 | withdrawResponse401) & {
-  headers: Headers;
-};
-
-export type withdrawResponse = (withdrawResponseSuccess | withdrawResponseError)
-
-export const getWithdrawUrl = () => {
-
-
-  
-
-  return `/api/auth/withdraw`
-}
-
-export const withdraw = async (withdrawRequest: WithdrawRequest, options?: RequestInit): Promise<withdrawResponse> => {
-  
-  return customFetch<withdrawResponse>(getWithdrawUrl(),
-  {      
-    ...options,
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      withdrawRequest,)
-  }
-);}
-
-
-
-
-export const getWithdrawMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdraw>>, TError,{data: WithdrawRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof withdraw>>, TError,{data: WithdrawRequest}, TContext> => {
-
-const mutationKey = ['withdraw'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof withdraw>>, {data: WithdrawRequest}> = (props) => {
-          const {data} = props ?? {};
-
-          return  withdraw(data,requestOptions)
-        }
-
-
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type WithdrawMutationResult = NonNullable<Awaited<ReturnType<typeof withdraw>>>
-    export type WithdrawMutationBody = WithdrawRequest
-    export type WithdrawMutationError = SwaggerErrorResponse
-
-    /**
- * @summary [공통] 회원 탈퇴
- */
-export const useWithdraw = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdraw>>, TError,{data: WithdrawRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof withdraw>>,
-        TError,
-        {data: WithdrawRequest},
-        TContext
-      > => {
-      return useMutation(getWithdrawMutationOptions(options), queryClient);
-    }
-    

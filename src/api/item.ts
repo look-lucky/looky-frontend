@@ -44,6 +44,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * 특정 상점의 모든 상품을 조회합니다.
+ * @deprecated
  * @summary [공통] 상점별 상품 목록 조회
  */
 export type getItemsResponse200 = {
@@ -142,6 +143,7 @@ export function useGetItems<TData = Awaited<ReturnType<typeof getItems>>, TError
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [공통] 상점별 상품 목록 조회
  */
 
@@ -162,6 +164,7 @@ export function useGetItems<TData = Awaited<ReturnType<typeof getItems>>, TError
 
 /**
  * 상점에 새로운 상품을 등록합니다. (본인 상점만 가능)
+ * @deprecated
  * @summary [점주] 상품 등록
  */
 export type createItemResponse201 = {
@@ -249,6 +252,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateItemMutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 상품 등록
  */
 export const useCreateItem = <TError = SwaggerErrorResponse,
@@ -263,28 +267,29 @@ export const useCreateItem = <TError = SwaggerErrorResponse,
     }
     /**
  * 상품 ID로 상품의 상세 정보를 조회합니다.
+ * @deprecated
  * @summary [공통] 상품 단건 조회
  */
-export type getItemResponse200 = {
+export type getItem1Response200 = {
   data: CommonResponseItemResponse
   status: 200
 }
 
-export type getItemResponse404 = {
+export type getItem1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type getItemResponseSuccess = (getItemResponse200) & {
+export type getItem1ResponseSuccess = (getItem1Response200) & {
   headers: Headers;
 };
-export type getItemResponseError = (getItemResponse404) & {
+export type getItem1ResponseError = (getItem1Response404) & {
   headers: Headers;
 };
 
-export type getItemResponse = (getItemResponseSuccess | getItemResponseError)
+export type getItem1Response = (getItem1ResponseSuccess | getItem1ResponseError)
 
-export const getGetItemUrl = (itemId: number,) => {
+export const getGetItem1Url = (itemId: number,) => {
 
 
   
@@ -292,9 +297,9 @@ export const getGetItemUrl = (itemId: number,) => {
   return `/api/items/${itemId}`
 }
 
-export const getItem = async (itemId: number, options?: RequestInit): Promise<getItemResponse> => {
+export const getItem1 = async (itemId: number, options?: RequestInit): Promise<getItem1Response> => {
   
-  return customFetch<getItemResponse>(getGetItemUrl(itemId),
+  return customFetch<getItem1Response>(getGetItem1Url(itemId),
   {      
     ...options,
     method: 'GET'
@@ -307,69 +312,70 @@ export const getItem = async (itemId: number, options?: RequestInit): Promise<ge
 
 
 
-export const getGetItemQueryKey = (itemId?: number,) => {
+export const getGetItem1QueryKey = (itemId?: number,) => {
     return [
     `/api/items/${itemId}`
     ] as const;
     }
 
     
-export const getGetItemQueryOptions = <TData = Awaited<ReturnType<typeof getItem>>, TError = SwaggerErrorResponse>(itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetItem1QueryOptions = <TData = Awaited<ReturnType<typeof getItem1>>, TError = SwaggerErrorResponse>(itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetItemQueryKey(itemId);
+  const queryKey =  queryOptions?.queryKey ?? getGetItem1QueryKey(itemId);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getItem>>> = ({ signal }) => getItem(itemId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getItem1>>> = ({ signal }) => getItem1(itemId, { signal, ...requestOptions });
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(itemId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(itemId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getItem1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetItemQueryResult = NonNullable<Awaited<ReturnType<typeof getItem>>>
-export type GetItemQueryError = SwaggerErrorResponse
+export type GetItem1QueryResult = NonNullable<Awaited<ReturnType<typeof getItem1>>>
+export type GetItem1QueryError = SwaggerErrorResponse
 
 
-export function useGetItem<TData = Awaited<ReturnType<typeof getItem>>, TError = SwaggerErrorResponse>(
- itemId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>> & Pick<
+export function useGetItem1<TData = Awaited<ReturnType<typeof getItem1>>, TError = SwaggerErrorResponse>(
+ itemId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem1>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getItem>>,
+          Awaited<ReturnType<typeof getItem1>>,
           TError,
-          Awaited<ReturnType<typeof getItem>>
+          Awaited<ReturnType<typeof getItem1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetItem<TData = Awaited<ReturnType<typeof getItem>>, TError = SwaggerErrorResponse>(
- itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>> & Pick<
+export function useGetItem1<TData = Awaited<ReturnType<typeof getItem1>>, TError = SwaggerErrorResponse>(
+ itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem1>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getItem>>,
+          Awaited<ReturnType<typeof getItem1>>,
           TError,
-          Awaited<ReturnType<typeof getItem>>
+          Awaited<ReturnType<typeof getItem1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetItem<TData = Awaited<ReturnType<typeof getItem>>, TError = SwaggerErrorResponse>(
- itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetItem1<TData = Awaited<ReturnType<typeof getItem1>>, TError = SwaggerErrorResponse>(
+ itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [공통] 상품 단건 조회
  */
 
-export function useGetItem<TData = Awaited<ReturnType<typeof getItem>>, TError = SwaggerErrorResponse>(
- itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetItem1<TData = Awaited<ReturnType<typeof getItem1>>, TError = SwaggerErrorResponse>(
+ itemId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItem1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetItemQueryOptions(itemId,options)
+  const queryOptions = getGetItem1QueryOptions(itemId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -381,33 +387,34 @@ export function useGetItem<TData = Awaited<ReturnType<typeof getItem>>, TError =
 
 /**
  * 상품을 삭제합니다. (본인 상점만 가능)
+ * @deprecated
  * @summary [점주] 상품 삭제
  */
-export type deleteItemResponse204 = {
+export type deleteItem1Response204 = {
   data: CommonResponseVoid
   status: 204
 }
 
-export type deleteItemResponse403 = {
+export type deleteItem1Response403 = {
   data: SwaggerErrorResponse
   status: 403
 }
 
-export type deleteItemResponse404 = {
+export type deleteItem1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type deleteItemResponseSuccess = (deleteItemResponse204) & {
+export type deleteItem1ResponseSuccess = (deleteItem1Response204) & {
   headers: Headers;
 };
-export type deleteItemResponseError = (deleteItemResponse403 | deleteItemResponse404) & {
+export type deleteItem1ResponseError = (deleteItem1Response403 | deleteItem1Response404) & {
   headers: Headers;
 };
 
-export type deleteItemResponse = (deleteItemResponseSuccess | deleteItemResponseError)
+export type deleteItem1Response = (deleteItem1ResponseSuccess | deleteItem1ResponseError)
 
-export const getDeleteItemUrl = (itemId: number,) => {
+export const getDeleteItem1Url = (itemId: number,) => {
 
 
   
@@ -415,9 +422,9 @@ export const getDeleteItemUrl = (itemId: number,) => {
   return `/api/items/${itemId}`
 }
 
-export const deleteItem = async (itemId: number, options?: RequestInit): Promise<deleteItemResponse> => {
+export const deleteItem1 = async (itemId: number, options?: RequestInit): Promise<deleteItem1Response> => {
   
-  return customFetch<deleteItemResponse>(getDeleteItemUrl(itemId),
+  return customFetch<deleteItem1Response>(getDeleteItem1Url(itemId),
   {      
     ...options,
     method: 'DELETE'
@@ -429,11 +436,11 @@ export const deleteItem = async (itemId: number, options?: RequestInit): Promise
 
 
 
-export const getDeleteItemMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItem>>, TError,{itemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteItem>>, TError,{itemId: number}, TContext> => {
+export const getDeleteItem1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItem1>>, TError,{itemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteItem1>>, TError,{itemId: number}, TContext> => {
 
-const mutationKey = ['deleteItem'];
+const mutationKey = ['deleteItem1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -443,10 +450,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteItem>>, {itemId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteItem1>>, {itemId: number}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteItem(itemId,requestOptions)
+          return  deleteItem1(itemId,requestOptions)
         }
 
 
@@ -456,52 +463,54 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteItem>>>
+    export type DeleteItem1MutationResult = NonNullable<Awaited<ReturnType<typeof deleteItem1>>>
     
-    export type DeleteItemMutationError = SwaggerErrorResponse
+    export type DeleteItem1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 상품 삭제
  */
-export const useDeleteItem = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItem>>, TError,{itemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useDeleteItem1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItem1>>, TError,{itemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteItem>>,
+        Awaited<ReturnType<typeof deleteItem1>>,
         TError,
         {itemId: number},
         TContext
       > => {
-      return useMutation(getDeleteItemMutationOptions(options), queryClient);
+      return useMutation(getDeleteItem1MutationOptions(options), queryClient);
     }
     /**
  * 상품 정보를 수정합니다. (본인 상점만 가능)
+ * @deprecated
  * @summary [점주] 상품 수정
  */
-export type updateItemResponse200 = {
+export type updateItem1Response200 = {
   data: CommonResponseVoid
   status: 200
 }
 
-export type updateItemResponse403 = {
+export type updateItem1Response403 = {
   data: SwaggerErrorResponse
   status: 403
 }
 
-export type updateItemResponse404 = {
+export type updateItem1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type updateItemResponseSuccess = (updateItemResponse200) & {
+export type updateItem1ResponseSuccess = (updateItem1Response200) & {
   headers: Headers;
 };
-export type updateItemResponseError = (updateItemResponse403 | updateItemResponse404) & {
+export type updateItem1ResponseError = (updateItem1Response403 | updateItem1Response404) & {
   headers: Headers;
 };
 
-export type updateItemResponse = (updateItemResponseSuccess | updateItemResponseError)
+export type updateItem1Response = (updateItem1ResponseSuccess | updateItem1ResponseError)
 
-export const getUpdateItemUrl = (itemId: number,) => {
+export const getUpdateItem1Url = (itemId: number,) => {
 
 
   
@@ -509,10 +518,10 @@ export const getUpdateItemUrl = (itemId: number,) => {
   return `/api/items/${itemId}`
 }
 
-export const updateItem = async (itemId: number,
-    updateItemRequest: UpdateItemRequest, options?: RequestInit): Promise<updateItemResponse> => {
+export const updateItem1 = async (itemId: number,
+    updateItemRequest: UpdateItemRequest, options?: RequestInit): Promise<updateItem1Response> => {
   
-  return customFetch<updateItemResponse>(getUpdateItemUrl(itemId),
+  return customFetch<updateItem1Response>(getUpdateItem1Url(itemId),
   {      
     ...options,
     method: 'PATCH',
@@ -525,11 +534,11 @@ export const updateItem = async (itemId: number,
 
 
 
-export const getUpdateItemMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,{itemId: number;data: UpdateItemRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,{itemId: number;data: UpdateItemRequest}, TContext> => {
+export const getUpdateItem1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem1>>, TError,{itemId: number;data: UpdateItemRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateItem1>>, TError,{itemId: number;data: UpdateItemRequest}, TContext> => {
 
-const mutationKey = ['updateItem'];
+const mutationKey = ['updateItem1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -539,10 +548,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateItem>>, {itemId: number;data: UpdateItemRequest}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateItem1>>, {itemId: number;data: UpdateItemRequest}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateItem(itemId,data,requestOptions)
+          return  updateItem1(itemId,data,requestOptions)
         }
 
 
@@ -552,21 +561,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdateItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateItem>>>
-    export type UpdateItemMutationBody = UpdateItemRequest
-    export type UpdateItemMutationError = SwaggerErrorResponse
+    export type UpdateItem1MutationResult = NonNullable<Awaited<ReturnType<typeof updateItem1>>>
+    export type UpdateItem1MutationBody = UpdateItemRequest
+    export type UpdateItem1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 상품 수정
  */
-export const useUpdateItem = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem>>, TError,{itemId: number;data: UpdateItemRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useUpdateItem1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItem1>>, TError,{itemId: number;data: UpdateItemRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateItem>>,
+        Awaited<ReturnType<typeof updateItem1>>,
         TError,
         {itemId: number;data: UpdateItemRequest},
         TContext
       > => {
-      return useMutation(getUpdateItemMutationOptions(options), queryClient);
+      return useMutation(getUpdateItem1MutationOptions(options), queryClient);
     }
     

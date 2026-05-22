@@ -30,11 +30,7 @@ import type {
   CommonResponseListMyStoreClaimResponse,
   CommonResponseListStoreResponse,
   CommonResponseLong,
-  CommonResponsePageStoreClaimResponse,
-  CommonResponseVoid,
-  GetStoreClaimsParams,
   SearchUnclaimedStoresParams,
-  StoreClaimRejectionRequest,
   StoreClaimRequest
 } from './generated.schemas';
 
@@ -48,6 +44,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * 사장님이 상점에 대해 소유를 요청하여 심사 대상이 됩니다.
+ * @deprecated
  * @summary [점주] 상점 소유 요청 등록
  */
 export type createStoreClaimsResponse200 = {
@@ -117,6 +114,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateStoreClaimsMutationError = unknown
 
     /**
+ * @deprecated
  * @summary [점주] 상점 소유 요청 등록
  */
 export const useCreateStoreClaims = <TError = unknown,
@@ -131,21 +129,22 @@ export const useCreateStoreClaims = <TError = unknown,
     }
     /**
  * 사업자등록번호의 유효성을 검증합니다.
+ * @deprecated
  * @summary [점주] 사업자등록번호 유효성 검증
  */
-export type verifyBizRegNoResponse200 = {
+export type verifyBizRegNo1Response200 = {
   data: CommonResponseBizVerificationResponse
   status: 200
 }
     
-export type verifyBizRegNoResponseSuccess = (verifyBizRegNoResponse200) & {
+export type verifyBizRegNo1ResponseSuccess = (verifyBizRegNo1Response200) & {
   headers: Headers;
 };
 ;
 
-export type verifyBizRegNoResponse = (verifyBizRegNoResponseSuccess)
+export type verifyBizRegNo1Response = (verifyBizRegNo1ResponseSuccess)
 
-export const getVerifyBizRegNoUrl = () => {
+export const getVerifyBizRegNo1Url = () => {
 
 
   
@@ -153,9 +152,9 @@ export const getVerifyBizRegNoUrl = () => {
   return `/api/biz-reg-no/verify`
 }
 
-export const verifyBizRegNo = async (bizVerificationRequest: BizVerificationRequest, options?: RequestInit): Promise<verifyBizRegNoResponse> => {
+export const verifyBizRegNo1 = async (bizVerificationRequest: BizVerificationRequest, options?: RequestInit): Promise<verifyBizRegNo1Response> => {
   
-  return customFetch<verifyBizRegNoResponse>(getVerifyBizRegNoUrl(),
+  return customFetch<verifyBizRegNo1Response>(getVerifyBizRegNo1Url(),
   {      
     ...options,
     method: 'POST',
@@ -168,11 +167,11 @@ export const verifyBizRegNo = async (bizVerificationRequest: BizVerificationRequ
 
 
 
-export const getVerifyBizRegNoMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyBizRegNo>>, TError,{data: BizVerificationRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof verifyBizRegNo>>, TError,{data: BizVerificationRequest}, TContext> => {
+export const getVerifyBizRegNo1MutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyBizRegNo1>>, TError,{data: BizVerificationRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyBizRegNo1>>, TError,{data: BizVerificationRequest}, TContext> => {
 
-const mutationKey = ['verifyBizRegNo'];
+const mutationKey = ['verifyBizRegNo1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -182,10 +181,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyBizRegNo>>, {data: BizVerificationRequest}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyBizRegNo1>>, {data: BizVerificationRequest}> = (props) => {
           const {data} = props ?? {};
 
-          return  verifyBizRegNo(data,requestOptions)
+          return  verifyBizRegNo1(data,requestOptions)
         }
 
 
@@ -195,275 +194,27 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type VerifyBizRegNoMutationResult = NonNullable<Awaited<ReturnType<typeof verifyBizRegNo>>>
-    export type VerifyBizRegNoMutationBody = BizVerificationRequest
-    export type VerifyBizRegNoMutationError = unknown
+    export type VerifyBizRegNo1MutationResult = NonNullable<Awaited<ReturnType<typeof verifyBizRegNo1>>>
+    export type VerifyBizRegNo1MutationBody = BizVerificationRequest
+    export type VerifyBizRegNo1MutationError = unknown
 
     /**
+ * @deprecated
  * @summary [점주] 사업자등록번호 유효성 검증
  */
-export const useVerifyBizRegNo = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyBizRegNo>>, TError,{data: BizVerificationRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useVerifyBizRegNo1 = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyBizRegNo1>>, TError,{data: BizVerificationRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof verifyBizRegNo>>,
+        Awaited<ReturnType<typeof verifyBizRegNo1>>,
         TError,
         {data: BizVerificationRequest},
         TContext
       > => {
-      return useMutation(getVerifyBizRegNoMutationOptions(options), queryClient);
-    }
-    /**
- * 상점 소유권 요청을 반려합니다.
- * @summary [관리자] 상점 소유권 요청 반려
- */
-export type rejectResponse200 = {
-  data: CommonResponseVoid
-  status: 200
-}
-    
-export type rejectResponseSuccess = (rejectResponse200) & {
-  headers: Headers;
-};
-;
-
-export type rejectResponse = (rejectResponseSuccess)
-
-export const getRejectUrl = (claimId: number,) => {
-
-
-  
-
-  return `/api/admin/store-claims/${claimId}/reject`
-}
-
-export const reject = async (claimId: number,
-    storeClaimRejectionRequest: StoreClaimRejectionRequest, options?: RequestInit): Promise<rejectResponse> => {
-  
-  return customFetch<rejectResponse>(getRejectUrl(claimId),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      storeClaimRejectionRequest,)
-  }
-);}
-
-
-
-
-export const getRejectMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reject>>, TError,{claimId: number;data: StoreClaimRejectionRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof reject>>, TError,{claimId: number;data: StoreClaimRejectionRequest}, TContext> => {
-
-const mutationKey = ['reject'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reject>>, {claimId: number;data: StoreClaimRejectionRequest}> = (props) => {
-          const {claimId,data} = props ?? {};
-
-          return  reject(claimId,data,requestOptions)
-        }
-
-
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RejectMutationResult = NonNullable<Awaited<ReturnType<typeof reject>>>
-    export type RejectMutationBody = StoreClaimRejectionRequest
-    export type RejectMutationError = unknown
-
-    /**
- * @summary [관리자] 상점 소유권 요청 반려
- */
-export const useReject = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reject>>, TError,{claimId: number;data: StoreClaimRejectionRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof reject>>,
-        TError,
-        {claimId: number;data: StoreClaimRejectionRequest},
-        TContext
-      > => {
-      return useMutation(getRejectMutationOptions(options), queryClient);
-    }
-    /**
- * 상점 소유권 요청을 승인합니다.
- * @summary [관리자] 상점 소유권 요청 승인
- */
-export type approveResponse200 = {
-  data: CommonResponseVoid
-  status: 200
-}
-    
-export type approveResponseSuccess = (approveResponse200) & {
-  headers: Headers;
-};
-;
-
-export type approveResponse = (approveResponseSuccess)
-
-export const getApproveUrl = (claimId: number,) => {
-
-
-  
-
-  return `/api/admin/store-claims/${claimId}/approve`
-}
-
-export const approve = async (claimId: number, options?: RequestInit): Promise<approveResponse> => {
-  
-  return customFetch<approveResponse>(getApproveUrl(claimId),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
-
-
-export const getApproveMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approve>>, TError,{claimId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof approve>>, TError,{claimId: number}, TContext> => {
-
-const mutationKey = ['approve'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approve>>, {claimId: number}> = (props) => {
-          const {claimId} = props ?? {};
-
-          return  approve(claimId,requestOptions)
-        }
-
-
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ApproveMutationResult = NonNullable<Awaited<ReturnType<typeof approve>>>
-    
-    export type ApproveMutationError = unknown
-
-    /**
- * @summary [관리자] 상점 소유권 요청 승인
- */
-export const useApprove = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approve>>, TError,{claimId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof approve>>,
-        TError,
-        {claimId: number},
-        TContext
-      > => {
-      return useMutation(getApproveMutationOptions(options), queryClient);
-    }
-    /**
- * 상점 소유권 요청에 관리자 메모를 남깁니다.
- * @summary [관리자] 상점 소유권 요청 관리자 메모 등록 및 수정
- */
-export type updateMemoResponse200 = {
-  data: CommonResponseVoid
-  status: 200
-}
-    
-export type updateMemoResponseSuccess = (updateMemoResponse200) & {
-  headers: Headers;
-};
-;
-
-export type updateMemoResponse = (updateMemoResponseSuccess)
-
-export const getUpdateMemoUrl = (claimId: number,) => {
-
-
-  
-
-  return `/api/admin/store-claims/${claimId}/memo`
-}
-
-export const updateMemo = async (claimId: number,
-    updateMemoBody: string, options?: RequestInit): Promise<updateMemoResponse> => {
-  
-  return customFetch<updateMemoResponse>(getUpdateMemoUrl(claimId),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateMemoBody,)
-  }
-);}
-
-
-
-
-export const getUpdateMemoMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMemo>>, TError,{claimId: number;data: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateMemo>>, TError,{claimId: number;data: string}, TContext> => {
-
-const mutationKey = ['updateMemo'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMemo>>, {claimId: number;data: string}> = (props) => {
-          const {claimId,data} = props ?? {};
-
-          return  updateMemo(claimId,data,requestOptions)
-        }
-
-
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateMemoMutationResult = NonNullable<Awaited<ReturnType<typeof updateMemo>>>
-    export type UpdateMemoMutationBody = string
-    export type UpdateMemoMutationError = unknown
-
-    /**
- * @summary [관리자] 상점 소유권 요청 관리자 메모 등록 및 수정
- */
-export const useUpdateMemo = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMemo>>, TError,{claimId: number;data: string}, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateMemo>>,
-        TError,
-        {claimId: number;data: string},
-        TContext
-      > => {
-      return useMutation(getUpdateMemoMutationOptions(options), queryClient);
+      return useMutation(getVerifyBizRegNo1MutationOptions(options), queryClient);
     }
     /**
  * 시스템에 등록된 미등록 상점을 이름 또는 주소로 검색합니다.
+ * @deprecated
  * @summary [점주] 미등록 상점 검색
  */
 export type searchUnclaimedStoresResponse200 = {
@@ -562,6 +313,7 @@ export function useSearchUnclaimedStores<TData = Awaited<ReturnType<typeof searc
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [점주] 미등록 상점 검색
  */
 
@@ -582,21 +334,22 @@ export function useSearchUnclaimedStores<TData = Awaited<ReturnType<typeof searc
 
 /**
  * 점주가 자신이 신청한 상점 소유 요청 목록을 조회합니다.
+ * @deprecated
  * @summary [점주] 내 상점 소유 요청 목록 조회
  */
-export type getMyStoreClaimsResponse200 = {
+export type getMyStoreClaims1Response200 = {
   data: CommonResponseListMyStoreClaimResponse
   status: 200
 }
     
-export type getMyStoreClaimsResponseSuccess = (getMyStoreClaimsResponse200) & {
+export type getMyStoreClaims1ResponseSuccess = (getMyStoreClaims1Response200) & {
   headers: Headers;
 };
 ;
 
-export type getMyStoreClaimsResponse = (getMyStoreClaimsResponseSuccess)
+export type getMyStoreClaims1Response = (getMyStoreClaims1ResponseSuccess)
 
-export const getGetMyStoreClaimsUrl = () => {
+export const getGetMyStoreClaims1Url = () => {
 
 
   
@@ -604,9 +357,9 @@ export const getGetMyStoreClaimsUrl = () => {
   return `/api/store-claims/my`
 }
 
-export const getMyStoreClaims = async ( options?: RequestInit): Promise<getMyStoreClaimsResponse> => {
+export const getMyStoreClaims1 = async ( options?: RequestInit): Promise<getMyStoreClaims1Response> => {
   
-  return customFetch<getMyStoreClaimsResponse>(getGetMyStoreClaimsUrl(),
+  return customFetch<getMyStoreClaims1Response>(getGetMyStoreClaims1Url(),
   {      
     ...options,
     method: 'GET'
@@ -619,187 +372,70 @@ export const getMyStoreClaims = async ( options?: RequestInit): Promise<getMySto
 
 
 
-export const getGetMyStoreClaimsQueryKey = () => {
+export const getGetMyStoreClaims1QueryKey = () => {
     return [
     `/api/store-claims/my`
     ] as const;
     }
 
     
-export const getGetMyStoreClaimsQueryOptions = <TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetMyStoreClaims1QueryOptions = <TData = Awaited<ReturnType<typeof getMyStoreClaims1>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMyStoreClaimsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetMyStoreClaims1QueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyStoreClaims>>> = ({ signal }) => getMyStoreClaims({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyStoreClaims1>>> = ({ signal }) => getMyStoreClaims1({ signal, ...requestOptions });
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetMyStoreClaimsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyStoreClaims>>>
-export type GetMyStoreClaimsQueryError = unknown
+export type GetMyStoreClaims1QueryResult = NonNullable<Awaited<ReturnType<typeof getMyStoreClaims1>>>
+export type GetMyStoreClaims1QueryError = unknown
 
 
-export function useGetMyStoreClaims<TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>> & Pick<
+export function useGetMyStoreClaims1<TData = Awaited<ReturnType<typeof getMyStoreClaims1>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims1>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyStoreClaims>>,
+          Awaited<ReturnType<typeof getMyStoreClaims1>>,
           TError,
-          Awaited<ReturnType<typeof getMyStoreClaims>>
+          Awaited<ReturnType<typeof getMyStoreClaims1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyStoreClaims<TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>> & Pick<
+export function useGetMyStoreClaims1<TData = Awaited<ReturnType<typeof getMyStoreClaims1>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims1>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyStoreClaims>>,
+          Awaited<ReturnType<typeof getMyStoreClaims1>>,
           TError,
-          Awaited<ReturnType<typeof getMyStoreClaims>>
+          Awaited<ReturnType<typeof getMyStoreClaims1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyStoreClaims<TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetMyStoreClaims1<TData = Awaited<ReturnType<typeof getMyStoreClaims1>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [점주] 내 상점 소유 요청 목록 조회
  */
 
-export function useGetMyStoreClaims<TData = Awaited<ReturnType<typeof getMyStoreClaims>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetMyStoreClaims1<TData = Awaited<ReturnType<typeof getMyStoreClaims1>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyStoreClaims1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetMyStoreClaimsQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-/**
- * 상점 소유권 요청 목록을 조회합니다. status 파라미터로 상태별 조회가 가능합니다.
- * @summary [관리자] 상점 소유권 요청 목록 조회
- */
-export type getStoreClaimsResponse200 = {
-  data: CommonResponsePageStoreClaimResponse
-  status: 200
-}
-    
-export type getStoreClaimsResponseSuccess = (getStoreClaimsResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getStoreClaimsResponse = (getStoreClaimsResponseSuccess)
-
-export const getGetStoreClaimsUrl = (params: GetStoreClaimsParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/admin/store-claims?${stringifiedParams}` : `/api/admin/store-claims`
-}
-
-export const getStoreClaims = async (params: GetStoreClaimsParams, options?: RequestInit): Promise<getStoreClaimsResponse> => {
-  
-  return customFetch<getStoreClaimsResponse>(getGetStoreClaimsUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-
-
-export const getGetStoreClaimsQueryKey = (params?: GetStoreClaimsParams,) => {
-    return [
-    `/api/admin/store-claims`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-    
-export const getGetStoreClaimsQueryOptions = <TData = Awaited<ReturnType<typeof getStoreClaims>>, TError = unknown>(params: GetStoreClaimsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreClaims>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetStoreClaimsQueryKey(params);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreClaims>>> = ({ signal }) => getStoreClaims(params, { signal, ...requestOptions });
-
-      
-
-      
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreClaims>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetStoreClaimsQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreClaims>>>
-export type GetStoreClaimsQueryError = unknown
-
-
-export function useGetStoreClaims<TData = Awaited<ReturnType<typeof getStoreClaims>>, TError = unknown>(
- params: GetStoreClaimsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreClaims>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getStoreClaims>>,
-          TError,
-          Awaited<ReturnType<typeof getStoreClaims>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetStoreClaims<TData = Awaited<ReturnType<typeof getStoreClaims>>, TError = unknown>(
- params: GetStoreClaimsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreClaims>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getStoreClaims>>,
-          TError,
-          Awaited<ReturnType<typeof getStoreClaims>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetStoreClaims<TData = Awaited<ReturnType<typeof getStoreClaims>>, TError = unknown>(
- params: GetStoreClaimsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreClaims>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary [관리자] 상점 소유권 요청 목록 조회
- */
-
-export function useGetStoreClaims<TData = Awaited<ReturnType<typeof getStoreClaims>>, TError = unknown>(
- params: GetStoreClaimsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStoreClaims>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetStoreClaimsQueryOptions(params,options)
+  const queryOptions = getGetMyStoreClaims1QueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -11,6 +11,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "generate": "node scripts/fetch-openapi.js && node scripts/patch-openapi.js && npx orval && node scripts/patch-generated.js",
+    "generate:dev": "cross-env OPENAPI_BASE_URL=https://dev-api.looky.kr node scripts/fetch-openapi.js && node scripts/patch-openapi.js && npx orval && node scripts/patch-generated.js",
     "eas-build-pre-install": "npm install --package-lock-only"
   },
   "dependencies": {

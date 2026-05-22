@@ -43,6 +43,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * 매장의 상품 카테고리 목록을 조회합니다.
+ * @deprecated
  * @summary [공통] 상품 카테고리 목록 조회
  */
 export type getItemCategoriesResponse200 = {
@@ -134,6 +135,7 @@ export function useGetItemCategories<TData = Awaited<ReturnType<typeof getItemCa
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [공통] 상품 카테고리 목록 조회
  */
 
@@ -154,6 +156,7 @@ export function useGetItemCategories<TData = Awaited<ReturnType<typeof getItemCa
 
 /**
  * 매장에 새로운 상품 카테고리를 등록합니다.
+ * @deprecated
  * @summary [점주] 상품 카테고리 등록
  */
 export type createItemCategoryResponse201 = {
@@ -236,6 +239,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateItemCategoryMutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 상품 카테고리 등록
  */
 export const useCreateItemCategory = <TError = SwaggerErrorResponse,
@@ -250,6 +254,7 @@ export const useCreateItemCategory = <TError = SwaggerErrorResponse,
     }
     /**
  * 상품 카테고리를 삭제합니다. (사용 중인 상품이 있으면 삭제 불가)
+ * @deprecated
  * @summary [점주] 상품 카테고리 삭제
  */
 export type deleteItemCategoryResponse204 = {
@@ -327,6 +332,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteItemCategoryMutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 상품 카테고리 삭제
  */
 export const useDeleteItemCategory = <TError = SwaggerErrorResponse,
@@ -341,6 +347,7 @@ export const useDeleteItemCategory = <TError = SwaggerErrorResponse,
     }
     /**
  * 상품 카테고리 이름을 수정합니다.
+ * @deprecated
  * @summary [점주] 상품 카테고리 수정
  */
 export type updateItemCategoryResponse200 = {
@@ -413,6 +420,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateItemCategoryMutationError = unknown
 
     /**
+ * @deprecated
  * @summary [점주] 상품 카테고리 수정
  */
 export const useUpdateItemCategory = <TError = unknown,

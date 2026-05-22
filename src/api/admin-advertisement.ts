@@ -43,7 +43,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 /**
- * 광고 목록을 조회합니다. 타입 및 상태 필터를 지원합니다.
+ * 광고 목록을 조회합니다. 타입과 상태 필터를 지원합니다.
  * @summary [관리자] 광고 목록 조회
  */
 export type getAdvertisementsResponse200 = {
@@ -263,7 +263,7 @@ export const useCreateAdvertisement = <TError = SwaggerErrorResponse,
       return useMutation(getCreateAdvertisementMutationOptions(options), queryClient);
     }
     /**
- * 광고를 삭제합니다. S3 이미지도 함께 삭제됩니다.
+ * 광고를 삭제합니다. S3 이미지도 함께 삭제합니다.
  * @summary [관리자] 광고 삭제
  */
 export type deleteAdvertisementResponse204 = {
@@ -357,7 +357,7 @@ export const useDeleteAdvertisement = <TError = SwaggerErrorResponse,
       return useMutation(getDeleteAdvertisementMutationOptions(options), queryClient);
     }
     /**
- * 광고 정보 및 상태를 수정합니다. 상태는 활성화/비활성화만 가능합니다.
+ * 광고 정보와 상태를 수정합니다. 상태는 활성/비활성만 직접 변경할 수 있습니다.
  * @summary [관리자] 광고 수정
  */
 export type updateAdvertisementResponse200 = {

@@ -29,6 +29,7 @@ import type {
   CommonResponseDownloadCouponResponse,
   CommonResponseListCouponResponse,
   CommonResponseListDownloadCouponResponse,
+  CommonResponseListStudentCouponResponse,
   CommonResponseLong,
   CommonResponseVerifyCouponResponse,
   CommonResponseVoid,
@@ -48,6 +49,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * 특정 상점의 모든 쿠폰을 조회합니다.
+ * @deprecated
  * @summary [공통] 상점별 쿠폰 목록 조회
  */
 export type getCouponsByStoreResponse200 = {
@@ -146,6 +148,7 @@ export function useGetCouponsByStore<TData = Awaited<ReturnType<typeof getCoupon
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [공통] 상점별 쿠폰 목록 조회
  */
 
@@ -166,6 +169,7 @@ export function useGetCouponsByStore<TData = Awaited<ReturnType<typeof getCoupon
 
 /**
  * 상점의 새로운 쿠폰을 생성합니다.
+ * @deprecated
  * @summary [점주] 쿠폰 생성
  */
 export type createCouponResponse201 = {
@@ -253,6 +257,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateCouponMutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 쿠폰 생성
  */
 export const useCreateCoupon = <TError = SwaggerErrorResponse,
@@ -267,6 +272,7 @@ export const useCreateCoupon = <TError = SwaggerErrorResponse,
     }
     /**
  * 조회된 쿠폰을 실제로 사용 처리합니다.
+ * @deprecated
  * @summary [점주] 쿠폰 사용 확정
  */
 export type useCouponResponse200 = {
@@ -354,6 +360,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UseCouponMutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 쿠폰 사용 확정
  */
 export const useUseCoupon = <TError = SwaggerErrorResponse,
@@ -368,6 +375,7 @@ export const useUseCoupon = <TError = SwaggerErrorResponse,
     }
     /**
  * 손님이 제시한 4자리 코드를 입력하여 혜택 및 사용자 정보를 확인합니다. (상태 변경 없음)
+ * @deprecated
  * @summary [점주] 쿠폰 코드 조회 (검증)
  */
 export type verifyCouponResponse200 = {
@@ -450,6 +458,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type VerifyCouponMutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 쿠폰 코드 조회 (검증)
  */
 export const useVerifyCoupon = <TError = SwaggerErrorResponse,
@@ -464,38 +473,39 @@ export const useVerifyCoupon = <TError = SwaggerErrorResponse,
     }
     /**
  * 매장에서 사용하기 위해 쿠폰을 활성화하고 4자리 코드를 발급받습니다.
+ * @deprecated
  * @summary [학생] 쿠폰 코드 발급
  */
-export type activateCouponResponse200 = {
+export type activateCoupon1Response200 = {
   data: CommonResponseActivateCouponResponse
   status: 200
 }
 
-export type activateCouponResponse404 = {
+export type activateCoupon1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
 
-export type activateCouponResponse409 = {
+export type activateCoupon1Response409 = {
   data: SwaggerErrorResponse
   status: 409
 }
 
-export type activateCouponResponse422 = {
+export type activateCoupon1Response422 = {
   data: SwaggerErrorResponse
   status: 422
 }
     
-export type activateCouponResponseSuccess = (activateCouponResponse200) & {
+export type activateCoupon1ResponseSuccess = (activateCoupon1Response200) & {
   headers: Headers;
 };
-export type activateCouponResponseError = (activateCouponResponse404 | activateCouponResponse409 | activateCouponResponse422) & {
+export type activateCoupon1ResponseError = (activateCoupon1Response404 | activateCoupon1Response409 | activateCoupon1Response422) & {
   headers: Headers;
 };
 
-export type activateCouponResponse = (activateCouponResponseSuccess | activateCouponResponseError)
+export type activateCoupon1Response = (activateCoupon1ResponseSuccess | activateCoupon1ResponseError)
 
-export const getActivateCouponUrl = (studentCouponId: number,) => {
+export const getActivateCoupon1Url = (studentCouponId: number,) => {
 
 
   
@@ -503,9 +513,9 @@ export const getActivateCouponUrl = (studentCouponId: number,) => {
   return `/api/my-coupons/${studentCouponId}/activate`
 }
 
-export const activateCoupon = async (studentCouponId: number, options?: RequestInit): Promise<activateCouponResponse> => {
+export const activateCoupon1 = async (studentCouponId: number, options?: RequestInit): Promise<activateCoupon1Response> => {
   
-  return customFetch<activateCouponResponse>(getActivateCouponUrl(studentCouponId),
+  return customFetch<activateCoupon1Response>(getActivateCoupon1Url(studentCouponId),
   {      
     ...options,
     method: 'POST'
@@ -517,11 +527,11 @@ export const activateCoupon = async (studentCouponId: number, options?: RequestI
 
 
 
-export const getActivateCouponMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateCoupon>>, TError,{studentCouponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof activateCoupon>>, TError,{studentCouponId: number}, TContext> => {
+export const getActivateCoupon1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateCoupon1>>, TError,{studentCouponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateCoupon1>>, TError,{studentCouponId: number}, TContext> => {
 
-const mutationKey = ['activateCoupon'];
+const mutationKey = ['activateCoupon1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -531,10 +541,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateCoupon>>, {studentCouponId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateCoupon1>>, {studentCouponId: number}> = (props) => {
           const {studentCouponId} = props ?? {};
 
-          return  activateCoupon(studentCouponId,requestOptions)
+          return  activateCoupon1(studentCouponId,requestOptions)
         }
 
 
@@ -544,52 +554,54 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ActivateCouponMutationResult = NonNullable<Awaited<ReturnType<typeof activateCoupon>>>
+    export type ActivateCoupon1MutationResult = NonNullable<Awaited<ReturnType<typeof activateCoupon1>>>
     
-    export type ActivateCouponMutationError = SwaggerErrorResponse
+    export type ActivateCoupon1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [학생] 쿠폰 코드 발급
  */
-export const useActivateCoupon = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateCoupon>>, TError,{studentCouponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useActivateCoupon1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateCoupon1>>, TError,{studentCouponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof activateCoupon>>,
+        Awaited<ReturnType<typeof activateCoupon1>>,
         TError,
         {studentCouponId: number},
         TContext
       > => {
-      return useMutation(getActivateCouponMutationOptions(options), queryClient);
+      return useMutation(getActivateCoupon1MutationOptions(options), queryClient);
     }
     /**
  * 점주가 자신의 쿠폰을 수동으로 만료시킵니다.
+ * @deprecated
  * @summary [점주] 쿠폰 수동 만료
  */
-export type expireCouponResponse200 = {
+export type expireCoupon1Response200 = {
   data: CommonResponseVoid
   status: 200
 }
 
-export type expireCouponResponse403 = {
+export type expireCoupon1Response403 = {
   data: SwaggerErrorResponse
   status: 403
 }
 
-export type expireCouponResponse404 = {
+export type expireCoupon1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type expireCouponResponseSuccess = (expireCouponResponse200) & {
+export type expireCoupon1ResponseSuccess = (expireCoupon1Response200) & {
   headers: Headers;
 };
-export type expireCouponResponseError = (expireCouponResponse403 | expireCouponResponse404) & {
+export type expireCoupon1ResponseError = (expireCoupon1Response403 | expireCoupon1Response404) & {
   headers: Headers;
 };
 
-export type expireCouponResponse = (expireCouponResponseSuccess | expireCouponResponseError)
+export type expireCoupon1Response = (expireCoupon1ResponseSuccess | expireCoupon1ResponseError)
 
-export const getExpireCouponUrl = (couponId: number,) => {
+export const getExpireCoupon1Url = (couponId: number,) => {
 
 
   
@@ -597,9 +609,9 @@ export const getExpireCouponUrl = (couponId: number,) => {
   return `/api/coupons/${couponId}/expire`
 }
 
-export const expireCoupon = async (couponId: number, options?: RequestInit): Promise<expireCouponResponse> => {
+export const expireCoupon1 = async (couponId: number, options?: RequestInit): Promise<expireCoupon1Response> => {
   
-  return customFetch<expireCouponResponse>(getExpireCouponUrl(couponId),
+  return customFetch<expireCoupon1Response>(getExpireCoupon1Url(couponId),
   {      
     ...options,
     method: 'POST'
@@ -611,11 +623,11 @@ export const expireCoupon = async (couponId: number, options?: RequestInit): Pro
 
 
 
-export const getExpireCouponMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof expireCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof expireCoupon>>, TError,{couponId: number}, TContext> => {
+export const getExpireCoupon1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof expireCoupon1>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof expireCoupon1>>, TError,{couponId: number}, TContext> => {
 
-const mutationKey = ['expireCoupon'];
+const mutationKey = ['expireCoupon1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -625,10 +637,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof expireCoupon>>, {couponId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof expireCoupon1>>, {couponId: number}> = (props) => {
           const {couponId} = props ?? {};
 
-          return  expireCoupon(couponId,requestOptions)
+          return  expireCoupon1(couponId,requestOptions)
         }
 
 
@@ -638,52 +650,54 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ExpireCouponMutationResult = NonNullable<Awaited<ReturnType<typeof expireCoupon>>>
+    export type ExpireCoupon1MutationResult = NonNullable<Awaited<ReturnType<typeof expireCoupon1>>>
     
-    export type ExpireCouponMutationError = SwaggerErrorResponse
+    export type ExpireCoupon1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 쿠폰 수동 만료
  */
-export const useExpireCoupon = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof expireCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useExpireCoupon1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof expireCoupon1>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof expireCoupon>>,
+        Awaited<ReturnType<typeof expireCoupon1>>,
         TError,
         {couponId: number},
         TContext
       > => {
-      return useMutation(getExpireCouponMutationOptions(options), queryClient);
+      return useMutation(getExpireCoupon1MutationOptions(options), queryClient);
     }
     /**
  * 사용자가 쿠폰을 다운로드받습니다.
+ * @deprecated
  * @summary [학생] 쿠폰 다운로드
  */
-export type downloadCouponResponse200 = {
+export type downloadCoupon1Response200 = {
   data: CommonResponseDownloadCouponResponse
   status: 200
 }
 
-export type downloadCouponResponse404 = {
+export type downloadCoupon1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
 
-export type downloadCouponResponse422 = {
+export type downloadCoupon1Response422 = {
   data: SwaggerErrorResponse
   status: 422
 }
     
-export type downloadCouponResponseSuccess = (downloadCouponResponse200) & {
+export type downloadCoupon1ResponseSuccess = (downloadCoupon1Response200) & {
   headers: Headers;
 };
-export type downloadCouponResponseError = (downloadCouponResponse404 | downloadCouponResponse422) & {
+export type downloadCoupon1ResponseError = (downloadCoupon1Response404 | downloadCoupon1Response422) & {
   headers: Headers;
 };
 
-export type downloadCouponResponse = (downloadCouponResponseSuccess | downloadCouponResponseError)
+export type downloadCoupon1Response = (downloadCoupon1ResponseSuccess | downloadCoupon1ResponseError)
 
-export const getDownloadCouponUrl = (couponId: number,) => {
+export const getDownloadCoupon1Url = (couponId: number,) => {
 
 
   
@@ -691,9 +705,9 @@ export const getDownloadCouponUrl = (couponId: number,) => {
   return `/api/coupons/${couponId}/download`
 }
 
-export const downloadCoupon = async (couponId: number, options?: RequestInit): Promise<downloadCouponResponse> => {
+export const downloadCoupon1 = async (couponId: number, options?: RequestInit): Promise<downloadCoupon1Response> => {
   
-  return customFetch<downloadCouponResponse>(getDownloadCouponUrl(couponId),
+  return customFetch<downloadCoupon1Response>(getDownloadCoupon1Url(couponId),
   {      
     ...options,
     method: 'POST'
@@ -705,11 +719,11 @@ export const downloadCoupon = async (couponId: number, options?: RequestInit): P
 
 
 
-export const getDownloadCouponMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downloadCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof downloadCoupon>>, TError,{couponId: number}, TContext> => {
+export const getDownloadCoupon1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downloadCoupon1>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof downloadCoupon1>>, TError,{couponId: number}, TContext> => {
 
-const mutationKey = ['downloadCoupon'];
+const mutationKey = ['downloadCoupon1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -719,10 +733,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof downloadCoupon>>, {couponId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof downloadCoupon1>>, {couponId: number}> = (props) => {
           const {couponId} = props ?? {};
 
-          return  downloadCoupon(couponId,requestOptions)
+          return  downloadCoupon1(couponId,requestOptions)
         }
 
 
@@ -732,52 +746,54 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DownloadCouponMutationResult = NonNullable<Awaited<ReturnType<typeof downloadCoupon>>>
+    export type DownloadCoupon1MutationResult = NonNullable<Awaited<ReturnType<typeof downloadCoupon1>>>
     
-    export type DownloadCouponMutationError = SwaggerErrorResponse
+    export type DownloadCoupon1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [학생] 쿠폰 다운로드
  */
-export const useDownloadCoupon = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downloadCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useDownloadCoupon1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downloadCoupon1>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof downloadCoupon>>,
+        Awaited<ReturnType<typeof downloadCoupon1>>,
         TError,
         {couponId: number},
         TContext
       > => {
-      return useMutation(getDownloadCouponMutationOptions(options), queryClient);
+      return useMutation(getDownloadCoupon1MutationOptions(options), queryClient);
     }
     /**
  * 쿠폰을 삭제합니다. (본인 상점만 가능)
+ * @deprecated
  * @summary [점주] 쿠폰 삭제
  */
-export type deleteCouponResponse204 = {
+export type deleteCoupon1Response204 = {
   data: CommonResponseVoid
   status: 204
 }
 
-export type deleteCouponResponse403 = {
+export type deleteCoupon1Response403 = {
   data: SwaggerErrorResponse
   status: 403
 }
 
-export type deleteCouponResponse404 = {
+export type deleteCoupon1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type deleteCouponResponseSuccess = (deleteCouponResponse204) & {
+export type deleteCoupon1ResponseSuccess = (deleteCoupon1Response204) & {
   headers: Headers;
 };
-export type deleteCouponResponseError = (deleteCouponResponse403 | deleteCouponResponse404) & {
+export type deleteCoupon1ResponseError = (deleteCoupon1Response403 | deleteCoupon1Response404) & {
   headers: Headers;
 };
 
-export type deleteCouponResponse = (deleteCouponResponseSuccess | deleteCouponResponseError)
+export type deleteCoupon1Response = (deleteCoupon1ResponseSuccess | deleteCoupon1ResponseError)
 
-export const getDeleteCouponUrl = (couponId: number,) => {
+export const getDeleteCoupon1Url = (couponId: number,) => {
 
 
   
@@ -785,9 +801,9 @@ export const getDeleteCouponUrl = (couponId: number,) => {
   return `/api/coupons/${couponId}`
 }
 
-export const deleteCoupon = async (couponId: number, options?: RequestInit): Promise<deleteCouponResponse> => {
+export const deleteCoupon1 = async (couponId: number, options?: RequestInit): Promise<deleteCoupon1Response> => {
   
-  return customFetch<deleteCouponResponse>(getDeleteCouponUrl(couponId),
+  return customFetch<deleteCoupon1Response>(getDeleteCoupon1Url(couponId),
   {      
     ...options,
     method: 'DELETE'
@@ -799,11 +815,11 @@ export const deleteCoupon = async (couponId: number, options?: RequestInit): Pro
 
 
 
-export const getDeleteCouponMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteCoupon>>, TError,{couponId: number}, TContext> => {
+export const getDeleteCoupon1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCoupon1>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCoupon1>>, TError,{couponId: number}, TContext> => {
 
-const mutationKey = ['deleteCoupon'];
+const mutationKey = ['deleteCoupon1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -813,10 +829,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCoupon>>, {couponId: number}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCoupon1>>, {couponId: number}> = (props) => {
           const {couponId} = props ?? {};
 
-          return  deleteCoupon(couponId,requestOptions)
+          return  deleteCoupon1(couponId,requestOptions)
         }
 
 
@@ -826,52 +842,54 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteCouponMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCoupon>>>
+    export type DeleteCoupon1MutationResult = NonNullable<Awaited<ReturnType<typeof deleteCoupon1>>>
     
-    export type DeleteCouponMutationError = SwaggerErrorResponse
+    export type DeleteCoupon1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 쿠폰 삭제
  */
-export const useDeleteCoupon = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCoupon>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useDeleteCoupon1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCoupon1>>, TError,{couponId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteCoupon>>,
+        Awaited<ReturnType<typeof deleteCoupon1>>,
         TError,
         {couponId: number},
         TContext
       > => {
-      return useMutation(getDeleteCouponMutationOptions(options), queryClient);
+      return useMutation(getDeleteCoupon1MutationOptions(options), queryClient);
     }
     /**
  * 쿠폰 정보를 수정합니다. (본인 상점만 가능)
+ * @deprecated
  * @summary [점주] 쿠폰 수정
  */
-export type updateCouponResponse200 = {
+export type updateCoupon1Response200 = {
   data: CommonResponseVoid
   status: 200
 }
 
-export type updateCouponResponse403 = {
+export type updateCoupon1Response403 = {
   data: SwaggerErrorResponse
   status: 403
 }
 
-export type updateCouponResponse404 = {
+export type updateCoupon1Response404 = {
   data: SwaggerErrorResponse
   status: 404
 }
     
-export type updateCouponResponseSuccess = (updateCouponResponse200) & {
+export type updateCoupon1ResponseSuccess = (updateCoupon1Response200) & {
   headers: Headers;
 };
-export type updateCouponResponseError = (updateCouponResponse403 | updateCouponResponse404) & {
+export type updateCoupon1ResponseError = (updateCoupon1Response403 | updateCoupon1Response404) & {
   headers: Headers;
 };
 
-export type updateCouponResponse = (updateCouponResponseSuccess | updateCouponResponseError)
+export type updateCoupon1Response = (updateCoupon1ResponseSuccess | updateCoupon1ResponseError)
 
-export const getUpdateCouponUrl = (couponId: number,) => {
+export const getUpdateCoupon1Url = (couponId: number,) => {
 
 
   
@@ -879,10 +897,10 @@ export const getUpdateCouponUrl = (couponId: number,) => {
   return `/api/coupons/${couponId}`
 }
 
-export const updateCoupon = async (couponId: number,
-    updateCouponRequest: UpdateCouponRequest, options?: RequestInit): Promise<updateCouponResponse> => {
+export const updateCoupon1 = async (couponId: number,
+    updateCouponRequest: UpdateCouponRequest, options?: RequestInit): Promise<updateCoupon1Response> => {
   
-  return customFetch<updateCouponResponse>(getUpdateCouponUrl(couponId),
+  return customFetch<updateCoupon1Response>(getUpdateCoupon1Url(couponId),
   {      
     ...options,
     method: 'PATCH',
@@ -895,11 +913,11 @@ export const updateCoupon = async (couponId: number,
 
 
 
-export const getUpdateCouponMutationOptions = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCoupon>>, TError,{couponId: number;data: UpdateCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateCoupon>>, TError,{couponId: number;data: UpdateCouponRequest}, TContext> => {
+export const getUpdateCoupon1MutationOptions = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCoupon1>>, TError,{couponId: number;data: UpdateCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCoupon1>>, TError,{couponId: number;data: UpdateCouponRequest}, TContext> => {
 
-const mutationKey = ['updateCoupon'];
+const mutationKey = ['updateCoupon1'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -909,10 +927,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCoupon>>, {couponId: number;data: UpdateCouponRequest}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCoupon1>>, {couponId: number;data: UpdateCouponRequest}> = (props) => {
           const {couponId,data} = props ?? {};
 
-          return  updateCoupon(couponId,data,requestOptions)
+          return  updateCoupon1(couponId,data,requestOptions)
         }
 
 
@@ -922,40 +940,42 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdateCouponMutationResult = NonNullable<Awaited<ReturnType<typeof updateCoupon>>>
-    export type UpdateCouponMutationBody = UpdateCouponRequest
-    export type UpdateCouponMutationError = SwaggerErrorResponse
+    export type UpdateCoupon1MutationResult = NonNullable<Awaited<ReturnType<typeof updateCoupon1>>>
+    export type UpdateCoupon1MutationBody = UpdateCouponRequest
+    export type UpdateCoupon1MutationError = SwaggerErrorResponse
 
     /**
+ * @deprecated
  * @summary [점주] 쿠폰 수정
  */
-export const useUpdateCoupon = <TError = SwaggerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCoupon>>, TError,{couponId: number;data: UpdateCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useUpdateCoupon1 = <TError = SwaggerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCoupon1>>, TError,{couponId: number;data: UpdateCouponRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateCoupon>>,
+        Awaited<ReturnType<typeof updateCoupon1>>,
         TError,
         {couponId: number;data: UpdateCouponRequest},
         TContext
       > => {
-      return useMutation(getUpdateCouponMutationOptions(options), queryClient);
+      return useMutation(getUpdateCoupon1MutationOptions(options), queryClient);
     }
     /**
  * 사용자가 발급받은 쿠폰 목록을 조회합니다.
+ * @deprecated
  * @summary [학생] 내 쿠폰 조회
  */
-export type getMyCouponsResponse200 = {
+export type getMyCoupons1Response200 = {
   data: CommonResponseListDownloadCouponResponse
   status: 200
 }
     
-export type getMyCouponsResponseSuccess = (getMyCouponsResponse200) & {
+export type getMyCoupons1ResponseSuccess = (getMyCoupons1Response200) & {
   headers: Headers;
 };
 ;
 
-export type getMyCouponsResponse = (getMyCouponsResponseSuccess)
+export type getMyCoupons1Response = (getMyCoupons1ResponseSuccess)
 
-export const getGetMyCouponsUrl = () => {
+export const getGetMyCoupons1Url = () => {
 
 
   
@@ -963,9 +983,9 @@ export const getGetMyCouponsUrl = () => {
   return `/api/my-coupons`
 }
 
-export const getMyCoupons = async ( options?: RequestInit): Promise<getMyCouponsResponse> => {
+export const getMyCoupons1 = async ( options?: RequestInit): Promise<getMyCoupons1Response> => {
   
-  return customFetch<getMyCouponsResponse>(getGetMyCouponsUrl(),
+  return customFetch<getMyCoupons1Response>(getGetMyCoupons1Url(),
   {      
     ...options,
     method: 'GET'
@@ -978,69 +998,70 @@ export const getMyCoupons = async ( options?: RequestInit): Promise<getMyCoupons
 
 
 
-export const getGetMyCouponsQueryKey = () => {
+export const getGetMyCoupons1QueryKey = () => {
     return [
     `/api/my-coupons`
     ] as const;
     }
 
     
-export const getGetMyCouponsQueryOptions = <TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetMyCoupons1QueryOptions = <TData = Awaited<ReturnType<typeof getMyCoupons1>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMyCouponsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetMyCoupons1QueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyCoupons>>> = ({ signal }) => getMyCoupons({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyCoupons1>>> = ({ signal }) => getMyCoupons1({ signal, ...requestOptions });
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetMyCouponsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyCoupons>>>
-export type GetMyCouponsQueryError = unknown
+export type GetMyCoupons1QueryResult = NonNullable<Awaited<ReturnType<typeof getMyCoupons1>>>
+export type GetMyCoupons1QueryError = unknown
 
 
-export function useGetMyCoupons<TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>> & Pick<
+export function useGetMyCoupons1<TData = Awaited<ReturnType<typeof getMyCoupons1>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons1>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyCoupons>>,
+          Awaited<ReturnType<typeof getMyCoupons1>>,
           TError,
-          Awaited<ReturnType<typeof getMyCoupons>>
+          Awaited<ReturnType<typeof getMyCoupons1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyCoupons<TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>> & Pick<
+export function useGetMyCoupons1<TData = Awaited<ReturnType<typeof getMyCoupons1>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons1>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyCoupons>>,
+          Awaited<ReturnType<typeof getMyCoupons1>>,
           TError,
-          Awaited<ReturnType<typeof getMyCoupons>>
+          Awaited<ReturnType<typeof getMyCoupons1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyCoupons<TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetMyCoupons1<TData = Awaited<ReturnType<typeof getMyCoupons1>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [학생] 내 쿠폰 조회
  */
 
-export function useGetMyCoupons<TData = Awaited<ReturnType<typeof getMyCoupons>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetMyCoupons1<TData = Awaited<ReturnType<typeof getMyCoupons1>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyCoupons1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetMyCouponsQueryOptions(options)
+  const queryOptions = getGetMyCoupons1QueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1052,28 +1073,29 @@ export function useGetMyCoupons<TData = Awaited<ReturnType<typeof getMyCoupons>>
 
 /**
  * 학생의 학교와 제휴된 매장에서 24시간 이내에 발급된 쿠폰 목록을 조회합니다.
+ * @deprecated
  * @summary [학생] 오늘의 신규 쿠폰 조회
  */
-export type getTodayCouponsResponse200 = {
-  data: CommonResponseListCouponResponse
+export type getTodayCoupons1Response200 = {
+  data: CommonResponseListStudentCouponResponse
   status: 200
 }
 
-export type getTodayCouponsResponse403 = {
-  data: CommonResponseListCouponResponse
+export type getTodayCoupons1Response403 = {
+  data: CommonResponseListStudentCouponResponse
   status: 403
 }
     
-export type getTodayCouponsResponseSuccess = (getTodayCouponsResponse200) & {
+export type getTodayCoupons1ResponseSuccess = (getTodayCoupons1Response200) & {
   headers: Headers;
 };
-export type getTodayCouponsResponseError = (getTodayCouponsResponse403) & {
+export type getTodayCoupons1ResponseError = (getTodayCoupons1Response403) & {
   headers: Headers;
 };
 
-export type getTodayCouponsResponse = (getTodayCouponsResponseSuccess | getTodayCouponsResponseError)
+export type getTodayCoupons1Response = (getTodayCoupons1ResponseSuccess | getTodayCoupons1ResponseError)
 
-export const getGetTodayCouponsUrl = () => {
+export const getGetTodayCoupons1Url = () => {
 
 
   
@@ -1081,9 +1103,9 @@ export const getGetTodayCouponsUrl = () => {
   return `/api/coupons/today`
 }
 
-export const getTodayCoupons = async ( options?: RequestInit): Promise<getTodayCouponsResponse> => {
+export const getTodayCoupons1 = async ( options?: RequestInit): Promise<getTodayCoupons1Response> => {
   
-  return customFetch<getTodayCouponsResponse>(getGetTodayCouponsUrl(),
+  return customFetch<getTodayCoupons1Response>(getGetTodayCoupons1Url(),
   {      
     ...options,
     method: 'GET'
@@ -1096,69 +1118,70 @@ export const getTodayCoupons = async ( options?: RequestInit): Promise<getTodayC
 
 
 
-export const getGetTodayCouponsQueryKey = () => {
+export const getGetTodayCoupons1QueryKey = () => {
     return [
     `/api/coupons/today`
     ] as const;
     }
 
     
-export const getGetTodayCouponsQueryOptions = <TData = Awaited<ReturnType<typeof getTodayCoupons>>, TError = CommonResponseListCouponResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetTodayCoupons1QueryOptions = <TData = Awaited<ReturnType<typeof getTodayCoupons1>>, TError = CommonResponseListStudentCouponResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetTodayCouponsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetTodayCoupons1QueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTodayCoupons>>> = ({ signal }) => getTodayCoupons({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTodayCoupons1>>> = ({ signal }) => getTodayCoupons1({ signal, ...requestOptions });
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons1>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetTodayCouponsQueryResult = NonNullable<Awaited<ReturnType<typeof getTodayCoupons>>>
-export type GetTodayCouponsQueryError = CommonResponseListCouponResponse
+export type GetTodayCoupons1QueryResult = NonNullable<Awaited<ReturnType<typeof getTodayCoupons1>>>
+export type GetTodayCoupons1QueryError = CommonResponseListStudentCouponResponse
 
 
-export function useGetTodayCoupons<TData = Awaited<ReturnType<typeof getTodayCoupons>>, TError = CommonResponseListCouponResponse>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons>>, TError, TData>> & Pick<
+export function useGetTodayCoupons1<TData = Awaited<ReturnType<typeof getTodayCoupons1>>, TError = CommonResponseListStudentCouponResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons1>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getTodayCoupons>>,
+          Awaited<ReturnType<typeof getTodayCoupons1>>,
           TError,
-          Awaited<ReturnType<typeof getTodayCoupons>>
+          Awaited<ReturnType<typeof getTodayCoupons1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetTodayCoupons<TData = Awaited<ReturnType<typeof getTodayCoupons>>, TError = CommonResponseListCouponResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons>>, TError, TData>> & Pick<
+export function useGetTodayCoupons1<TData = Awaited<ReturnType<typeof getTodayCoupons1>>, TError = CommonResponseListStudentCouponResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons1>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getTodayCoupons>>,
+          Awaited<ReturnType<typeof getTodayCoupons1>>,
           TError,
-          Awaited<ReturnType<typeof getTodayCoupons>>
+          Awaited<ReturnType<typeof getTodayCoupons1>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetTodayCoupons<TData = Awaited<ReturnType<typeof getTodayCoupons>>, TError = CommonResponseListCouponResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetTodayCoupons1<TData = Awaited<ReturnType<typeof getTodayCoupons1>>, TError = CommonResponseListStudentCouponResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * @deprecated
  * @summary [학생] 오늘의 신규 쿠폰 조회
  */
 
-export function useGetTodayCoupons<TData = Awaited<ReturnType<typeof getTodayCoupons>>, TError = CommonResponseListCouponResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export function useGetTodayCoupons1<TData = Awaited<ReturnType<typeof getTodayCoupons1>>, TError = CommonResponseListStudentCouponResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayCoupons1>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetTodayCouponsQueryOptions(options)
+  const queryOptions = getGetTodayCoupons1QueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
