@@ -1,4 +1,5 @@
-import { useGetStoreMap } from '@/src/api/store';
+import { useGetStoreMap1 as useGetStoreMap } from '@/src/api/store';
+import type { StudentStoreMapResponse } from '@/src/api/generated.schemas';
 import { CATEGORY_TO_API } from '@/src/shared/constants/map';
 import { useAuth } from '@/src/shared/lib/auth';
 import type { Store } from '@/src/shared/types/store';
@@ -102,9 +103,9 @@ export function useMapSearch(permissionReady = true, skipInitialCenterMove = fal
   const allStores: Store[] = useMemo(() => {
     const raw = rawData?.data?.data ?? [];
     // TODO: 디버그 - myPartnerships 확인 후 제거
-    const partners = raw.filter((s) => (s.myPartnerships?.length ?? 0) > 0);
+    const partners = raw.filter((s: StudentStoreMapResponse) => (s.myPartnerships?.length ?? 0) > 0);
     if (partners.length > 0) {
-      console.log('[MAP] myPartnerships 있는 가게:', partners.map((s) => ({ name: s.name, myPartnerships: s.myPartnerships })));
+      console.log('[MAP] myPartnerships 있는 가게:', partners.map((s: StudentStoreMapResponse) => ({ name: s.name, myPartnerships: s.myPartnerships })));
     } else {
       console.log('[MAP] myPartnerships 있는 가게 없음. 총 가게 수:', raw.length);
     }

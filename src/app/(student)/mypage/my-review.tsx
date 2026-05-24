@@ -1,6 +1,6 @@
-import type { PageResponseReviewResponse } from '@/src/api/generated.schemas';
-import { useGetStudentInfo } from '@/src/api/my-page';
-import { useDeleteReview, useGetMyReviews } from '@/src/api/review';
+import type { PageResponseStudentReviewResponse as PageResponseReviewResponse } from '@/src/api/generated.schemas';
+import { useGetStudentInfo1 as useGetStudentInfo } from '@/src/api/my-page';
+import { useDeleteReview1 as useDeleteReview, useGetMyReviews1 as useGetMyReviews } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { AppPopup } from '@/src/shared/common/app-popup';
 import { ErrorPopup } from '@/src/shared/common/error-popup';
@@ -40,8 +40,8 @@ export default function MyReview() {
 
     // parentReviewId가 있거나, 별점이 0점(또는 없음)이면 답글로 취급 (학생 리뷰는 최소 1점 이상)
     return {
-      reviews: items.filter(r => !r.parentReviewId && (r.rating !== undefined && r.rating > 0)),
-      replies: items.filter(r => (!!r.parentReviewId) || (r.rating === undefined || r.rating === 0))
+      reviews: items.filter((r: any) => !r.parentReviewId && (r.rating !== undefined && r.rating > 0)),
+      replies: items.filter((r: any) => (!!r.parentReviewId) || (r.rating === undefined || r.rating === 0))
     };
   }, [myReviewsRes]);
 
@@ -67,7 +67,7 @@ export default function MyReview() {
 
   const handleEditPress = (id: number) => {
     closeMenu();
-    const review = reviews.find((r) => r.reviewId === id);
+    const review = reviews.find((r: any) => r.reviewId === id);
     if (!review) return;
     const imageUrlsParam = review.imageUrls && review.imageUrls.length > 0
       ? encodeURIComponent(JSON.stringify(review.imageUrls))
@@ -148,7 +148,7 @@ export default function MyReview() {
           </View>
         )}
 
-        {reviews.map((review) => {
+        {reviews.map((review: any) => {
           // 1. 중첩 구조인 경우 (Store Detail API 방식)
           const children = (review as any).children;
           const nestedReplies = (review as any).replies || (review as any).reply;
@@ -161,7 +161,7 @@ export default function MyReview() {
                 : null;
 
           // 2. 평면 구조인 경우 (My Page API 방식 추정)
-          const flatReply = replies.find(r =>
+          const flatReply = replies.find((r: any) =>
             r.parentReviewId && review.reviewId && String(r.parentReviewId) === String(review.reviewId)
           );
 
@@ -255,7 +255,7 @@ export default function MyReview() {
               {/* 리뷰 이미지 */}
               {review.imageUrls && review.imageUrls.length > 0 && (
                 <View style={styles.imageContainer}>
-                  {review.imageUrls.map((url, idx) => (
+                  {review.imageUrls.map((url: any, idx: any) => (
                     <Image
                       key={idx}
                       source={{ uri: url }}

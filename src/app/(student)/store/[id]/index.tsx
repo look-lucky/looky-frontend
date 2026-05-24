@@ -1,20 +1,20 @@
-import { useDownloadCoupon, useGetCouponsByStore } from '@/src/api/coupon';
-import { useAddFavorite, useCountFavorites, useGetMyFavorites, useRemoveFavorite } from '@/src/api/favorite';
+import { useDownloadCoupon1 as useDownloadCoupon, useGetCouponsByStore } from '@/src/api/coupon';
+import { useAddFavorite1 as useAddFavorite, useCountFavorites1 as useCountFavorites, useGetMyFavorites1 as useGetMyFavorites, useRemoveFavorite1 as useRemoveFavorite } from '@/src/api/favorite';
 import { logCouponBoxOpen, logCouponDownloadComplete, logCouponDownloadStart, logFavoriteToggle, logFirstCouponDownload, logStoreDetailView, logStoreTabClick } from '@/src/shared/lib/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   CouponResponse,
   ItemResponse,
-  PageResponseReviewResponse,
+  PageResponseStudentReviewResponse,
   PageResponseStoreNewsResponse,
   ReviewStatsResponse,
-  StorePartnershipResponse,
+  StudentPartnershipResponse,
   StoreResponse,
 } from '@/src/api/generated.schemas';
 import { useGetItems } from '@/src/api/item';
-import { useGetStudentInfo } from '@/src/api/my-page';
-import { useGetStorePartnerships } from '@/src/api/partnership';
-import { useAddLike, useDeleteReview, useGetReviews, useGetReviewStats, useRemoveLike } from '@/src/api/review';
+import { useGetStudentInfo1 as useGetStudentInfo } from '@/src/api/my-page';
+import { useGetStorePartnerships1 as useGetStorePartnerships } from '@/src/api/partnership';
+import { useAddLike1 as useAddLike, useDeleteReview1 as useDeleteReview, useGetReviews1 as useGetReviews, useGetReviewStats1 as useGetReviewStats, useRemoveLike1 as useRemoveLike } from '@/src/api/review';
 import { useGetStore } from '@/src/api/store';
 import { useGetStoreNewsList } from '@/src/api/store-news';
 import { StoreBenefits } from '@/src/app/(student)/components/store/benefits';
@@ -149,7 +149,7 @@ export default function StoreDetailScreen() {
   // 제휴 혜택 목록 (해당 상점과 실제 제휴를 맺은 조직만)
   const { data: partnershipsRes } = useGetStorePartnerships(storeId);
   const apiPartnerships = useMemo(() => {
-    const detailPartnerships = ((partnershipsRes as any)?.data?.data ?? []) as StorePartnershipResponse[];
+    const detailPartnerships = ((partnershipsRes as any)?.data?.data ?? []) as StudentPartnershipResponse[];
 
     return detailPartnerships
       .filter(p => p.organizationName && p.organizationCategory !== 'DEPARTMENT' && !p.organizationName.endsWith('학과'));
@@ -295,7 +295,7 @@ export default function StoreDetailScreen() {
     storeId,
     { page: reviewPage, size: 20 } as any,
   );
-  const apiReviewsPage = (reviewsRes as any)?.data?.data as PageResponseReviewResponse | undefined;
+  const apiReviewsPage = (reviewsRes as any)?.data?.data as PageResponseStudentReviewResponse | undefined;
 
   // 리뷰 데이터 누적 처리 — 응답이 도착한 시점의 page 번호로 검증해 race condition 방지
   useEffect(() => {

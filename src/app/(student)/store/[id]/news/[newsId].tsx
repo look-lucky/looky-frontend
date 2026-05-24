@@ -5,12 +5,12 @@ import { Divider } from "@/src/shared/common/divider";
 import { ThemedText } from '@/src/shared/common/themed-text';
 import {
     useGetStoreNews,
-    useGetComments,
-    useCreateComment,
-    useDeleteComment,
-    useToggleLike,
+    useGetComments1 as useGetComments,
+    useCreateComment1 as useCreateComment,
+    useDeleteComment1 as useDeleteComment,
+    useToggleLike1 as useToggleLike,
     getGetStoreNewsQueryKey,
-    getGetCommentsQueryKey,
+    getGetComments1QueryKey as getGetCommentsQueryKey,
 } from "@/src/api/store-news";
 import { useGetStore } from "@/src/api/store";
 import { rs } from "@/src/shared/theme/scale";

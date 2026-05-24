@@ -1,5 +1,5 @@
 import { StoreReportRequestReasonsItem } from '@/src/api/generated.schemas';
-import { useReportStore } from '@/src/api/store';
+import { useReportStore1 as useReportStore } from '@/src/api/store';
 import { AppButton } from '@/src/shared/common/app-button';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';

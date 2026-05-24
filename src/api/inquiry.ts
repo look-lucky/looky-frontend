@@ -6,7 +6,7 @@ export const getInquiries = async () => {
 };
 
 // 2. 문의 등록 (POST)
-export const createInquiry = async (data) => {
+export const createInquiry = async (data: any) => {
   return await customFetch('/api/inquiries', {
     method: 'POST',
     body: JSON.stringify(data),

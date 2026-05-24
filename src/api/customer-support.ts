@@ -25,15 +25,16 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  CommonResponseInquiryResponse,
   CommonResponseLong,
-  CommonResponsePageInquiryResponse,
-  CreateInquiryRequest,
-  GetInquiriesParams,
   SwaggerErrorResponse
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
+
+type CommonResponseInquiryResponse = any;
+type CommonResponsePageInquiryResponse = any;
+type CreateInquiryRequest = any;
+type GetInquiriesParams = any;
 
 
 

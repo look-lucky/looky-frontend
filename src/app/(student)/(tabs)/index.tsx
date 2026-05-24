@@ -1,6 +1,6 @@
-import { useGetMyCoupons, useGetTodayCoupons } from '@/src/api/coupon';
-import { useGetStudentInfo } from '@/src/api/my-page';
-import { useGetHotStores } from '@/src/api/store';
+import { useGetMyCoupons1 as useGetMyCoupons, useGetTodayCoupons1 as useGetTodayCoupons } from '@/src/api/coupon';
+import { useGetStudentInfo1 as useGetStudentInfo } from '@/src/api/my-page';
+import { useGetHotStores1 as useGetHotStores } from '@/src/api/store';
 import { AdBannerSection } from '@/src/app/(student)/components/home/ad-banner-section';
 import { CategorySection } from '@/src/app/(student)/components/home/category-section';
 import { CouponSection } from '@/src/app/(student)/components/home/coupon-section';

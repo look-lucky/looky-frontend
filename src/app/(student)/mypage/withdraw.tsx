@@ -1,4 +1,4 @@
-import { withdraw } from '@/src/api/auth';
+import { withdraw } from '@/src/api/account';
 import { WithdrawRequestReasonsItem } from '@/src/api/generated.schemas';
 import { AppPopup } from '@/src/shared/common/app-popup';
 import { isNetworkError, useNetworkError } from '@/src/shared/contexts/network-error-context';

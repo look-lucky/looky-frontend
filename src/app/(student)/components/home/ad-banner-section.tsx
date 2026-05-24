@@ -164,7 +164,7 @@ export function AdBannerSection({ }: AdBannerProps) {
       {/* 인디케이터 */}
       {ads.length > 1 && (
         <View style={styles.indicatorContainer}>
-          {ads.map((_, idx) => (
+          {ads.map((_: any, idx: number) => (
             <Pressable
               key={idx}
               style={[

@@ -2,7 +2,7 @@ import GiftIcon from "@/assets/images/icons/coupon/gift.svg";
 import HotPriceIcon from "@/assets/images/icons/coupon/hot-price.svg";
 import PriceTagDollarIcon from "@/assets/images/icons/coupon/price-tag-dollar.svg";
 import LocationIcon from "@/assets/images/icons/home/location-icon.svg";
-import { getGetMyCouponsQueryKey, useActivateCoupon, useGetMyCoupons } from "@/src/api/coupon";
+import { getGetMyCoupons1QueryKey as getGetMyCouponsQueryKey, useActivateCoupon1 as useActivateCoupon, useGetMyCoupons1 as useGetMyCoupons } from "@/src/api/coupon";
 import type { DownloadCouponResponse } from "@/src/api/generated.schemas";
 import { logCouponUseStart, logCouponUseComplete } from "@/src/shared/lib/analytics";
 import { AppButton } from "@/src/shared/common/app-button";
@@ -234,7 +234,7 @@ export default function BenefitsTab() {
     activateCoupon(
       { studentCouponId: selectedCoupon.studentCouponId },
       {
-        onSuccess: (res) => {
+        onSuccess: (res: any) => {
           const responseData = (res as any)?.data?.data;
           const code = (responseData?.verificationCode ?? responseData?.couponCode) as string | undefined;
           const serverExpiresAt = responseData?.activationExpiresAt as string | undefined;

@@ -9,7 +9,7 @@ import { useAuth } from "@/src/shared/lib/auth";
 import { logOwnerSignUpComplete } from "@/src/shared/lib/analytics";
 import { clearToken, saveCredentials, saveToken } from "@/src/shared/lib/auth/token";
 import type { UserType } from "@/src/shared/lib/auth/token";
-import { useVerifyBizRegNo, useCreateStoreClaims } from "@/src/api/store-claim";
+import { useVerifyBizRegNo1 as useVerifyBizRegNo, useCreateStoreClaims } from "@/src/api/store-claim";
 import * as ImagePicker from "expo-image-picker";
 import { uploadImageAsset, validateImageAsset } from "@/src/shared/hooks/use-upload-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -194,7 +194,6 @@ export default function SignupOwnerPage() {
       // 소셜 회원가입 흐름
       if (socialUserId) {
         const socialResponse = await completeSocialSignupMutation.mutateAsync({
-          params: {},
           data: {
             role: "ROLE_OWNER",
             gender: apiGender as "MALE" | "FEMALE",
@@ -249,7 +248,6 @@ export default function SignupOwnerPage() {
         await createStoreClaimsMutation.mutateAsync({
           data: {
             storeId: savedStoreId,
-            userId,
             bizRegNo: businessNumber,
             representativeName,
             storeName,
@@ -332,7 +330,6 @@ export default function SignupOwnerPage() {
       await createStoreClaimsMutation.mutateAsync({
         data: {
           storeId,
-          userId,
           bizRegNo: businessNumber,
           representativeName,
           storeName,

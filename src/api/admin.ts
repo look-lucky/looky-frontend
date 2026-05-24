@@ -26,7 +26,7 @@ import type {
 
 import type {
   CommonResponseCoordinate,
-  CommonResponsePageResponseUserResponse,
+  CommonResponsePageResponseAdminUserResponse as CommonResponsePageResponseUserResponse,
   CommonResponseString,
   CommonResponseVoid,
   GetAllUsersParams,

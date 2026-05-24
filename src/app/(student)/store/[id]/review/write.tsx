@@ -1,4 +1,4 @@
-import { useCreateReview } from '@/src/api/review';
+import { useCreateReview1 as useCreateReview } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { logReviewWriteComplete } from '@/src/shared/lib/analytics';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';

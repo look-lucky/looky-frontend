@@ -116,14 +116,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       "@react-native-firebase/app",
       ...(IS_DEV ? [] : [
-        [
-          "@sentry/react-native/expo",
-          {
-            url: "https://sentry.io/",
-            project: "react-native",
-            organization: "looky-ub",
-          },
-        ],
+        ["@sentry/react-native/expo", { url: "https://sentry.io/", project: "react-native", organization: "looky-ub" }] as [string, object],
       ]),
     ],
     experiments: {

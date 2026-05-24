@@ -11,7 +11,7 @@ import { useEffect, useRef } from "react";
 import { ActivityIndicator, AppState, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { useGetMyStoreClaims } from "@/src/api/store-claim";
+import { useGetMyStoreClaims1 as useGetMyStoreClaims } from "@/src/api/store-claim";
 import { ForceUpdateModal } from "@/src/shared/common/force-update-modal";
 import { logSessionEnd } from "@/src/shared/lib/analytics";
 import { useForceUpdate } from "@/src/shared/hooks/use-force-update";

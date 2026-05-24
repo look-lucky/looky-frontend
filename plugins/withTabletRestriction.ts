@@ -5,9 +5,9 @@ const withTabletRestriction: ConfigPlugin = (config) => {
     const manifest = mod.modResults.manifest;
 
     // Remove existing supports-screens if any
-    delete manifest["supports-screens"];
+    delete (manifest as any)["supports-screens"];
 
-    manifest["supports-screens"] = [
+    (manifest as any)["supports-screens"] = [
       {
         $: {
           "android:smallScreens": "true",

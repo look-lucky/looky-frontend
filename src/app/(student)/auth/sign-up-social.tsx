@@ -217,7 +217,6 @@ export default function SocialSignupPage() {
 
     completeSocialSignupMutation.mutate(
       {
-        params: {},
         data: {
           role: "ROLE_STUDENT",
           gender: apiGender,

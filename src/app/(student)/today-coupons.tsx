@@ -1,8 +1,8 @@
 import GiftIcon from '@/assets/images/icons/coupon/gift.svg';
 import HotPriceIcon from '@/assets/images/icons/coupon/hot-price.svg';
 import PriceTagDollarIcon from '@/assets/images/icons/coupon/price-tag-dollar.svg';
-import { useGetTodayCoupons } from '@/src/api/coupon';
-import { useGetStudentInfo } from '@/src/api/my-page';
+import { useGetTodayCoupons1 as useGetTodayCoupons } from '@/src/api/coupon';
+import { useGetStudentInfo1 as useGetStudentInfo } from '@/src/api/my-page';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { rs } from '@/src/shared/theme/scale';

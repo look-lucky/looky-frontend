@@ -1,7 +1,7 @@
 import type {
   PartnershipInfo,
-  StoreMapResponse,
-  StoreMapResponseStoreCategoriesItem,
+  StudentStoreMapResponse,
+  StudentStoreMapResponseStoreCategoriesItem,
   StoreResponse,
   StoreResponseStoreCategoriesItem,
 } from '@/src/api/generated.schemas';
@@ -10,7 +10,7 @@ import type { Store } from '@/src/shared/types/store';
 /**
  * 카테고리 코드를 한글로 변환
  */
-const CATEGORY_LABELS: Record<StoreResponseStoreCategoriesItem | StoreMapResponseStoreCategoriesItem, string> = {
+const CATEGORY_LABELS: Record<StoreResponseStoreCategoriesItem | StudentStoreMapResponseStoreCategoriesItem, string> = {
   BAR: '주점',
   CAFE: '카페',
   RESTAURANT: '식당',
@@ -191,7 +191,7 @@ export function transformStoreResponse(
     lat,
     lng,
     isPartner: (response.myPartnerships && response.myPartnerships.length > 0) ?? false,
-    hasCoupon: response.hasCoupon ?? false,
+    hasCoupon: (response as any).hasCoupon ?? false,
     category: formatStoreCategories(response.storeCategories),
     isFavorite: false, // 기본값, 추후 즐겨찾기 목록과 비교하여 업데이트
   };
@@ -208,10 +208,10 @@ export function transformStoreResponses(
 }
 
 /**
- * StoreMapResponse (API) → Store (UI) 변환
+ * StudentStoreMapResponse (API) → Store (UI) 변환
  */
 export function transformStoreMapResponse(
-  response: StoreMapResponse,
+  response: StudentStoreMapResponse,
   myLocation?: { lat: number; lng: number } | null,
 ): Store {
   const lat = response.latitude ?? 0;
@@ -246,10 +246,10 @@ export function transformStoreMapResponse(
 }
 
 /**
- * StoreMapResponse[] → Store[] 배열 변환
+ * StudentStoreMapResponse[] → Store[] 배열 변환
  */
 export function transformStoreMapResponses(
-  responses: StoreMapResponse[],
+  responses: StudentStoreMapResponse[],
   myLocation?: { lat: number; lng: number } | null,
 ): Store[] {
   return responses.map((r) => transformStoreMapResponse(r, myLocation));

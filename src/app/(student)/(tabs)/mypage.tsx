@@ -1,7 +1,7 @@
-import { getGetMyCouponsQueryKey, useGetMyCoupons } from "@/src/api/coupon";
-import { useGetMyFavorites } from "@/src/api/favorite";
-import { useGetStudentInfo } from "@/src/api/my-page";
-import { useGetMyReviews } from "@/src/api/review";
+import { getGetMyCoupons1QueryKey as getGetMyCouponsQueryKey, useGetMyCoupons1 as useGetMyCoupons } from "@/src/api/coupon";
+import { useGetMyFavorites1 as useGetMyFavorites } from "@/src/api/favorite";
+import { useGetStudentInfo1 as useGetStudentInfo } from "@/src/api/my-page";
+import { useGetMyReviews1 as useGetMyReviews } from "@/src/api/review";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";
 import { rs } from "@/src/shared/theme/scale";

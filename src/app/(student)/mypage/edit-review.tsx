@@ -1,4 +1,4 @@
-import { useUpdateReview } from '@/src/api/review';
+import { useUpdateReview1 as useUpdateReview } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { rs } from '@/src/shared/theme/scale';
 import { Brand, Gray, Text as TextColor } from '@/src/shared/theme/theme';

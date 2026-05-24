@@ -1,7 +1,7 @@
-import { useGetMyFavorites, useRemoveFavorite } from '@/src/api/favorite';
+import { useGetMyFavorites1 as useGetMyFavorites, useRemoveFavorite1 as useRemoveFavorite } from '@/src/api/favorite';
 import type {
-  FavoriteStoreResponse,
-  PageResponseFavoriteStoreResponse,
+  StudentFavoriteStoreResponse as FavoriteStoreResponse,
+  PageResponseStudentFavoriteStoreResponse as PageResponseFavoriteStoreResponse,
   StoreResponseStoreCategoriesItem,
 } from '@/src/api/generated.schemas';
 import { rs } from '@/src/shared/theme/scale';
@@ -117,7 +117,7 @@ export default function Favorite() {
             </View>
           )}
 
-          {stores.map((store) => (
+          {stores.map((store: FavoriteStoreResponse) => (
             <TouchableOpacity
               key={store.storeId}
               style={styles.storeCard}
@@ -134,7 +134,7 @@ export default function Favorite() {
                   const imageSrc =
                     (store as any).profileImageUrl ||
                     (store as any).logoImage ||
-                    store.imageUrl ||
+                    (store as any).imageUrl ||
                     (store as any).imageUrls?.[0] ||
                     (store as any).storeLogo ||
                     (store as any).image;

@@ -27,10 +27,11 @@ import type {
 import type {
   CommonResponseVoid,
   SwaggerErrorResponse,
-  UploadExcelBody
 } from './generated.schemas';
 
 import { customFetch } from './mutator';
+
+type UploadExcelBody = any;
 
 
 

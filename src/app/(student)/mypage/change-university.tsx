@@ -1,6 +1,6 @@
 import { useSend, useVerify } from "@/src/api/auth";
-import { getGetStudentInfoQueryKey, useUpdateUniversity } from "@/src/api/my-page";
-import { getGetHotStoresQueryKey, getGetStoreMapQueryKey } from "@/src/api/store";
+import { getGetStudentInfo1QueryKey as getGetStudentInfoQueryKey, useUpdateUniversity1 as useUpdateUniversity } from "@/src/api/my-page";
+import { getGetHotStores1QueryKey as getGetHotStoresQueryKey, getGetStoreMap1QueryKey as getGetStoreMapQueryKey } from "@/src/api/store";
 import { useGetUniversities } from "@/src/api/university";
 import { AppButton } from "@/src/shared/common/app-button";
 import { AppPopup } from "@/src/shared/common/app-popup";
@@ -208,7 +208,7 @@ export default function ChangeUniversityScreen() {
           queryClient.invalidateQueries({ queryKey: ['events'] });
           setPopupState({ visible: true, title: "대학교가 변경되었습니다", onClose: () => router.back() });
         },
-        onError: (error) => {
+        onError: (error: any) => {
           console.error("대학 변경 실패:", error);
           if (!isNetworkError(error)) {
             setPopupState({ visible: true, title: "대학 변경에 실패했습니다", subtitle: "다시 시도해주세요" });

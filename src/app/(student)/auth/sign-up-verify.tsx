@@ -185,6 +185,26 @@ export default function StudentVerificationPage() {
   const selectedCollegeName = colleges.find(c => c.id === selectedCollegeId)?.name ?? "";
   const selectedDepartmentName = departments.find((d: any) => d.id === selectedDepartmentId)?.name ?? "";
 
+  // 인라인 메시지 30초 후 자동 제거 (타이머 useEffect보다 먼저 선언)
+  const showSendCodeMessage = useCallback((message: string, isError = false) => {
+    if (sendCodeMessageTimerRef.current) {
+      clearTimeout(sendCodeMessageTimerRef.current);
+    }
+    setSendCodeMessage(message);
+    setIsErrorMessage(isError);
+    sendCodeMessageTimerRef.current = setTimeout(() => {
+      setSendCodeMessage("");
+    }, 30000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (sendCodeMessageTimerRef.current) {
+        clearTimeout(sendCodeMessageTimerRef.current);
+      }
+    };
+  }, []);
+
   // 타이머 로직 - 실제 만료 시간 기반으로 계산
   useEffect(() => {
     if (!isCodeSent || !expiryTime || isEmailVerified) return;
@@ -232,26 +252,6 @@ export default function StudentVerificationPage() {
     }, 1000);
     return () => clearInterval(interval);
   }, [resendCooldown]);
-
-  // 인라인 메시지 30초 후 자동 제거
-  const showSendCodeMessage = useCallback((message: string, isError = false) => {
-    if (sendCodeMessageTimerRef.current) {
-      clearTimeout(sendCodeMessageTimerRef.current);
-    }
-    setSendCodeMessage(message);
-    setIsErrorMessage(isError);
-    sendCodeMessageTimerRef.current = setTimeout(() => {
-      setSendCodeMessage("");
-    }, 30000);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (sendCodeMessageTimerRef.current) {
-        clearTimeout(sendCodeMessageTimerRef.current);
-      }
-    };
-  }, []);
 
   // 타이머 포맷 (MM:SS)
   const formatTimer = (seconds: number) => {
@@ -360,9 +360,6 @@ export default function StudentVerificationPage() {
     if (socialUserId) {
       completeSocialSignupMutation.mutate(
         {
-          params: {
-            userId: parseInt(socialUserId, 10),
-          },
           data: {
             role: "ROLE_STUDENT",
             gender: apiGender,

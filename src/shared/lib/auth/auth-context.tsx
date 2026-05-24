@@ -13,7 +13,7 @@ import { clearToken, getUniversityId, saveUniversityId, getCollegeId, getCollege
 import { authEvents } from "./auth-events";
 import { setLoggingOut } from "@/src/api/mutator";
 import { queryClient } from "@/src/shared/contexts/network-error-context";
-import { getStudentInfo } from "@/src/api/my-page";
+import { getStudentInfo1 as getStudentInfo } from "@/src/api/my-page";
 
 interface AuthState {
   isAuthenticated: boolean;

@@ -147,7 +147,7 @@ export function HomePopup({ }: HomePopupProps) {
             {/* 인디케이터 (2개 이상일 때만, 캐러셀 이미지 하단 영역에 배치) */}
             {ads.length > 1 && (
               <View style={styles.indicatorContainer}>
-                {ads.map((_, idx) => (
+                {ads.map((_: any, idx: number) => (
                   <View
                     key={idx}
                     style={[

@@ -1,10 +1,10 @@
 import ConfettiIcon from '@/assets/images/icons/map/confetti.svg';
 import {
-  useAddFavorite,
-  useGetMyFavorites,
-  useRemoveFavorite,
+  useAddFavorite1 as useAddFavorite,
+  useGetMyFavorites1 as useGetMyFavorites,
+  useRemoveFavorite1 as useRemoveFavorite,
 } from '@/src/api/favorite';
-import { useGetHotStores } from '@/src/api/store';
+import { useGetHotStores1 as useGetHotStores } from '@/src/api/store';
 import { EventCard } from '@/src/app/(student)/components/event/event-card';
 import { SelectedEventDetail } from '@/src/app/(student)/components/event/selected-event-detail';
 import { MapAdButton } from '@/src/app/(student)/components/map/map-ad-button';

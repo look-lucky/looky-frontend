@@ -1,6 +1,6 @@
 import { OrganizationResponseCategory } from "@/src/api/generated.schemas";
-import { getGetStudentInfoQueryKey, useGetStudentInfo, useUpdateStudentProfile } from "@/src/api/my-page";
-import { getGetStoreMapQueryKey } from "@/src/api/store";
+import { getGetStudentInfo1QueryKey as getGetStudentInfoQueryKey, useGetStudentInfo1 as useGetStudentInfo, useUpdateStudentProfile1 as useUpdateStudentProfile } from "@/src/api/my-page";
+import { getGetStoreMap1QueryKey as getGetStoreMapQueryKey } from "@/src/api/store";
 import { useGetDepartmentsByCollege, useGetOrganizations } from "@/src/api/organization";
 import { AppButton } from "@/src/shared/common/app-button";
 import { AppPopup } from "@/src/shared/common/app-popup";
@@ -224,7 +224,7 @@ export default function ProfileEditScreen() {
           });
           setPopupState({ visible: true, title: "프로필이 수정되었습니다", onClose: () => router.back() });
         },
-        onError: (error) => {
+        onError: (error: any) => {
           console.error("프로필 수정 실패:", error);
           if (!isNetworkError(error)) {
             setPopupState({ visible: true, title: "프로필 수정에 실패했습니다", subtitle: "다시 시도해주세요" });

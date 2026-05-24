@@ -1,5 +1,6 @@
-import { useLogout, withdraw } from "@/src/api/auth";
-import { getGetMyStoreClaimsQueryKey } from "@/src/api/store-claim";
+import { useLogout } from "@/src/api/auth";
+import { withdraw } from "@/src/api/account";
+import { getGetMyStoreClaims1QueryKey as getGetMyStoreClaimsQueryKey } from "@/src/api/store-claim";
 import { AppButton } from "@/src/shared/common/app-button";
 import { ThemedText } from "@/src/shared/common/themed-text";
 import { useAuth } from "@/src/shared/lib/auth";

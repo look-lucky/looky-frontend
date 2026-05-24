@@ -1,4 +1,4 @@
-import type { StorePartnershipResponse, StoreResponseCloverGrade } from '@/src/api/generated.schemas';
+import type { StudentPartnershipResponse, StoreResponseCloverGrade } from '@/src/api/generated.schemas';
 import { SelectModal } from '@/src/shared/common/select-modal';
 import { ThemedText } from '@/src/shared/common/themed-text';
 import { ThemedView } from '@/src/shared/common/themed-view';
@@ -57,7 +57,7 @@ interface StoreHeaderProps {
   closedDays: string;
   university: string;
   isPartner: boolean;
-  partnerships: StorePartnershipResponse[];
+  partnerships: StudentPartnershipResponse[];
   onBack: () => void;
   onLike: () => void;
   onReviewPress?: () => void;
@@ -89,7 +89,7 @@ function MainImageSection({
   const displayImages = images.length > 0 ? images.slice(0, 3) : [null];
 
   const flatListRef = useRef<FlatList>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startTimer = useCallback(() => {
     if (displayImages.length <= 1) return;
@@ -502,8 +502,6 @@ export function StoreHeader({
           category={category}
           reviewCount={reviewCount}
           address={address}
-          latitude={latitude}
-          longitude={longitude}
           openHours={openHours}
           closedDays={closedDays}
           onReviewPress={onReviewPress}
