@@ -1,4 +1,4 @@
-import { useCreateReview1 as useCreateReview } from '@/src/api/review';
+import { useCreateReview1 as useCreateReview, getGetReviews1QueryKey, getGetReviewStats1QueryKey } from '@/src/api/review';
 import { AppButton } from '@/src/shared/common/app-button';
 import { logReviewWriteComplete } from '@/src/shared/lib/analytics';
 import { ArrowLeft } from '@/src/shared/common/arrow-left';
@@ -67,8 +67,8 @@ export default function ReviewWriteScreen() {
     mutation: {
       onSuccess: () => {
         logReviewWriteComplete({ storeId: id });
-        queryClient.invalidateQueries({ queryKey: [`/api/stores/${id}/reviews`] });
-        queryClient.invalidateQueries({ queryKey: [`/api/stores/${id}/reviews/stats`] });
+        queryClient.invalidateQueries({ queryKey: getGetReviews1QueryKey(Number(id)) });
+        queryClient.invalidateQueries({ queryKey: getGetReviewStats1QueryKey(Number(id)) });
         setSuccessVisible(true);
       },
       onError: (error: any) => {

@@ -1,5 +1,5 @@
-import { useDownloadCoupon1 as useDownloadCoupon, useGetCouponsByStore } from '@/src/api/coupon';
-import { useAddFavorite1 as useAddFavorite, useCountFavorites1 as useCountFavorites, useGetMyFavorites1 as useGetMyFavorites, useRemoveFavorite1 as useRemoveFavorite } from '@/src/api/favorite';
+import { useDownloadCoupon1 as useDownloadCoupon, useGetCouponsByStore, getGetCouponsByStoreQueryKey, getGetMyCoupons1QueryKey } from '@/src/api/coupon';
+import { useAddFavorite1 as useAddFavorite, useCountFavorites1 as useCountFavorites, useGetMyFavorites1 as useGetMyFavorites, useRemoveFavorite1 as useRemoveFavorite, getGetMyFavorites1QueryKey, getCountFavorites1QueryKey } from '@/src/api/favorite';
 import { logCouponBoxOpen, logCouponDownloadComplete, logCouponDownloadStart, logFavoriteToggle, logFirstCouponDownload, logStoreDetailView, logStoreTabClick } from '@/src/shared/lib/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
@@ -14,8 +14,8 @@ import type {
 import { useGetItems } from '@/src/api/item';
 import { useGetStudentInfo1 as useGetStudentInfo } from '@/src/api/my-page';
 import { useGetStorePartnerships1 as useGetStorePartnerships } from '@/src/api/partnership';
-import { useAddLike1 as useAddLike, useDeleteReview1 as useDeleteReview, useGetReviews1 as useGetReviews, useGetReviewStats1 as useGetReviewStats, useRemoveLike1 as useRemoveLike } from '@/src/api/review';
-import { useGetStore } from '@/src/api/store';
+import { useAddLike1 as useAddLike, useDeleteReview1 as useDeleteReview, useGetReviews1 as useGetReviews, useGetReviewStats1 as useGetReviewStats, useRemoveLike1 as useRemoveLike, getGetReviews1QueryKey, getGetReviewStats1QueryKey } from '@/src/api/review';
+import { useGetStore, getGetStoreMap1QueryKey } from '@/src/api/store';
 import { useGetStoreNewsList } from '@/src/api/store-news';
 import { StoreBenefits } from '@/src/app/(student)/components/store/benefits';
 import { BottomFixedBar } from '@/src/app/(student)/components/store/bottom-bar';
@@ -190,8 +190,8 @@ export default function StoreDetailScreen() {
   const addFavoriteMutation = useAddFavorite({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/favorites/count`] });
-        queryClient.invalidateQueries({ queryKey: ['/api/favorites'] });
+        queryClient.invalidateQueries({ queryKey: getCountFavorites1QueryKey(storeId) });
+        queryClient.invalidateQueries({ queryKey: getGetMyFavorites1QueryKey() });
       },
       onError: () => {
         setIsLiked(false);
@@ -202,8 +202,8 @@ export default function StoreDetailScreen() {
   const removeFavoriteMutation = useRemoveFavorite({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/favorites/count`] });
-        queryClient.invalidateQueries({ queryKey: ['/api/favorites'] });
+        queryClient.invalidateQueries({ queryKey: getCountFavorites1QueryKey(storeId) });
+        queryClient.invalidateQueries({ queryKey: getGetMyFavorites1QueryKey() });
       },
       onError: () => {
         setIsLiked(true);
@@ -218,9 +218,9 @@ export default function StoreDetailScreen() {
       onSuccess: async () => {
         Alert.alert('쿠폰 발급 완료', '내 쿠폰함에서 확인하세요');
         // 스토어 쿠폰 목록 갱신 (isDownloaded 반영) + 내 쿠폰함 + 지도 마커 hasCoupon 반영
-        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/coupons`] });
-        queryClient.invalidateQueries({ queryKey: ['/api/my-coupons'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/stores/map'] });
+        queryClient.invalidateQueries({ queryKey: getGetCouponsByStoreQueryKey(storeId) });
+        queryClient.invalidateQueries({ queryKey: getGetMyCoupons1QueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetStoreMap1QueryKey() });
         // 첫 쿠폰 다운 여부 확인
         const alreadyDownloaded = await AsyncStorage.getItem('first_coupon_downloaded');
         if (!alreadyDownloaded) {
@@ -250,7 +250,7 @@ export default function StoreDetailScreen() {
   const addLikeMutation = useAddLike({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
+        queryClient.invalidateQueries({ queryKey: getGetReviews1QueryKey(storeId) });
       },
       onError: (error: any) => {
         const errorMessage =
@@ -265,7 +265,7 @@ export default function StoreDetailScreen() {
   const removeLikeMutation = useRemoveLike({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
+        queryClient.invalidateQueries({ queryKey: getGetReviews1QueryKey(storeId) });
       },
       onError: (error: any) => {
         const errorMessage =
@@ -583,8 +583,8 @@ export default function StoreDetailScreen() {
               onSuccess: () => {
                 reviewPageRef.current = 0;
                 setReviewPage(0);
-                queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews`] });
-                queryClient.invalidateQueries({ queryKey: [`/api/stores/${storeId}/reviews/stats`] });
+                queryClient.invalidateQueries({ queryKey: getGetReviews1QueryKey(storeId) });
+                queryClient.invalidateQueries({ queryKey: getGetReviewStats1QueryKey(storeId) });
               },
             },
           ),
