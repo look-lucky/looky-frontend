@@ -16,6 +16,18 @@
         "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.824850984674-4gvq65pvtt4a68nuomqs16dpj50i9emr"
       }
     },
+    "staging": {
+      "distribution": "internal",
+      "channel": "staging",
+      "env": {
+        "APP_VARIANT": "development",
+        "EXPO_PUBLIC_API_BASE_URL": "https://dev-api.looky.kr",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "824850984674-speljhjen159d0f585vq744nnh0c2qqb.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "824850984674-435honkftnb8g5qfrni5s78g40jda00h.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "824850984674-4gvq65pvtt4a68nuomqs16dpj50i9emr.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.824850984674-4gvq65pvtt4a68nuomqs16dpj50i9emr"
+      }
+    },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
